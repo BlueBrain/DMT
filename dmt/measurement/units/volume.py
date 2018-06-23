@@ -1,6 +1,6 @@
 """Units of volume."""
 
-from dmt.dmt.measurement.units import Unit
+from dmt.dmt.measurement.units import AtomicUnit, CompoundUnit
 
 class CubicMeter(Unit):
     """Cubic meter is the standard unit of volume."""
