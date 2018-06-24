@@ -2,6 +2,7 @@
 used as a standard for measurement of the same kind of quantity."""
 
 from abc import ABC, abstractmethod
+from dmt import physical_dimension
 
 class Unit(ABC):
     """Behavior of a unit of measurement."""
