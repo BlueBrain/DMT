@@ -2,3 +2,233 @@
 
 * TODO write tests for physical dimensions.
 
+* Model
+  #+begin_src
+  There is no correct model. But some may be useful.
+  #+end_src
+
+  What is a model anyway?
+  The models we are interested in are quantitative models of some real
+  phenomenon, that must be validated against reality. This project is about how
+  to go about the business of validating models. However, we first need to
+  decide what we mean by models, and what we do not. We can think of our models
+  as simulations of reality.
+ 
+** Simulation
+   It is natural to think of BBP's brain model as a simulation --- in fact we
+   run /simulations/ on the circuit. With that in mind, how will we define what
+   a simulation is? 
+
+   Google:
+
+   #+begin_src
+
+   1. imitation of a situation or process.
+   /eg: simulation of blood flowing through arteries and veins/
+   2. the action of pretending; deception.
+   /eg: clever simulation that's good enough to trick you/
+   3. the production of a computer model of something, especially for the 
+   purpose of study.
+   /eg: the method was tested by computer simulation/
+   #+end_src
+   All three are subjective --- they assume that a human is reading the
+   definition. There are many undefineds here:
+   1. What is a /situation/ or a /process/ ?
+   2. What is imitation? A monkey imitating a human? Or your child imitating
+      you?
+   3. What is pretending? Now that is a complicated thought! How do we even we
+      begin to understand what pretension is!
+   4. Definition number 3 is the most useful one for our purposes. It neatly
+      redirects the reader to /model/. May be /model/'s definition will be
+      simpler to understand. But there will again will be a huge list of
+      possible meanings --- which one should we pick?
+   
+
+   Now consider that there is such a /simulation/ that matches
+   reality (of humans) perfectly. For a /real/ human, it will be clear which one
+   is the simulation. They will be biased. Of course they have to be able to
+   sense which one is their side. So with that in mind, the first definition
+   makes sense. We are the originals, reality is original, simulation is an
+   imitation. We have that knowledge wired in to our /physics/. We are
+   inherently biased to think of our current reality as the limit of simulation
+   as it gets more sophisticated.
+
+   How would we define /simulation/ for a machine? But can you make an
+   /objective/ definition that can be and avoid the bias of /reality as the
+   limit of simulation/. 
+   
+
+   Wikipedia:
+   
+   #+begin_src
+   ...the imitation of the operation of a real world process or system.
+   ...first requires that a model be developed; this model represents the key 
+   characteristics, behaviors and functions of the selected physical or abstract 
+   system or process. The model represents the system itself, whereas the 
+   simulation represents the operation of the system over time.
+   #+end_src
+
+   Wikipedia has a very interesting article on [[https://en.wikipedia.org/wiki/Simulation][Simulation]]. Don't forget to read
+   it!
+
+** Validation as /an as objective definition of simulation as it is possible/.
+   To figure out reality from simulation, you should know that simulation is the
+   imitation. So if you can tell the imitation from reality, you know which one
+   is the simulation. This has been a common science-fiction theme. 
+
+   The solution is to test, in reality and the imitation --- test under as
+   similar circumstances as possible. The smaller the difference, harder it is
+   to tell simulation from reality. So, from a machine's perspective we can only
+   tell if the two are the same or different. The machine may as well be biased
+   that the simulation is in fact the reality because both phenomena of
+   validation and simulation happen /in-silico/. So be it, it does not matter.
+   All we want to find out is if the two are the same or not.
+   
+   Once we can objectively establish the extent to which a /model/ or
+   /simulation/ agrees with /reality/ on a given set of phenomena, we can give a
+   quantitative measure of the /amount/ of validation. 
+ 
+   Provided with a prior about which one is reality, the machine can then
+   compute the max-apriori probability of reality /versus/ simulation.
+
+   While that happens, we have what we really want --- and that is a
+   quantitative definition of validation, even if it is implicit and a bit
+   mystical. 
+
+  
+
+
+  We may not be sure about what a model is, but we do understand what we are
+  talking about here. So it may not be necessary to dwell on this point for too
+  long. But we will, even if for a small moment.
+  Our models are scientific models that must be validated against empirical
+  observations. They are /mechanical/ models, in the sense that these models are
+  essentially computer simulations---computations of a set of equations that
+  describe the (modeled) systems mechanics.
+
+  What other kind of (mathematical) models are there? There are statistical
+  models, and their generalization: machine learning models. However,
+  statistical models are not built around differential equations.
+
+  - Quantitative Model :: a formal computation based system that can generate
+       predictions about observable quantities.
+  - Scope of a Model :: the set of observable quantities that can be predicted
+       by the model.
+  - Validity of a Model :: accuracy of the model's predictions, as measured
+       against experimental observations.
+
+
+  Overall validity of a model is not a well defined, or complete, notion. A
+  model, such as the reconstructed brain circuit, may be valid for a certain set
+  of measurements, while very much off reality for another set. So, validation
+  of a model is a continuous process, and any new set of relevant experimental
+  data should trigger a new cycle of validations.
+
+  A related, and may be even more important, goal of model validation
+  against experimental data is the dissemination of experimental results in a
+  consumable form. From a modeling perspective, the purpose of experiments is to
+  provide data that can help improve the model. As things stand in the
+  scientific world, it is fairly straightforward, if not easy, to build a model.
+  There is no dearth of models, especially in lieu of the observation that all
+  models are wrong. The hard part is to make models that are useful. One
+  pre-condition for models to be correct is that they be validated against
+  reality. This hard task of validating models is made worse by the difficulty
+  of obtaining relevant data, or even complete lack of it. The relevant data
+  gathered from real systems is necessary to tune model parameters, as well as
+  to validate's it's predictions. In many cases, there is a lot of experimental
+  data available, but not in an easy to use or easy to search format. The bar of
+  using this data is too high. A model validation framework should focus on
+  integrating experimental results with modeling.
+
+* Model verification /versus/ model validation.
+
+* Validation is about DMT (Data, Models, and Tests)
+  
+* Requirements
+  We will attack the problem from both ends: a data, model, and test (validation)
+  collaboration framework for the general quantitative scientific endeavors, and
+  the other end of the use-case of validating the BBP brain region circuit.
+
+  General guidelines.
+  1. do not over-specify.
+  2. be loose
+  3. leave enough documentation, and expressive code inside the class, methods,..
+  
+** What is CellDensity? : an example that will lead is to enlightenment by using DMT.
+   We know the mathematical definition of cell density. As we consider that
+   definition, we can also see how open-ended it is. For a spatially extended
+   system, you can measure a field like quantity, such as a cell density, in
+   what ever which way you want. In the particular case of the cerebral cortex,
+   you may want cell density at the center of each layer, or computed across the
+   whole layer, or sampled in small boxes spread across a layer to asses the
+   spatial fluctuations in the cell density. You may even decide that there is
+   nothing sacrosanct about the layers --- you can decide to look at density as
+   a function of the cortical depth. It is easy to imagine yourself as a real
+   experimental neuroscientist and performing this experiments in the wet. Once
+   again, the different ways to compute cell density at a given location remain
+   the same as those in each layer.
+
+   So there are many possible ways to compute cell density. However each one of
+   them will measure cell density --- they are all methods to measure the same
+   phenomenon. So we have it: *CellDensity* is a *Phenomenon*.
+
+   Along with (total) cell density, consider the inhibitory cell density. So,
+   instead of all cells, you count only inter-neurons in your /simulated/ wet
+   experiments. The phenomenon being measured now is *InhibitorCellDensity*.
+   However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
+   the same *Quantity*. The exact form of this *Quantity* will depend on the
+   measurement method, and whether measurement method was statistical. However,
+   the underlying physical dimensions of the phenomena is the same: [Count /
+   Volume], count per unit volume. 
+
+   A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
+   CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
+   either be a model, or a data-object), and the *Quantity* that resulted from
+   measuring the /system/.
+
+   #+begin_src haskell
+   Measurement :: Record { phenomenon :: Phenomenon
+                         , system :: MeasurableSystem
+                         , quantity :: Quantity }
+                         
+   Quantity :: MagnitudeType => Record { unit :: Unit
+                                       , magnitude :: MagnitudeType }
+                         
+   #+end_src
+
+   We have abused our incompetence in Haskell syntax. What we want to say is
+   that *Quantity* is a generic type, parameterized by the type of it's
+   magnitude. Normally you would assume that the type of a quantity's magnitude
+   should be a floating point number. However that would severely  limit it's
+   use in our work. So we have to accommodate all the different /quantities/
+   that the different possible methods of measuring a cell density into a
+   generic type parameter. Luckily in Python we can pretend that all of them are
+   ducks, a duck is a duck so is a stack of ducks. All we have to ensure that
+   the ~class Quantity~ quacks. Defining *Quantity* in C++ should also be simple
+   --- after all C++ meta-programming is duck typing at static compilation time.
+   Haskell should be a challenge --- but not too hard --- just gotta find out
+   what the syntax is. In any case ...
+
+   Remember that one of our aims is to leverage Python's provided libraries
+   (especially Abstract Base Classes) to build features that may be useful in a
+   collaborative effort to define validations against data, that may be applied
+   to different model types. Keeping that in mind, here are some big questions
+
+   1. Who should determine the method of measuring the cell density?
+      The comparing (validating, judging, testing) method would call that
+      method on the provided ~model~ argument --- it's absence should display a
+      nice explanatory message that such and such method needs to be implemented
+      by the model adapter ... 
+      So, the validation has to assume that a certain method is available on the
+      ~model~ parameter. It is this /assumption/ that we need to express in an
+      abstract base class. The writer of validation will have to write such a
+      class. 
+   2. Can we expect our average user to be able to write Python abstract
+      classes? Probably not.
+      So we need to provide a /front-end/ simple Python way of writing a Python
+      abstract base class. On the back-end such code should become ABC's.
+      We cannot solve all problems at the same time, neither can we think and
+      plan for each desired feature. So we should take the first step --- and
+      write the validations ourselves with ABC's.
+      
+   3. How should we organize circuit validations, and adapter models?
