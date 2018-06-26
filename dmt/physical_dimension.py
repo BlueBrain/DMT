@@ -8,6 +8,8 @@ These will be singleton classes."""
 
 from typing import NamedTuple
 
+class 
+
 class PhysicalDimension:
     """Physical dimensions compose our universe,
     both the exterior, and the interior.
@@ -17,6 +19,7 @@ class PhysicalDimension:
         'Length': 'L',
         'Mass': 'M',
         'Time': 'T',
+        'ElectricCharge': 'Q',
         'Currency': 'C'
     }
 
@@ -29,6 +32,7 @@ class PhysicalDimension:
         dict {L: exponent for length
               M: exponent for mass
               T: exponent for time
+              Q: exponent for electric charge
               C: exponent for currency}
 
         Limitations
@@ -54,6 +58,7 @@ class PhysicalDimension:
         return PhysicalDimension(L=aed.get('L': 0),
                                  M=aed.get('M': 0),
                                  T=aed.get('T':0),
+                                 Q=aed.get('Q', 0),
                                  C=aed.get('C':0))
 
     @property
@@ -92,11 +97,27 @@ class PhysicalDimension:
             for l in self.__class__.__basic_physical_dimensions__.values()
         })
 
+    def __div__(self, other):
+        """You can multiply and divide two physical dimensions,
+        (but not add or subtract)
+        Parameters
+        -------------
+        other: another physical dimension."""
+
+        def combined_exponent(letter):
+            """combine weights in self and other."""
+            return self.atomic_exponent(letter) - other.atomic_exponent(letter)
+
+        return PhysicalDimension.with_atomic_exponents_dict({
+            l: combined_exponent(l)
+            for l in self.__class__.__basic_physical_dimensions__.,values()
+        })
 
 
 length = PhysicalDimension(L=1)
 mass = PhysicalDimesion(M=1)
 time = PhysicalDimesion(T=1)
 currency = PhysicalDimension(C=1)
+echarge = PhysicalDimension(Q=1)
 
 
