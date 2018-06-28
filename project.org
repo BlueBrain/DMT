@@ -180,93 +180,174 @@
   the model has been constructed correctly: that it's /components/ have been set
   correctly.
 
-* Validation is about DMT (Data, Models, and Tests)
+* Scientific Unit testing
+  [[https://github.com/scidash/sciunit][SciUnit]] is a framework for /test-driven scientific model validation/.
+
+  I am not sure if calling it /test-driven/ scientific model validations makes
+  much sense. They are abusing the term from /test-driven development (TDD). TDD
+  is a process. Wikipedia teaches us:
+  #+begin_src
+  ...is a software development process that relies on the repetition of a very 
+  short development cycle: requirements are turned into very specific test 
+  cases, then the software is improved to pass the new tests, only. This is 
+  opposed to software development that allows software to be added that is not 
+  proven to meet requirements.
+  #+end_src
+  The process of TDD:
+  1. Add a test
+  2. Run all tests and see if the new test fails
+  3. Write the code
+  4. Run tests
+  5. Refactor code
+  6. Repeat
+
+  The process of TDD is based on /unit-tests/.
+  - unit-test ::
+       a function that checks the behavior of a single component.
+
+  The critical word above is /single/ -- a good coding practice is to have a
+  single component for a single functionality.
+
+  In contrast to generic industrial software systems, it may not be possible to
+  identify components in a model's predictions. Consider the validation of a
+  brain circuit's structure. Several structural features of the modeled brain
+  region's structure must be validated. These can be computed for the model --
+  however these /predictions/ are not independent of each other -- and each may
+  depend on more that one component of the model. One failed validation may not
+  indicate where in the model the disagreement arises from.
+
+  - regression-test ::
+       ensure changes to software have not changed it's (previously defined)
+       functionality.
+       
+   
+  Clearly, validation of a scientific model has nothing to do with the process
+  of it's development. So let us not confuse ourselves by trying to find
+  analogies  where they do not exist.
+
+* Scientific Validation as a Debate
+  Traditional progress of science has always been led by debate. It is one man
+  with his colleagues (constituting the unit of research industry: a research
+  group) against another (or the whole establishment of science). The process of
+  science has always included a debate. The modern format / shape that this
+  debate takes is that of /peer-reviewed/ publication.
+
+  The process of /peer-review/ can be compared to /code-review/. In fact code
+  review has been called peer-review of computer source code. The goal is to
+  find mistakes, and to improve the overall quality of software. Though I must
+  notice that in my experience code review is an explicitly helpful exercise,
+  competitive in a friendly manner. Peer review can sometimes become an outright
+  shouting match. 
+
+  To /validate/ a quantitative model involves a lot of activities. In the
+  current, human peer-review model, the proponents of the model must present
+  their model in a /scientific/ paper. The paper must describe the model, and
+  discuss how good it's predictions are, and compare those to predictions of
+  other models. The validity of a model relies on the assumptions made to build
+  the model, and the accuracy of it's predictions. Several of the assumptions
+  can be best judged by scientists in the same field as the authors of the
+  model. Many of these activities cannot be replaced by automation, others can
+  be. For example, the human reviewer should not have to look for experimental
+  results to compare the model against, or have to run a computation to validate
+  model predictions against experimental measurements. 
+
+  The narrow focus of papers, and the print media they are published in are
+  another limitation that prevents model and data integration. Both experimental
+  and data papers are frozen in time. The investigators must use their knowledge
+  of literature to compare their results against models or experimental results.
+
+  Many of these requirements of model review can be fulfilled by a single
+  /collaborative validation framework/.
   
+
 * Requirements
+  Validation is about DMT: Data, Models, and Tests
+
   We will attack the problem from both ends: a data, model, and test (validation)
   collaboration framework for the general quantitative scientific endeavors, and
   the other end of the use-case of validating the BBP brain region circuit.
 
-  General guidelines.
-  1. do not over-specify.
-  2. be loose
-  3. leave enough documentation, and expressive code inside the class, methods,..
+  - General guidelines ::
+       While developing, we should follow the rough guidelines of
+       1. do not over-specify
+       2. couple components loosely
+       3. leave enough documentation, and expressive code
   
-** What is CellDensity? : an example that will lead is to enlightenment by using DMT.
-   We know the mathematical definition of cell density. As we consider that
-   definition, we can also see how open-ended it is. For a spatially extended
-   system, you can measure a field like quantity, such as a cell density, in
-   what ever which way you want. In the particular case of the cerebral cortex,
-   you may want cell density at the center of each layer, or computed across the
-   whole layer, or sampled in small boxes spread across a layer to asses the
-   spatial fluctuations in the cell density. You may even decide that there is
-   nothing sacrosanct about the layers --- you can decide to look at density as
-   a function of the cortical depth. It is easy to imagine yourself as a real
-   experimental neuroscientist and performing this experiments in the wet. Once
-   again, the different ways to compute cell density at a given location remain
-   the same as those in each layer.
+  
+  We will use cell density as a guiding example.
+  We know the mathematical definition of cell density. As we consider that
+  definition, we can also see how open-ended it is. For a spatially extended
+  system, you can measure a field like quantity, such as a cell density, in
+  what ever which way you want. In the particular case of the cerebral cortex,
+  you may want cell density at the center of each layer, or computed across the
+  whole layer, or sampled in small boxes spread across a layer to asses the
+  spatial fluctuations in the cell density. You may even decide that there is
+  nothing sacrosanct about the layers --- you can decide to look at density as
+  a function of the cortical depth. It is easy to imagine yourself as a real
+  experimental neuroscientist and performing this experiments in the wet. Once
+  again, the different ways to compute cell density at a given location remain
+  the same as those in each layer.
 
-   So there are many possible ways to compute cell density. However each one of
-   them will measure cell density --- they are all methods to measure the same
-   phenomenon. So we have it: *CellDensity* is a *Phenomenon*.
+  So there are many possible ways to compute cell density. However each one of
+  them will measure cell density --- they are all methods to measure the same
+  phenomenon. So we have it: *CellDensity* is a *Phenomenon*.
+  
+  Along with (total) cell density, consider the inhibitory cell density. So,
+  instead of all cells, you count only inter-neurons in your /simulated/ wet
+  experiments. The phenomenon being measured now is *InhibitorCellDensity*.
+  However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
+  the same *Quantity*. The exact form of this *Quantity* will depend on the
+  measurement method, and whether measurement method was statistical. However,
+  the underlying physical dimensions of the phenomena is the same: [Count /
+  Volume], count per unit volume. 
+  
+  A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
+  CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
+  either be a model, or a data-object), and the *Quantity* that resulted from
+  measuring the /system/.
+  
+  #+begin_src haskell
+  Measurement :: Record { phenomenon :: Phenomenon
+                        , system :: MeasurableSystem
+                        , quantity :: Quantity }
+  
+  Quantity :: MagnitudeType => Record { unit :: Unit
+                                      , magnitude :: MagnitudeType }
+  #+end_src
 
-   Along with (total) cell density, consider the inhibitory cell density. So,
-   instead of all cells, you count only inter-neurons in your /simulated/ wet
-   experiments. The phenomenon being measured now is *InhibitorCellDensity*.
-   However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
-   the same *Quantity*. The exact form of this *Quantity* will depend on the
-   measurement method, and whether measurement method was statistical. However,
-   the underlying physical dimensions of the phenomena is the same: [Count /
-   Volume], count per unit volume. 
+  I have abused my incompetence in Haskell syntax. What I want to say is
+  that *Quantity* is a generic type, parameterized by the type of it's
+  magnitude. Normally you would assume that the type of a quantity's magnitude
+  should be a floating point number. However that would severely  limit it's
+  use in our work. So we have to accommodate all the different /quantities/
+  that the different possible methods of measuring a cell density into a
+  generic type parameter. Luckily in Python we can pretend that all of them are
+  ducks, a duck is a duck so is a stack of ducks. All we have to ensure that
+  the ~class Quantity~ quacks. Defining *Quantity* in C++ should also be simple
+  --- after all C++ meta-programming is duck typing at static compilation time.
+  Haskell should be a challenge --- but not too hard --- just gotta find out
+  what the syntax is. In any case ...
 
-   A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
-   CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
-   either be a model, or a data-object), and the *Quantity* that resulted from
-   measuring the /system/.
+  Remember that one of our aims is to leverage Python's provided libraries
+  (especially Abstract Base Classes) to build features that may be useful in a
+  collaborative effort to define validations against data, that may be applied
+  to different model types. Keeping that in mind, here are some big questions
 
-   #+begin_src haskell
-   Measurement :: Record { phenomenon :: Phenomenon
-                         , system :: MeasurableSystem
-                         , quantity :: Quantity }
-                         
-   Quantity :: MagnitudeType => Record { unit :: Unit
-                                       , magnitude :: MagnitudeType }
-                         
-   #+end_src
-
-   We have abused our incompetence in Haskell syntax. What we want to say is
-   that *Quantity* is a generic type, parameterized by the type of it's
-   magnitude. Normally you would assume that the type of a quantity's magnitude
-   should be a floating point number. However that would severely  limit it's
-   use in our work. So we have to accommodate all the different /quantities/
-   that the different possible methods of measuring a cell density into a
-   generic type parameter. Luckily in Python we can pretend that all of them are
-   ducks, a duck is a duck so is a stack of ducks. All we have to ensure that
-   the ~class Quantity~ quacks. Defining *Quantity* in C++ should also be simple
-   --- after all C++ meta-programming is duck typing at static compilation time.
-   Haskell should be a challenge --- but not too hard --- just gotta find out
-   what the syntax is. In any case ...
-
-   Remember that one of our aims is to leverage Python's provided libraries
-   (especially Abstract Base Classes) to build features that may be useful in a
-   collaborative effort to define validations against data, that may be applied
-   to different model types. Keeping that in mind, here are some big questions
-
-   1. Who should determine the method of measuring the cell density?
-      The comparing (validating, judging, testing) method would call that
-      method on the provided ~model~ argument --- it's absence should display a
-      nice explanatory message that such and such method needs to be implemented
-      by the model adapter ... 
-      So, the validation has to assume that a certain method is available on the
-      ~model~ parameter. It is this /assumption/ that we need to express in an
-      abstract base class. The writer of validation will have to write such a
-      class. 
-   2. Can we expect our average user to be able to write Python abstract
-      classes? Probably not.
-      So we need to provide a /front-end/ simple Python way of writing a Python
-      abstract base class. On the back-end such code should become ABC's.
-      We cannot solve all problems at the same time, neither can we think and
-      plan for each desired feature. So we should take the first step --- and
-      write the validations ourselves with ABC's.
+  1. Who should determine the method of measuring the cell density?
+     The comparing (validating, judging, testing) method would call that
+     method on the provided ~model~ argument --- it's absence should display a
+     nice explanatory message that such and such method needs to be implemented
+     by the model adapter ... 
+     So, the validation has to assume that a certain method is available on the
+     ~model~ parameter. It is this /assumption/ that we need to express in an
+     abstract base class. The writer of validation will have to write such a
+     class. 
+  2. Can we expect our average user to be able to write Python abstract
+     classes? Probably not.
+     So we need to provide a /front-end/ simple Python way of writing a Python
+     abstract base class. On the back-end such code should become ABC's.
+     We cannot solve all problems at the same time, neither can we think and
+     plan for each desired feature. So we should take the first step --- and
+     write the validations ourselves with ABC's.
       
-   3. How should we organize circuit validations, and adapter models?
+  3. How should we organize circuit validations, and adapter models?
