@@ -137,10 +137,48 @@
   gathered from real systems is necessary to tune model parameters, as well as
   to validate's it's predictions. In many cases, there is a lot of experimental
   data available, but not in an easy to use or easy to search format. The bar of
-  using this data is too high. A model validation framework should focus on
-  integrating experimental results with modeling.
+  using this data is too high. *A model validation framework should focus on*
+  *integrating experimental results with modeling.*
 
 * Model verification /versus/ model validation.
+  The solution to a differential equation must be verified against the initial /
+  boundary conditions. But that is a /verification/ and not a /validation/.
+
+  Experimental data may be partitioned into two groups:
+  1. data used to set the parameters of the model, and
+  2. rest of the data.
+  
+  - Statistical models ::
+       For statistical models there is only one kind of data. Some of it is used
+       to train the model (/i.e./ determining model parameters), the rest for
+       testing or /cross-validation/. Either way, error which is the difference
+       between the model's output and the expected value (for a given input)
+       determines the outcome. During training, the error determines the size
+       and direction of parameter value updates. Error over the test data
+       determines how good the model is.
+       
+  
+  The /mechanistic/ scientific models we consider model the system of interest
+  from the ground up. For the purpose of /validating against experimental data/
+  we must *treat the model as an experimental object*.
+
+  The data that was used to /train/ or set model parameters must then be used to
+  /verify/ the model. Whatever this data was, it was measured in an experimental
+  set up for a /real/ system (which is not a computer / mathematical model), or
+  it may be a mock up of real data. (We may want to test by using
+  a standard-deviation to randomize real experimental data). We must be able to
+  measure the same type of data for a digital model of the system. We can even
+  /simulate/ the experimental protocol used in the /real/ experiment. Positive
+  model verification will require that the result of /in-silico/ measurement
+  matches that of /in-vivo, in-vitro/ measurement.
+
+  We may say that to verify a model is to validate it against experimental data
+  that was used to set it's parameters.
+  
+  A satisfactory reproduction of the data that was used to set the model's
+  parameters does not constitute the model's validation. It merely verifies that
+  the model has been constructed correctly: that it's /components/ have been set
+  correctly.
 
 * Validation is about DMT (Data, Models, and Tests)
   
