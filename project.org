@@ -260,6 +260,74 @@
   /collaborative validation framework/.
   
 
+* Previous work
+  Of course there is SciUnitTest. There is also the  [[https://bbpteam.epfl.ch/project/spaces/display/~palacios/Validation+API#ValidationAPI-Introduction][Validation API]], developed
+  at BBP by Juan Pablo Palacios. None of the code referenced on the
+  [[https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=~palacios&title=Validation+API][Confluence page]] is alive. However there are some user stories on Jira that we
+  can get some ideas from.
+
+  Requirements from the previous BBP validation framework attempts.
+  1. Circuit validations be run automatically
+     1. user can find documentation on how to register a circuit
+     2. a set of validations are automatically executed after a user has
+        registered a circuit
+     3. default values for validation parameters so that validations to have as
+        much automation as possible --- take away as much responsibility from
+        the user as possible
+     4. easy access to results, with documentation that explains where the
+        results are located
+  2. [[https://bbpteam.epfl.ch/project/issues/browse/LBK-457][Implement Validation Framework V1]]
+     1. As a SD (scientific developer) I want to have the validations from the
+        previous validation framework available as tasks
+     2. As a DEV, I want a finalized spec for the Validation report object
+     3. As a SU (scientific user) I want to be able to launch validation jobs
+        using the python Task Framework client API with Bluepy dependencies
+     4. As a SCIDEV I want the Validation report data model to include the input
+        distributions in the Validation result set
+     5. As an SU, I want to be able to launch jobs using scipy with the python
+        Task Framework client API
+     6. As a SCIDEV I want the Validation API to allow easy comparison of
+        distributions stored in numpy arrays, according to acceptable validation
+        practices 
+     7. As a SCIDEV I want a non-trivial example of a validation using the
+        Validation toolkit
+     8. As a DEV I want to have a standard API for producing validation reports
+
+** Validation Report
+   There was a draft spec for validation reports. It is still  [[https://bbpteam.epfl.ch/project/spaces/display/BBPWFA/Validation+Report+-+Draft+0.2][available on
+   Confluence]]. We note some observations on this report.
+   This specification was about how the validation results are presented on a
+   platform web interface. The /report/ is actually a summary. 
+   - Requirements ::
+     1. Simple to understand
+     2. Web-friendly format
+     3. Allows multiple representations of the same data 
+     4. Supports various data types (e.g. 1D bar charts and histograms, 2D
+        graphs)
+     5. Validation input and reference distributions must be available
+     6. De-coupled from graphical representation
+     
+    
+   The goal of the older validation /toolkit/ was to produce validation reports
+   with data. There are examples on the confluence page that show JSONs carrying
+   data that can be plotted. However, in my experience, it is hard to assume
+   what form a validation's data may be. In a framework we cannot over-specify
+   data formats. We should leave the data formats, as well as how the data is
+   reported, open for the user to decide. However we can decide to give the same
+   treatment to data and code. For this we do have to constrain the formats that
+   data must be provided in. The formats we choose must be Python friendly.
+   Also, we expect data to be statistical summaries (/e.g./ mean cell
+   densities), which amounts to /small/ data which we do not have to optimize by
+   hand. JSON is definitely allowed, as well as any other format that can be
+   loaded by Pandas (CSVs, matrices, and tables). This data will be mostly
+   numbers, and the user must provide /code/ to load it. The data must be
+   separate from the code, so that we can upload it to /Nexus/. We must also be
+   able to update the whole /validation/ up to Nexus.
+  
+   
+
+
+
 * Requirements
   Validation is about DMT: Data, Models, and Tests
 
@@ -290,7 +358,13 @@
 
   So there are many possible ways to compute cell density. However each one of
   them will measure cell density --- they are all methods to measure the same
-  phenomenon. So we have it: *CellDensity* is a *Phenomenon*.
+  phenomenon. So we have it: *CellDensity* is a *Phenomenon*. We can define
+  *Phenomenon* as a record:
+  #+begin_src haskell
+  data Phenomenon = Phenomenon { name :: String
+                               , label :: String
+                               , description :: String}
+  #+end_src
   
   Along with (total) cell density, consider the inhibitory cell density. So,
   instead of all cells, you count only inter-neurons in your /simulated/ wet
@@ -298,7 +372,7 @@
   However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
   the same *Quantity*. The exact form of this *Quantity* will depend on the
   measurement method, and whether measurement method was statistical. However,
-  the underlying physical dimensions of the phenomena is the same: [Count /
+  the underlying physical dimensions of the two phenomena is the same: [Count /
   Volume], count per unit volume. 
   
   A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
@@ -307,12 +381,15 @@
   measuring the /system/.
   
   #+begin_src haskell
-  Measurement :: Record { phenomenon :: Phenomenon
-                        , system :: MeasurableSystem
-                        , quantity :: Quantity }
+  type MagnitudeType
   
-  Quantity :: MagnitudeType => Record { unit :: Unit
-                                      , magnitude :: MagnitudeType }
+  data Quantity =  Quantity { unit :: Unit
+                            , magnitude :: MagnitudeType }
+
+  data Measurement = Measurement { phenomenon :: Phenomenon
+                                 , system :: MeasurableSystem
+                                 , quantity :: Quantity }
+
   #+end_src
 
   I have abused my incompetence in Haskell syntax. What I want to say is
@@ -327,6 +404,14 @@
   --- after all C++ meta-programming is duck typing at static compilation time.
   Haskell should be a challenge --- but not too hard --- just gotta find out
   what the syntax is. In any case ...
+
+  Getting back to *Phenomenon*, and the example of two /circuit composition/
+  *Phenomenon*  we can also see the utility of a domain specific *Phenomenon*
+  hierarchy. We are stepping into the territory of ontology, which may be worth
+  it we manage to keep it simple. We can implement this hierarchy for the domain
+  --- so keeping *Phenomenon* abstract may be sensible. The class hierarchy of
+  the domain's *Phenomenon*s can be used to structure a class hierarchy of a
+  group of validations.
 
   Remember that one of our aims is to leverage Python's provided libraries
   (especially Abstract Base Classes) to build features that may be useful in a
@@ -351,3 +436,66 @@
      write the validations ourselves with ABC's.
       
   3. How should we organize circuit validations, and adapter models?
+
+  
+** Three parties
+   Our validation framework has three dimensions and hence three different types
+   of user-roles. Of course the same user can play all three users.
+   Nevertheless, it is important to note the ideal specification of each of
+   these three user-roles.
+
+   - Validation writer ::
+        The role in which the user writes the validation. The user must follow
+        the guidelines / documentation of the validation base class...
+   - Model adapter ::
+        The role in which the user decides to adapt their model to the
+        requirements of a particular validation / set of validations. 
+   - Data interface author ::
+        The role in which the user provides the data to the validation
+        repository and programs a data-reader so that the data can be loaded in
+        a validation. If the user wants their data to be used in the context of
+        a particular available validation, they must provide a reader that
+        satisfies the requirements of that validation. This role can be split
+        into two: 1. the role in which the user uploads the data, and 2. the
+        role in which the user adapts an available data to the requirements of a
+        validation.
+
+** Validation Report
+   There are three levels to a validation:
+   - Describe a validation ::
+        The /abstract/ code, that defines a validation --- it expresses the
+        scientific motivation and definitions, the mathematical and statistical
+        methods, the algorithm, and the programmatic logic. The code of a
+        validation must clearly describe its data / model requirements.
+   - Validating interactively ::
+        A validation in context of a specific pair of model and data. This 
+        should be mostly automated, however we can provide some options. For
+        example, the user may want to interactively generate data from a model.
+        In an /interactive validation/ the user should be allowed to process the
+        data into a format specified in the validation's documentation. This
+        feature will allow the user to interactively validate models against
+        data. This should operate as a  validation of two data-sets. In fact, we
+        will program validation as a validation of two data-sets that will then
+        be used to validate a model against a data-set or even two models.
+        Interactive validation should be particularly useful when models are
+        simple and can be run in up to a few minutes ---  for example in a MOOC
+        exercise.
+   -  Validation as data :: 
+        Running a validation must result in a report that should tell us if the
+        validation was successful, and explain the scientific motivation,
+        statistical methodology, as well as the algorithmic details. The report
+        should provide plots and resulting data in a folder and upload to
+        Nexus or another data-base. We can require all the three participants in
+        a validation to provide their abstracts and methods as part of their
+        code.
+
+  
+* Action items
+  A list of items to do.
+** TODO Build a class hierarchy of circuit *Phenomenon*.
+   CREATED: <2018-06-28 Thu>
+** TODO Write about the three user-roles:  
+   1. the user who provides wrapper for a model
+   2. the user who provides the data, and a reader for that data
+   3. the user who codes a validation
+  

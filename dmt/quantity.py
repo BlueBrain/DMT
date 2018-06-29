@@ -5,6 +5,7 @@ and thus component of a measurement."""
 
 from abc import ABC, abstractmethod
 import numpy as np
+import pandas as pd
 from dmt.phenomenon import Phenomenon
 
 class Quantity(ABC):
@@ -68,7 +69,16 @@ class VectorQuantity(Quantity):
     @property
     def magnitude(self):
         """self._magnitude should be a tuple or a pandas Series object."""
-        return self._magnitude
+        m = self._magnitude
+        if isinstance(m, pd.core.series.Series):
+            return m.copy()
+        if isinstance(m, np.ndarray):
+            return np.copy(m)
+        if isinstance(m, tuple):
+            return m
+
+        import copy
+        return copy.deepcopy(m)
 
 class MatrixQuantity(Quantity):
     """Some physical quantities are matrices!

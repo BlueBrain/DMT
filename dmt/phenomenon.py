@@ -19,7 +19,6 @@ class Phenomenon(ABC):
         return self._name
 
     @property
-    @abstractmethod
     def label(self) -> str:
         """label that can be used as a header entry
         (column name in a data-frame)"""
@@ -31,3 +30,4 @@ class Phenomenon(ABC):
         """A wordy description of the phenomenon,
         explaining how it may be evaulated!"""
         pass
+
