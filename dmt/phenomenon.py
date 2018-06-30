@@ -1,6 +1,6 @@
 """A phenomenon is anything that manifests itself,
 an observable fact or event. A phenomenon may be described by a system of
-information related to matter, energy, or spacetimean"""
+information related to matter, energy, or spacetime"""
 
 from abc import ABC, @abstractmethod
 

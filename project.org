@@ -260,40 +260,45 @@
   /collaborative validation framework/.
   
 
+* Validation vs Analysis
+  In my previous attempts I have distinguished a circuit analysis from a
+  validation. 
 * Previous work
-  Of course there is SciUnitTest. There is also the  [[https://bbpteam.epfl.ch/project/spaces/display/~palacios/Validation+API#ValidationAPI-Introduction][Validation API]], developed
-  at BBP by Juan Pablo Palacios. None of the code referenced on the
-  [[https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=~palacios&title=Validation+API][Confluence page]] is alive. However there are some user stories on Jira that we
-  can get some ideas from.
+  Of course there is SciUnitTest. 
 
-  Requirements from the previous BBP validation framework attempts.
-  1. Circuit validations be run automatically
-     1. user can find documentation on how to register a circuit
-     2. a set of validations are automatically executed after a user has
+** Validation API 
+   Developed at BBP by Juan Pablo Palacios. None of the code referenced on the
+   [[https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=~palacios&title=Validation+API][Confluence page]] is alive. However there are some user stories on Jira that we
+   can get some ideas from.
+
+   Requirements from the previous BBP validation framework attempts.
+   1. Circuit validations be run automatically
+      1. user can find documentation on how to register a circuit
+      2. a set of validations are automatically executed after a user has
         registered a circuit
-     3. default values for validation parameters so that validations to have as
+      3. default values for validation parameters so that validations to have as
         much automation as possible --- take away as much responsibility from
         the user as possible
-     4. easy access to results, with documentation that explains where the
+      4. easy access to results, with documentation that explains where the
         results are located
-  2. [[https://bbpteam.epfl.ch/project/issues/browse/LBK-457][Implement Validation Framework V1]]
-     1. As a SD (scientific developer) I want to have the validations from the
+   2. [[https://bbpteam.epfl.ch/project/issues/browse/LBK-457][Implement Validation Framework V1]]
+      1. As a SD (scientific developer) I want to have the validations from the
         previous validation framework available as tasks
-     2. As a DEV, I want a finalized spec for the Validation report object
-     3. As a SU (scientific user) I want to be able to launch validation jobs
+      2. As a DEV, I want a finalized spec for the Validation report object
+      3. As a SU (scientific user) I want to be able to launch validation jobs
         using the python Task Framework client API with Bluepy dependencies
-     4. As a SCIDEV I want the Validation report data model to include the input
+      4. As a SCIDEV I want the Validation report data model to include the input
         distributions in the Validation result set
-     5. As an SU, I want to be able to launch jobs using scipy with the python
+      5. As an SU, I want to be able to launch jobs using scipy with the python
         Task Framework client API
-     6. As a SCIDEV I want the Validation API to allow easy comparison of
+      6. As a SCIDEV I want the Validation API to allow easy comparison of
         distributions stored in numpy arrays, according to acceptable validation
         practices 
-     7. As a SCIDEV I want a non-trivial example of a validation using the
+      7. As a SCIDEV I want a non-trivial example of a validation using the
         Validation toolkit
-     8. As a DEV I want to have a standard API for producing validation reports
-
-** Validation Report
+      8. As a DEV I want to have a standard API for producing validation reports
+        
+*** Validation Report
    There was a draft spec for validation reports. It is still  [[https://bbpteam.epfl.ch/project/spaces/display/BBPWFA/Validation+Report+-+Draft+0.2][available on
    Confluence]]. We note some observations on this report.
    This specification was about how the validation results are presented on a
@@ -327,6 +332,9 @@
    
 
 
+** Original Validation Framekwork
+
+** My previous attempts
 
 * Requirements
   Validation is about DMT: Data, Models, and Tests
@@ -494,8 +502,13 @@
   A list of items to do.
 ** TODO Build a class hierarchy of circuit *Phenomenon*.
    CREATED: <2018-06-28 Thu>
-** TODO Write about the three user-roles:  
+** DONE <2018-06-29 Fri> Write about the three user-roles:  
    1. the user who provides wrapper for a model
    2. the user who provides the data, and a reader for that data
    3. the user who codes a validation
+** TODO write about previour Validation Frameworks
+   CREATED: <2018-06-29 Fri>
+** TODO write about circuit validation vs circuit analysis.
+
+   
   
