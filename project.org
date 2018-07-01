@@ -506,9 +506,15 @@
    1. the user who provides wrapper for a model
    2. the user who provides the data, and a reader for that data
    3. the user who codes a validation
-** TODO write about previour Validation Frameworks
+** TODO write about previous Validation Frameworks
    CREATED: <2018-06-29 Fri>
+   SCHEDULED: <2018-06-30 Sam>
 ** TODO write about circuit validation vs circuit analysis.
+   SCHEDULED: <2018-06-30 Sam>
+** TODO write about simulation
+   There is a good looking [[https://en.wikipedia.org/wiki/Verification_and_validation_of_computer_simulation_models][wikipedia article]] titled "Verification and validation
+   of computer simulation models".
+   SCHEDULED: <2018-06-30 Sam>
 
    
   
