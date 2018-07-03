@@ -262,7 +262,17 @@
 
 * Validation vs Analysis
   In my previous attempts I have distinguished a circuit analysis from a
-  validation. 
+  validation. Strictly, a Validation needs to provide a judgment. An Analysis,
+  on the other hand can produce just a bunch of plots. Previously, we have
+  allowed such an Analysis object --- however the /analyses/ it performed was a
+  comparison of two /models/. We can extend this notion of an /Analysis/ to a
+  allow for analysis of a single model or data-object.
+
+  Question to consider is where to place such a class in our /Validation/ class
+  hierarchy.
+
+  
+
 * Previous work
   Of course there is SciUnitTest. 
 
@@ -332,9 +342,20 @@
    
 
 
-** Original Validation Framekwork
+** Original Validation Framework
 
 ** My previous attempts
+   I have written a /ValidationFramework/ before --- which was confused about
+   being a framework for validations and toolkit to do analysis for a BBP
+   circuit. We discuss features and lessons learned from writing that code.
+
+   My previous ~ValidationFramework~ is more of a toolkit to analyze a BBP brain
+   circuit, with specific well defined analyses that can be applied to circuits
+   of several brain regions. Such a toolkit will definitely be useful --- but
+   where can be put it? Definitely not as a part of ~dmt~. Can it go somewhere
+   in ~neuro_dmt~? We can start by writing that code under
+   ~neuro_dmt/bbp_circuit/~, and move any generally applicable code to a more
+   general location.
 
 * Requirements
   Validation is about DMT: Data, Models, and Tests
@@ -497,7 +518,52 @@
         a validation to provide their abstracts and methods as part of their
         code.
 
+** Metadata       
+   We need several kinds of meta-data.
+*** Author
+    Author's name, affiliation, basic / simple things.
+    As a collaboration platform, we could use ~Author~ as a synonym for ~User~.
+*** Citation
+    We can use ~Citation~ to store references --- we can leverage any available
+    library for these purposes --- some Python classes for bibtex.
+*** Caption
+    It might be simpler to keep caption as a string property that a concrete
+    Validation should implement. However, it may be interesting to think of what
+    data forms a Caption.
   
+** Aggregated Validation
+   Validating a model against a single measurement is not a full validation of
+   the model. In fact, a model can never be fully validated. Validation of a 
+   model is a continuous process. So what should we call an object that will
+   compare a model against an experiment for only one measurement (such as cell
+   density) ? We can call it ~TestCase~ or ~ValidationTestCase~.
+
+   - TestCase :: A validation is composed of /tests/. We validate a model
+        against reality with a battery of test cases.
+        #+begin_src
+        A test case is a specification of the inputs, execution conditions, 
+        testing procedure, and expected results that define a single test to be
+        executed to achieve a particular software testing objective, such as to 
+        exercise a particular program path or to verify compliance wth a 
+        specific requirement.
+        #+end_src
+        We should define individual test cases, ~ValidationTestCase~.
+        #+begin_case python
+        class ValidationTestCase(BaseClass):
+          """a 'unit' test for the model"""
+          pass
+        #+end_case
+        What should ~ValidationTestCase~ derive from?
+        Is it a ~CircuitAnalysis~?
+
+    If we think of a validation as testing a model against reality for a single
+    phenomenon, then the complete definition of a Validation must contain the
+    experimental data. 
+
+    
+
+   
+
 * Action items
   A list of items to do.
 ** TODO Build a class hierarchy of circuit *Phenomenon*.
@@ -515,6 +581,9 @@
    There is a good looking [[https://en.wikipedia.org/wiki/Verification_and_validation_of_computer_simulation_models][wikipedia article]] titled "Verification and validation
    of computer simulation models".
    SCHEDULED: <2018-06-30 Sam>
+** TODO implement meta-data classes
+   SCHEDULED: <2018-07-02 Mon>
+   So far we have ~Author~, ~Reference~.
 
    
   
