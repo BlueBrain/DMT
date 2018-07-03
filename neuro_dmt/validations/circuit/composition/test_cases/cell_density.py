@@ -3,20 +3,23 @@ from an experiment."""
 
 from abc import abstractmethod
 from dmt.validation import ValidationTestCase
-from dmt.model import ModelAdapter
+from dmt.model.adapter import ModelAdapter
 
-class CanMeasureCellDensity(ModelAdapter):
+
+class HasCellDensity(ModelAdapter):
     """A ModelAdapter is a base class to define a simple model like object that 
     measures specific phenomena."""
 
-    @classmethod
     @abstractmethod
-    def get_layer_cell_densities(self):
+    def get_layer_cell_densities(self, model):
         """Get cell densities by layer.
         Users who want to include CellDensity test in their Validation suite
         should specify the details in their concrete implementation of this
         ModelAdapter """
         pass
+
+    def get_measurement(self, measurable_system):
+        return self.get_layer_cell_densiteis(measurable_system)
 
 
 class CellDensity(ValidationTestCase):
@@ -30,11 +33,13 @@ class CellDensity(ValidationTestCase):
     to understand how to structure our validation framework dmt, as well as
     how to structure validation of a neuronal model circuit."""
 
-    def __init__(self, real_system):
+    def __init__(self, real_system, model_adapter):
         """
         Parameters
         -----------
         real_system :: RealMeasurableSystem
+
+        model_adapter :: CanMeasureComposition
 
         Notes
         -----
@@ -42,11 +47,20 @@ class CellDensity(ValidationTestCase):
         a RealMeasurableSystem to behave exactly like the ModelMeasurableSystem
         it will validate.
         """
+        if not isinstance(model_adapter, HasCellDensity):
+            HasCellDensity.complain()
+            raise Exception("Model adapter " +
+                            model_adapter.__class__.__name__ +
+                            " does not adapt to " +
+                            'HasCellDensity')
+        
+
         self._real_system = real_system
         self._real_observation = self.generate_observation(real_system)
+        self._model_adapter = model_adapter
 
-    @classmethod
-    def generate_observation(cls, measurable_system):
+
+    def generate_observation(self, measurable_system):
         """
         Parameters
         ----------
@@ -62,15 +76,18 @@ class CellDensity(ValidationTestCase):
         will throw an ugly looking exception. We want a more descriptive
         explanation.
         """
-        #assert isinstance(measurable_system, CanMeasureCellDensity)
-        try:
-            return measurable_system.get_layer_cell_densities()
-        except:
-            raise RequiredMeasurementException(
-                """To use this cell density test case in a validation,
-                your model adapter must have provide an implementation of
-                get_layer_cell_densities"""
-            )
+        #assert isinstance(measurable_system, CanMeasureComposition)
+        if not self.model_adapter.check_adapts(measurable_system):
+
+            self.model_adapter.complain()
+
+            raise Exception("Model adapter " +
+                            model_adapter.__class__.__name__ +
+                            " cannot adapt " +
+                            measurable_system.__class__.__name__)
+
+        #return self.model_adapter.get_layer_cell_densities(measurable_system)
+        return self.model_adaptor.get_measurement(measurable_system)
 
 
     @property
