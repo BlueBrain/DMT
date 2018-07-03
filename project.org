@@ -180,6 +180,21 @@
   the model has been constructed correctly: that it's /components/ have been set
   correctly.
 
+  According to Wikipedia [[https://en.wikipedia.org/wiki/Verification_and_validation_of_computer_simulation_models][article]]
+  #+begin_src
+  ...verification of a model is the process of confirming that it is correctly 
+  implemented with respect to a conceptual model, i. e. it matches 
+  specifications and assumptions deemed acceptable for the given purpose of 
+  application.
+  ...
+  Validation checks the accuracy of the model's representation of the real 
+  system. 
+  Step 1. Build a model that has high face validity.
+  Step 2. Validate model assumptions.
+  Step 3. Compare the model input-output transformations to corresponding 
+  input-output transformations for the real system.
+  #+end_src
+
 * Scientific Unit testing
   [[https://github.com/scidash/sciunit][SciUnit]] is a framework for /test-driven scientific model validation/.
 
@@ -394,7 +409,7 @@
                                , label :: String
                                , description :: String}
   #+end_src
-  
+
   Along with (total) cell density, consider the inhibitory cell density. So,
   instead of all cells, you count only inter-neurons in your /simulated/ wet
   experiments. The phenomenon being measured now is *InhibitorCellDensity*.
@@ -402,8 +417,8 @@
   the same *Quantity*. The exact form of this *Quantity* will depend on the
   measurement method, and whether measurement method was statistical. However,
   the underlying physical dimensions of the two phenomena is the same: [Count /
-  Volume], count per unit volume. 
-  
+  Volume], count per unit volume.
+
   A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
   CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
   either be a model, or a data-object), and the *Quantity* that resulted from
@@ -563,6 +578,18 @@
     
 
    
+** Kinds of Judges
+   Or course a Judge should be as objective as possible --- a program if at all
+   possible. If not, and this might be the case quite often, human eyeballs. We
+   need a mechanism to allow users to judge the results of an Investigation.
+   This consideration makes us rethink our design of the process. Verdict should
+   be given after Investigation / Analysis, and then a final Report.
+   #+begin_src
+   Analysis => AnalysisReport --> Verdict --> Validation => ValidationReport
+   #+end_src
+   In the scheme outlined above, an Analysis should produce an ~AnalysisReport~
+   that is used to produce a ~Verdict~. The ~AnalysisReport~ and ~Verdict~ are
+   then combined by ~Validation~ to produce a ~ValidationReport~.
 
 * Action items
   A list of items to do.
