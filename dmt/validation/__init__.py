@@ -49,8 +49,6 @@ class Comparison(Analysis):
     However Comparison does not pass any judgements."""
 
 
-    
-
 class Validation(Comparison):
     """Validation is a Comparison that passes a judgment.
     Validation will pass a judgment.
@@ -142,5 +140,6 @@ class Validation(Comparison):
 
 
 class ModelValidation(Validation):
-    """ModelValidation is a Comparison of a model against reality (i.e. experimental 
-    data source). A Validation will pass a judgment.
+    """ModelValidation is a Comparison of a model against reality (i.e. experimental
+    data source). A Validation will pass a judgment."""
+
