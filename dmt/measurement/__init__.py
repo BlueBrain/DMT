@@ -1,26 +1,43 @@
-"""Measurement of a physical phenomenon of a system,
-composed of a physical quantity that consists of a number and units"""
+"""Measurement is the assignment of a number to a characteristic of an object
+or event, which can be compared with other objects or events.
+Measurement is the determination or estimation of ratios of quantities.
+Measurement is the correlation of numbers with entities that are not numbers.
+Statistically speaking, a measurement is a set of observations that reduce
+uncertainty where the result is expressed as a quantity. There is not a clear
+distinction between estimation and measurement."""
 
-from abc import ABC, abstractmethod
-from dmt import MeasurableSystem
+#from abc import ABC. abstractmethod
+from dmt.phenomenon import Phenomenon
+from dmt.measurement import MeasurableSystem
+#from dmt.methods import MeasurementMethod
+from dmt.quantity import Quantity
 
-class Measurement(ABC):
-    """Behavior of a measurement."""
+class Measurement:
+    """Defines a measurement.
+    We define this class to be abstract to distinguish between measurements
+    composed of quantities that are scalar, vector, or statistical.
+
+    Not sure if it should be an ABC"""
+
+    def __init__(self, phenomenon, system, quantity):
+        self._phenomenon = phenomenon
+        self._system = system
+        self._quantity = quantity
 
     @property
-    @abstractmethod
-    def measured_system(self) -> MeasurableSystem:
-        """The system that this measurement was made on."""
-        pass
+    def measured_phenomenon(self) -> Phenomenon :
+        """The measured phenomenon."""
+        return self._phenomenon
 
     @property
-    @abstractmethod
-    def measurement_label(self) -> str:
-        """A label of this measurement to be used as a column in a data-frame.
-        For example, cell density should be cell_density --- no spaces."""
-        pass
+    def measured_system(self) -> MeasurableSystem :
+        """The system that was measured."""
+        return self._system
 
     @property
-    @abstractmethod
-    def units(self) -> Units
+    def measured_quantity(self) -> Quantity :
+        """Quantity that is the result of this measurement."""
+        return self._quantity
+
+
 
