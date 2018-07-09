@@ -1,18 +1,17 @@
 """Test and develop adapters for models and validation requirements"""
 
-from dmt import adapter
-from dmt.validation import TestCase
+from dmt.adapter import requires, implements
+from dmt.validation.test_case import ValidationTestCase
 
 
-@adapter.adapt
-class TestIntegerMath(TestCase):
+class TestIntegerMath(ValidationTestCase):
 
-    @adapter.provided
+    @requires
     def add(self, x, y):
         """Add two numbers x and y"""
         pass
 
-    @adapter.provided
+    @requires
     def sub(self, x, y):
         """Sub two numbers x and y"""
         pass
@@ -36,7 +35,8 @@ class GoodIntegerMathModel:
     def minus(self, x, y):
         return x - y
 
-@adapter.implementation(TestIntegerMath.AdapterInterface)
+#@adapter.implementation(TestIntegerMath.AdapterInterface)
+@implements(TestIntegerMath.AdapterInterface)
 class TestIntegerMathAdapter:
     def __init__(self, model):
         self.model = model

@@ -107,6 +107,8 @@ def provided(required_method):
     required_method.__isrequiredmethod__ = True
     return required_method
 
+requires = provided
+
 def implementation(an_interface):
    """a class decorator to declare that a class implements an interface.
    Improvements
@@ -125,6 +127,8 @@ def implementation(an_interface):
       return cls
 
    return class_implements
+
+implements = implementation
 
 def get_adapter_interface(cls):
     """define an adapter for a class."""
