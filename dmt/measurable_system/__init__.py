@@ -2,8 +2,6 @@
 
 
 from abc import ABC, abstractmethod
-from typing import Dict, Callable
-from dmt.phenomenon import Phenomenon
 
 class MeasurableSystem(ABC):
     """Basic behavior of a system that can be measured.
@@ -12,9 +10,12 @@ class MeasurableSystem(ABC):
 
     @abstractmethod
     @property
-    def measurable_phenomena(self) -> Dict[Phenomenon, MeasruementMethod] :
-        """The phenomena that this MeasruableSystem provides
-        measurement methods for."""
+    def measurable_phenomena(self):
+        """
+        Return
+        ------
+        A list of phenomena that this MeasurableSystem provides"""
+        
         pass
 
 

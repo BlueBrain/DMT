@@ -611,6 +611,10 @@
 ** TODO implement meta-data classes
    SCHEDULED: <2018-07-02 Mon>
    So far we have ~Author~, ~Reference~.
+** TODO locate models and data-objects
+   SCHEDULED: <2018-07-09 Mon>
+   We want to query models and data repo to see which of these provide
+   measurements of a given phenomenon.
 
    
   
