@@ -1,7 +1,8 @@
 """Units of length."""
 
 from dmt.measurement.units import AtomicUnit
-from dmt.physical_dimension import PhysicalDimension
+from dmt.physical_dimension import BasicPhysicalDimension
+from dmt.utils.utils import Namespace
 
 class Meter(Unit):
     """Meter is the standard unit used to measure mass."""
@@ -34,4 +35,4 @@ class Micrometer(Unit):
     scale_factor = 1.e-6
 
 
-meter = AtomicUnit()
+Length = Namespace(Meter = AtomicUnit(BasicPhysicalDimension.Length))

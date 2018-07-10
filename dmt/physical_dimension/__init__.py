@@ -6,6 +6,107 @@ length will provide a quantity with physical dimensions of [L].
 We begin by defining PhysicalDimension. PhysicalDimension will not have state.
 These will be singleton classes."""
 
+from abc import ABC, abstractmethod
+import numpy as np
+
+class PhysicalDimension(ABC):
+    """Physical dimensions compose our universe,
+    both the exterior, and the interior.
+    They can be modeled as composed of basic physical dimensions."""
+
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @property
+    @abstractmethod
+    def label(self):
+        pass
+
+    @property
+    @abstractmethod
+    def composition(self):
+        """Composition of this physical dimension,
+        for example Area is dict(L=2)"""
+        pass
+
+    @abstractmethod
+    def __mul__(self, other):
+        """multiply this physical dimension with another."""
+        pass
+
+    @abstractmethod
+    def __truediv__(self, other):
+        """divide this physical dimension by another,
+        to return another physical dimension."""
+        pass
+
+
+class Dimensionless(PhysicalDimension):
+    """Dimensionless, like a number, a count of stuff.
+    Improvements
+    ------------
+    Enforce that this is a singleton class."""
+
+    @property
+    def name(self):
+        return "number"
+
+    @property
+    def label(self):
+        return "N"
+
+    @property
+    def composition(self):
+        return {}
+
+    def __mul__(self, other):
+        return other
+
+    def __truediv__(self, other):
+        return {label: -1 * exponent for label, exponent in other.composition}
+
+
+class AtomicPhysicalDimension(PhysicalDimension):
+    """All physical dimension are composed of AtomicPhysicalDimensions."""
+
+    def __init__(self, name, label):
+        self.__name = name
+        self.__label = label
+
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def label(self):
+        """a single letter abbreviation."""
+        return self.__label
+
+    @property
+    def composition(self):
+        return {self.__label: 1}
+
+    def __mul__(self, other):
+        compound_name =  self.name + "_times_" + other.name
+        composition = other.composition.update({
+            self.label: other.composition.get(self.label, 0) + 1
+        })
+        return CompoundPhysicalDimension(compound_name, composition)
+
+    def __truediv__(self, other):
+        if other == self:
+            return Dimensionless()
+        
+
+
+class CompoundPhysicalDimension(PhysicalDimension):
+    """A compound physical dimension is composed of AtomicPhysicalDimensions."""
+
+    def __init__(self, name, composition):
+        self.__name = name
+        self.__composition = composition
 
 class PhysicalDimension:
     """Physical dimensions compose our universe,
@@ -149,16 +250,29 @@ class PhysicalDimension:
             for l in self.__class__.basic_physical_dimensions.values()
         })
 
+    def combined_weight(self, basic_weights):
+        """combine the basic physical dimension weights.
+        Parameters
+        ----------
+        basic_weights :: a dict,
+        that maps basic physical dimension labels to  floats"""
+        
+        return np.prod([
+            basic_weights.get(l, 0) ** self.__atomic_exponents[l]
+            for l in PhysicalDimension.basic_physical_dimensions.values()
+        ])
+
+
 
 from dmt.utils.utils import Namespace
 
-Basic = Namespace(Length=PhysicalDimension(L=1),
-                  Mass=PhysicalDimension(M=1),
-                  Time=PhysicalDimension(T=1),
-                  Ecurrent=PhysicalDimension(I=1),
-                  Temperature=PhysicalDimension(K=1),
-                  Luminosity=PhysicalDimension(J=1),
-                  Count=PhysicalDimension(N=1),
-                  Currency=PhysicalDimension(C=1))
+BasicPhysicalDimension = Namespace(Length=PhysicalDimension(L=1),
+                                   Mass=PhysicalDimension(M=1),
+                                   Time=PhysicalDimension(T=1),
+                                   Ecurrent=PhysicalDimension(I=1),
+                                   Temperature=PhysicalDimension(K=1),
+                                   Luminosity=PhysicalDimension(J=1),
+                                   Count=PhysicalDimension(N=1),
+                                   Currency=PhysicalDimension(C=1))
 
 
