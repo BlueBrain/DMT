@@ -2,16 +2,45 @@
 used as a standard for measurement of the same kind of quantity."""
 
 from abc import ABC, abstractmethod
-from dmt import physical_dimension
+from dmt.physical_dimension import PhysicalDimension
 
 class Unit(ABC):
     """Behavior of a unit of measurement."""
     
+    registered_instances = {} #to store all the instances of units
+
     @property
     @abstractmethod
-    def scale_factor(self) -> float:
+    def __repr__(self):
+        """A label to use to print this Unit"""
         pass
 
+    @property
+    @abstractmethod
+    def physical_dimension(self):
+        """The PhysicalDimension that this is a measurement unit of."""
+        pass
+
+    @property
+    @abstractmethod
+    def scale(self):
+        """Scale of a unit can be measured in terms of another unit
+        with the same physical dimensions as this unit, and a number.
+
+        Return
+        ------
+        Tuple[Unit, Float] #a tuple of another unit and the scaling factor 
+        relating this unit to that one."""
+        pass
+
+    @abstractmethod
+    def weight_per(self, alt_unit):
+        """Convert this unit to an alternate unit.
+        Parameters
+        ----------
+        @alt_unit :: Unit # the alternate unit to convert to."""
+
+        pass
 
 
 class AtomicUnit(Unit):
@@ -19,7 +48,13 @@ class AtomicUnit(Unit):
     In physics units for length, mass, and time are atomic.
     To this list we may add units of money, or count of things."""
 
-    pass
+    def __init__(self, physical_dimension):
+        self.__physical_dimension = physical_dimension
+
+    @property
+    def physical_dimension(self):
+        """The PhysicalDimension that this is a measurement unit of."""
+        return self.__physical_dimension
 
 
 class CompoundUnit(Unit):

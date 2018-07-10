@@ -1,6 +1,7 @@
 """Units of length."""
 
-from dmt.dmt.measurement.units import Unit
+from dmt.measurement.units import AtomicUnit
+from dmt.physical_dimension import PhysicalDimension
 
 class Meter(Unit):
     """Meter is the standard unit used to measure mass."""
@@ -31,3 +32,6 @@ class Micrometer(Unit):
     label = "um"
 
     scale_factor = 1.e-6
+
+
+meter = AtomicUnit()

@@ -7,14 +7,12 @@ We begin by defining PhysicalDimension. PhysicalDimension will not have state.
 These will be singleton classes."""
 
 
-class 
-
 class PhysicalDimension:
     """Physical dimensions compose our universe,
     both the exterior, and the interior.
     They can be modeled as composed of basic physical dimensions."""
 
-    __basic_physical_dimensions__ = {
+    basic_physical_dimensions = {
         'Length': 'L',
         'Mass': 'M',
         'Time': 'T',
@@ -49,7 +47,7 @@ class PhysicalDimension:
 
     def atomic_exponent(self, letter):
         """getter for exponent of physical dimension represented by letter"""
-        return self.__atomic_exponent.get(letter, 0)
+        return self.__atomic_exponents.get(letter, 0)
 
     @classmethod
     def with_atomic_exponents_dict(cls, aed={}):
@@ -60,14 +58,21 @@ class PhysicalDimension:
         Will need additional arguments as the list of basic dimensions grows,
         or change them accordingly.
         """
-        return PhysicalDimension(L=aed.get('L': 0),
-                                 M=aed.get('M': 0),
-                                 T=aed.get('T':0),
-                                 I=aed.get('I':0),
-                                 K=aed.get('K': 0),
-                                 J=aed.get('J': 0),
-                                 N=aed.get('N': 0),
-                                 C=aed.get('C':0))
+        return PhysicalDimension(L=aed.get('L', 0),
+                                 M=aed.get('M', 0),
+                                 T=aed.get('T', 0),
+                                 I=aed.get('I', 0),
+                                 K=aed.get('K', 0),
+                                 J=aed.get('J', 0),
+                                 N=aed.get('N', 0),
+                                 C=aed.get('C', 0))
+
+    def __eq__(self, other):
+        """tell if this PhysicalDimension is the same as the other."""
+        return all([
+            self.atomic_exponent(l) == other.atomic_exponent(l)
+            for l in PhysicalDimension.basic_physical_dimensions.values()
+        ])
 
     @property
     def label(self):
@@ -77,17 +82,40 @@ class PhysicalDimension:
         Label for this physical dimension"""
         def contribution(letter):
             """contribution of a basic physical dimension."""
-            power = self.atomic_weights(letter)
-            return letter + '^' + power if power > 0 else ''
+            power = self.atomic_exponent(letter)
+            return letter + str(power) if power > 0 else ''
 
         return ''.join(
             [contribution(l)
-             for l in self.__class__.__basic_physical_dimensions__.values()]
+             for l in self.__class__.basic_physical_dimensions.values()]
         )
 
 
-    def repr(self):
-        return "[" + self.label + "]"
+    def __repr__(self):
+        """
+        Return
+        -----------
+        Representation  for this physical dimension"""
+
+
+
+        positive = [pd for pd in self.__class__.basic_physical_dimensions.values()
+                    if self.atomic_exponent(pd) > 0]
+        negative = [pd for pd in self.__class__.basic_physical_dimensions.values()
+                    if self.atomic_exponent(pd) < 0]
+
+        def contribution(letter):
+            """contribution of a basic physical dimension."""
+            power = self.atomic_exponent(letter)
+            return letter + '^' + str(abs(power)) if power != 0 else ''
+
+        r = (' * '.join([contribution(l) for l in positive])
+             if len(positive) > 0 else '1')
+        if len(negative) > 0:
+            r += ' / ' + ' * '.join([contribution(l) for l in negative])
+             
+        return '[' + r + ']'
+
 
     def __mul__(self, other):
         """You can multiply and divide two physical dimensions,
@@ -102,10 +130,10 @@ class PhysicalDimension:
 
         return PhysicalDimension.with_atomic_exponents_dict({
             l: combined_exponent(l)
-            for l in self.__class__.__basic_physical_dimensions__.values()
+            for l in self.__class__.basic_physical_dimensions.values()
         })
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         """You can multiply and divide two physical dimensions,
         (but not add or subtract)
         Parameters
@@ -118,20 +146,19 @@ class PhysicalDimension:
 
         return PhysicalDimension.with_atomic_exponents_dict({
             l: combined_exponent(l)
-            for l in self.__class__.__basic_physical_dimensions__.values()
+            for l in self.__class__.basic_physical_dimensions.values()
         })
 
 
+from dmt.utils.utils import Namespace
 
-
-length = PhysicalDimension(L=1)
-mass = PhysicalDimesion(M=1)
-time = PhysicalDimesion(T=1)
-ecurrent = PhysicalDimension(I=1)
-temperature = PhysicalDimension(K=1)
-luminosity = PhysicalDimension(J=1)
-count = PhysicalDimension(N=1)
-currency = PhysicalDimension(C=1)
-echarge = PhysicalDimension(Q=1)
+Basic = Namespace(Length=PhysicalDimension(L=1),
+                  Mass=PhysicalDimension(M=1),
+                  Time=PhysicalDimension(T=1),
+                  Ecurrent=PhysicalDimension(I=1),
+                  Temperature=PhysicalDimension(K=1),
+                  Luminosity=PhysicalDimension(J=1),
+                  Count=PhysicalDimension(N=1),
+                  Currency=PhysicalDimension(C=1))
 
 

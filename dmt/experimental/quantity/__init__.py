@@ -23,6 +23,7 @@ class NumberLike:
 
     @classmethod
     def __accepts__(cls, x):
+        """determine if the value x represents a magnitude"""
         return (
             hasattr(x, '__add__') and
             hasattr(x, '__sub__') and
