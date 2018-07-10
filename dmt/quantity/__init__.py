@@ -17,7 +17,7 @@ class Quantity(ABC):
     -----------
     A Quantity cannot be labeled --- both CellRatio and CellDensity are 
     measured by the same Quantity --- but are different phenomena.
-    Quantity thus expresses the type of the phenomenon's measured numerical
+    Quantity thus expresses the type of a Phenomenon's measured numerical
     value along with the weight factor in the associated units."""
 
     def __init__(self, magnitude, unit):
@@ -30,7 +30,7 @@ class Quantity(ABC):
         Notes
         ----------
         Statistical measurements should return a data-frame.
-        We can suggest / enforce this by defining a class StatisticalQuantity"""
+        We can suggest/enforce this by defining a class StatisticalQuantity"""
 
         self._magnitude = magnitude
         self._unit = unit
@@ -43,7 +43,7 @@ class Quantity(ABC):
         pass
 
     @property
-    def in_units(self, alt_units):
+    def in_units(self, alt_unit):
         """The same quantity in different units.
         Exact details of the conversion will depend on the type of
         the Quantity's magnitude. For example, consider a quantity representing
@@ -104,7 +104,7 @@ class StatisticalQuantity(Quantity):
     """
 
     @property
-    def sample_size(self) -> int:
+    def sample_size(self):
         return self._magnitude.shape[0]
 
     @property
