@@ -20,7 +20,6 @@ class PhysicalDimension(ABC):
     def name(self):
         pass
 
-    @property
     def label(self):
         """
         Return
@@ -32,7 +31,19 @@ class PhysicalDimension(ABC):
         ])
 
     def __repr__(self):
+        """string to be printed"""
         return '[' + self.label + ']'
+
+    def __str__(self):
+        """a string representation, that can be hashed"""
+        return (self.name + "(" + self.label + "): " + '[' + 
+                ", ".join([ "(" + k + ": " + str(v) + ")"
+                            for k, v in self.composition.items()]) +
+                ']')
+
+    def __hash__(self):
+        """Make this type hashable"""
+        return hash(str(self))
 
     @property
     @abstractmethod
@@ -53,13 +64,16 @@ class PhysicalDimension(ABC):
             return Dimensionless()
 
         compound_name =  self.name + "_by_" + other.name
+        compound_label = self.label + "by" + other.label
         composition = FrozenDict({
             k: v for k, v in self.composition.updated(
                 {key: self.composition.get(key, 0) - value
                  for key, value in other.composition.items()}
             ).items() if v != 0
         })
-        return CompoundPhysicalDimension(compound_name, composition)
+        return CompoundPhysicalDimension(compound_name,
+                                         compound_label,
+                                         composition)
 
     def __eq__(self, other):
         """define equality to another"""
@@ -115,24 +129,35 @@ class AtomicPhysicalDimension(PhysicalDimension):
         if isinstance(other, Dimensionless):
             return self
         compound_name =  self.name + "_times_" + other.name
+        compound_label = self.label + "times" + other.label
         composition = FrozenDict({
             k: v for k, v in other.composition.updated(
             {self.label: other.composition.get(self.label, 0) + 1}
             ).items() if v != 0
         })
-        return CompoundPhysicalDimension(compound_name, composition)
+        return CompoundPhysicalDimension(compound_name,
+                                         compound_label,
+                                         composition)
        
+
+Length = AtomicPhysicalDimension("Length", "L")
+
 
 class CompoundPhysicalDimension(PhysicalDimension):
     """A compound physical dimension is composed of AtomicPhysicalDimensions."""
 
-    def __init__(self, name, composition):
+    def __init__(self, name, label, composition):
         self.__name = name
+        self.__label = label
         self.__composition = composition
 
     @property
     def name(self):
         return self.__name
+
+    @property
+    def label(self):
+        return self.__label
 
     @property
     def composition(self):
@@ -153,7 +178,9 @@ class CompoundPhysicalDimension(PhysicalDimension):
             return Dimensionless()
 
         compound_name = self.name + "_times_" + other.name
+        compound_label = self.label + "times" + other.label
 
         return CompoundPhysicalDimension(compound_name,
+                                         compound_label,
                                          composition)
 
