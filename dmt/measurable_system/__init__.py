@@ -8,8 +8,8 @@ class MeasurableSystem(ABC):
     A MeasurableSystem may be a model, or a wrapper around data obtained from
     an experimental system."""
 
-    @abstractmethod
     @property
+    @abstractmethod
     def measurable_phenomena(self):
         """
         Return

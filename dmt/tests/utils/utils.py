@@ -4,11 +4,17 @@ from abc import ABC, abstractmethod
 from dmt.utils.utils import ABCwithRegistryMeta
 
 class Color(metaclass=ABCwithRegistryMeta):
+    def __init__(self, grade):
+        self.__grade = grade
 
     @property
     @abstractmethod
     def group(self):
         pass
+
+    @property
+    def grade(self):
+        return self.__grade
 
 class Red(Color):
     group = "red"

@@ -35,8 +35,8 @@ class Quantity(ABC):
         self._magnitude = magnitude
         self._unit = unit
 
-    @abstractmethod
     @property
+    @abstractmethod
     def magnitude(self):
         """The value of this quantity.
         Should be determined by self._magnitude."""

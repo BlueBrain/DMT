@@ -8,7 +8,7 @@ distinction between estimation and measurement."""
 
 #from abc import ABC. abstractmethod
 from dmt.phenomenon import Phenomenon
-from dmt.measurement import MeasurableSystem
+from dmt.measurable_system import MeasurableSystem
 #from dmt.methods import MeasurementMethod
 from dmt.quantity import Quantity
 
@@ -25,17 +25,17 @@ class Measurement:
         self._quantity = quantity
 
     @property
-    def measured_phenomenon(self) -> Phenomenon :
+    def measured_phenomenon(self) :
         """The measured phenomenon."""
         return self._phenomenon
 
     @property
-    def measured_system(self) -> MeasurableSystem :
+    def measured_system(self) :
         """The system that was measured."""
         return self._system
 
     @property
-    def measured_quantity(self) -> Quantity :
+    def measured_quantity(self) :
         """Quantity that is the result of this measurement."""
         return self._quantity
 
