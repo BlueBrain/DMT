@@ -1,28 +1,44 @@
 """Test and develop adapters for models and validation requirements"""
 
 from abc import ABC, abstractmethod
+import pandas as pd
 from dmt.adapter import requires, implements
 from dmt.validation.test_case import ValidationTestCase
+
+#test data
 
 
 class TestIntegerMath(ValidationTestCase):
 
     @requires
-    def add(self, x, y):
-        """Add two numbers x and y"""
+    def get_addition(measurable_system, x, y):
+        """get addition of x and y."""
         pass
 
     @requires
-    def sub(self, x, y):
-        """Sub two numbers x and y"""
+    def get_difference(measurable_system, x, y):
+        """get difference x - y"""
         pass
 
     def __call__(self, model):
-        adapted = self.get_adapted_model(model)
+        adapted_model = self.get_adapted_model(model)
+
+        #the author is supposed to know the format data is in.
+        d = self._data
         return (
-            'PASS' if ((adapted.add(1, 1) == 2) and (adapted.sub(2, 1) == 1))
+            'PASS' if (all(adapted_model.get_addition(d.x, d.y) == d.z) and
+                       all(adapted_model.get_difference(d.x, d.y) == d.w))
             else 'FAIL'
         )
+
+
+test_data = pd.DataFrame(dict(
+    x=[1, 2, 3, 4, 5, 6, 7],
+    y=[1, 2, 3, 4, 3, 2, 1],
+    z=[2, 4, 6, 8, 8, 8, 8],
+    w=[0, 0, 0, 0, 2, 4, 6]
+))
+
 
 class IntegerMathModelPM(ABC):
     """An ABC for a model of integer math,
@@ -42,12 +58,15 @@ class IntegerMathModelPM(ABC):
 
 
 class BadIntegerMathModel(IntegerMathModelPM):
+
     def plus(self, x, y):
         return x + y
     def minus(self, x, y):
         return x + y
 
+
 class GoodIntegerMathModel(IntegerMathModelPM):
+
     def plus(self, x, y):
         return x + y
     def minus(self, x, y):
@@ -60,13 +79,14 @@ class TestIntegerMathModelPMAdapter:
     def __init__(self, model):
         self.model = model
 
-    def add(self, x, y):
+    def get_addition(self, x, y):
         return self.model.plus(x, y)
 
-    def sub(self, x, y):
+    def get_difference(self, x, y):
         return self.model.minus(x, y)
 
-timpm = TestIntegerMath(TestIntegerMathModelPMAdapter)
+
+timpm = TestIntegerMath(test_data, TestIntegerMathModelPMAdapter)
 
 def run_test(tst, obj):
     result = tst(obj)
@@ -98,13 +118,13 @@ class TestIntegerMathModelModuloAdapter:
     def __init__(self, model):
         self.model = model
 
-    def add(self, x, y):
+    def get_addition(self, x, y):
         return self.model.madd(x, y)
 
-    def sub(self, x, y):
+    def get_difference(self, x, y):
         return self.model.msub(x, y)
         
 
-timmod = TestIntegerMath(TestIntegerMathModelModuloAdapter)
+timmod = TestIntegerMath(test_data, TestIntegerMathModelModuloAdapter)
 
 run_test(timmod, IntegerModuloMathModel(10))
