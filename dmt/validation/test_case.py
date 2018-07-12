@@ -1,20 +1,9 @@
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 from dmt import adapter
 
-class AIMeta(ABCMeta):
-    """A metaclass that will add an AdapterInterface."""
-
-    def __new__(meta, name, bases, dct):
-        return super(AIMeta, meta).__new__(meta, name, bases, dct)
-
-    def __init__(cls, name, bases, dct):
-        cls.AdapterInterface = adapter.interface(cls)
-        super(AIMeta, cls).__init__(name, bases, dct)
-
-
-class ValidationTestCase(metaclass=AIMeta):
+class ValidationTestCase(metaclass=adapter.AIMeta):
     """A validation test case."""
-    __metaclass__ = AIMeta #for Python 2 --- irrelevant in Python 3
+    __metaclass__ = adapter.AIMeta #for Python 2 --- irrelevant in Python 3
 
     def __init__(self, adapter_implementation=None):
         """
