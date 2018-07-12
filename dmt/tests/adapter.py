@@ -18,12 +18,11 @@ class TestIntegerMath(ValidationTestCase):
         pass
 
     def __call__(self, model):
-        adapted_model = self.get_adapted_model(model)
-        assert(adapted_model.add(1, 1) == 2)
-        assert(adapted_model.sub(2, 1) == 1)
-        print("PASS")
-        return True
-
+        adapted = self.get_adapted_model(model)
+        return (
+            'PASS' if ((adapted.add(1, 1) == 2) and (adapted.sub(2, 1) == 1))
+            else 'FAIL'
+        )
 
 class IntegerMathModelPM(ABC):
     """An ABC for a model of integer math,
@@ -69,6 +68,18 @@ class TestIntegerMathModelPMAdapter:
 
 timpm = TestIntegerMath(TestIntegerMathModelPMAdapter)
 
+def run_test(tst, obj):
+    result = tst(obj)
+    if result == 'FAIL':
+        print("FAILED: {}".format(obj.__class__.__name__))
+    if result == 'PASS':
+        print("PASSED: {}".format(obj.__class__.__name__))
+
+run_test(timpm, BadIntegerMathModel())
+
+run_test(timpm, GoodIntegerMathModel())
+
+
 class IntegerModuloMathModel:
     """Modulo math."""
     def __init__(self, n):
@@ -95,3 +106,5 @@ class TestIntegerMathModelModuloAdapter:
         
 
 timmod = TestIntegerMath(TestIntegerMathModelModuloAdapter)
+
+run_test(timmod, IntegerModuloMathModel(10))

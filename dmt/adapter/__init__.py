@@ -9,9 +9,38 @@ However, if the author codes her Validation using an interface her Validation
 can be used by another user. Our DMT framework will provide advice to a user
 intends to use a Validation"""
 
+class InterfaceMeta(type):
+    """A metaclass to be used to create Interfaces!
+    This metaclass will strip away any implementation of a method.
+    This will define a strict interface, that cannot be implemented,
+    can is not allowed to have any methods with implementations in
+    its body."""
 
+    def __init__(meta,  name, bases, attrs):
+        """..."""
+        def raise_not_implemented(function):
+            """..."""
+            def function_eff(*args, **kwargs):
+                raise NotImplementedError
 
-def interface(client_cls):
+            function_eff.__doc__ = function.__doc__
+            return function_eff
+
+        for k in attrs.keys():
+            attrs[k] = raise_not_implemented(attrs[k])
+
+        super(InterfaceMeta, meta).__init__(name, bases, attrs)
+    
+
+class Interface(metaclass=InterfaceMeta):
+    """An Interface cannot be implemented!"""
+
+    def __init__(self, *args, **kwargs):
+        raise Exception("{} is an Interface\n".format(self.__class__.__name__) + 
+                         "An Interface cannot be initialized.\n" +
+                        "It must be implemented!!!\n")
+
+def interface(client_cls, prefix=""):
     """Create an adapter interface for a client class.
     Parameters
     ----------
@@ -28,8 +57,12 @@ def interface(client_cls):
         m: getattr(client_cls, m) for m in dir(client_cls)
         if getattr(getattr(client_cls, m), '__isrequiredmethod__', False)
     }
-    adapter_spec = type(client_cls.__name__ + 'AdapterInterface',
-                        (object,), required)
+    cname = client_cls.__name__
+    suffix = prefix + ("" if (cname.endswith("Interface")
+                              or cname.endswith("interface"))
+                       else "Interface")
+
+    adapter_spec = type(client_cls.__name__ + suffix, (Interface,), required)
 
     adapter_spec.__requiredmethods__ = required.keys()
 
@@ -41,30 +74,13 @@ def interface(client_cls):
     for m, mm in required.items():
         mm = getattr(client_cls, m)
         msg += "\t({}) {}: ".format(str(n), m)
-        msg += mm.__doc__ + "\n"
+        msg += (mm.__doc__ if mm.__doc__ else "") + "\n"
         n += 1
 
     client_cls.guide = msg
+    adapter_spec.guide = msg
 
     return adapter_spec
-
-
-def interface0(adapter_spec):
-   """Using the specification in adapter_spec, """
-
-   adapter_spec.__implementation_registry__ = {}
-   msg = "Interface " + adapter_spec.__name__ + " requires you to implement\n"
-
-   n = 1
-   for m in adapter_spec.__requiredmethods__:
-      mm = getattr(adapter_spec, m)
-      msg  += "\t(" + str(n) + ") " + m + ": "
-      msg += mm.__doc__ + "\n"
-      n += 1
-
-   adapter_spec.guide =  msg
-
-   return adapter_spec
 
 def implementations(an_interface):
    return an_interface.__implementation_registry__
@@ -96,14 +112,22 @@ def implements(an_interface):
    return class_implements
 
 
-def get_adapter_interface(cls):
-    """define an adapter for a class."""
-    required = {m: getattr(cls, m) for m in dir(cls)
-                if getattr(getattr(cls, m), '__isrequiredmethod__', False)}
-    adapter_spec = type(cls.__name__ + 'AdapterInterface', (object,), required)
-    adapter_spec.__requiredmethods__ = required.keys()
-    return interface0(adapter_spec, cls)
+def adapt(client_cls):
+    """a method intended to decorate classes that will need an
+    AdapterInterface, that can be used instead of metclass=AIMeta"""
+    client_cls.AdapterInterface = interface(client_cls, prefix='Adapter')
+    return client_cls
 
-def adapt(cls):
-    cls.AdapterInterface = get_adapter_interface(cls)
-    return cls
+
+from abc import ABCMeta
+
+class AIMeta(ABCMeta):
+    """A metaclass that will add an AdapterInterface."""
+
+    def __new__(meta, name, bases, dct):
+        return super(AIMeta, meta).__new__(meta, name, bases, dct)
+
+    def __init__(cls, name, bases, dct):
+        cls.AdapterInterface = interface(cls)
+        super(AIMeta, cls).__init__(name, bases, dct)
+
