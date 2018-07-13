@@ -31,11 +31,13 @@ class TestIntegerMath(ValidationTestCase):
         be used internally. The author of this validation does not have to
         adapt her model."""
         d = other_data if other_data else self.data
-        return (
-            'PASS' if (all(self.get_addition(model, d.x, d.y) == d.z) and
-                       all(self.get_subtraction(model, d.x, d.y) == d.w))
-            else 'FAIL'
-        )
+
+        addition_measurement = self.adapter.get_addition(model, d.x, d.y)
+        subtraction_measurement = self.adapter.get_subtraction(model, d.x, d.y)
+        
+        return ('PASS' if (all(addition_measurement == d.z) and
+                           all(subtraction_measurement == d.w))
+                else 'FAIL')
         
 
 class TestIntegerMath0(ValidationTestCase):
@@ -111,6 +113,16 @@ class TestIntegerMathModelPMAdapter:
     def get_subtraction(self, x, y):
         """implementation of the required method get_subtraction"""
         return self.model.minus(x, y)
+
+
+class TestIntegerMathModePMAlternativeAdapter:
+    """An alternative syntax"""
+
+    def get_addition(self, model, x, y):
+        return model.plus(x, y)
+
+    def get_subtraction(self, model, x, y):
+        return model.minus(x, y)
 
 test_data = pd.DataFrame(dict(
     x=[1, 2, 3, 4, 5, 6, 7],

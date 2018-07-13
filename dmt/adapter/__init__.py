@@ -107,12 +107,42 @@ def implementation(an_interface):
                             "' a by interface " + an_interface.__name__)
 
       an_interface.__implementation_registry__[cls.__name__] = cls
+
       return cls
 
    return class_implements
 
-
 implements = implementation
+
+def interface_implementation(client_cls):
+    """Implementation of an Adapter that satisfies the given interface.
+    This method is different from the previous, 'implementation'.
+    Parameters
+    --------------
+    @client_cls :: class that needs an adapter.
+    """
+    print("decorate an {} interface implementation.".format(client_cls.__name__))
+    adapter_interface = client_cls.AdapterInterface
+    def class_implements(cls):
+        """
+        Parameters
+        ----------
+        @cls :: the class that will be decorated,
+        and made the adapter implementation"""
+
+        for m in adapter_interface.__requiredmethods__:
+            if not hasattr(cls, m):
+                print(adapter_interface.guide)
+                raise Exception(
+                    "Unimplemented required method '{}' by interface "\
+                    .format(adapter_interface.__name__)
+                )
+
+        adapter_interface.__implementation_registry__[cls.__name__] = cls
+        client_cls._adapter = cls
+        return cls
+
+    return class_implements
 
 def add_interface(client_cls):
     """a method intended to decorate classes that will need an
@@ -165,8 +195,6 @@ class AIMeta(ABCMeta):
 
         for m in required.keys():
             setattr(cls, m, get_wrapped_model_method(m))
-
-        #cls.__call__ = adapted(cls.__call__)
-
+            
         super(AIMeta, cls).__init__(name, bases, dct)
 

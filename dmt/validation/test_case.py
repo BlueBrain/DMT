@@ -38,6 +38,12 @@ class ValidationTestCase(metaclass=adapter.AIMeta):
         raise Exception("Validation test case {} does not use data"\
                         .format(self.__class__.__name__))
 
+    @property
+    def adapter(self):
+        """A concrete implementation of this ValidationTestCase's
+        AdapterInterface."""
+        return self._adapter
+
     @abstractmethod
     def __call__(self, *args, **kwargs):
         """A ValidationTestCase is a callable.
