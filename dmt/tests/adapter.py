@@ -30,7 +30,7 @@ class TestIntegerMath(ValidationTestCase):
         The model adapter provided in the definition of this test case will
         be used internally. The author of this validation does not have to
         adapt her model."""
-        d = other_data if other_data else self._data
+        d = other_data if other_data else self.data
         return (
             'PASS' if (all(self.get_addition(model, d.x, d.y) == d.z) and
                        all(self.get_subtraction(model, d.x, d.y) == d.w))
@@ -57,20 +57,12 @@ class TestIntegerMath0(ValidationTestCase):
     def __call__(self, model, other_data=None):
         """model should be of the type that this ValidationTestCase's
         AdapterInterface's implementation adapts."""
-        d = other_data if other_data else self._data
+        d = other_data if other_data else self.data
         return (
             'PASS' if (all(model.get_addition(d.x, d.y) == d.z) and
                        all(model.get_subtraction(d.x, d.y) == d.w))
             else 'FAIL'
         )
-
-
-test_data = pd.DataFrame(dict(
-    x=[1, 2, 3, 4, 5, 6, 7],
-    y=[1, 2, 3, 4, 3, 2, 1],
-    z=[2, 4, 6, 8, 8, 8, 8],
-    w=[0, 0, 0, 0, 2, 4, 6]
-))
 
 
 class IntegerMathModelPM(ABC):
@@ -120,19 +112,30 @@ class TestIntegerMathModelPMAdapter:
         """implementation of the required method get_subtraction"""
         return self.model.minus(x, y)
 
+test_data = pd.DataFrame(dict(
+    x=[1, 2, 3, 4, 5, 6, 7],
+    y=[1, 2, 3, 4, 3, 2, 1],
+    z=[2, 4, 6, 8, 8, 8, 8],
+    w=[0, 0, 0, 0, 2, 4, 6]
+))
 
-timpm = TestIntegerMath(test_data, TestIntegerMathModelPMAdapter)
+
+timpm = TestIntegerMath(data=test_data,
+                        model_adapter=TestIntegerMathModelPMAdapter)
 
 def run_test(tst, obj):
     result = tst(obj)
     if result == 'FAIL':
-        print("FAILED: {}".format(obj.__class__.__name__))
+        print("FAILED: {} failed {}"\
+              .format(obj.__class__.__name__, tst.__class__.__name__))
     if result == 'PASS':
-        print("PASSED: {}".format(obj.__class__.__name__))
+        print("PASSED: {} failed {}"\
+              .format(obj.__class__.__name__, tst.__class__.__name__))
 
 run_test(timpm, BadIntegerMathModel())
 
 run_test(timpm, GoodIntegerMathModel())
+
 
 
 class IntegerModuloMathModel:
@@ -163,3 +166,36 @@ class TestIntegerMathModelModuloAdapter:
 timmod = TestIntegerMath(test_data, TestIntegerMathModelModuloAdapter)
 
 run_test(timmod, IntegerModuloMathModel(10))
+
+#you can even write a ValidationTestCase without data
+class TestIntegerMathNoData(ValidationTestCase):
+    """An example of a validation test case that does not use data."""
+    
+    @adapter.requires
+    def get_addition(self, model, x, y):
+        """get addition of x and y"""
+        pass
+
+    @adapter.requires
+    def get_subtraction(self, model, x, y):
+        """get subtraction of x and y"""
+        pass
+
+    def __call__(self, model):
+        """Method that each ValidationTestCase must implement.
+        Parameters
+        ----------
+        @model :: The model that needs to be validated (not adapted model).
+        The model adapter provided in the definition of this test case will
+        be used internally. The author of this validation does not have to
+        adapt her model."""
+        return (
+            'PASS' if ((self.get_addition(model, 1, 2) == 3) and
+                       (self.get_subtraction(model, 1, 2) == -1))
+            else 'FAIL'
+        )
+
+timpm_nd = TestIntegerMathNoData(model_adapter=TestIntegerMathModelPMAdapter)
+run_test(timpm_nd, GoodIntegerMathModel())
+run_test(timpm_nd, BadIntegerMathModel())
+ 

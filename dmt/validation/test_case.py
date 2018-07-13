@@ -18,15 +18,25 @@ class ValidationTestCase(metaclass=adapter.AIMeta):
     """
     __metaclass__ = adapter.AIMeta #for Python 2 --- irrelevant in Python 3
 
-    def __init__(self, data, model_adapter=lambda model_object: model_object):
+    def __init__(self, data=None, model_adapter=lambda model_object: model_object):
                  
         """
         Parameters
         ----------
         model_adapter :: Model -> AdaptedModel
         a callable that returns an adapted model."""
-        self._data = data
+        self.__data = data
         self.get_adapted_model = model_adapter
+
+    @property
+    def data(self):
+        """Data stored to validate a model against.
+        However, you are allowed to create a validation without data!!!"""
+        if self.__data is not None:
+            return self.__data
+
+        raise Exception("Validation test case {} does not use data"\
+                        .format(self.__class__.__name__))
 
     @abstractmethod
     def __call__(self, *args, **kwargs):
