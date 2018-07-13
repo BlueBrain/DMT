@@ -2,32 +2,65 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.adapter import requires, implements
+from dmt import adapter
 from dmt.validation.test_case import ValidationTestCase
 
-#test data
-
-
+       
 class TestIntegerMath(ValidationTestCase):
+    """Preferred way to write a ValidationTestCase.
+    Provide validation logic in __call__ .
+    Mark all measurements desired from the model
+    by decorator '@adapter.requires'."""
 
-    @requires
-    def get_addition(measurable_system, x, y):
+    @adapter.requires
+    def get_addition(self, model, x, y):
+        """get addition of x and y"""
+        pass
+
+    @adapter.requires
+    def get_subtraction(self, model, x, y):
+        """get subtraction of x and y"""
+        pass
+
+    def __call__(self, model, other_data=None):
+        """Method that each ValidationTestCase must implement.
+        Parameters
+        ----------
+        @model :: The model that needs to be validated (not adapted model).
+        The model adapter provided in the definition of this test case will
+        be used internally. The author of this validation does not have to
+        adapt her model."""
+        d = other_data if other_data else self._data
+        return (
+            'PASS' if (all(self.get_addition(model, d.x, d.y) == d.z) and
+                       all(self.get_subtraction(model, d.x, d.y) == d.w))
+            else 'FAIL'
+        )
+        
+
+class TestIntegerMath0(ValidationTestCase):
+    """An alternate way to write an application.
+    Notice that you need to decorate __call__ with @adapted,
+    so that you can pretend that the model being validated
+    has the required methods defined for it. """
+    @adapter.requires
+    def get_addition(model, x, y):
         """get addition of x and y."""
         pass
 
-    @requires
-    def get_difference(measurable_system, x, y):
+    @adapter.requires
+    def get_subtraction(model, x, y):
         """get difference x - y"""
         pass
 
-    def __call__(self, model):
-        adapted_model = self.get_adapted_model(model)
-
-        #the author is supposed to know the format data is in.
-        d = self._data
+    @adapter.adapted
+    def __call__(self, model, other_data=None):
+        """model should be of the type that this ValidationTestCase's
+        AdapterInterface's implementation adapts."""
+        d = other_data if other_data else self._data
         return (
-            'PASS' if (all(adapted_model.get_addition(d.x, d.y) == d.z) and
-                       all(adapted_model.get_difference(d.x, d.y) == d.w))
+            'PASS' if (all(model.get_addition(d.x, d.y) == d.z) and
+                       all(model.get_subtraction(d.x, d.y) == d.w))
             else 'FAIL'
         )
 
@@ -73,16 +106,18 @@ class GoodIntegerMathModel(IntegerMathModelPM):
         return x - y
 
 
-@implements(TestIntegerMath.AdapterInterface)
+@adapter.implementation(TestIntegerMath.AdapterInterface)
 class TestIntegerMathModelPMAdapter:
 
     def __init__(self, model):
         self.model = model
 
     def get_addition(self, x, y):
+        """implementation of the required method get_addition"""
         return self.model.plus(x, y)
 
-    def get_difference(self, x, y):
+    def get_subtraction(self, x, y):
+        """implementation of the required method get_subtraction"""
         return self.model.minus(x, y)
 
 
@@ -112,7 +147,7 @@ class IntegerModuloMathModel:
         return (x - y) % self.__n
 
 
-@implements(TestIntegerMath.AdapterInterface)
+@adapter.implementation(TestIntegerMath.AdapterInterface)
 class TestIntegerMathModelModuloAdapter:
 
     def __init__(self, model):
@@ -121,7 +156,7 @@ class TestIntegerMathModelModuloAdapter:
     def get_addition(self, x, y):
         return self.model.madd(x, y)
 
-    def get_difference(self, x, y):
+    def get_subtraction(self, x, y):
         return self.model.msub(x, y)
         
 

@@ -82,7 +82,7 @@ def interface(client_cls, prefix=""):
 
     return adapter_spec
 
-def implementations(an_interface):
+def get_implementations(an_interface):
    return an_interface.__implementation_registry__
 
 def provided(required_method):
@@ -92,7 +92,7 @@ def provided(required_method):
 
 requires = provided
 
-def implements(an_interface):
+def implementation(an_interface):
    """a class decorator to declare that a class implements an interface.
    Improvements
    ------------
@@ -112,22 +112,61 @@ def implements(an_interface):
    return class_implements
 
 
-def adapt(client_cls):
+implements = implementation
+
+def add_interface(client_cls):
     """a method intended to decorate classes that will need an
     AdapterInterface, that can be used instead of metclass=AIMeta"""
     client_cls.AdapterInterface = interface(client_cls, prefix='Adapter')
     return client_cls
 
 
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
+
+def adapted(func_call):
+    """A utility function to adapt a function call."""
+    def func_effective(self, *args, **kwargs):
+        """effective function call.
+        the first parameter in args must be a model"""
+        model = args[0]
+        adapted_model = self.get_adapted_model(model)
+        return func_call(self, adapted_model, *args[1:], **kwargs)
+    return func_effective
 
 class AIMeta(ABCMeta):
     """A metaclass that will add an AdapterInterface."""
 
     def __new__(meta, name, bases, dct):
+        #print("AIMeta, new a class ", meta.__name__, name , dct)
         return super(AIMeta, meta).__new__(meta, name, bases, dct)
 
     def __init__(cls, name, bases, dct):
         cls.AdapterInterface = interface(cls)
+
+        required = {m: getattr(cls, m) for m in dir(cls)
+                    if getattr(getattr(cls, m), '__isrequiredmethod__', False )}
+
+        @abstractmethod
+        def get_adapted_model(self, model):
+            pass
+
+        cls.get_adapted_model = get_adapted_model
+        
+        def get_wrapped_model_method(m):
+            """wrap a method of the adapter implementation,
+            such that it can be called as method of this instance."""
+
+            def wrapped_func(self, *args, **kwargs):
+                model = self.get_adapted_model(args[0])
+                #model = args[0]
+                model_method = getattr(model, m)
+                return model_method(*args[1:], **kwargs)
+            return wrapped_func
+
+        for m in required.keys():
+            setattr(cls, m, get_wrapped_model_method(m))
+
+        #cls.__call__ = adapted(cls.__call__)
+
         super(AIMeta, cls).__init__(name, bases, dct)
 
