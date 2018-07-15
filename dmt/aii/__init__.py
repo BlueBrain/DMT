@@ -39,6 +39,8 @@ class Interface(metaclass=InterfaceMeta):
         An Interface cannot be initialized.
         It must be implemented!!!""".format(self.__class__.__name__))
 
+    __implementation_registry__ = {}
+
 
 def requiredmethod(method):
     """To be used to decorate a method of a class that must
@@ -79,7 +81,7 @@ def get_interface(client_cls, name='Interface'):
     cname = client_cls.__name__
     spec = type(name, (Interface, ), required)
     spec.__requiredmethods__ = required.keys()
-    spec.__implementation_registry__ = {}
+    #spec.__implementation_registry__ = {}
 
     msg = "{} for {} requires you to implement\n".format(name, cname)
 
@@ -93,14 +95,13 @@ def get_interface(client_cls, name='Interface'):
     spec.__implementation_guide__ = msg
     return spec
 
-def get_implmentations(an_interface):
-    """all the implementations"""
+def implementation_registry(an_interface):
+    """list of implementations"""
     if not is_interface(an_interface):
         raise Exception(
             "class {} is not an interface!!!".format(an_interface.__name__)
         )
     return an_interface.__implementation_registry__
-    
             
 from abc import ABCMeta, abstractmethod
 class AIMeta(ABCMeta):
@@ -162,6 +163,10 @@ def implementation_guide(an_interface):
                         .format(an_interface.__name__))
     return implementation_guide(an_interface)
     
+
+def get_required_methods(cls):
+    return getattr(cls, '__requiredmethods__', [])
+    
 #and now the implementations
 def implementation(an_interface):
     """"A class decorator to declare that a class implements an interface.
@@ -176,14 +181,14 @@ def implementation(an_interface):
 
     def effective(cls):
         """Effective class"""
-        for method in an_interface.__requiredmethods__:
+        for method in get_required_methods(an_interface):
             if not hasattr(cls, method):
                 print(implementation_guide(an_interface))
                 raise Exception(
                     "Unimplemented method '{}' requred by interface "\
                     .format(an_interface.__name__)
                 )
-        an_interface.__implementation_registry__[cls.__name__] = cls
+        implementation_registry(an_interface)[cls.__name__] = cls
         cls.__isinterfaceimplementation__ = True
         cls.__interface__ = an_interface
         return cls
