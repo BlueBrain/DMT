@@ -39,8 +39,21 @@ class Interface(metaclass=InterfaceMeta):
         An Interface cannot be initialized.
         It must be implemented!!!""".format(self.__class__.__name__))
 
+    __requiredmethods__ = []
     __implementation_registry__ = {}
+    __implementation_guide__ = "Please provide implementation instructions."
 
+    @classmethod
+    def register_implementation(cls, impl):
+        """Register an implementation."""
+        for method in cls.__requiredmethods__:
+            if not hasattr(cls, method):
+                print(cls.__implementation_guide__)
+                raise Exception(
+                    "Unimplemented method '{}' required by interface "\
+                    .format(cls.__name__)
+                )
+        cls.__implementation_registry__[impl.__name__] = impl
 
 def requiredmethod(method):
     """To be used to decorate a method of a class that must
@@ -67,7 +80,6 @@ def needs_interface(client_cls):
     return any([is_required_method(getattr(client_cls, method))
                 for method in dir(client_cls)])
                                    
-
 def get_interface(client_cls, name='Interface'):
     """Create an interface for a client class.
     Parameters
@@ -81,7 +93,6 @@ def get_interface(client_cls, name='Interface'):
     cname = client_cls.__name__
     spec = type(name, (Interface, ), required)
     spec.__requiredmethods__ = required.keys()
-    #spec.__implementation_registry__ = {}
 
     msg = "{} for {} requires you to implement\n".format(name, cname)
 
@@ -136,6 +147,16 @@ class AdapterInterfaceBase(metaclass=AIMeta):
         """Reset the adapter."""
         self._adapter = value
 
+    @classmethod
+    def accepted_models(cls):
+        """Models that this class with AdapterInterface will accept ---
+        models for which at least one concrete implementation is available."""
+        return set([
+            model_adapted(impl)
+            for impl in implementation_registry(cls.AdapterInterface).values()
+            if model_adapted(impl) is not None
+        ])
+        
 
 def is_interface_implementation(cls):
     """Does class 'cls' implement an interface?"""
@@ -168,7 +189,7 @@ def get_required_methods(cls):
     return getattr(cls, '__requiredmethods__', [])
     
 #and now the implementations
-def implementation(an_interface):
+def implementation(an_interface, adapted=None):
     """"A class decorator to declare that a class implements an interface.
     We establish a protocol.
     Protocol
@@ -181,19 +202,26 @@ def implementation(an_interface):
 
     def effective(cls):
         """Effective class"""
-        for method in get_required_methods(an_interface):
-            if not hasattr(cls, method):
-                print(implementation_guide(an_interface))
-                raise Exception(
-                    "Unimplemented method '{}' requred by interface "\
-                    .format(an_interface.__name__)
-                )
-        implementation_registry(an_interface)[cls.__name__] = cls
+        an_interface.register_implementation(cls)
         cls.__isinterfaceimplementation__ = True
         cls.__interface__ = an_interface
+        if adapted is not None:
+            cls.__adapted__ = adapted
         return cls
     return effective
+
+def get_implementations(an_interface):
+    """all the implementations"""
+    if not isinstance(an_interface, Interface):
+        raise Exception("{} is not an Interface!!!"\
+                        .format(an_interface.__name__))
+    return an_interface.__implementation_registry__
+
         
+def model_adapted(impl):
+    """Get models implemented by an implementation.
+    We assume that one implementation will adapt only one model type."""
+    return getattr(impl, '__adapted__', None)
 
                 
 

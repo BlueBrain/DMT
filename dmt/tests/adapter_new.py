@@ -75,11 +75,15 @@ class BadIntegerMathModel(IntegerMathModelPM):
         return x + y
 
 
-@implementation(TestIntegerMath.AdapterInterface)
+@implementation(TestIntegerMath.AdapterInterface, adapted=IntegerMathModelPM)
 class TestIntegerMathModelPMAdapter:
     """An adapter for TestIntegerMathModel.
     Methods in the Adapter are all class method.
-    So you can instantiate with TestIntegerMathModelPMAdapter()."""
+    So you can instantiate with TestIntegerMathModelPMAdapter().
+
+    Also, this examplifies that we should use an interface for the model, if
+    available. Instead of two implementations of IntegerMathModelPM, we say
+    that this implementation implements their interface IntegerMathModelPM."""
 
     def __init__(self):
         """TestIntegerMathModelPMAdapter does not need any initialization
@@ -133,7 +137,7 @@ class IntegerModuloMathModel:
     def msub(self, x, y):
         return (x - y) % self.__n
 
-@implementation(TestIntegerMath.AdapterInterface)
+@implementation(TestIntegerMath.AdapterInterface, IntegerModuloMathModel)
 class TestIntegerMathModelModuleAdapter:
     """Adapt IntegerModuloMathModel for TestIntegerMath."""
     @classmethod
