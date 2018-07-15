@@ -5,9 +5,9 @@ against. The initializer of ValidationTestCase will accept a data object.
 """
 
 from abc import abstractmethod
-from dmt import adapter
+from dmt.aii import AdapterInterfaceBase
 
-class ValidationTestCase(metaclass=adapter.AIMeta):
+class ValidationTestCase(AdapterInterfaceBase):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
@@ -16,33 +16,22 @@ class ValidationTestCase(metaclass=adapter.AIMeta):
     with decorator '@adapter.requires', and use them like this,
     'measurement_data = self.get_measurement_data(model, parameters)'.
     """
-    __metaclass__ = adapter.AIMeta #for Python 2 --- irrelevant in Python 3
 
-    def __init__(self, data=None, model_adapter=lambda model_object: model_object):
-                 
+    def __init__(self, *args, **kwargs):
         """
-        Parameters
-        ----------
-        model_adapter :: Model -> AdaptedModel
-        a callable that returns an adapted model."""
-        self.__data = data
-        self.get_adapted_model = model_adapter
+        """
+        self.__data = kwargs.get('data', None)
+        super(ValidationTestCase, self).__init__(self, *args, **kwargs)
+            
 
     @property
     def data(self):
         """Data stored to validate a model against.
         However, you are allowed to create a validation without data!!!"""
-        if self.__data is not None:
-            return self.__data
-
-        raise Exception("Validation test case {} does not use data"\
-                        .format(self.__class__.__name__))
-
-    @property
-    def adapter(self):
-        """A concrete implementation of this ValidationTestCase's
-        AdapterInterface."""
-        return self._adapter
+        if self.__data is None:
+            raise Exception("Validation test case {} does not use data"\
+                            .format(self.__class__.__name__))
+        return self.__data
 
     @abstractmethod
     def __call__(self, *args, **kwargs):

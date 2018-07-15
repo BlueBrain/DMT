@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt import adapter
+from dmt.aii import requiredmethod, implementation
 from dmt.validation.test_case import ValidationTestCase
 
 
@@ -13,12 +13,12 @@ class TestIntegerMath(ValidationTestCase):
     Mark all measurements, or any other data, required from the
     model by decorator '@adapter.requires'."""
 
-    @adapter.provided
+    @requiredmethod
     def get_addition(adapter, model, x, y):
         """get addition of x and y"""
         pass
 
-    @adapter.provided
+    @requiredmethod
     def get_subtraction(adapter, model, x, y):
         """get difference of x and y"""
         pass
@@ -75,11 +75,21 @@ class BadIntegerMathModel(IntegerMathModelPM):
         return x + y
 
 
-@adapter.interface_implementation(TestIntegerMath)
+@implementation(TestIntegerMath.AdapterInterface)
 class TestIntegerMathModelPMAdapter:
+    """An adapter for TestIntegerMathModel.
+    Methods in the Adapter are all class method.
+    So you can instantiate with TestIntegerMathModelPMAdapter()."""
+
+    def __init__(self):
+        """TestIntegerMathModelPMAdapter does not need any initialization
+        parameters."""
+        pass
+    
     @classmethod
     def get_addition(cls, model, x, y):
         return model.plus(x, y)
+
     @classmethod
     def get_subtraction(cls, model, x, y):
         return model.minus(x, y)
@@ -92,8 +102,11 @@ test_data = pd.DataFrame(dict(
     w=[0, 0, 0, 0, 2, 4, 6]
 ))
 
-
+#model adapter need not be an input 
 timpm = TestIntegerMath(data=test_data)
+#in which case,
+#you have to set a ValidationTestCase's adapter instance
+timpm.adapter = TestIntegerMathModelPMAdapter()
 
 def run_test(tst, obj):
     result = tst(obj)
@@ -101,7 +114,7 @@ def run_test(tst, obj):
         print("FAILED: {} failed {}"\
               .format(obj.__class__.__name__, tst.__class__.__name__))
     if result == 'PASS':
-        print("PASSED: {} failed {}"\
+        print("PASSED: {} passed {}"\
               .format(obj.__class__.__name__, tst.__class__.__name__))
 
 run_test(timpm, BadIntegerMathModel())
@@ -120,5 +133,21 @@ class IntegerModuloMathModel:
     def msub(self, x, y):
         return (x - y) % self.__n
 
+@implementation(TestIntegerMath.AdapterInterface)
+class TestIntegerMathModelModuleAdapter:
+    """Adapt IntegerModuloMathModel for TestIntegerMath."""
+    @classmethod
+    def get_addition(cls, model, x, y):
+        return model.madd(x, y)
 
-@adapter.interface_implementation(TestIntegerMath)
+    @classmethod
+    def get_subtraction(cls, model, x, y):
+        return model.msub(x, y)
+
+timmodulo = TestIntegerMath(data=test_data,
+                            model_adapter=TestIntegerMathModelModuleAdapter())
+
+run_test(timmodulo, IntegerModuloMathModel(1))
+
+
+
