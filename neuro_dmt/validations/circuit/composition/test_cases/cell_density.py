@@ -2,7 +2,9 @@
 from an experiment."""
 
 from abc import abstractmethod
-from dmt.validation import ValidationTestCase
+from dmt.validation.test_case import ValidationTestCase
+from dmt.aii import requiremethod, implementation
+
 from dmt.model.adapter import ModelAdapter
 
 
@@ -116,5 +118,10 @@ class CellDensity(ValidationTestCase):
         model_observation = self.generate_observation(model_system)
 
 
+from dmt.neuro_dmt.utils.brain_region import CorticalLayer
 
-        
+class CellDensity(ValidationTestCase):
+    """CellDensity is a unit test case for validation."""
+
+    @requiredmethod
+    def get_cell_density(adapter, region_type=CorticalLayer)
