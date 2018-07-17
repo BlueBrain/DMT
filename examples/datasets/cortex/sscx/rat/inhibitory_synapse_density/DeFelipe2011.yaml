@@ -1,0 +1,32 @@
+short_name: "DeFelipeInhibitorySynapseDensity_2011"
+uri: "https://bbpteam.epfl.ch/confluence/display/MEETINSILICO/BBP+vs.+DeFelipe"
+citation: >-
+  De Felipe et al. (2011 unpublished).
+  'Inhibitory Synapse Densities per Layer', Unpublished.
+
+what: "number of inhibitory synpases per micron^3 in each cortical layer"
+animal: "wistar rat"
+brainArea: "S1 hindlimb"
+sampleSize: "various"
+age: "P14-16"
+
+# mean and std were derived from em reconstruction of tissue
+# a std of zero means only one observation
+density_means:
+  - 0.093076
+  - 0.076727
+  - 0.07855
+  - 0.155247
+  - 0.064944
+  - 0.043169
+# original
+#density_stds = numpy.array([0.00405,0.006978,0.02582,0.0,0.012004,0.0])
+# modified
+density_stds:
+  - 0.00405
+  - 0.006978
+  - 0.02582
+  - 0.015
+  - 0.012004
+  - 0.004
+

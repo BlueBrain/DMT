@@ -1,0 +1,26 @@
+short_name: "Cajal"
+uri: "unknown"
+citation: "Lidia Alonso-Nanclares and Javier DeFelipe, unpublished"
+citation: "Preliminary, ask Daniel Keller for details"
+what: "volume fraction of neuronal somata"
+animal: "ask Daniel Keller"
+brainArea: "ask Daniel Keller"
+sampleSize: "ask Daniel Keller"
+age: "ask Daniel Keller"
+notes: "Data was collected, compiled and provided by Daniel Keller in an email"
+
+fraction_means:
+  - 0.0223
+  - 0.1610
+  - 0.1306
+  - 0.1599
+  - 0.1355
+  - 0.1568
+
+fraction_stds:
+  - 0.0157
+  - 0.0286
+  - 0.0202
+  - 0.0225
+  - 0.0149
+  - 0.0297

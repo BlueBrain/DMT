@@ -2,7 +2,7 @@
 This is a good playground to understand descriptors and type validations."""
 
 from abc import ABC, abstractmethod
-class BrainRegionType(ABC):
+class BrainRegion(ABC):
     """Base class regions of the brain.
     ABC with an abstractmethod, because we do not want """
 
@@ -33,11 +33,11 @@ class BrainRegionType(ABC):
         pass
 
     def __repr__(self):
-        """represent this BrainRegionType"""
+        """represent this BrainRegion"""
         return "{}({})".format(self.__class__.__name__, self.label)
 
     
-class Layer(BrainRegionType):
+class Layer(BrainRegion):
     """Layer is a type of brain region.
     Still abstract class."""
     pass

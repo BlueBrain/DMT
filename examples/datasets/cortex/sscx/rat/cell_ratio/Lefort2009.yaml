@@ -1,0 +1,25 @@
+short_name: "Lefort2009"
+uri: "http://www.ncbi.nlm.nih.gov/pubmed?term=lefort%202009%20excitatory"
+citation: "Lefort et al. (2009). Excitatory Microcircuit of the C2 Barrel Column"
+what: "neuron densities per layer. all and GABA"
+animal: "mouse"
+brainArea: "barrel cortex"
+sampleSize: "..."
+age: "..."
+notes: "no data for layer 1, layer 5 separated in a and b"
+
+# no std for this dataset
+ratio_means:
+  - 0.0
+  - 0.17
+  - 0.09
+  - 0.06
+  - 0.17
+  - 0.08
+ratio_stds:
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0
+  - 0.0

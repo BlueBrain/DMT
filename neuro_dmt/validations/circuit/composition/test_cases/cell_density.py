@@ -3,125 +3,84 @@ from an experiment."""
 
 from abc import abstractmethod
 from dmt.validation.test_case import ValidationTestCase
-from dmt.aii import requiremethod, implementation
-
-from dmt.model.adapter import ModelAdapter
-
-
-class HasCellDensity(ModelAdapter):
-    """A ModelAdapter is a base class to define a simple model like object that 
-    measures specific phenomena."""
-
-    @abstractmethod
-    def get_layer_cell_densities(self, model):
-        """Get cell densities by layer.
-        Users who want to include CellDensity test in their Validation suite
-        should specify the details in their concrete implementation of this
-        ModelAdapter """
-        pass
-
-    def get_measurement(self, measurable_system):
-        return self.get_layer_cell_densiteis(measurable_system)
+from dmt.aii import requiredmethod, implementation
+from neuro_dmt.utils.brain_region import CorticalLayer
 
 
-class CellDensity(ValidationTestCase):
-    """Test if the cell density of a model circuit matches that obtained
-    from an experiment.
+def reference_datasets(reference_data_dir):
+    """Available reference data to be used to validate cell density."""
+    import dmt.vtk.datasets as datasets
+    import numpy as np
+    import pandas as pd
+    defelipe2002 = datasets.load(reference_data_dir, "DeFelipe2002")
+    defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
+    defelipe2014 = datasets.load(reference_data_dir, "DeFelipe2014")
+    defelipe2017 = datasets.load(reference_data_dir, "DeFelipe2014")
+    meyer2010    = datasets.load(reference_data_dir, "Meyer2010")
+    sonja        = datasets.load(reference_data_dir, "Sonja")
 
-    Notes
-    -----
-    We include all the methods needed for testing cell density here.
-    In our first attempt, we will use this validation test as a learning ground
-    to understand how to structure our validation framework dmt, as well as
-    how to structure validation of a neuronal model circuit."""
+    df2014Densities = np.vstack([
+        ckt['densities'] for ckt in defelipe2014['circuits'].values()
+    ])
+    defelipe2014['density_means'] = np.mean(df2014Densities, axis=0)
+    defelipe2014['density_stds']  = np.std(df2014Densities, axis=0)
+    
+    df2017Densities = np.vstack([
+        ckt['densities'] for ckt in defelipe2017['circuits'].values()
+    ])
+    defelipe2017['density_means'] = np.mean(df2017Densities, axis=0)
+    defelipe2017['density_stds']  = np.std(df2017Densities, axis=0)
+    
+    def summarized(ds):
+        return pd.DataFrame([
+            dict(region='L{}'.format(l+1),
+                 mean=ds['density_means'][l],
+                 std=ds['density_stds'][l])
+            for l in range(6)
+        ])
+    
+    defelipe2002["summary"] = summarized(defelipe2002)
+    defelipe2011["summary"] = summarized(defelipe2011)
+    defelipe2014["summary"] = summarized(defelipe2014)
+    defelipe2017["summary"] = summarized(defelipe2017)
+    sonja["summary"] = summarized(sonja)
+    meyer2010["summary"] = summarized(meyer2010)
+    
+    defelipe2014['scale'] = 1.0e-3
+    defelipe2017['scale'] = 0.8229e-3
+    
+    return {'defelipe2017': defelipe2017,
+            'defelipe2014': defelipe2014,
+            'defelipe2011': defelipe2011,
+            'defelipe2002': defelipe2002,
+            'sonja': sonja,
+            'meyer2010': meyer2010}
 
-    def __init__(self, real_system, model_adapter):
-        """
-        Parameters
-        -----------
-        real_system :: RealMeasurableSystem
-
-        model_adapter :: CanMeasureComposition
-
-        Notes
-        -----
-        A validation is tied to a RealMeasurableSystem. Our code will require
-        a RealMeasurableSystem to behave exactly like the ModelMeasurableSystem
-        it will validate.
-        """
-        if not isinstance(model_adapter, HasCellDensity):
-            HasCellDensity.complain()
-            raise Exception("Model adapter " +
-                            model_adapter.__class__.__name__ +
-                            " does not adapt to " +
-                            'HasCellDensity')
-        
-
-        self._real_system = real_system
-        self._real_observation = self.generate_observation(real_system)
-        self._model_adapter = model_adapter
-
-
-    def generate_observation(self, measurable_system):
-        """
-        Parameters
-        ----------
-        @measurable_system :: MeasurableSystem
-
-        Desired Behavior
-        ----------------
-        ???
-
-        Improvements
-        ------------
-        For now, we use a naked assert, which on failure
-        will throw an ugly looking exception. We want a more descriptive
-        explanation.
-        """
-        #assert isinstance(measurable_system, CanMeasureComposition)
-        if not self.model_adapter.check_adapts(measurable_system):
-
-            self.model_adapter.complain()
-
-            raise Exception("Model adapter " +
-                            model_adapter.__class__.__name__ +
-                            " cannot adapt " +
-                            measurable_system.__class__.__name__)
-
-        #return self.model_adapter.get_layer_cell_densities(measurable_system)
-        return self.model_adaptor.get_measurement(measurable_system)
-
-
-    @property
-    def real_system(self) :
-        """@attr :: RealMeasurableSystem"""
-        return self._real_system
-
-    @property
-    def real_observation(self):
-        """@attr :: Measurement"""
-        return self._real_observation
-
-    def __call__(self, model_system):
-        """call / run this test for a given model_system.
-
-        Parameters
-        ----------
-        @model_system :: ModelMeasurableSystem
-
-        Notes
-        -----
-        In our first attempt, we will dump all details of testing cell density
-        here, learn some lessons and move common patterns out into base
-        classes."""
-
-        model_observation = self.generate_observation(model_system)
-
-
-from dmt.neuro_dmt.utils.brain_region import CorticalLayer
-
+    
 class CellDensity(ValidationTestCase):
     """CellDensity is a unit test case for validation."""
 
     @requiredmethod
-    def get_cell_density(adapter, region_type=CorticalLayer)
+    def get_cell_density(adapter, circuit):
+        """Get cell density for a circuit.
+        Parameters
+        ----------
+        @circuit :: ModelCircuit
+        ------------------------
+        Return
+        ------------------------
+        pandas.DataFrame["region", "mean", "std"]"""
+        pass
+
+    def __call__(self, circuit, *args, **kwargs):
+        """makes CellDensity a callable"""
+        output_dir = kwargs.get("output_dir", None)
+        model_measurement = self.adapter.get_cell_density(circuit)
+        data_measurement  = self.data
+
+        #compare, statistically model measurement against data measurement
+        
+
+    
+
+

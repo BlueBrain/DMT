@@ -1,0 +1,39 @@
+#Vishal Sood: 2018-03-02
+#Translated from Lidia's xlsx at Dropbox.
+#Notice that the xlsx may have moved to a centralized HBP location
+
+short_name: "DeFelipe2018"
+
+uri: "path/to/parent/directory/C57_thicknessNeun_per_layer-Feb2018.xlsx"
+
+citation: "Lidia et al. 2018 (unpublished)"
+
+what: >-
+  measurement of layer thickness, corrected for immuno, and fresh to fix
+  (ask Lidia for details)
+
+animal: "Mouse"
+
+age: "Ask Lidia"
+
+notes: >-
+  Raw measurements were multiplied by two (> 1) correction factors.
+  Ask Lidia to explain these factors.
+
+#units: um
+
+means:
+  - 122.7050
+  - 96.4912
+  - 175.8397
+  - 185.2523
+  - 362.2625
+  - 436.2220
+
+errors:
+  - 9.8136
+  - 11.5549
+  - 16.1811
+  - 29.3267
+  - 38.1273
+  - 44.5399

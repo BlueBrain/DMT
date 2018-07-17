@@ -1,0 +1,33 @@
+short_name: "AntonSanchez2014"
+
+uri: "https://www.frontiersin.org/articles/10.3389/fnana.2014.00085/full"
+citation: "De Felipe et al. (2011 unpublished).  'Synapse Densities per Layer', Unpublished."
+citation: "Anton Sanchez et al. (2014 Frontiers in neuroanatomy Volume 8)"
+doi: " https://doi.org/10.3389/fnana.2014.00085"
+what: "synaptic densities"
+animal: "wistar rat"
+brainArea: "S1 hindlimb"
+sampleSize: "various"
+age: "P14-16"
+
+# mean and std were derived from em reconstruction of tissue
+density_means:
+  - 0.794
+  - 1.1098
+  - 0.940
+  - 1.222
+  - 0.828
+  - 0.466
+
+  # a std of zero means only one observation
+  #density_stds = numpy.array([0.100247,0.249871,0.12041,0.0,0.104365,0.0])
+
+  # Give those with only 1 obsv a relative error 1.5 * avg of the others (15.2%) ->
+density_stds:
+  - 0.190
+  - 0.323
+  - 0.206
+  - 0.098
+  - 0.238
+  - 0.222
+

@@ -1,0 +1,27 @@
+short_name: "Beaulieu1992"
+uri: "http://www.ncbi.nlm.nih.gov/pubmed/8508310"
+citation: >-
+  Beaulieu (1992). Numerical data on neocortical neurons in adult rat,
+  with special reference to the GABA population
+what: "neuron densities per layer. all and GABA"
+animal: "rat"
+brainArea: "barrel cortex"
+sampleSize: "..."
+age: "adult"
+notes: "layer 2/3 lumped together, layer 6 separated in a and b"
+
+# std was derived from the data using error propagation rule for division
+ratio_means:
+  - 0.81
+  - 0.15
+  - 0.15
+  - 0.11
+  - 0.17
+  - 0.14
+ratio_stds:
+  - 0.28
+  - 0.02
+  - 0.02
+  - 0.02
+  - 0.02
+  - 0.02

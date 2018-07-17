@@ -1,0 +1,25 @@
+short_name: "Ghobril2012"
+uri: "<none>"
+citation: "J.-P. Ghobril - unpublished - 2012"
+what: "multi stain confocal images yielding inh cell fractions"
+animal: "rat"
+brainArea: "S1"
+sampleSize: "..."
+age: "~P14"
+notes: ""
+# J.P. Ghobril's data & marking, Martin Telefont's analysis
+count_all:
+  - 20000.0 #this is fictitious; layer 1 counts not provided; big to make err 0.01
+  - 78.0
+  - 252.0
+  - 211.0
+  - 267.0
+  - 388.0
+
+count_inh:
+  - 20000.0 #this is fictitious; layer 1 counts not provided; big to make err 0.01
+  - 22.0
+  - 38.0
+  - 20.0
+  - 45.0
+  - 37.0

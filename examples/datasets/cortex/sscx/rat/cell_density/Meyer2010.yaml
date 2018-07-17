@@ -1,0 +1,56 @@
+# Vishal Sood: 2017-10-09
+# We have to decide the format of the datasets used for validations.
+# Current CircuitValidations assume a YAML, which I am porting the existing
+# datasets to, from Python classes in the legacy ValidationFramework.
+
+short_name: "Meyer2010"
+uri: "http://cercor.oxfordjournals.org/content/20/10/2277.short"
+citation: >-
+  Hanno S. Meyer,
+  Verena C. Wimmer,
+  M. Oberlaender,
+  Christiaan P.J. de Kock,
+  Bert Sakmann,
+  and Moritz Helmstaedter,
+  'Number and Laminar Distribution of Neurons in a Thalamocortical Projection
+  Column of Rat Vibrissal Cortex Cereb.'
+  Cortex (2010) 20(10): 2277-2286
+  first published online June 9, 2010 doi:10.1093/cercor/bhq067
+
+what: "Cell Densities"
+brainArea: "rat somoatosensory barrel cortex"
+animal: "rat"
+age: "P27"
+notes: ""
+
+#Vishal Sood: 2017-10-09
+# the following is leftovers from the python class code in the old
+# ValidationFramework.
+#this probably, reflects how the data from the source paper was
+#translated to be used as a reference for validations
+
+#density_means = numpy.array([6.6, 86.4, 101.6, 123.9, 54.4, 59.8, 92.3, 42 ])
+#density_stds = numpy.array([2.7, 11.2, 6.5, 6.3, 4.1, 3.8, 0.9, 3.8, 1.8])
+
+#density_means = numpy.array([6.6, 86.4, 101.6, 123.9, 57.31, 73.11 ])
+#density_stds = numpy.array([2.7, 11.2, 6.5, 6.3, 4.1, 3.8])
+
+# L5: (234*54.4 + 274*59.8)/508 = 57.31
+# L6: (300*92.3 + 185*42)/485 = 73.11
+
+density_means:
+  - 6.6
+  - 86.4
+  - 101.6
+  - 123.9
+  - 57.31
+  - 73.11
+
+density_stds:
+  - 2.7
+  - 11.2
+  - 6.5
+  - 6.3
+  - 4.1
+  - 3.8
+
