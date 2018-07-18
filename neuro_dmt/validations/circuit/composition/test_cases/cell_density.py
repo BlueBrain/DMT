@@ -60,6 +60,13 @@ def reference_datasets(reference_data_dir):
 class CellDensity(ValidationTestCase):
     """CellDensity is a unit test case for validation."""
 
+    def __init__(self, reference_path, p_value_threshold=0.05):
+        """
+        Parameters
+        ----------
+        @reference_path :: DirectoryPath #to reference dataset(s)
+        """
+
     @requiredmethod
     def get_cell_density(adapter, circuit):
         """Get cell density for a circuit.
@@ -80,7 +87,18 @@ class CellDensity(ValidationTestCase):
 
         #compare, statistically model measurement against data measurement
         
+        raise NotImplementedError("Complete this implementation!!!")
 
     
+    @classmethod
+    def probability_of_validity(cls, data_measurement,
+                                model_measurement,
+                                **kwargs):
+        """What is the probability that model's measurement is valid?"""
+        from scipy_special import erf
+        from dmt.vtk.statistics import FischersPooler
+
+
+
 
 
