@@ -7,6 +7,11 @@ class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+class Record:
+    """A record, like a C-struct"""
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
 
 class FrozenDict(collections.Mapping):
     """A dictionary that cannot be changed."""

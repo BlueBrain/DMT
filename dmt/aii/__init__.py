@@ -55,6 +55,7 @@ class Interface(metaclass=InterfaceMeta):
                 )
         cls.__implementation_registry__[impl.__name__] = impl
 
+
 def requiredmethod(method):
     """To be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
@@ -114,6 +115,7 @@ def implementation_registry(an_interface):
         )
     return an_interface.__implementation_registry__
             
+
 from abc import ABCMeta, abstractmethod
 class AIMeta(ABCMeta):
     """A metaclass that will add an AdapterInterface."""
@@ -130,31 +132,31 @@ class AdapterInterfaceBase(metaclass=AIMeta):
     """A base class for classes that will declare an adapter interface."""
 
     def __init__(self, *args, **kwargs):
-        self._adapter = kwargs.get('model_adapter', None)
+        self._model_adapter = kwargs.get('model_adapter', None)
 
     AdapterInterface = None
 
     @property
-    def adapter(self):
+    def model_adapter(self):
         """The adapter implementation to be used."""
-        if self._adapter is None:
+        if self._model_adapter is None:
             raise Exception("An Adapter for {} was not set!!!"\
                             .format(self.__class__.__name__))
-        return self._adapter
+        return self._model_adapter
 
     @adapter.setter
-    def adapter(self, value):
+    def model_adapter(self, value):
         """Reset the adapter."""
-        self._adapter = value
+        self._model_adapter = value
 
     @classmethod
     def accepted_models(cls):
         """Models that this class with AdapterInterface will accept ---
         models for which at least one concrete implementation is available."""
         return set([
-            model_adapted(impl)
+            get_adapted_entity(impl)
             for impl in implementation_registry(cls.AdapterInterface).values()
-            if model_adapted(impl) is not None
+            if get_adapted_entity(impl) is not None
         ])
         
 
@@ -189,9 +191,11 @@ def get_required_methods(cls):
     return getattr(cls, '__requiredmethods__', [])
     
 #and now the implementations
-def implementation(an_interface, adapted=None):
+def implementation(an_interface, adapted_entity=None):
     """"A class decorator to declare that a class implements an interface.
-    We establish a protocol.
+    Parameters
+    ----------
+    @adapted_entity :: Adapter #of a model or a data-object
     Protocol
     --------
     A class 'cls' is an interface implementation
@@ -205,8 +209,8 @@ def implementation(an_interface, adapted=None):
         an_interface.register_implementation(cls)
         cls.__isinterfaceimplementation__ = True
         cls.__interface__ = an_interface
-        if adapted is not None:
-            cls.__adapted__ = adapted
+        if adapted_entity is not None:
+            cls.__adapted_entity__ = adapted_entity
         return cls
     return effective
 
@@ -216,12 +220,11 @@ def get_implementations(an_interface):
         raise Exception("{} is not an Interface!!!"\
                         .format(an_interface.__name__))
     return an_interface.__implementation_registry__
-
         
-def model_adapted(impl):
+def get_adapted_entity(impl):
     """Get models implemented by an implementation.
     We assume that one implementation will adapt only one model type."""
-    return getattr(impl, '__adapted__', None)
+    return getattr(impl, '__adapted_entity__', None)
 
                 
 

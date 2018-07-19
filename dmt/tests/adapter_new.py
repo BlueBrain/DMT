@@ -137,6 +137,7 @@ class IntegerModuloMathModel:
     def msub(self, x, y):
         return (x - y) % self.__n
 
+
 @implementation(TestIntegerMath.AdapterInterface, IntegerModuloMathModel)
 class TestIntegerMathModelModuleAdapter:
     """Adapt IntegerModuloMathModel for TestIntegerMath."""

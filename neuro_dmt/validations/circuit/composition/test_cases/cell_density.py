@@ -2,9 +2,13 @@
 from an experiment."""
 
 from abc import abstractmethod
+import matplotlib as pylab
 from dmt.validation.test_case import ValidationTestCase
 from dmt.aii import requiredmethod, implementation
+from dmt.vtk.utils.plotting import golden_figure
+from dmt.vtk.utils.collections import Record
 from neuro_dmt.utils.brain_region import CorticalLayer
+
 
 
 def reference_datasets(reference_data_dir):
@@ -58,13 +62,25 @@ def reference_datasets(reference_data_dir):
 
     
 class CellDensity(ValidationTestCase):
-    """CellDensity is a unit test case for validation."""
+    """CellDensity is a unit test case for validation.
+    Cell density is a spatial composition phenomenon.
+    Hence we assume that all measurements are made by region
+    in the brain, i.e., the pandas DataFrame passed around as
+    measurements must have a column labeled 'region'."""
 
-    def __init__(self, reference_path, p_value_threshold=0.05):
+    def __init__(self, reference_path,
+                 p_value_threshold=0.05,
+                 plot_customization={}):
         """
         Parameters
         ----------
         @reference_path :: DirectoryPath #to reference dataset(s)
+        @p_value_threshold :: Float
+        #plot_customization :: dict # that provides customization for a plot
+
+        TODO
+        ----------
+        Provide a default plot_customization
         """
 
     @requiredmethod
@@ -79,26 +95,48 @@ class CellDensity(ValidationTestCase):
         pandas.DataFrame["region", "mean", "std"]"""
         pass
 
+    @requiredmethod
+    def get_anatomically_ordered(adapter, data_frame):
+        """A pandas DataFrame with one column labelled 'region',
+        ordered anatomically.
+
+        MethodType
+        ----------
+        Adapter -> DataFrame -> DataFrame
+
+
+        Parameters
+        ------------
+        @adapter :: Adapter # for a model or for a data-object
+        @data_frame :: DataFrame # with the same columns as argument data_frame
+
+        Return
+        ------------
+        Anatomically ordered data-frame
+
+        Examples
+        ---------
+        If the region is CorticalDepth, the order can be 
+        ['L1', 'L2', 'L3', 'L4', 'L5', 'L6'] or its reverse.
+        """
+        pass
+
     def __call__(self, circuit, *args, **kwargs):
         """makes CellDensity a callable"""
         output_dir = kwargs.get("output_dir", None)
-        model_measurement = self.adapter.get_cell_density(circuit)
-        data_measurement  = self.data
+        model_measurement = Record(
+            label=self.model_adapter.get_label(circuit),
+            data=self.model_adapter.get_cell_density(circuit),
+        )
+        exptl_measurement = Record(
+            label=self.experimental.label,
+            data=self.experimental.data
+        )
+        validation_plot_path = self.plot_comparison([
+            Record(data=model_measurement, label=model_label)
+            Record(data=exptl_measurement, label=exptl_label)
+        ])
+        self._statistic = self.probability_of_validity(model_measurement,
+                                                       exptl_measurement)
 
-        #compare, statistically model measurement against data measurement
-        
         raise NotImplementedError("Complete this implementation!!!")
-
-    
-    @classmethod
-    def probability_of_validity(cls, data_measurement,
-                                model_measurement,
-                                **kwargs):
-        """What is the probability that model's measurement is valid?"""
-        from scipy_special import erf
-        from dmt.vtk.statistics import FischersPooler
-
-
-
-
-
