@@ -61,6 +61,13 @@ def requiredmethod(method):
     be included in that class's AdapterInterface."""
     method.__isrequiredmethod__ = True
     return method
+
+def adaptermethod(method):
+    """To be used to decorate a method of a class that must
+    be included in that class's AdapterInterface."""
+    method.__isrequiredmethod__ = True
+    method.__isadaptermethod__  = True
+    return method
     
 def is_interface(cls):
     """Is class 'cls' an interface.
@@ -72,13 +79,20 @@ def is_required_method(method):
     """Specify the protocol that a method is required by an interface."""
     return (isinstance(method, FunctionType) and
             getattr(method, '__isrequiredmethod__', False))
+
+
+def is_adapter_method(method):
+    """Specify the Protocol that an Adapter should implement a method. This
+    method will be listed in an AdapterInterface."""
+    return (isinstance(method, FunctionType) and
+            getattr(method, '__isadaptermethod__', False))
     
-def needs_interface(client_cls):
+def needs_adapter_interface(client_cls):
     """Specifies the protocol that a class specifies an interface.
-    A class that has any method with attribute '__isrequiredmethod__' set to
+    A class that has any method with attribute '__isadaptermethod__' set to
     'True' will be treated as specifying an interface.
     """
-    return any([is_required_method(getattr(client_cls, method))
+    return any([is_adapter_method(getattr(client_cls, method))
                 for method in dir(client_cls)])
                                    
 def get_interface(client_cls, name='Interface'):
@@ -86,11 +100,11 @@ def get_interface(client_cls, name='Interface'):
     Parameters
     ----------
     @client_cls :: type #the class that needs an interface."""
-    if not needs_interface(client_cls):
+    if not needs_adapter_interface(client_cls):
         return None
 
     required = {m: getattr(client_cls, m) for m in dir(client_cls)
-                if is_required_method(getattr(client_cls, m))}
+                if is_adapter_method(getattr(client_cls, m))}
     cname = client_cls.__name__
     spec = type(name, (Interface, ), required)
     spec.__requiredmethods__ = required.keys()
@@ -144,7 +158,7 @@ class AdapterInterfaceBase(metaclass=AIMeta):
                             .format(self.__class__.__name__))
         return self._model_adapter
 
-    @adapter.setter
+    @model_adapter.setter
     def model_adapter(self, value):
         """Reset the adapter."""
         self._model_adapter = value

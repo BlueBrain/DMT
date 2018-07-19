@@ -1,7 +1,7 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import requiredmethod, implementation
+from dmt.aii import adaptermethod, implementation
 from dmt.validation.test_case import ValidationTestCase
 
 
@@ -13,12 +13,12 @@ class TestIntegerMath(ValidationTestCase):
     Mark all measurements, or any other data, required from the
     model by decorator '@adapter.requires'."""
 
-    @requiredmethod
+    @adaptermethod
     def get_addition(adapter, model, x, y):
         """get addition of x and y"""
         pass
 
-    @requiredmethod
+    @adaptermethod
     def get_subtraction(adapter, model, x, y):
         """get difference of x and y"""
         pass
@@ -34,8 +34,8 @@ class TestIntegerMath(ValidationTestCase):
 
         d = other_data if other_data else self.data
 
-        addition_measurement = self.adapter.get_addition(model, d.x, d.y)
-        subtraction_measurement = self.adapter.get_subtraction(model, d.x, d.y)
+        addition_measurement = self.model_adapter.get_addition(model, d.x, d.y)
+        subtraction_measurement = self.model_adapter.get_subtraction(model, d.x, d.y)
 
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
@@ -75,7 +75,8 @@ class BadIntegerMathModel(IntegerMathModelPM):
         return x + y
 
 
-@implementation(TestIntegerMath.AdapterInterface, adapted=IntegerMathModelPM)
+@implementation(TestIntegerMath.AdapterInterface,
+                adapted_entity=IntegerMathModelPM)
 class TestIntegerMathModelPMAdapter:
     """An adapter for TestIntegerMathModel.
     Methods in the Adapter are all class method.
@@ -110,7 +111,7 @@ test_data = pd.DataFrame(dict(
 timpm = TestIntegerMath(data=test_data)
 #in which case,
 #you have to set a ValidationTestCase's adapter instance
-timpm.adapter = TestIntegerMathModelPMAdapter()
+timpm.model_adapter = TestIntegerMathModelPMAdapter()
 
 def run_test(tst, obj):
     result = tst(obj)
