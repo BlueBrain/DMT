@@ -549,6 +549,40 @@
     It might be simpler to keep caption as a string property that a concrete
     Validation should implement. However, it may be interesting to think of what
     data forms a Caption.
+** Reporting
+   Reporting is very important. In fact, a Report is what a Validation is good
+   for. The user must be able to generate a report for fully implemented
+   validation. Reporting can get arbitrarily complex ---  Imagine a study of a
+   model against a suite of experimental data. Such a study may be considered as
+   a validation report! 
+
+   In fact, it seems to me that /reporting/ is the pivot around which we can
+   explore the possibilities of a Data/Model/Test Validation framework.
+
+*** Use cases
+    We need to catalog different use cases
+     - Scientific reports ::  A study of a model against a suite of experimental
+          data, or a suite of a models against a set of experimental dataset, or
+          a suite of models against a suite of experimental datasets. Not all
+          such analyses may be considered a ~Validation~, but we can definitely
+          call them an ~Analysis~.
+     - Jupyter Notebook :: 
+   In addition to scientific papers, analysis code in a jupyter notebook could be 
+   converted into a validation report. The simplest way to do this is to ask
+   the author of a notebook to mark their classes and methods with specific
+   decorators.
+
+   Best way to find out the requirements of Jupyter Notebook to Validation is to
+   repeat one well-practiced analysis manually, /i.e./ to repeat all the logic
+   of a validation such as cell density. 
+
+*** Decorating
+    As a start, we will implement a decorator ~@reportattribute~, like 
+    ~@requiredmethod~ and ~@adaptermethod~. The problem this address is the
+    following: 
+    
+    
+   
 
 ** Aggregated Validation
    Validating a model against a single measurement is not a full validation of
@@ -622,3 +656,7 @@
    SCHEDULED: <2018-07-09 Mon>
    
   
+** TODO think about an Analysis --- more general, 
+   SCHEDULED: <2018-07-20 Fri>
+   ~class Analysis~ encompasses any study of models and data. 
+   or may be even a ~class Study~

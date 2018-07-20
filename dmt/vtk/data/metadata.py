@@ -5,7 +5,7 @@ class ReferenceMetaData:
     """Metadata for a validation's reference data.
     One dataset should have one metadata associated with it."""
 
-    def __init__(self, short_name, uri, citation, what):
+    def __init__(self, short_name, uri="", citation="", what=""):
         """
         Parameters
         ----------
@@ -47,6 +47,3 @@ class ReferenceMetaData:
     @property
     def description(self):
         return _description
-
-
-def reference_metadata(reference):

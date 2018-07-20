@@ -4,16 +4,16 @@ from abc import ABC, abstractmethod
 from Cheetah.Template import Template
 
 class Report(ABC):
-    """A report!
-    Report will be an data-entity that contains data about the results of a
-    validation.
-    
+    """
+    Report is a data-entity that contains data about the results of a validation
+    ----------------------------------------------------------------------------
     Status
-    ---------
+    ----------------------------------------------------------------------------
     Prototype. We develop it inside neuro_dmt, learning what we need by coding
     circuit composition validations. Once we have a version that we can test,
     will move it into dmt.
-    ---------"""
+    ----------------------------------------------------------------------------
+    """
 
     @abstractmethod
     @property
@@ -25,16 +25,67 @@ class Report(ABC):
     @abstractmethod
     @property
     def caption(self):
-        """Caption will be displayed under the image. Caption should describe
+        """
+        Caption will be displayed under the image. Caption should describe
         the validation, and include information about the validation data, the
         model, describing how the measurement was made in the experiment, and
-        the model, and the statistical validation method."""
+        the model, and the statistical validation method.
+        ------------------------------------------------------------------------
+        """
+        pass
+
+    @abstractmethod
+    @property
+    def datasets(self):
+        """
+        This method makes sense for a 'multi-validation', in which more than one
+        one reference datasets are used.
+        ------------------------------------------------------------------------
+        """
+        pass
+
+    @abstractmethod
+    @property
+    def p_value(self):
+        """
+        p-value resulting from the validation's statistical test.
+        ------------------------------------------------------------------------
+        """
+        pass
+
+    @abstractmethod
+    @property
+    def is_pass(self):
+        """
+        Did the model pass the validation?
+        ------------------------------------------------------------------------
+        """
+        pass
+
+    @abstractmethod
+    @property
+    def author(self):
+        """
+        Author of the validation. The author should be the person who runs
+        the validation to get a physical (i.e. stored on the disk, or displayed
+        on the screen) report.
+        ------------------------------------------------------------------------
+        Implementation Notes
+        ------------------------------------------------------------------------
+        You may use a string, or dmt.vtk.author.Author, or even implement
+        your own type. The only requirement is that that you define a method
+        __repr__() returning a string.
+        ------------------------------------------------------------------------
+        """
+        pass
+
+    
 
 
 
 def save_report(report, output_path):
     """Save template.e report on the disk.
-    Parametemplate.rs
+    Parameters
     ----------
     @report :: Report # containing relevant attributes
     @output_path :: File in which the report is to be saved.
