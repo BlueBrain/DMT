@@ -375,113 +375,114 @@
 * Requirements
   Validation is about DMT: Data, Models, and Tests
 
-  We will attack the problem from both ends: a data, model, and test (validation)
-  collaboration framework for the general quantitative scientific endeavors, and
-  the other end of the use-case of validating the BBP brain region circuit.
+** Introductiom
 
-  - General guidelines ::
-       While developing, we should follow the rough guidelines of
-       1. do not over-specify
-       2. couple components loosely
-       3. leave enough documentation, and expressive code
+   We will attack the problem from both ends: a data, model, and test (validation)
+   collaboration framework for the general quantitative scientific endeavors, and
+   the other end of the use-case of validating the BBP brain region circuit.
+   
+   - General guidelines ::
+        While developing, we should follow the rough guidelines of
+        1. do not over-specify
+        2. couple components loosely
+        3. leave enough documentation, and expressive code
   
   
-  We will use cell density as a guiding example.
-  We know the mathematical definition of cell density. As we consider that
-  definition, we can also see how open-ended it is. For a spatially extended
-  system, you can measure a field like quantity, such as a cell density, in
-  what ever which way you want. In the particular case of the cerebral cortex,
-  you may want cell density at the center of each layer, or computed across the
-  whole layer, or sampled in small boxes spread across a layer to asses the
-  spatial fluctuations in the cell density. You may even decide that there is
-  nothing sacrosanct about the layers --- you can decide to look at density as
-  a function of the cortical depth. It is easy to imagine yourself as a real
-  experimental neuroscientist and performing this experiments in the wet. Once
-  again, the different ways to compute cell density at a given location remain
-  the same as those in each layer.
+   We will use cell density as a guiding example.
+   We know the mathematical definition of cell density. As we consider that
+   definition, we can also see how open-ended it is. For a spatially extended
+   system, you can measure a field like quantity, such as a cell density, in
+   what ever which way you want. In the particular case of the cerebral cortex,
+   you may want cell density at the center of each layer, or computed across the
+   whole layer, or sampled in small boxes spread across a layer to asses the
+   spatial fluctuations in the cell density. You may even decide that there is
+   nothing sacrosanct about the layers --- you can decide to look at density as
+   a function of the cortical depth. It is easy to imagine yourself as a real
+   experimental neuroscientist and performing this experiments in the wet. Once
+   again, the different ways to compute cell density at a given location remain
+   the same as those in each layer.
 
-  So there are many possible ways to compute cell density. However each one of
-  them will measure cell density --- they are all methods to measure the same
-  phenomenon. So we have it: *CellDensity* is a *Phenomenon*. We can define
-  *Phenomenon* as a record:
-  #+begin_src haskell
-  data Phenomenon = Phenomenon { name :: String
-                               , label :: String
-                               , description :: String}
-  #+end_src
+   So there are many possible ways to compute cell density. However each one of
+   them will measure cell density --- they are all methods to measure the same
+   phenomenon. So we have it: *CellDensity* is a *Phenomenon*. We can define
+   *Phenomenon* as a record:
+   #+begin_src haskell
+   data Phenomenon = Phenomenon { name :: String
+                                , label :: String
+                                , description :: String}
+   #+end_src
 
-  Along with (total) cell density, consider the inhibitory cell density. So,
-  instead of all cells, you count only inter-neurons in your /simulated/ wet
-  experiments. The phenomenon being measured now is *InhibitorCellDensity*.
-  However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
-  the same *Quantity*. The exact form of this *Quantity* will depend on the
-  measurement method, and whether measurement method was statistical. However,
-  the underlying physical dimensions of the two phenomena is the same: [Count /
-  Volume], count per unit volume.
+   Along with (total) cell density, consider the inhibitory cell density. So,
+   instead of all cells, you count only inter-neurons in your /simulated/ wet
+   experiments. The phenomenon being measured now is *InhibitorCellDensity*.
+   However, both *CellDensity* and *InhibitorCellDensity* can be quantified by
+   the same *Quantity*. The exact form of this *Quantity* will depend on the
+   measurement method, and whether measurement method was statistical. However,
+   the underlying physical dimensions of the two phenomena is the same: [Count /
+   Volume], count per unit volume.
 
-  A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
-  CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
-  either be a model, or a data-object), and the *Quantity* that resulted from
-  measuring the /system/.
+   A *Measurement* is a /record/ of the *Phenomenon* (that can distinguish
+   CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
+   either be a model, or a data-object), and the *Quantity* that resulted from
+   measuring the /system/.
   
-  #+begin_src haskell
-  type MagnitudeType
+   #+begin_src haskell
+   type MagnitudeType
   
-  data Quantity =  Quantity { unit :: Unit
-                            , magnitude :: MagnitudeType }
+   data Quantity =  Quantity { unit :: Unit
+                             , magnitude :: MagnitudeType }
 
-  data Measurement = Measurement { phenomenon :: Phenomenon
-                                 , system :: MeasurableSystem
-                                 , quantity :: Quantity }
+   data Measurement = Measurement { phenomenon :: Phenomenon
+                                  , system :: MeasurableSystem
+                                  , quantity :: Quantity }
 
-  #+end_src
+   #+end_src
 
-  I have abused my incompetence in Haskell syntax. What I want to say is
-  that *Quantity* is a generic type, parameterized by the type of it's
-  magnitude. Normally you would assume that the type of a quantity's magnitude
-  should be a floating point number. However that would severely  limit it's
-  use in our work. So we have to accommodate all the different /quantities/
-  that the different possible methods of measuring a cell density into a
-  generic type parameter. Luckily in Python we can pretend that all of them are
-  ducks, a duck is a duck so is a stack of ducks. All we have to ensure that
-  the ~class Quantity~ quacks. Defining *Quantity* in C++ should also be simple
-  --- after all C++ meta-programming is duck typing at static compilation time.
-  Haskell should be a challenge --- but not too hard --- just gotta find out
-  what the syntax is. In any case ...
+   I have abused my incompetence in Haskell syntax. What I want to say is
+   that *Quantity* is a generic type, parameterized by the type of it's
+   magnitude. Normally you would assume that the type of a quantity's magnitude
+   should be a floating point number. However that would severely  limit it's
+   use in our work. So we have to accommodate all the different /quantities/
+   that the different possible methods of measuring a cell density into a
+   generic type parameter. Luckily in Python we can pretend that all of them are
+   ducks, a duck is a duck so is a stack of ducks. All we have to ensure that
+   the ~class Quantity~ quacks. Defining *Quantity* in C++ should also be simple
+   --- after all C++ meta-programming is duck typing at static compilation time.
+   Haskell should be a challenge --- but not too hard --- just gotta find out
+   what the syntax is. In any case ...
 
-  Getting back to *Phenomenon*, and the example of two /circuit composition/
-  *Phenomenon*  we can also see the utility of a domain specific *Phenomenon*
-  hierarchy. We are stepping into the territory of ontology, which may be worth
-  it we manage to keep it simple. We can implement this hierarchy for the domain
-  --- so keeping *Phenomenon* abstract may be sensible. The class hierarchy of
-  the domain's *Phenomenon*s can be used to structure a class hierarchy of a
-  group of validations.
-
-  Remember that one of our aims is to leverage Python's provided libraries
-  (especially Abstract Base Classes) to build features that may be useful in a
-  collaborative effort to define validations against data, that may be applied
-  to different model types. Keeping that in mind, here are some big questions
-
-  1. Who should determine the method of measuring the cell density?
-     The comparing (validating, judging, testing) method would call that
-     method on the provided ~model~ argument --- it's absence should display a
-     nice explanatory message that such and such method needs to be implemented
-     by the model adapter ... 
-     So, the validation has to assume that a certain method is available on the
-     ~model~ parameter. It is this /assumption/ that we need to express in an
-     abstract base class. The writer of validation will have to write such a
-     class. 
-  2. Can we expect our average user to be able to write Python abstract
+   Getting back to *Phenomenon*, and the example of two /circuit composition/
+   *Phenomenon*  we can also see the utility of a domain specific *Phenomenon*
+   hierarchy. We are stepping into the territory of ontology, which may be worth
+   it we manage to keep it simple. We can implement this hierarchy for the domain
+   --- so keeping *Phenomenon* abstract may be sensible. The class hierarchy of
+   the domain's *Phenomenon*s can be used to structure a class hierarchy of a
+   group of validations.
+   
+   Remember that one of our aims is to leverage Python's provided libraries
+   (especially Abstract Base Classes) to build features that may be useful in a
+   collaborative effort to define validations against data, that may be applied
+   to different model types. Keeping that in mind, here are some big questions
+   
+   1. Who should determine the method of measuring the cell density?
+      The comparing (validating, judging, testing) method would call that
+      method on the provided ~model~ argument --- it's absence should display a
+      nice explanatory message that such and such method needs to be implemented
+      by the model adapter ... 
+      So, the validation has to assume that a certain method is available on the
+      ~model~ parameter. It is this /assumption/ that we need to express in an
+      abstract base class. The writer of validation will have to write such a
+      class. 
+   2. Can we expect our average user to be able to write Python abstract
      classes? Probably not.
      So we need to provide a /front-end/ simple Python way of writing a Python
      abstract base class. On the back-end such code should become ABC's.
      We cannot solve all problems at the same time, neither can we think and
      plan for each desired feature. So we should take the first step --- and
      write the validations ourselves with ABC's.
-      
-  3. How should we organize circuit validations, and adapter models?
+     
+   3. How should we organize circuit validations, and adapter models?
 
-  
 ** Three parties
    Our validation framework has three dimensions and hence three different types
    of user-roles. Of course the same user can play all three users.
@@ -512,7 +513,7 @@
         methods, the algorithm, and the programmatic logic. The code of a
         validation must clearly describe its data / model requirements.
    - Validating interactively ::
-        A validation in context of a specific pair of model and data. This 
+        A validation in context of a specific pair of model and data. This
         should be mostly automated, however we can provide some options. For
         example, the user may want to interactively generate data from a model.
         In an /interactive validation/ the user should be allowed to process the
@@ -524,7 +525,7 @@
         Interactive validation should be particularly useful when models are
         simple and can be run in up to a few minutes ---  for example in a MOOC
         exercise.
-   -  Validation as data :: 
+   -  Validation as data ::
         Running a validation must result in a report that should tell us if the
         validation was successful, and explain the scientific motivation,
         statistical methodology, as well as the algorithmic details. The report
@@ -538,6 +539,9 @@
 *** Author
     Author's name, affiliation, basic / simple things.
     As a collaboration platform, we could use ~Author~ as a synonym for ~User~.
+    
+    1. Every entity that needs to be implemented by the user must have an Author.
+
 *** Citation
     We can use ~Citation~ to store references --- we can leverage any available
     library for these purposes --- some Python classes for bibtex.
@@ -545,7 +549,7 @@
     It might be simpler to keep caption as a string property that a concrete
     Validation should implement. However, it may be interesting to think of what
     data forms a Caption.
-  
+
 ** Aggregated Validation
    Validating a model against a single measurement is not a full validation of
    the model. In fact, a model can never be fully validated. Validation of a 
@@ -577,7 +581,6 @@
 
     
 
-   
 ** Kinds of Judges
    Or course a Judge should be as objective as possible --- a program if at all
    possible. If not, and this might be the case quite often, human eyeballs. We

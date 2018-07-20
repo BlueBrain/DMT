@@ -6,6 +6,7 @@ against. The initializer of ValidationTestCase will accept a data object.
 
 from abc import abstractmethod
 from dmt.aii import AdapterInterfaceBase
+from dmt.vtk.author import Author
 
 class ValidationTestCase(AdapterInterfaceBase):
     """A validation test case.
@@ -16,6 +17,8 @@ class ValidationTestCase(AdapterInterfaceBase):
     with decorator '@adapter.requires', and use them like this,
     'measurement_data = self.get_measurement_data(model, parameters)'.
     """
+
+    author = Author.anonymous
 
     def __init__(self, *args, **kwargs):
         """

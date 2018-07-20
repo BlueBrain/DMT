@@ -8,6 +8,7 @@ model, the user must provide an adapter implmentation."""
 
 from types import FunctionType
 from abc import ABC, abstractmethod
+from dmt.vtk.author import Author
 
 class InterfaceMeta(type):
     """A metaclass to be used to create Interfaces!
@@ -220,6 +221,13 @@ def implementation(an_interface, adapted_entity=None):
 
     def effective(cls):
         """Effective class"""
+        if not hasattr(cls, 'author'):
+            #ISSUE A WARNING HERE with the following message
+            print("Interface {} implementation {} should attribute its author"\
+                  .format(an_interface.__name__, cls.__name__))
+            cls.author = Author.anonymous
+            print("Here we will assume that the author is Anonymous\n",
+                  cls.author)
         an_interface.register_implementation(cls)
         cls.__isinterfaceimplementation__ = True
         cls.__interface__ = an_interface

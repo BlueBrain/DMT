@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from dmt.aii import adaptermethod, implementation
 from dmt.validation.test_case import ValidationTestCase
+from dmt.vtk.author import Author
 
 
 class TestIntegerMath(ValidationTestCase):
@@ -13,6 +14,9 @@ class TestIntegerMath(ValidationTestCase):
     Mark all measurements, or any other data, required from the
     model by decorator '@adapter.requires'."""
 
+    author = Author(name="Vishal Sood",
+                    affiliation="EPFL",
+                    user_id=1)
     @adaptermethod
     def get_addition(adapter, model, x, y):
         """get addition of x and y"""
@@ -40,7 +44,8 @@ class TestIntegerMath(ValidationTestCase):
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
                 else 'FAIL')
-   
+
+print("Validation TestIntegerMath authored by ", TestIntegerMath.author)
    
 #here is an example of how to use ABC's as interfaces
 class IntegerMathModelPM(ABC):
