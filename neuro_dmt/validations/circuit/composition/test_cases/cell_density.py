@@ -8,6 +8,8 @@ from dmt.aii import requiredmethod, implementation
 from dmt.vtk.utils.plotting import golden_figure
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.utils.brain_region import CorticalLayer
+import neuro_dmt.validations.circuit.composition.\
+    layer_composition as LayerComposition
 
 
 
@@ -83,7 +85,7 @@ class CellDensity(ValidationTestCase):
         Provide a default plot_customization
         """
 
-    @requiredmethod
+    @adaptermethod
     def get_cell_density(adapter, circuit):
         """Get cell density for a circuit.
         Parameters
@@ -95,7 +97,7 @@ class CellDensity(ValidationTestCase):
         pandas.DataFrame["region", "mean", "std"]"""
         pass
 
-    @requiredmethod
+    @adaptermethod
     def get_anatomically_ordered(adapter, data_frame):
         """A pandas DataFrame with one column labelled 'region',
         ordered anatomically.
@@ -121,9 +123,12 @@ class CellDensity(ValidationTestCase):
         """
         pass
 
+    @abstractmethod
+    def process_report(self, report):
+        """Process a report."""
+
     def __call__(self, circuit, *args, **kwargs):
         """makes CellDensity a callable"""
-        output_dir = kwargs.get("output_dir", None)
         model_measurement = Record(
             label=self.model_adapter.get_label(circuit),
             data=self.model_adapter.get_cell_density(circuit),
@@ -132,11 +137,14 @@ class CellDensity(ValidationTestCase):
             label=self.experimental.label,
             data=self.experimental.data
         )
-        validation_plot_path = self.plot_comparison([
+        validation_plot_path = LayerComposition.plot_comparison([
             Record(data=model_measurement, label=model_label)
-            Record(data=exptl_measurement, label=exptl_label)
+            Record(data=exptl_measurement, label=exptl_label),
+            title="Cell Density",
+            output_dir_path=kwargs.get("output_dir", None)
         ])
-        self._statistic = self.probability_of_validity(model_measurement,
+        self._statistic\
+            = LayerComposition.probability_of_validity(model_measurement,
                                                        exptl_measurement)
-
-        raise NotImplementedError("Complete this implementation!!!")
+        report = Report(...)
+        self.process_report(report)

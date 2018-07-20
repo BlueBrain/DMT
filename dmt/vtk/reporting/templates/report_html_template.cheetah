@@ -1,0 +1,37 @@
+<html>
+<body>
+
+
+<h1>Comparison against data</h1>
+
+<img src="$image_path" alt="report.png"/> 
+<br>
+<p>$caption</p>
+
+<h1>Datasets</h1>
+
+<ul>
+#for $k, $d in $datasets.iteritems()
+<li><a href="$d.url">[$d.short_name]</a> -$d.citation<br>
+<p>
+<i>$d.what</i>
+</p>
+</li>
+#end for
+</ul>
+
+<h1>Status</h1>
+
+<p>
+#if $is_pass:
+<font color="#00FF00">passed</font>
+#else
+<font color="#FF0000">failed</font>
+#end if
+<br>
+P value: p=$p_value
+</p>
+
+
+</body>
+</html> 
