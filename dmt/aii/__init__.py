@@ -221,15 +221,25 @@ def get_required_methods(cls):
     return getattr(cls, '__requiredmethods__', [])
     
 #and now the implementations
-def interface_implementation(an_interface, adapted_entity=None):
-    """"A class decorator to declare that a class implements an interface.
+#def interface_implementation(an_interface):
+def implementation(an_interface,
+                   adapted_entity=None,
+                   reported_entity=None):
+    """A class decorator to declare that a class implements an interface, which
+    may either adapt a Model or Data-object to a Validation, or may implement a
+    reporter class.
+    ---------------------------------------------------------------------------
     Parameters
-    ----------
-    @adapted_entity :: Adapter #of a model or a data-object
+    ---------------------------------------------------------------------------
+    @an_interface :: Interface# mostly generated with an appropriate decorator
+    @adapted_entity :: MeasurableSystem# model / data that was adapted
+    @reported_entity :: Analysis #in most cases that I can think of!
+    ---------------------------------------------------------------------------
     Protocol
-    --------
+    ---------------------------------------------------------------------------
     A class 'cls' is an interface implementation
     if cls.__isinterfaceimplementation__ == True
+    ---------------------------------------------------------------------------
     """
     if not issubclass(an_interface, Interface):
         raise Exception("{} is not an Interface".format(an_interface.__name__))
@@ -246,21 +256,17 @@ def interface_implementation(an_interface, adapted_entity=None):
         an_interface.register_implementation(cls)
         cls.__isinterfaceimplementation__ = True
         cls.__interface__ = an_interface
+        if adapted_entity is not None and reported_entity is not None:
+            raise ValueError("""
+            Only one of 'adapted_entity', 'reported_entity'
+            may be passed as an argument!!!
+            """)
         if adapted_entity is not None:
             cls.__adapted_entity__ = adapted_entity
+        if reported_entity is not None:
+            cls.__reported_entity__ = reported_entity
         return cls
     return effective
-
-def adapter_implementation(an_interface, adapted_entity=None):
-    """Class decorator to declare that class implements a model / data
-    adapter for the given interface.
-    ---------------------------------------------------------------------------
-    Parameters
-    ---------------------------------------------------------------------------
-    @an_interface :: Interface# mostly generated with decorator '@adaptermethod' 
-    @adapted_entity :: MeasurableSystem# model / data that was adapted
-    ---------------------------------------------------------------------------
-    """
 
 def get_implementations(an_interface):
     """all the implementations"""
