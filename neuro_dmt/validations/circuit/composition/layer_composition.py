@@ -1,4 +1,5 @@
 """Utilities for circuit composition by layer."""
+from pathlib import Path
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 def probability_of_validity(real_measurement, model_measurement):
@@ -119,3 +120,78 @@ def plot_comparison(plotting_datas, **kwargs):
         return output_file_path
     else:
         return None
+
+def save_report(report,
+                path_to_templates,
+                template_name='report_html_template.cheetah',
+                entry_template_name='entry_html_template.cheetah',
+                output_path):
+    """Save a validation report to the disk.
+    Parameters
+    ----------------------------------------------------------------------------
+    @report :: Report # containing relevant attributes
+    @output_path :: File in which the report is to be saved.
+    ----------------------------------------------------------------------------
+    Return
+    ----------------------------------------------------------------------------
+    A Cheetah template that can be saved to the disk.
+    ----------------------------------------------------------------------------
+    Implementation Note
+    ----------------------------------------------------------------------------
+    We include this 'save_report' method here ---- so far this is the only
+    reporting method we have, and the only template that this function uses.
+    We will provide tools to assist the user to create their own templates, and
+    reporting styles, that they can then share.
+    """
+
+
+    template_dir = Path(path_to_templates)
+    if not template_dir.is_dir():
+        raise Exception("""Not a directory 'template_path'.
+        Provide a valid path to the directory where the Cheetah Templates lie.
+        """)
+
+    template_file = Path(path_to_templates, template_name)
+
+    if not template_file.is_file():
+        raise Exception(
+            "Not Found Required file {} in the indicated directory {}"\
+            .format(template_name, template_dir)
+        )
+            
+
+    template_str = file(os.path.join(path_to_templates, template_name)).read()
+    template = Template(template_str)
+    template.image_path = report.validation_image_path
+    template.caption = report.caption
+    template.datasets = {label: data.metadata,
+                         for label, data in report.datasetes.iteritems()}
+    template.p_value = report.p_value
+    template.is_pass = report.is_pass
+    template.name = report.name
+    template.author = report.author
+
+    print("Saving {}".format(output_path))
+
+    with open(output_path, 'w') as f:
+        f.write.(str(template))
+
+    entry_template_str = """<tr>
+    <td><a href="$uri">$name</a></td>
+    #if $is_pass:
+    <td><font color="#00FF00">passed</font></td>
+    #else
+    <template.><font color="#FF0000">failed</font></td>
+    #end if
+    <td>p=$p_value</td>
+    <td>$author</td>
+    </td>"""
+    entry_template = Template(entry_template_str)
+    entry_template.uri = report.name + 'report.html'
+    entry_template.p_value = report.p_value
+    entry_template.is_pass = report.is_pass
+    entry_template.name = report.name
+    entry_template.author = str(report.author)
+
+    return str(entry_template)
+

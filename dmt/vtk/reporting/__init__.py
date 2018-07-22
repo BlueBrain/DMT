@@ -84,7 +84,7 @@ class Report(ABC):
 
 
 def save_report(report, output_path):
-    """Save template.e report on the disk.
+    """Save report on the disk.
     Parameters
     ----------
     @report :: Report # containing relevant attributes

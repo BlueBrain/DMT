@@ -126,6 +126,7 @@ class CellDensity(ValidationTestCase):
     @abstractmethod
     def process_report(self, report):
         """Process a report."""
+        pass
 
     def __call__(self, circuit, *args, **kwargs):
         """makes CellDensity a callable"""
@@ -137,14 +138,15 @@ class CellDensity(ValidationTestCase):
             label=self.experimental.label,
             data=self.experimental.data
         )
-        validation_plot_path = LayerComposition.plot_comparison([
-            Record(data=model_measurement, label=model_label)
-            Record(data=exptl_measurement, label=exptl_label),
+        validation_plot_path = LayerComposition.plot_comparison(
+            [model_measurement, exptl_measurement],
             title="Cell Density",
             output_dir_path=kwargs.get("output_dir", None)
-        ])
+        )
         self._statistic\
-            = LayerComposition.probability_of_validity(model_measurement,
-                                                       exptl_measurement)
+            = LayerComposition.probability_of_validity(
+                model_measurement,
+                exptl_measurement
+            )
         report = Report(...)
         self.process_report(report)
