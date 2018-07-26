@@ -122,10 +122,10 @@ def plot_comparison(plotting_datas, **kwargs):
         return None
 
 def save_report(report,
-                path_to_templates,
-                template_name='report_html_template.cheetah',
-                entry_template_name='entry_html_template.cheetah',
-                output_path):
+                template_dir_name,
+                template_file_name='report_html_template.cheetah',
+                entry_template_file_name=None, #'entry_html_template.cheetah',
+                output_path=None):
     """Save a validation report to the disk.
     Parameters
     ----------------------------------------------------------------------------
@@ -145,23 +145,29 @@ def save_report(report,
     """
 
 
-    template_dir = Path(path_to_templates)
+    template_dir = Path(template_dir_name)
     if not template_dir.is_dir():
         raise Exception("""Not a directory 'template_path'.
         Provide a valid path to the directory where the Cheetah Templates lie.
         """)
 
-    template_file = Path(path_to_templates, template_name)
+    template_file = Path(template_dir_name, template_file_name)
 
     if not template_file.is_file():
         raise Exception(
             "Not Found Required file {} in the indicated directory {}"\
-            .format(template_name, template_dir)
+            .format(template_file_name, template_dir_name)
         )
             
+    with open(template_file, 'r') as file:
+        template_str = file.read()
 
-    template_str = file(os.path.join(path_to_templates, template_name)).read()
-    template = Template(template_str)
+    try:
+        template = Template(template_str)
+    except:
+        raise Exception("Could not load template from file {}"\
+                        .format(template_file))
+
     template.image_path = report.validation_image_path
     template.caption = report.caption
     template.datasets = {label: data.metadata,

@@ -21,20 +21,48 @@ class ValidationTestCase(AdapterInterfaceBase):
     author = Author.anonymous
 
     def __init__(self, *args, **kwargs):
+        """A validation test case can be initialized either with a validation
+        data set, or the directory location of a validation data set, or none,
+        but not both.
         """
-        """
-        self.__data = kwargs.get('data', None)
-        super(ValidationTestCase, self).__init__(self, *args, **kwargs)
-            
+        self.__validation_data = kwargs.get('validation_data', None)
+        if (self.__validation_data is None and
+            'validation_data_location' in kwargs):
+            if not hasattr(self, '_load_validation_data'):
+                raise NotImplementedError(
+                    "To load data from a directory location\
+                    you must implement method '_load_validation_data' for {}"\
+                    .format(self.__class__.__name__)
+                )
+            self.__validation_data\
+                = self._load_validation_data(kwargs['validation_data_location'])
+
+        super(ValidationTestCase, self).__init__(*args, **kwargs)
 
     @property
-    def data(self):
-        """Data stored to validate a model against.
-        However, you are allowed to create a validation without data!!!"""
-        if self.__data is None:
-            raise Exception("Validation test case {} does not use data"\
+    def validation_data(self):
+        """Data to validate a model against.
+        However, you are allowed to create a validation without data!!!
+        ------------------------------------------------------------------------
+        Notes
+        ------------------------------------------------------------------------
+        We talk of validation being against real data.
+        ------------------------------------------------------------------------
+        """
+        if self.__validation_data is None:
+            raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
-        return self.__data
+        return self.__validation_data
+
+    @property
+    def reference_data(self):
+        """Another term for validation data."""
+        return self.validation_data
+
+    @property
+    def test_data(self):
+        """Another term for validation data."""
+        return self.validation_data
 
     @abstractmethod
     def __call__(self, *args, **kwargs):

@@ -71,16 +71,16 @@
    Wikipedia has a very interesting article on [[https://en.wikipedia.org/wiki/Simulation][Simulation]]. Don't forget to read
    it!
 
-** Validation as /an as objective definition of simulation as it is possible/.
+** Validation as an /as objective definition of simulation as possible/.
    To figure out reality from simulation, you should know that simulation is the
    imitation. So if you can tell the imitation from reality, you know which one
    is the simulation. This has been a common science-fiction theme. 
 
-   The solution is to test, in reality and the imitation --- test under as
-   similar circumstances as possible. The smaller the difference, harder it is
-   to tell simulation from reality. So, from a machine's perspective we can only
-   tell if the two are the same or different. The machine may as well be biased
-   that the simulation is in fact the reality because both phenomena of
+   The solution is to test, imitation against reality --- under as
+   similar circumstances as possible. The smaller the difference, the harder it 
+   is to tell simulation from reality. So, from a machine's perspective we can 
+   only tell if the two are the same or different. The machine may as well be 
+   biased that the simulation is in fact the reality because both phenomena of
    validation and simulation happen /in-silico/. So be it, it does not matter.
    All we want to find out is if the two are the same or not.
    
@@ -89,13 +89,10 @@
    quantitative measure of the /amount/ of validation. 
  
    Provided with a prior about which one is reality, the machine can then
-   compute the max-apriori probability of reality /versus/ simulation.
+   compute the max-apriori probability of simulation /versus/ reality.
 
    While that happens, we have what we really want --- and that is a
-   quantitative definition of validation, even if it is implicit and a bit
-   mystical. 
-
-  
+   quantitative definition of validation, even if it is implicit.
 
 
   We may not be sure about what a model is, but we do understand what we are
@@ -131,7 +128,7 @@
   scientific world, it is fairly straightforward, if not easy, to build a model.
   There is no dearth of models, especially in lieu of the observation that all
   models are wrong. The hard part is to make models that are useful. One
-  pre-condition for models to be correct is that they be validated against
+  pre-condition for models to be useful is that they be validated against
   reality. This hard task of validating models is made worse by the difficulty
   of obtaining relevant data, or even complete lack of it. The relevant data
   gathered from real systems is necessary to tune model parameters, as well as

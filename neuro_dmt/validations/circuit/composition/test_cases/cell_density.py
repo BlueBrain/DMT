@@ -1,19 +1,18 @@
 """Test if the cell density of a model circuit is close to that obtained
 from an experiment."""
 
-from abc import abstractmethod
+import os
 import matplotlib as pylab
 from dmt.validation.test_case import ValidationTestCase
 from dmt.aii import requiredmethod, implementation
 from dmt.vtk.utils.plotting import golden_figure
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.utils.brain_region import CorticalLayer
-import neuro_dmt.validations.circuit.composition.\
-    layer_composition as LayerComposition
+import neuro_dmt.validations.circuit.composition.by_layer as LayerComposition
 
 
 
-def reference_datasets(reference_data_dir):
+def get_reference_datasets(reference_data_dir):
     """Available reference data to be used to validate cell density."""
     import dmt.vtk.datasets as datasets
     import numpy as np
@@ -123,13 +122,17 @@ class CellDensity(ValidationTestCase):
         """
         pass
 
-    @abstractmethod
-    def process_report(self, report):
-        """Process a report."""
-        pass
-
     def __call__(self, circuit, *args, **kwargs):
-        """makes CellDensity a callable"""
+        """Make CellDensity a callable"""
+
+        template_dir_name = kwargs.get(
+            'template_dir_name', os.path.dirname(LayerComposition.__file__)
+        )
+        template_file_name = kwargs.get(
+            'template_file_name', 'report_html_template.cheetah'
+        )
+        output_dir = kwargs.get('output_dir', os.getcwd())
+
         model_measurement = Record(
             label=self.model_adapter.get_label(circuit),
             data=self.model_adapter.get_cell_density(circuit),
@@ -149,4 +152,7 @@ class CellDensity(ValidationTestCase):
                 exptl_measurement
             )
         report = Report(...)
-        self.process_report(report)
+        LayerComposition.save_report(report,
+                                     template_dir_name,
+                                     template_file_name,
+                                     output_path=)

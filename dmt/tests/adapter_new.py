@@ -27,7 +27,7 @@ class TestIntegerMath(ValidationTestCase):
         """get difference of x and y"""
         pass
 
-    def __call__(self, model, other_data=None):
+    def __call__(self, model, other_validation_data=None):
         """Method that each ValidationTestCase must implement.
         Parameters
         ----------
@@ -36,10 +36,13 @@ class TestIntegerMath(ValidationTestCase):
         be used internally to define an interface. The user of this validation
         test case will have to implement the resulting adapter interface."""
 
-        d = other_data if other_data else self.data
+        d = other_validation_data if other_validation_data\
+            else self.validation_data
 
-        addition_measurement = self.model_adapter.get_addition(model, d.x, d.y)
-        subtraction_measurement = self.model_adapter.get_subtraction(model, d.x, d.y)
+        addition_measurement\
+            = self.model_adapter.get_addition(model, d.x, d.y)
+        subtraction_measurement\
+            = self.model_adapter.get_subtraction(model, d.x, d.y)
 
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
@@ -113,7 +116,7 @@ test_data = pd.DataFrame(dict(
 ))
 
 #model adapter need not be an input 
-timpm = TestIntegerMath(data=test_data)
+timpm = TestIntegerMath(validation_data=test_data)
 #in which case,
 #you have to set a ValidationTestCase's adapter instance
 timpm.model_adapter = TestIntegerMathModelPMAdapter()
@@ -155,7 +158,7 @@ class TestIntegerMathModelModuleAdapter:
     def get_subtraction(cls, model, x, y):
         return model.msub(x, y)
 
-timmodulo = TestIntegerMath(data=test_data,
+timmodulo = TestIntegerMath(validation_data=test_data,
                             model_adapter=TestIntegerMathModelModuleAdapter())
 
 run_test(timmodulo, IntegerModuloMathModel(1))
