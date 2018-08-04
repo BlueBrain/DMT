@@ -9,9 +9,10 @@ class Verdict(Enum):
     """an enumeration that lists all possible values
     of a Validation's verdict"""
 
-    FAIL = -1
-    UNDECIDED = 0
-    PASS = 1
+    NA = 0
+    FAIL = 1
+    INCONCLUSIVE = 2
+    PASS = 3
 
 
 

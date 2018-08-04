@@ -16,6 +16,10 @@ class ValidationTestCase(AdapterInterfaceBase):
     Mark all model measurements that validation needs
     with decorator '@adapter.requires', and use them like this,
     'measurement_data = self.get_measurement_data(model, parameters)'.
+
+    Attributes
+    ----------------------------------------------------------------------------
+    author :: Author #The author of this validation
     """
 
     author = Author.anonymous

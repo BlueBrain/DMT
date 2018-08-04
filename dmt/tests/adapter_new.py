@@ -1,4 +1,3 @@
-
 from abc import ABC, abstractmethod
 import pandas as pd
 from dmt.aii import adaptermethod, implementation
@@ -47,6 +46,7 @@ class TestIntegerMath(ValidationTestCase):
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
                 else 'FAIL')
+
 
 print("Validation TestIntegerMath authored by ", TestIntegerMath.author)
    
@@ -162,6 +162,7 @@ timmodulo = TestIntegerMath(validation_data=test_data,
                             model_adapter=TestIntegerMathModelModuleAdapter())
 
 run_test(timmodulo, IntegerModuloMathModel(1))
+
 
 
 

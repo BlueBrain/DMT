@@ -2,8 +2,10 @@
 
 from abc import abstractmethod
 import os
+import numpy as np
 from dmt.aii import adaptermethod, reportattribute
 from dmt.validation.test_case import ValidationTestCase
+from dmt.vtk.judgment import Verdict
 from dmt.vtk.utils.collections import Record
 
 class MultiDataSetValidationTestCase(ValidationTestCase):
@@ -37,6 +39,40 @@ class MultiDataSetValidationTestCase(ValidationTestCase):
         super(MultiDataSetValidationTestCase, self).__init__(*args, **kwargs)
 
 
+    class Report:
+        """The report for multi-dataset validations.
+        We have defined 'Report' as an inner class here.
+        After we have implemented a few different reports,
+        we can think of a better approach to integrating reporting into a
+        validation."""
+        def __init__(self, image="validation_plot.png",
+                     caption="not-provided",
+                     datasets=[],
+                     verdict=Verdict.NA,
+                     p_value=np.nan):
+            self.image = image
+            self.caption = caption
+            self.datasets = datasets
+            self.verdict = verdict
+            self.p_value = p_value
+
+        def save(self, template=None):
+            """Save this report.
+            --------------------------------------------------------------------
+
+            Parameters
+            --------------------------------------------------------------------
+            template :: A Cheetah template.
+            --------------------------------------------------------------------
+
+            Notes
+            --------------------------------------------------------------------
+            If a template is provided, it will be used. We assume that the
+            template is a Cheetah template. If a template is not provided,
+            contents of a Report will be saved to the disk separately.
+            """
+            pass
+        
     @adaptermethod
     def get_measurement(model_adapter, model):
         """Get measurement from the model with the model adapter.
@@ -47,7 +83,7 @@ class MultiDataSetValidationTestCase(ValidationTestCase):
         pass
 
     @abstractmethod
-    def get_judgment(self, model_measurement):
+    def evaluation(self, model_measurement):
         """Judge how valid a model's measurement is against validation data.
         ------------------------------------------------------------------------
         Return
@@ -64,11 +100,10 @@ class MultiDataSetValidationTestCase(ValidationTestCase):
 
         output_dir_path = kwargs.get('output_dir_path', self.output_dir_path)
         report_file_name = kwargs.get('report_file_name', self.report_file_name)
-        model_measurement = self.model_adapter.get_measurement(model)
-        report = self.get_judgment(model_measurement)
 
-        report_file_path = os.path.join(output_dir_path, report_file_name)
-        print("Generating {}".format(report_file_path))
-        return report.save(report_file_path)
+        model_measurement = self.model_adapter.get_measurement(model)
+        report = self.evaluation(model_measurement)
+
+        return report.save(output_dir_path, report_file_name)
 
 
