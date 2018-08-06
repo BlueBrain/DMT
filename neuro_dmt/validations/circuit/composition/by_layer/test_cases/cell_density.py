@@ -13,6 +13,7 @@ from dmt.vtk.utils.descriptor import Field
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
+from neuro_dmt.utils.brain_region import BrainRegion
 
 
 class CompositionReport(ReportWithCheetahTemplate):
@@ -49,7 +50,10 @@ class CellDensity(SinglePhenomenonValidation):
     region_type :: String #To know the region type in measurements, layer, etc.
     """
 
-    region_type = "Cortical Layer"
+    
+    #label to use for region type, eg "Cortical Layer"
+    region_type = Field(type,
+                        validation=lambda rtype: issubclass(rtype, BrainRegion))
 
     def __init__(self, validation_data, *args, **kwargs):
         """This initializer is written as a generic initializer,
@@ -142,7 +146,6 @@ class CellDensity(SinglePhenomenonValidation):
         circuit_model :: ModelCircuit
         """
         pass
-
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import List
-from dmt import Phenomenon
+from dmt.vtk.phenomenon import Phenomenon
 
 class BrainRegionPhenomenon(Phenomenon):
     """A phenomenon that involves a brain region.

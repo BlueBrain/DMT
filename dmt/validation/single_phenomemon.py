@@ -2,6 +2,7 @@
 from abc import abstractmethod
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.phenomenon import Phenomenon
 
 class SinglePhenomenonValidation(ValidationTestCase):
     """Validation of a single phenomenon.
