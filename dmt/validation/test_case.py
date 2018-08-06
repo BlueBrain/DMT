@@ -22,7 +22,7 @@ class ValidationTestCase(AdapterInterfaceBase):
     author :: Author #The author of this validation
     """
 
-    author = Author.anonymous
+    author = Field(Author)
 
     def __init__(self, *args, **kwargs):
         """A validation test case can be initialized either with a validation
@@ -41,6 +41,7 @@ class ValidationTestCase(AdapterInterfaceBase):
             self.__validation_data\
                 = self._load_validation_data(kwargs['validation_data_location'])
 
+        self.author = kwargs.get('author', Author.anonymous)
         super(ValidationTestCase, self).__init__(*args, **kwargs)
 
     @property

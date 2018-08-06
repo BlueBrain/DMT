@@ -6,6 +6,14 @@ from dmt.aii import adaptermethod
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.reporting.cheetah import ReportWithCheetahTemplate
 from dmt.vtk.author import Author
+from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+from dmt.vtk.utils.plotting import golden_figure
+from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.utils.descriptor import Field
+from dmt.validation.single_phenomemon import SinglePhenomenonValidation
+from dmt.vtk.judgment.verdict import Verdict
+from neuro_dmt.validations.circuit.composition import layer_composition 
+
 
 class CompositionReport(ReportWithCheetahTemplate):
     """A reporting class that will be used for all composition validations.
@@ -22,36 +30,12 @@ class CompositionReport(ReportWithCheetahTemplate):
     Cheetah template must be placed in a directory named 'templates' in the
     same directory as this file.
     """
-
     __template_loc__ = os.path.join(os.path.dirname(__file__),
                                     "templates",
-                                    "report_html_template.cheetah")
+                                    "validation_with_plot.cheetah")
 
 
-class SinglePhenomenonValidation(ValidationTestCase):
-    """Validation of a single phenomenon.
-    A single phenomenon will be measured for a model, and compared against
-    validation data. P-value will be used as a validation criterion.
-
-    Attributes
-    ----------------------------------------------------------------------------
-    validated_phenomenon :: Phenomenon / String 
-    """
-
-    validated_phenomenon = None
-
-    def __init__(self, *args, **kwargs):
-        """Before initializing, check that the concrete implementation of
-        SinglePhenomenonValidation has set it's validated_phenomenon."""
-
-        if validated_phenomenon is None:
-            raise NotImplementedError(
-                "class {} must provide a validated_phenomenon"\
-                .format(self.__class__.__name__)
-            )
-
-
-class CellDensity(ValidationTestCase):
+class CellDensity(SinglePhenomenonValidation):
     """CellDensity is a 'unit' test case for validation.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
@@ -61,11 +45,11 @@ class CellDensity(ValidationTestCase):
     Attributes
     ----------------------------------------------------------------------------
     author :: Author #The author of this validation.
-    phenomenon :: Phenomenon #The phenomenon measured for this validation
+    validated_phenomenon :: Phenomenon / String # measured for this validation
+    region_type :: String #To know the region type in measurements, layer, etc.
     """
-    author = Author(name="Vishal Sood",
-                    affiliation="EPFL",
-                    user_id=1)
+
+    region_type = "Cortical Layer"
 
     def __init__(self, validation_data, *args, **kwargs):
         """This initializer is written as a generic initializer,
@@ -75,10 +59,11 @@ class CellDensity(ValidationTestCase):
 
         Arguments
         ------------------------------------------------------------------------
-        validation_data :: List[Record(label    :: String,
+        validation_data :: List[Record(measurement_label :: String,
+        ~                              region_label :: String,
+        ~                              data :: DataFrame["region", "mean", "std"],
         ~                              citation :: Citation,
-        ~                              what     :: String,
-        ~                              data     :: DataFrame)]
+        ~                              what     :: String)]
 
         #This validation will be made against multiple datasets.
         #The type of 'validation_data' above specifies what is expected of each
@@ -95,7 +80,13 @@ class CellDensity(ValidationTestCase):
         self.report_file_name = kwargs.get('report_file_name', 'report.html')
         self.plot_customization = kwargs.get('plot_customization', {})
 
-        kwargs['validation_data'] = validation_data
+        kwargs['validation_data']\
+            = validation_data
+        kwargs['validated_phenomenon']\
+            = Phenomenon("Cell Density", "Count of cells in a unit volume")
+        kwargs['author']\
+            = Author(name="Vishal Sood", affiliation="EPFL", user_id=1)
+        
         super(CellDensity, self).__init__(*args, **kwargs)
 
 
@@ -111,8 +102,11 @@ class CellDensity(ValidationTestCase):
 
         Return
         ------------------------------------------------------------------------
-        Record(label :: String, #to be used as label for the measurement
-        ~      data :: DataFrame["region", "mean", "std"])
+        Record(phenomenon :: Phenomenon, #that was measured
+        ~      measurement_label :: String, #used as label for the measurement
+        ~      region_label :: String, #label for regions in data
+        ~      data :: DataFrame["region", "mean", "std"],
+        ~      method :: String)
         """
         pass
 
@@ -150,6 +144,28 @@ class CellDensity(ValidationTestCase):
         pass
 
 
+    def plot(self, model_measurement, *args, **kwargs):
+        """Plot the data."""
+        plotting_datas = [model_measurement] + self.validation_data
+        image_path\
+            = layer_composition.plot_bars(plotting_datas, *args, **kwargs)
+        #return Record(image_path=image_path,
+        return image_path
+
+    def get_caption(self, model_measurement):
+        """A placeholder --- we will have to define methods for the model
+        adapter to get real content for this caption.
+
+        Implemented Notes
+        ------------------------------------------------------------------------
+        This method does not belong here. It should be moved to a more general
+        location.
+        """
+        return "{} is plotted. {}\n Method: {} "\
+            .format(self.model_measurement.phenomenon.title,
+                    self.model_measurement.phenomenon.description,
+                    self.model_measurement.method)
+
     def __call__(self, circuit_model, *args, **kwargs):
         """Make CellDensity callable."""
         output_dir_path = kwargs.get('output_dir_path', self.output_dir_path)
@@ -158,7 +174,22 @@ class CellDensity(ValidationTestCase):
         model_measurement = self.model_adapter.get_cell_density(circuit)
 
         model_label = self.model_adapter.get_label(circuit_model)
-        report = CompositionReport(
-            validated_phenomenon=repr(self.phenomenon)
+
+        p_val = layer_composition.probability_of_validity(
+            model_measurement, self.validation_data[0]
         )
+        verdict = layer_composition.get_verdict(p_val, self.pvalue_threshold)
+
+        report = CompositionReport(
+            validated_phenomenon=self.validated_phenomenon.title,
+            validation_image_path=self.plot(model_measurement),
+            author_name=self.author.name,
+            author_affiliation=self.author.affiliation,
+            caption=self.get_caption(model_measurement),
+            validation_datasets=self.validation_data,
+            is_pass=verdict == Verdict.PASS,
+            is_fail=verdict == Verdict.FAIL,
+            p_value=p_val
+        )
+        return report
 

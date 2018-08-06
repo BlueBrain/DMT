@@ -2,7 +2,7 @@
 """
 
 from abc import ABC, abstractmethod
-from dmt.validation.pronouncement import Pronouncement
+from dmt.vtk.judgment.pronouncement import Pronouncement
 
 
 class Analysis(ABC):

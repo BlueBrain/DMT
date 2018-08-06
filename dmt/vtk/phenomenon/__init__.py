@@ -14,7 +14,7 @@ class Phenomenon:
     In the future we can use Phenomenon to store all known models that provide
     a measurement of given phenomenon."""
 
-    registered_instances = {} #phenomena that have been defined
+    __registered_instances = {} #phenomena that have been defined
 
     @staticmethod
     def make_unique(x):
@@ -41,13 +41,13 @@ class Phenomenon:
         description_hash = hashlib.sha1(unique_description).hexdigest()
         label = Phenomenon.make_label(name)
 
-        if label not in Phenomenon.registered_instances:
-            cls.registered_instances[label] = {}
-        if description_hash not in cls.registered_instances[label]:
-            cls.registered_instances[label] = {
+        if label not in Phenomenon.__registered_instances:
+            cls.__registered_instances[label] = {}
+        if description_hash not in cls.__registered_instances[label]:
+            cls.__registered_instances[label] = {
                 description_hash: super(Phenomenon, cls).__new__(cls)
             }
-        return cls.registered_instances[label][description_hash]
+        return cls.__registered_instances[label][description_hash]
 
     def __init__(self, name, description):
         self.name = name
@@ -68,6 +68,10 @@ class Phenomenon:
             raise ValueError('Phenomenon name cannot be empty!')
         self.__name = value
             
+    @property
+    def title(self):
+        """Another (read-only) word for 'name'."""
+        return self.name
 
     @staticmethod
     def make_label(name):
@@ -129,10 +133,10 @@ class Phenomenon:
     def get_known_phenomena(cls, name=None):
         """Get all known phenomenon with given name."""
         if name is None:
-            return [p for dps in Phenomenon.registered_instances.values()
+            return [p for dps in Phenomenon.__registered_instances.values()
                     for p in dps.values()]
 
         label = Phenomenon.make_label(name)
 
-        return cls.registered_instances[label].values()
+        return cls.__registered_instances[label].values()
 

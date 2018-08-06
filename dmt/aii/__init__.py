@@ -159,12 +159,17 @@ class AIMeta(ABCMeta):
 
 
 class AdapterInterfaceBase(metaclass=AIMeta):
-    """A base class for classes that will declare an adapter interface."""
+    """A base class for classes that will declare an adapter interface.
+
+    Initializer
+    ----------------------------------------------------------------------------
+    Pass a keyword argument 'model_adapter' to set the attribute _model_adapter.
+    """
+
+    _model_adapter = None
 
     def __init__(self, *args, **kwargs):
         self._model_adapter = kwargs.get('model_adapter', None)
-
-    AdapterInterface = None
 
     @property
     def model_adapter(self):

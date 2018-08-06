@@ -1,5 +1,7 @@
 """Utilities for circuit composition by layer."""
 from pathlib import Path
+import numpy as np
+from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 def probability_of_validity(real_measurement, model_measurement):
@@ -34,92 +36,98 @@ def probability_of_validity(real_measurement, model_measurement):
         'pooled': FischersPooler.eval(region_p_values.p_value)
     }
 
-def plot_comparison(plotting_datas, **kwargs):
-    """Plot bars for measurements of real and model systems.
-    Bars will be plotted in the order of the list @plotting_datas.
-    
-    Parameters
-    ----------
-    @plotting_datas :: [Measurement] #list of measurements to be plotted
-    
-    Implementation Notes
-    -------
-    In the current implementation we assume that a Measurement is a
-    dmt.vtk.collections.Record[data :: DataFrame, label :: String].
-    
-    Return
-    ----------
-    DirectoryPath #where plots are saved
+def get_verdict(p_value, threshold):
+    """Did the validation pass?
+    Should we move this function somewhere more general?"""
+    if np.isnan(p_value):
+        return Verdict.NA
+    if p_value > threshold:
+        return Verdict.PASS
+    if p_value <= threshold:
+        return Verdict.FAIL
+    return Verdict.INCONCLUSIVE
 
-    Question
-    ----------
-    Should we define @plotting_datas to be a list of tuples
-    (MeasurableSystem, DataFrame), where MeasurableSystem may be a model or
-    (experimental) data-object?
+def plot_bars(plotting_datas, *args, **kwargs):
+    """A method to plot data. Bars will be plotted in order passed
+        in list 'plotting_data'.
 
-    Notes
-    ----------
-    It is assumed that each Measurement.data in 'plotting_datas' has the same
-    format, and the same index.
-    For example, if we are analyzing composition by cortical layer,
-    each Measurement.data should have the index
-    ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']. The data-frames may have NaNs.
-    """
+        Parameters
+        ------------------------------------------------------------------------
+        plotting_datas :: [Measurement] #list of measurements to be plotted
 
+        Return
+        ------------------------------------------------------------------------
+        Directory path where plots are saved.
+
+        Implementation Note
+        ------------------------------------------------------------------------
+        For now we let 'Measurement' be a record: 
+
+        Measurement = Record(measurement_label :: String,
+        ~                    region_label :: String,
+        ~                    data :: DataFrame["region", "mean", "std"])
+
+        We assume that each Measurement.data has the same columns,
+        and the same index.
+        For example, if we are analyzing composition by cortical layer, each
+        Measurement.data should have the index
+        ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']. The DataFrame may bave NaNs.
+        """
     if len(plotting_datas) == 0:
-        raise ValueError("len(plotting_datas) == 0: " +
-                         "Cannot plot a comparison of no data!!!")
-
+        raise ValueError(
+            "Cannot plot without data, len(plotting_datas) == 0 "
+        )
     output_dir_path = kwargs.get('output_dir_path', None)
     plot_customization = kwargs.get('plot_customization', {})
     legend_loc = plot_customization.get('legend_loc', 'upper_left')
     fheight = plot_customization.get('fheight', 10)
-    fwidth = plot_customization.get('fwidth', None)
-
-    default_colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
-    colors = plot_customization.get('colors', default_colors)
-                                    
+    fwidh = plot_customization.get('fwidth', None)
+    color = plot_customization.get('colors',
+                                       ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
     file_name = kwargs.get('file_name', None)
+
     try:
         title = kwargs['title']
     except:
         raise RequiredKeywordArgumentError("title")
-
     fig = golden_figure(fheight=fheight, fwidth=fwidth)
 
     nbar = len(plotting_datas)
-    width = 1.0 / (1 + nbar)
+    width = 1.0 / (1.0 + nbar)
+    #expecting region_label to be same for all plotting_datas 
+    region_label = plotting_datas[0].region_label 
+    region_names = list(plotting_datas[0].index)
     x = np.arange(len(region_names))
     x0 = x - (nbar / 2) * width
-
+    
     plot_index = 1
     for pe in plotting_datas:
         df = pe.data.fillna(0.0)
         a_plot = plt.bar(x0 + plot_index * width,
-                         df.mean.values,
+                         df['mean'].values,
                          width,
-                         color=colors[(plot_index - 1) % len(colors)],
-                         yerr=df.std.values
+                         color=color[(plot_index - 1) % len(colors)],
+                         yerr=df['std'].values,
                          label=pe.label)
         plot_index += 1
-        
-    plt.title(title + " comparison .", fontsize=24)
-    plt.xlabel("Layer", fontsize=20)
+
+    plt.title(title, fontsize=24)
+    plt.xlabel(region_label, fontsize=20)
     plt.xticks(x - width / 2., region_names)
-    
-    fontP = FontProperties()
+
+    fontP = FontPropertis()
     fontP.set_size('small')
     plt.legend(prop=fontP, loc=legend_loc)
-    
+
     if output_dir_path and file_name:
         if not os.path.exists(output_dir_path):
             os.makedirs(output_dir_path)
-        output_file_path = os.path.join(output_dir_path, file_name+".png")
-        print("Generating {}".format(output_file_path))
-        pylab.savefig(output_file_path, dpi=100)
-        return output_file_path
-    else:
-        return None
+        output_file = os.path.join(output_dir_path, file_name + ".png")
+        print("Generating {}".format(output_file))
+        pylab.savefig(output_file, dpi=100)
+        return output_file
+
+    return None
 
 def save_report(report,
                 template_dir_name,
@@ -170,7 +178,7 @@ def save_report(report,
 
     template.image_path = report.validation_image_path
     template.caption = report.caption
-    template.datasets = {label: data.metadata,
+    template.datasets = {label: data.metadata
                          for label, data in report.datasetes.iteritems()}
     template.p_value = report.p_value
     template.is_pass = report.is_pass
@@ -180,7 +188,7 @@ def save_report(report,
     print("Saving {}".format(output_path))
 
     with open(output_path, 'w') as f:
-        f.write.(str(template))
+        f.write(str(template))
 
     entry_template_str = """<tr>
     <td><a href="$uri">$name</a></td>

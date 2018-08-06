@@ -162,7 +162,3 @@ timmodulo = TestIntegerMath(validation_data=test_data,
                             model_adapter=TestIntegerMathModelModuleAdapter())
 
 run_test(timmodulo, IntegerModuloMathModel(1))
-
-
-
-
