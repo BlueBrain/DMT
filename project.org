@@ -555,6 +555,136 @@
 
    In fact, it seems to me that /reporting/ is the pivot around which we can
    explore the possibilities of a Data/Model/Test Validation framework.
+   
+   <2018-08-08 Wed> Until now we have thought of /Cheetah templates/ as integral
+   to what we have been programming. And we have been programming primarily the
+   backend. To make durable progress we will need to shift our attention to the
+   front-end, and to do that we have to start thinking of the separation of the
+   back-end and the front-end. 
+
+
+   <2018-08-08 Wed> Given that we require a front back split, we will assume
+   that we will use a /controller/ to relay queries / responses back and forth,
+   front to back, view to model to view. We shall not concern ourselves must 
+   with the front-end for now. However we will respond with JSON from the
+   controller, that will receive PODs from the models.
+
+*** Back and front ends.
+    Back end is most of the work. Front end is simple, and we set the conditions
+    / guidelines to separate the two.
+
+    1. let Front End be concerned with Cheetah / Jinja2, or any other templating
+       system. 
+    2. let Front End be concerned with html, or pdf, or text, or whatever format
+       the output is desired in.
+    3. let Back End concern itself with producing a Report. 
+    4. let Report be a POD (plain old data) --- named tuple, a data-only class.
+    5. let Front End have a query system that the user can manipulate to monitor
+       their validations.
+    
+       
+    A few precautions are also necessary
+    1. Some amount of entanglement between the front and back ends is
+       unavoidable.
+    2. Entangled design is all right to begin with, but must be noticed and
+       dealt with as early as possible.
+   
+
+    Guidelines for double-ended development
+    1. Front End will decide how to display results of a query. 
+    2. Front End will send a query to Back End.
+    3. Back End will respond with a properly structured JSON.
+
+    
+    The trick is in determining the fields of this JSON. The simplest, and
+    probably the most useful one, is to allow a collaboration between the two
+    ends. 
+
+**** Front End queries, front end user stories
+     What may the user query at the interactive web-page? 
+     1. A user may come in looking for available validations to test her model.
+     2. A user may come in with data for measurement of some phenomenon, and
+        look for models that study that phenomenon.
+     3. A user may come in with data for measurement of some phenomenon, and
+        look for other experimental studies of that phenomenon.
+     4. A user may come in with a model wanting to compare it with other models
+        that study the same phenomenon.
+     
+
+    One story may evolve like this.
+    1. User has a new model for a phenomenon.
+    2. User logs in.
+    3. User uploads her model.
+    4. User fills in a meta-data form for her model.
+    5. User asks for available validations.
+    6. User browses the available relevant validations.
+    7. User reads about the validated phenomenon:
+       - the /simulated-experimental/ methodology employed in sampling the
+         modeled system to measure the validated phenomenon
+       - the statistical methodology used for judging a model's performance
+       - the experimental studies from where the data was sourced to validated
+         the model's predictions
+       - what the validations report discuss, to judge the quality of
+         documentation
+    8. User chooses a validation that she found appropriate to her requirements. 
+    9. User finds that she must provide an adaptor for her model to run her
+       chosen validation. 
+    10. User looks up the documentation and follows a tutorial to write an
+        adaptor.
+    11. User submits her adaptor, and allows the system to criticize her code.
+    12. User manages to write an acceptable adaptor with the help of the system.
+    13. User submits the adaptor, signs it with her affiliation and motivation.
+    14. User runs the validation with her adaptor.
+    15. User reads the report produced by the validation.
+    16. User decides to write her own validation, because either no validation
+        was available for her use, or the ones she found were not satisfactory.
+    17. User queries for available data for the phenomena that her model
+        studies. 
+    18. User also digs / cooks up experimental data from other sources.
+    19. User submits her collected experimental data.
+    20. User decides to publicize submitted data, by providing proper credits,
+        and provenance.
+    21. User reads documentation and follows tutorials to write a validation for
+        her model.
+    22. User runs the validation she has written.
+    23. User reads the report produced by her validation.
+    24. User submits all the code and data required for her validation  or
+        produced by her validation for /publication/.
+    25. User decides to start a public discussion that may be mediated by chosen
+       /peers/ in the system. 
+    26. User subscribes for notifications about DMvTs of her interest, /i.e./
+        any data, models, validation tests submitted by other users for
+        publication. 
+    27. User decides to keep data for her private use, if she cannot provide
+        proper credits and provenance.
+    28. User runs her validations in a private sandbox.
+    29. User appoints a chosen set of /peers/ for judging the logic of her model
+        and validation. 
+    30. User appoints a chosen set of /peers/ for code-review.
+   
+***** Validation by humans        
+      We can think of peer-review of academic papers as validation by humans,
+      instead of an automated system. Strict guidelines may be set for such a
+      validation --- probably by asking the judges to list a small number of
+      criteria. Each of these criterion and its requirements can then be made as
+      objective as possible, and each of them provided with a scale to measure
+      the response. Once such a list has been curated, it can be presented to
+      the any fresh reviewer. So there are two stages of development here. This
+      human validation needs humans to compile!
+
+      We have a ready example / application of this idea here at BBP. That of
+      determining the type of an experimentally observed morphology. Suppose I
+      come up with a model to construct a random sample of a morphology of a
+      particular type. The /algorithm/ to produce of a model morphology can
+      itself be considered as a model --- a model of the processes that produce
+      a morphology. Of course, this model is not what happens in reality, there
+      will be a lot of missing links, and the model may be completely abstract.
+      The point is that we want to plug in this model somewhere else in the
+      bigger puzzle involving the simulation of the human brain. So the human
+      /validator/ will look at the model's output and experimentally
+      morphologies and provide their judgment. 
+      
+        
 
 *** Use cases
     We need to catalog different use cases
@@ -657,3 +787,9 @@
    SCHEDULED: <2018-07-20 Fri>
    ~class Analysis~ encompasses any study of models and data. 
    or may be even a ~class Study~
+** TODO imagine an interaction between the user and the interactive web-page
+   SCHEDULED: <2018-08-08 Wed>
+   We keep thinking about users --- some parts of our back-end have used that
+   idea as motivation. However the user will see the front-end. We must think
+   about what we want to offer the user --- /a well defined UI/. What
+   constitutes a good definition of a UI? 
