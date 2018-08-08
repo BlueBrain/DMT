@@ -9,14 +9,14 @@ from dmt.vtk.author import Author
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.plotting import golden_figure
 from dmt.vtk.phenomenon import Phenomenon
-from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
 from neuro_dmt.utils.brain_region import BrainRegion
 from neuro_dmt.validations.circuit.composition import CompositionReport
 
-
+@document_fields
 class CellDensity(SinglePhenomenonValidation):
     """CellDensity is a 'unit' test case for validation.
     Cell density is a spatial composition phenomenon.

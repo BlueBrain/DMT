@@ -1,9 +1,10 @@
 """Code for validation test cases that analyze only one phenomenon."""
 from abc import abstractmethod
 from dmt.validation.test_case import ValidationTestCase
-from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 
+@document_fields
 class SinglePhenomenonValidation(ValidationTestCase):
     """Validation of a single phenomenon.
     A single phenomenon will be measured for a model, and compared against

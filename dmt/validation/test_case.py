@@ -7,8 +7,9 @@ against. The initializer of ValidationTestCase will accept a data object.
 from abc import abstractmethod
 from dmt.aii import AdapterInterfaceBase
 from dmt.vtk.author import Author
-from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.descriptor import Field, document_fields
 
+@document_fields
 class ValidationTestCase(AdapterInterfaceBase):
     """A validation test case.
     Instructions on implementing a ValidationTestCase

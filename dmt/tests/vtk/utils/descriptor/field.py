@@ -14,11 +14,11 @@ class TestField:
         __name__ = "j",
         __type__ = int,
         __is_valid_value__ = lambda i: i < 0,
-        __doc__ = """Another integer, must be negative"""
+        __doc__ = """An integer, must be negative"""
     )
     f = Field(
         __name__ = "f",
         __type__ = float,
         __is_valid_value__ = lambda i: i > 0.0,
-        __doc__ = """A float field that must always be positive."""
+        __doc__ = """A field that must always be positive."""
     )

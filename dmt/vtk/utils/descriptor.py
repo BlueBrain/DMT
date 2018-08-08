@@ -83,14 +83,23 @@ def __get_field_attrs(cls):
 def document_fields(cls):
     """Document any Fields that may appear in class cls.
     Can be used as class decorator."""
+    doc_included = {}
     field_docs = "\n\nFields\n"
     field_docs += 70 * "-" + "\n"
-    for attr, value in cls.__dict__.items():
-        if is_field(value):
-            field_docs += attr + "\n"
-            field_docs += "    type {}\n".format(value.__type__)
-            field_docs += "    {}\n".format(value.__doc__)
-    field_docs += 70 * "-" + "\n"
+    for mcls in cls.__mro__:
+        field_attrs = [a for a, v in mcls.__dict__.items() if is_field(v)]
+        if len(field_attrs) == 0:
+            continue
+        if mcls != cls:
+            field_docs += "\nFields inherited from {}.\n".format(mcls.__name__)
+            field_docs += 70 * "-" + "\n"
+        for attr, value in mcls.__dict__.items():
+            if not doc_included.get(attr, False) and is_field(value):
+                field_docs += attr + "\n"
+                field_docs += "    type {}\n".format(value.__type__.__name__)
+                field_docs += "    {}\n".format(value.__doc__)
+                field_docs += 70 * "-" + "\n"
+                doc_included[attr] = True
     cls.__doc__ += field_docs
     return cls
 
