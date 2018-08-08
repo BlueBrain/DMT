@@ -1,20 +1,21 @@
 <html>
   <body>
 
-    <h1>$phenomenon Validation</h1>
-    <h2>$author_name</h2>
-    <h3>$author_affiliation</h3>
+    <h1>$validated_phenomenon Validation</h1>
+    <h2> Author <h2>
+    <h3> $author_name</h3>
+    <h3> Affiliation:  $author_affiliation</h3>
     <br>
-    <img src="$validation_image__path" alt="apologies.png"/>
+    <img src="$validation_image_path" alt="apologies.png"/>
     <br>
     <p>$caption</p>
 
     <h1>Datasets</h1>
 
     <ul>
-      #for $k, $d in $validation_datasets.iteritems()
+      #for $k, $d in $validation_datasets.items()
       <li><a href="$d.url">[$d.short_name]</a> -$d.citation<br>
-        <p><i><$d.what></i></p>
+        <p><i>$d.what</i></p>
       </li>
       #end for
     </ul>
@@ -32,5 +33,5 @@
       p-value: p=$p_value
     </p>
 
-  </body>
+  </body
 </html>

@@ -14,26 +14,7 @@ from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
 from neuro_dmt.utils.brain_region import BrainRegion
-
-
-class CompositionReport(ReportWithCheetahTemplate):
-    """A reporting class that will be used for all composition validations.
-    The html produced by the Cheetah Template used here will display a plot
-    for the validation, with a caption, metadata about the authors and their
-    affiliation, and the status of the validation --- i.e. whether the model
-    passed the validation or not.
-
-    Once fully developed, we must move this class to a location from where it
-    can be loaded for more general use-cases.
-
-    Notes
-    ----------------------------------------------------------------------------
-    Cheetah template must be placed in a directory named 'templates' in the
-    same directory as this file.
-    """
-    __template_loc__ = os.path.join(os.path.dirname(__file__),
-                                    "templates",
-                                    "validation_with_plot.cheetah")
+from neuro_dmt.validations.circuit.composition import CompositionReport
 
 
 class CellDensity(SinglePhenomenonValidation):
@@ -186,8 +167,7 @@ class CellDensity(SinglePhenomenonValidation):
         report = CompositionReport(
             validated_phenomenon=self.validated_phenomenon.title,
             validation_image_path=self.plot(model_measurement),
-            author_name=self.author.name,
-            author_affiliation=self.author.affiliation,
+            author=self.author,
             caption=self.get_caption(model_measurement),
             validation_datasets=self.validation_data,
             is_pass=verdict == Verdict.PASS,
