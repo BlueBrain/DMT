@@ -1,9 +1,7 @@
 """Report the result of an analysis or a validation."""
-
-from abc import ABC, abstractmethod
 import os
 
-class Report(ABC):
+class Report:
     """Report base class."""
 
     def __init__(self, **kwargs):
@@ -29,3 +27,17 @@ class Report(ABC):
                 f.write(str(self.__dict__[attribute]))
 
         return report_file_path
+
+    @classmethod
+    def get_file_name_base(file_name=None):
+        """Get the base from a file name, stripping away it's suffix."""
+        return ("report" if file_name is None else
+                '_'.join(file_name.split('.')[0:-1]).strip().replace(' ', '_'))
+
+    def save(self, output_dir_path, report_file_name=None):
+        """Save the results --- this uses the default method.
+        Please over-ride it where you want to define your own custom save.
+        """
+        file_name_base = self.__class__.get_file_name_base(report_file_name)
+        return self._save_default(output_dir_path, file_name_base)
+                                  
