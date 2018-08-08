@@ -4,8 +4,9 @@ from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 class __Field:
     """Creates a field from a provided class."""
-    __is_field__ = True
+
     #__isabstractmethod__ = True
+    __is_field__ = True
 
     def __init__(self, field_type, validation=None):
         """"
@@ -34,14 +35,17 @@ class __Field:
                              .format(self.__type__.__name__,
                                      value, str(type(value))))
         if not self.__is_valid(value):
-            raise ValueError("{} cannot be set to an invalid value, {}"\
-                             .format(self.__type__.__name__, value))
+            raise ValueError(
+                "{} of type {} cannot be set to an invalid value, {}"\
+                .format(self.storage_name, self.__type__.__name__, value))
         setattr(instance, self.storage_name, value)
 
     def __get__(self, instance, owner):
         """get the value of the field, from the instance
         it was created in."""
-        return getattr(instance, self.storage_name)
+        return (getattr(instance, self.storage_name)
+                if instance is not None else
+                getattr(owner, self.storage_name, None))
 
     def __repr__(self):
         """represent this field as a string."""
@@ -59,38 +63,46 @@ def Field(__type__, #type of the field value
 def is_field(x):
     """Is x a field?"""
     return getattr(x, '__is_field__', False)
-    
-def has_fields(cls):
-    """A class decorator that will extract fields from a class' attributes,
-    and add their doc strings to that of the class."""
+
+def __get_field_attrs(cls):
+    """get fields of class cls"""
+    return [attr for attr, value in cls.__dict__.items() if is_field(value)]
+
+def document_fields(cls):
+    """Document any Fields that may appear in class cls.
+    Can be used as class decorator."""
     field_docs = "\n\nFields\n"
     field_docs += 70 * "-" + "\n"
-    field_attrs = []
     for attr, value in cls.__dict__.items():
         if is_field(value):
-            field_attrs.append(attr)
             field_docs += attr + "\n"
             field_docs += "    type {}\n".format(value.__type__)
             field_docs += "    {}\n".format(value.__doc__)
     field_docs += 70 * "-" + "\n"
     cls.__doc__ += field_docs
+    return cls
 
+def has_fields(cls):
+    """A class decorator that will extract fields from a class' attributes,
+    and add their doc strings to that of the class."""
+    cls = document_fields(cls)
     original_init = cls.__init__
-    def field__init(self, *args, **kwargs):
+    def field_init(self, *args, **kwargs):
         """insert fields into the class dict"""
         try:
             original_init(self, *args, **kwargs)
         except:
             pass
-        for attr in field_attrs:
+        for attr in __get_field_attrs(self.__class__):
             try:
                 value = kwargs[attr]
             except:
                 raise RequiredKeywordArgumentError(attr)
             setattr(self, attr, value)
-
-    cls.__init__ = field__init
+    cls.__init__ = field_init
+            
     return cls
+
 
 
 

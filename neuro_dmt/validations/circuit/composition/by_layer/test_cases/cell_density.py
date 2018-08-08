@@ -9,7 +9,7 @@ from dmt.vtk.author import Author
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.plotting import golden_figure
 from dmt.vtk.phenomenon import Phenomenon
-from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
@@ -17,6 +17,7 @@ from neuro_dmt.utils.brain_region import BrainRegion
 from neuro_dmt.validations.circuit.composition import CompositionReport
 
 
+@document_fields
 class CellDensity(SinglePhenomenonValidation):
     """CellDensity is a 'unit' test case for validation.
     Cell density is a spatial composition phenomenon.
@@ -33,9 +34,11 @@ class CellDensity(SinglePhenomenonValidation):
 
     
     #label to use for region type, eg "Cortical Layer"
-    region_type = Field(type,
-                        validation=lambda rtype: issubclass(rtype, BrainRegion))
-
+    region_type = Field(
+        __type__ = type,
+        __is_valid_value__ = lambda rtype: issubclass(rtype, BrainRegion),
+        __doc__ = """region type used for measuring cell density."""
+    )
     def __init__(self, validation_data, *args, **kwargs):
         """This initializer is written as a generic initializer,
         that should be moved to a base class once we can identify all the
@@ -60,7 +63,7 @@ class CellDensity(SinglePhenomenonValidation):
         plot_customization :: dict #optional dict to customize validation plot
         ------------------------------------------------------------------------
         """
-        self.p_value_threshold = kwargs.get('p_value_threshold', 0;05)
+        self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
         self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
         self.report_file_name = kwargs.get('report_file_name', 'report.html')
         self.plot_customization = kwargs.get('plot_customization', {})

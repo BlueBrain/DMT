@@ -12,15 +12,16 @@ class Report:
         The value of each report attribute in 'kwargs' must be a string."""
         #self.__dict__.update(kwargs)
         self.__report_attributes__ = kwargs.keys()
-        field_attrs = self.__class__.update_doc()
         self.__report_dict__ = {}
-        for attr in field_attrs:
-            try:
-                value = kwargs[attr]
-            except:
-                raise RequiredKeywordArgumentError(attr)
-            setattr(self, attr, value) #this will validate the value
-            self.__report_dict__[attr] = value #this will be a validated value!
+        for attr, value in self.__class__.__dict__.items():
+            if is_field(value):
+                print("set {} to {}".format(attr, value))
+                try:
+                    value = kwargs[attr]
+                except:
+                    raise RequiredKeywordArgumentError(attr)
+                setattr(self, attr, value) #this will validate the value
+                self.__report_dict__[attr] = value #this will be a validated value!
             
 
     @classmethod

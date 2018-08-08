@@ -122,12 +122,3 @@ class CompositionReport(Report):
             Will proceed to save a text report""".format(ex))
             return self._save_default(output_dir_path, file_name_base)
 
-
-
-
-class CompositionTestCase:
-    """Code that is common to composition validation test cases,
-    irrespective of how the composition is measured."""
-    pass
-
-

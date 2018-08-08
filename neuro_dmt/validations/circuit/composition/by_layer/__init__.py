@@ -99,7 +99,7 @@ def plot_comparison(plotting_datas, **kwargs):
                          df.mean.values,
                          width,
                          color=colors[(plot_index - 1) % len(colors)],
-                         yerr=df.std.values
+                         yerr=df.std.values,
                          label=pe.label)
         plot_index += 1
         
@@ -123,9 +123,9 @@ def plot_comparison(plotting_datas, **kwargs):
 
 def save_report(report,
                 template_dir_name,
+                output_path,
                 template_file_name='report_html_template.cheetah',
-                entry_template_file_name='entry_html_template.cheetah',
-                output_path):
+                entry_template_file_name='entry_html_template.cheetah'):
     """Save a validation report to the disk.
     Parameters
     ----------------------------------------------------------------------------
@@ -170,7 +170,7 @@ def save_report(report,
 
     template.image_path = report.validation_image_path
     template.caption = report.caption
-    template.datasets = {label: data.metadata,
+    template.datasets = {label: data.metadata
                          for label, data in report.datasetes.iteritems()}
     template.p_value = report.p_value
     template.is_pass = report.is_pass
@@ -180,7 +180,7 @@ def save_report(report,
     print("Saving {}".format(output_path))
 
     with open(output_path, 'w') as f:
-        f.write.(str(template))
+        f.write(str(template))
 
     entry_template_str = """<tr>
     <td><a href="$uri">$name</a></td>

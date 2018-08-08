@@ -7,7 +7,9 @@ against. The initializer of ValidationTestCase will accept a data object.
 from abc import abstractmethod
 from dmt.aii import AdapterInterfaceBase
 from dmt.vtk.author import Author
+from dmt.vtk.utils.descriptor import Field, document_fields
 
+@document_fields
 class ValidationTestCase(AdapterInterfaceBase):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
@@ -22,8 +24,10 @@ class ValidationTestCase(AdapterInterfaceBase):
     author :: Author #The author of this validation
     """
 
-    author = Field(Author)
-
+    author = Field(
+        __type__ = Author,
+        __doc__ = """Author of the validation code."""
+    )
     def __init__(self, *args, **kwargs):
         """A validation test case can be initialized either with a validation
         data set, or the directory location of a validation data set, or none,
