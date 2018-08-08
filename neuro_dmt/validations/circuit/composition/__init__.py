@@ -4,7 +4,7 @@ import os
 from Cheetah.Template import Template
 from dmt.vtk.reporting import Report
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from dmt.vtk.utils.descriptor import Field, has_fields
+from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 

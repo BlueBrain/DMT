@@ -9,7 +9,7 @@ from dmt.vtk.author import Author
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.plotting import golden_figure
 from dmt.vtk.phenomenon import Phenomenon
-from dmt.vtk.utils.descriptor import Field, document_fields
+from dmt.vtk.utils.descriptor import Field
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
@@ -17,19 +17,12 @@ from neuro_dmt.utils.brain_region import BrainRegion
 from neuro_dmt.validations.circuit.composition import CompositionReport
 
 
-@document_fields
 class CellDensity(SinglePhenomenonValidation):
     """CellDensity is a 'unit' test case for validation.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
     i.e., the pandas DataFrame passed around as a measurement must have
     a column labeled 'region'.
-
-    Attributes
-    ----------------------------------------------------------------------------
-    author :: Author #The author of this validation.
-    validated_phenomenon :: Phenomenon / String # measured for this validation
-    region_type :: String #To know the region type in measurements, layer, etc.
     """
 
     
@@ -64,6 +57,8 @@ class CellDensity(SinglePhenomenonValidation):
         plot_customization :: dict #optional dict to customize validation plot
         ------------------------------------------------------------------------
         """
+        super(CellDensity, self).__init__(*args, **kwargs)
+
         self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
         self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
         self.report_file_name = kwargs.get('report_file_name', 'report.html')
@@ -76,7 +71,6 @@ class CellDensity(SinglePhenomenonValidation):
         kwargs['author']\
             = Author(name="Vishal Sood", affiliation="EPFL", user_id=1)
         
-        super(CellDensity, self).__init__(*args, **kwargs)
 
 
     @adaptermethod

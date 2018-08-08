@@ -7,9 +7,8 @@ against. The initializer of ValidationTestCase will accept a data object.
 from abc import abstractmethod
 from dmt.aii import AdapterInterfaceBase
 from dmt.vtk.author import Author
-from dmt.vtk.utils.descriptor import Field, document_fields
+from dmt.vtk.utils.descriptor import Field
 
-@document_fields
 class ValidationTestCase(AdapterInterfaceBase):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
@@ -18,22 +17,18 @@ class ValidationTestCase(AdapterInterfaceBase):
     Mark all model measurements that validation needs
     with decorator '@adapter.requires', and use them like this,
     'measurement_data = self.get_measurement_data(model, parameters)'.
-
-    Attributes
-    ----------------------------------------------------------------------------
-    author :: Author #The author of this validation
     """
-
     author = Field(
         __name__ = "author",
         __type__ = Author,
-        __doc__ = """Author of the validation code."""
+        __doc__  = """Author of the validation code."""
     )
     def __init__(self, *args, **kwargs):
         """A validation test case can be initialized either with a validation
         data set, or the directory location of a validation data set, or none,
         but not both.
         """
+        super(ValidationTestCase, self).__init__(*args, **kwargs)
         self.__validation_data = kwargs.get('validation_data', None)
         if (self.__validation_data is None and
             'validation_data_location' in kwargs):
@@ -47,7 +42,6 @@ class ValidationTestCase(AdapterInterfaceBase):
                 = self._load_validation_data(kwargs['validation_data_location'])
 
         self.author = kwargs.get('author', Author.anonymous)
-        super(ValidationTestCase, self).__init__(*args, **kwargs)
 
     @property
     def validation_data(self):

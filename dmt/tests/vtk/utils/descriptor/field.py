@@ -1,8 +1,8 @@
 """Tests for class Field."""
 
-from dmt.vtk.utils.descriptor import Field, has_fields
+from dmt.vtk.utils.descriptor import Field, initialize_fields
 
-@has_fields
+@initialize_fields
 class TestField:
     """A class to test fields."""
     i = Field(

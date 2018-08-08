@@ -47,12 +47,15 @@ class __Field:
         it was created in."""
         if not instance is None:
             return getattr(instance, self.instance_storage_name)
-        if not self.__field_name__ in owner.__dict__:
+        if not self.__field_name__ in dir(owner):
             print("{} is not a field member of {}"\
                   .format(self.__field_name__, owner.__name__))
             return None
-        return owner.__dict__[self.__field_name__]
-        #return getattr(owner, self.__field_name__)
+        for mo in owner.__mro__:
+            if self.__field_name__ in mo.__dict__.keys():
+                return mo.__dict__[self.__field_name__]
+        raise Exception("field member {} NOT FOUND in class {}"\
+                        .format(self.__field_name__, owner.__name__))
 
     def __repr__(self):
         """represent this field as a string."""
@@ -91,7 +94,7 @@ def document_fields(cls):
     cls.__doc__ += field_docs
     return cls
 
-def has_fields(cls):
+def initialize_fields(cls):
     """A class decorator that will extract fields from a class' attributes,
     and add their doc strings to that of the class."""
     cls = document_fields(cls)

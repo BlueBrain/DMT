@@ -8,10 +8,6 @@ class SinglePhenomenonValidation(ValidationTestCase):
     """Validation of a single phenomenon.
     A single phenomenon will be measured for a model, and compared against
     validation data. P-value will be used as a validation criterion.
-
-    Attributes
-    ----------------------------------------------------------------------------
-    validated_phenomenon :: Phenomenon #implemented as a Field(Phenomenon)
     """
     validated_phenomenon = Field(
         __name__ = "validated_phenomenon",
@@ -20,10 +16,9 @@ class SinglePhenomenonValidation(ValidationTestCase):
     )
     def __init__(self, *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
+        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)
         if 'validated_phenomenon' in kwargs:
             self.validated_phenomenon = kwargs['validated_phenomenon']
-        
-        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)
 
     @abstractmethod
     def plot(self, *args, **kwargs):
