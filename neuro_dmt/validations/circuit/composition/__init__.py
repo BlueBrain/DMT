@@ -21,38 +21,46 @@ class CompositionReport(Report):
     """
 
     validated_phenomenon = Field(
+        __name__ = "validated_phenomenon",
         __type__ = Phenomenon,
         __doc__  = """Phenomenon that was validated."""
     )
     validation_image_path = Field(
+        __name__ = "validation_image_path",
         __type__ = str,
         __doc__  = """Location of the image produced by the validation."""
     )
     author = Field(
+        __name__ = "author",
         __type__ = Author,
         __doc__  = """Author of this validation. If a group has authored,
         please create a group user as author."""
     )
     caption = Field(
+        __name__ = "caption",
         __type__ = str,
         __doc__ = "Caption to go with the plot."
     )
     validation_datasets = Field(
+        __name__ = "validation_datasets",
         __type__ = dict,
         __doc__ = """List of metadata, one element for each dataset used by the
         validation. Please take a look at documentation of the validation."""
     )
     is_pass = Field(
+        __name__ = "is_pass",
         __type__ = bool,
         __doc__  = """Are the model's predictions for the validated phenomenon
         valid when compared against the experimental measurements."""
     )
     is_fail = Field(
+        __name__ = "is_fail",
         __type__ = bool,
         __doc__  = """If the validation did not pass, did it fail? It might
         have been inconclusive."""
     )
     p_value = Field(
+        __name__ = "p_value",
         __type__ = float,
         __doc__ = """P-value for observing the model measurement, when compared
         against the experimental data in the first validation dataset."""

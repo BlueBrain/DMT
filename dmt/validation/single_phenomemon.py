@@ -13,15 +13,17 @@ class SinglePhenomenonValidation(ValidationTestCase):
     ----------------------------------------------------------------------------
     validated_phenomenon :: Phenomenon #implemented as a Field(Phenomenon)
     """
-    validated_phenomenon = Field(Phenomenon)
-
+    validated_phenomenon = Field(
+        __name__ = "validated_phenomenon",
+        __type__ = Phenomenon,
+        __doc__  = "The phenomenon that is measured for this validation."
+    )
     def __init__(self, *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
         if 'validated_phenomenon' in kwargs:
             self.validated_phenomenon = kwargs['validated_phenomenon']
         
         super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)
-
 
     @abstractmethod
     def plot(self, *args, **kwargs):

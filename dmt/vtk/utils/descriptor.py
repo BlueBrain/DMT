@@ -8,17 +8,19 @@ class __Field:
     #__isabstractmethod__ = True
     __is_field__ = True
 
-    def __init__(self, field_type, validation=None):
+    def __init__(self, field_name, field_type, validation=None):
         """"
         Parameters
         -----------------------------------------------------------------------
         cls :: a type, not an instance
         validation :: a predicate function to validate values to set
         """
+        self.__field_name__ = field_name
         self.__type__ = field_type
         self.__is_valid = validation if validation is not None\
                             else lambda value: True
-        self.storage_name = "${}".format(field_type.__name__)
+        self.instance_storage_name\
+            = "${}_{}".format(field_type.__name__, field_name)
 
     def __is_minimally_valid(self, value):
         """Minimum requirement on value to pass as a valid instance."""
@@ -37,26 +39,33 @@ class __Field:
         if not self.__is_valid(value):
             raise ValueError(
                 "{} of type {} cannot be set to an invalid value, {}"\
-                .format(self.storage_name, self.__type__.__name__, value))
-        setattr(instance, self.storage_name, value)
+                .format(self.instance_storage_name, self.__type__.__name__, value))
+        setattr(instance, self.instance_storage_name, value)
 
     def __get__(self, instance, owner):
         """get the value of the field, from the instance
         it was created in."""
-        return (getattr(instance, self.storage_name)
-                if instance is not None else
-                getattr(owner, self.storage_name, None))
+        if not instance is None:
+            return getattr(instance, self.instance_storage_name)
+        if not self.__field_name__ in owner.__dict__:
+            print("{} is not a field member of {}"\
+                  .format(self.__field_name__, owner.__name__))
+            return None
+        return owner.__dict__[self.__field_name__]
+        #return getattr(owner, self.__field_name__)
 
     def __repr__(self):
         """represent this field as a string."""
         return "Field {}".format(str(self.__type__))
 
 
-def Field(__type__, #type of the field value
+def Field(__name__, #name of the field, 
+          __type__, #type of the field value
           __doc__ = None, #document string
           __is_valid_value__ = lambda x: True):
-    """a factory function to define a Field."""
-    F = __Field(__type__, __is_valid_value__)
+    """A factory function to define a Field.
+    It is unfortunate that we have to require a __name__ argument."""
+    F = __Field(__name__, __type__, __is_valid_value__)
     F.__doc__ =  __doc__
     return F
 

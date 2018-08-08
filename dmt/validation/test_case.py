@@ -25,6 +25,7 @@ class ValidationTestCase(AdapterInterfaceBase):
     """
 
     author = Field(
+        __name__ = "author",
         __type__ = Author,
         __doc__ = """Author of the validation code."""
     )

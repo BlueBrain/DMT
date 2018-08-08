@@ -35,6 +35,7 @@ class CellDensity(SinglePhenomenonValidation):
     
     #label to use for region type, eg "Cortical Layer"
     region_type = Field(
+        __name__ = "region_type",
         __type__ = type,
         __is_valid_value__ = lambda rtype: issubclass(rtype, BrainRegion),
         __doc__ = """region type used for measuring cell density."""
