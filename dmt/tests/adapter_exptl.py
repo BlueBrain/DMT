@@ -2,11 +2,12 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import Interface, requiredmethod
+from dmt.aii import AdapterInterfaceBase, Interface
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
-class IntegerMathTest(ValidationTestCase):
+class IntegerMathTest(ValidationTestCase,
+                      AdapterInterfaceBase):
     """An example showing how to write a ValidationTestCase.
     """
     author = Author(name="Vishal Sood",

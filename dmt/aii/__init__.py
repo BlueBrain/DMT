@@ -10,6 +10,15 @@ from types import FunctionType
 from abc import ABC, abstractmethod
 from dmt.vtk.author import Author
 
+class Callable(ABC):
+    """A simple extension of ABC,
+    with an init method that takes *args and **kwargs,
+    but only to ignore them.
+    This is required because abc.ABC.__init__ does not take any parameters"""
+    def __init__(self, *args, **kwargs):
+        """init"""
+        super(Callable, self).__init__() #or don't do anything
+    
 class InterfaceMeta(type):
     """A metaclass to be used to create Interfaces!
     At some point we should come around to stripping any implementation
@@ -115,6 +124,22 @@ def adaptermethod(method):
     """
     return method
 
+def modelmethod(method):
+    """"Decorator, to be used to decorate a method a class that must
+    take model as it's second argument. These methods must be implemented by
+    an class that extends the containing class of these methods."""
+    method.__ismodelmethod__ = True
+    doc = """Method defined in validation test case's body to take 'model' as
+    it's second argument. It must be defined by a class that extends the
+    validation test case.
+    ----------------------------------------------------------------------------
+    """
+    method.__doc__ = doc + '\n' + method.__doc__
+    method.__doc__ += """
+    ----------------------------------------------------------------------------
+    """
+    return method
+
 def reportattribute(method):
     """Decorator, to be used to decorate a method of a class that must
     must be included in that class's ReportInterface.
@@ -190,14 +215,14 @@ class AIMeta(ABCMeta):
         if not hasattr(cls, 'AdapterInterface') and adapter_interface:
             cls.AdapterInterface = adapter_interface
 
-        super(AIMeta, cls).__init__(name, bases, dct)
+#        super(AIMeta, cls).__init__(name, bases, dct)
 
 
 def adapter_documentation(cls):
     """Documentation of a class that will use an adapter."""
     return "AdapterInterface"
 
-class AdapterInterfaceBase(metaclass=AIMeta):
+class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     """A base class for classes that will declare an adapter interface.
 
     Initializer
@@ -208,6 +233,7 @@ class AdapterInterfaceBase(metaclass=AIMeta):
     _model_adapter = None
 
     def __init__(self, *args, **kwargs):
+        print("AdapterInterface will initialize {}")
         self._model_adapter\
             = kwargs.get('model_adapter', kwargs.get('adapter', None))
 
@@ -315,12 +341,14 @@ def implementation(an_interface,
     may either adapt a Model or Data-object to a Validation, or may implement a
     reporter class.
     ---------------------------------------------------------------------------
+
     Parameters
     ---------------------------------------------------------------------------
-    @an_interface :: Interface# mostly generated with an appropriate decorator
-    @adapted_entity :: MeasurableSystem# model / data that was adapted
-    @reported_entity :: Analysis #in most cases that I can think of!
+    an_interface :: Interface# mostly generated with an appropriate decorator
+    adapted_entity :: MeasurableSystem# model / data that was adapted
+    reported_entity :: Analysis #in most cases that I can think of!
     ---------------------------------------------------------------------------
+
     Protocol
     ---------------------------------------------------------------------------
     A class 'cls' is an interface implementation
@@ -352,7 +380,10 @@ def implementation(an_interface,
         if reported_entity is not None:
             cls.__reported_entity__ = reported_entity
         return cls
+
     return effective
+
+implements = implementation #just an alias
 
 def get_implementations(an_interface):
     """all the implementations"""
@@ -367,6 +398,31 @@ def get_adapted_entity(impl):
     return getattr(impl, '__adapted_entity__', None)
 
                 
+def is_model_method(base_cls, method):
+    """Is 'method' a model method of class 'base_cls'?"""
+    return getattr(getattr(base_cls, method, None), '__ismodelmethod__', False)
 
+def extends(base_cls):
+    """A class decorator to mark a class that extends a base class."""
+    required_model_methods = [method for method in dir(base_cls)
+                              if is_model_method(base_cls, method)]
+    def effective(sub_cls):
+        """Effective class. Move to base_cls methods of sub_class,
+        that are not in base_cls already"""
+        def combined_init(self, *args, **kwargs):
+            """Combined initialization."""
+            #sub_cls.__init__(self, *args, **kwargs)
+            self.__init__(*args, **kwargs)
 
+        #attrs = {'__init__': combined_init}
+        attrs = {}
+        for model_method in required_model_methods:
+            if hasattr(sub_cls, model_method):
+                attrs[model_method] = getattr(sub_cls, model_method)
+            else:
+                print("WARNING: {} does not provide all model methods of {}"\
+                      .format(sub_cls, base_cls))
 
+        return type(sub_cls.__name__, (base_cls,), attrs)
+
+    return effective

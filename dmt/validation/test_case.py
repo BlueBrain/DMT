@@ -4,13 +4,13 @@ validation knows the format of the data that she is going to validate a model
 against. The initializer of ValidationTestCase will accept a data object.
 """
 
-from abc import abstractmethod
-from dmt.aii import AdapterInterfaceBase
+from abc import ABC, abstractmethod
+from dmt.aii import Callable, AdapterInterfaceBase
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import Field, document_fields
 
 @document_fields
-class ValidationTestCase(AdapterInterfaceBase):
+class ValidationTestCase(Callable):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
@@ -29,7 +29,6 @@ class ValidationTestCase(AdapterInterfaceBase):
         data set, or the directory location of a validation data set, or none,
         but not both.
         """
-        super(ValidationTestCase, self).__init__(*args, **kwargs)
         self.__validation_data = kwargs.get('validation_data', None)
         if (self.__validation_data is None and
             'validation_data_location' in kwargs):
@@ -43,6 +42,8 @@ class ValidationTestCase(AdapterInterfaceBase):
                 = self._load_validation_data(kwargs['validation_data_location'])
 
         self.author = kwargs.get('author', Author.anonymous)
+
+        super(ValidationTestCase, self).__init__(*args, **kwargs)
 
     @property
     def validation_data(self):
