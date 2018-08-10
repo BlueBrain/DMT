@@ -2,26 +2,26 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import adaptermethod, implementation
+from dmt.aii import Interface, requiredmethod
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
-class TestIntegerMethod(ValidationTestCase):
+class IntegerMathTest(ValidationTestCase):
     """An example showing how to write a ValidationTestCase.
     """
     author = Author(name="Vishal Sood",
                     affiliation="EPFL",
                     user_id=1)
 
-    class AdapterInterface:
+    class AdapterInterface(Interface):
         """Specify all the methods you require from your adapter here. In order
         to use this validation test case, the user will have to program an
         adapter for their model. The adapter must satisfy all the requirements
         specified in this interface.
 
-        Remember that all methods defined in the body of an interface will be
-        considered abstract --- only their __doc__ string will be kept.
-        Everything else in the body of these methods will be thrown away.
+        Methods and attributes defined in the body of an interface will be
+        considered abstract --- only their __doc__ string will be kept. There
+        is no need to mark these attributes and methods with a decorator.
         """
         def get_addition(self, model, x, y):
             """Add x and y.
@@ -52,7 +52,7 @@ class TestIntegerMethod(ValidationTestCase):
             pass
 
     def __call__(self, model):
-        """"Makes this ValidationTestCase callable.
+        """Makes this ValidationTestCase callable.
         Each ValidationTestCase must implement a '__call__' method.
 
         Parameters
@@ -61,9 +61,9 @@ class TestIntegerMethod(ValidationTestCase):
         """
         d = self.validation_data
         addition_measurement\
-            = self.model_adapter.get_addition(model, d.x, d.y)
+            = self.adapter.get_addition(model, d.x, d.y)
         subtraction_measurement\
-            = self.model_adapter.get_addition(model, d.x, d.y)
+            = self.adapter.get_addition(model, d.x, d.y)
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
                 else 'FAIL')

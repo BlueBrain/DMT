@@ -12,23 +12,29 @@ from dmt.vtk.author import Author
 
 class InterfaceMeta(type):
     """A metaclass to be used to create Interfaces!
-    This metaclass will strip away any method implementation,
-    thus enforcing a strict interface that is not allowed to have any
-    methods with implementations in its body."""
-
-    def __init__(meta, name, bases, attrs):
+    At some point we should come around to stripping any implementation
+    of required adapter methods.thus enforcing a strict interface that is not 
+    allowed to have any methods with implementations in its body."""
+    def __init__(cls, name, bases, attrs):
         """..."""
-        def raise_not_implemented(function):
-            """..."""
-            def function_eff(*args, **kwargs):
-                raise NotImplementedError
-
-            function_eff.__doc__ = function.__doc__
-
-        for m in attrs.keys():
-            attrs[m] = raise_not_implemented(attrs[m])
-
-        super(InterfaceMeta, meta).__init__(name, bases, attrs)
+        cls.__requiredmethods__ = [k for k in attrs.keys()
+                                   if (k != '__module__' and
+                                       k != '__doc__' and
+                                       k != '__qualname__')]
+        msg = '\n' + 80 * '-' + "\n"
+        msg += "{} for {} requires you to implement\n"\
+               .format(name, cls.__name__)
+        n = 1
+        for m, mm in attrs.items():
+            msg += "\t({}) {}: ".format(str(n), m)
+            if mm.__doc__ is not None:
+                msg += mm.__doc__
+                msg += "\n" 
+                n += 1
+                msg += 80 * '-' + "\n"
+        cls.__implementation_guide__ = msg
+                
+        super(InterfaceMeta, cls).__init__(name, bases, attrs)
 
 
 class Interface(metaclass=InterfaceMeta):
@@ -40,27 +46,54 @@ class Interface(metaclass=InterfaceMeta):
         An Interface cannot be initialized.
         It must be implemented!!!""".format(self.__class__.__name__))
 
-    __requiredmethods__ = []
     __implementation_registry__ = {}
-    __implementation_guide__ = "Please provide implementation instructions."
 
     @classmethod
     def register_implementation(cls, impl):
         """Register an implementation."""
-        for method in cls.__requiredmethods__:
-            if not hasattr(cls, method):
-                print(cls.__implementation_guide__)
-                raise Exception(
-                    "Unimplemented method '{}' required by interface "\
-                    .format(cls.__name__)
-                )
-        cls.__implementation_registry__[impl.__name__] = impl
+        impl_cls = impl if isinstance(impl, type) else type(impl)
+
+        unimplemented = cls.__unimplemented(impl_cls)
+        if len(unimplemented) > 0:
+            print("""To use {} as an implementation of {}'s adapter,
+            please provide: """.format(impl_cls, cls))
+            n = 1
+            for method in cls.__unimplemented(impl_cls):
+                print("{}: {}\n".format(n, method))
+                n += 1
+            print(cls.__implementation_guide__)
+            raise Exception(
+                "Unimplemented methods required by {}'s adapter interface"\
+                .format(cls)
+            )
+        cls.__implementation_registry__[impl_cls] = impl_cls
 
     @classmethod
-    def is_implemented_by(cls, implementation):
-        """Is this interface implemented by an implementation?"""
-        return (hasattr(implementation, '__implemented_interface__') and
-                implementation.__implemented_interface__ == cls)
+    def __unimplemented(cls, impl):
+        """A list of methods that were not implemented by implementation
+        'impl'. We may want to check that 'impl' actually implements,
+        i.e. the method is not abstractmethod or still requiredmethod. However
+        we cannot check for everything."""
+        return [method for method in cls.__requiredmethods__
+                if not hasattr(impl, method)]
+
+    @classmethod
+    def is_implemented_by(cls, impl):
+        """Is this interface implemented by an implementation?
+        """
+        return len(cls.__unimplemented(impl)) == 0
+
+    @classmethod
+    def extended_with(cls, other):
+        """Extend this interface with methods from other interface."""
+        if not issubclass(other, Interface):
+            raise Exception("{} is not an interface!".format(other))
+        all_required_methods = {m: getattr(cls, m)
+                                for m in cls.__requiredmethods__}
+        for m in other.__requiredmethods__:
+            all_required_methods[m] = getattr(other, m)
+
+        return type(cls.__name__, (Interface, ), all_required_methods)
 
 
 def requiredmethod(method):
@@ -134,21 +167,7 @@ def get_interface(client_cls, name='Interface'):
 
     required = {m: getattr(client_cls, m) for m in dir(client_cls)
                 if is_adapter_method(getattr(client_cls, m))}
-    cname = client_cls.__name__
-    spec = type(name, (Interface, ), required)
-    spec.__requiredmethods__ = required.keys()
-
-    msg = "{} for {} requires you to implement\n".format(name, cname)
-
-    n = 1
-    for m, mm in required.items():
-        msg += "\t({}) {}: ".format(str(n), m)
-        if mm.__doc__ is not None:
-            msg += mm.__doc__
-        msg += "\n" 
-        n += 1
-    spec.__implementation_guide__ = msg
-    return spec
+    return type(name, (Interface, ), required)
 
 def implementation_registry(an_interface):
     """list of implementations"""
@@ -163,13 +182,13 @@ from abc import ABCMeta, abstractmethod
 class AIMeta(ABCMeta):
     """A metaclass that will add an AdapterInterface."""
     def __new__(mcs, name, bases, dct):
-        print("AIMeta will create a new {} with name {}".format(mcs.__name__, name))
         cls = super(AIMeta, mcs).__new__(mcs, name, bases, dct)
         return cls
 
     def __init__(cls, name, bases, dct):
-        print("AIMeta will initialize {} with name {}".format(cls.__name__, name))
-        cls.AdapterInterface = get_interface(cls, name='AdapterInterface')
+        adapter_interface = get_interface(cls, name="AdapterInterface")
+        if not hasattr(cls, 'AdapterInterface') and adapter_interface:
+            cls.AdapterInterface = adapter_interface
 
         super(AIMeta, cls).__init__(name, bases, dct)
 
@@ -189,7 +208,8 @@ class AdapterInterfaceBase(metaclass=AIMeta):
     _model_adapter = None
 
     def __init__(self, *args, **kwargs):
-        self._model_adapter = kwargs.get('model_adapter', None)
+        self._model_adapter\
+            = kwargs.get('model_adapter', kwargs.get('adapter', None))
 
     @property
     def model_adapter(self):
@@ -234,6 +254,7 @@ class AdapterInterfaceBase(metaclass=AIMeta):
         if self.AdapterInterface.is_implemented_by(value):
             self._model_adapter = value
         else:
+            print(self.AdapterInterface.__implementation_guide__)
             raise ValueError("{} does not implement {} adapter's interface"\
                              .format(value, self.__class__.__name__))
 
@@ -307,7 +328,7 @@ def implementation(an_interface,
     ---------------------------------------------------------------------------
     """
     if not issubclass(an_interface, Interface):
-        raise Exception("{} is not an Interface".format(an_interface.__name__))
+        raise Exception("{} is not an Interface".format(an_interface))
 
     def effective(cls):
         """Effective class"""

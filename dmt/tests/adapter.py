@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import adaptermethod, implementation
+from dmt.aii import AdapterInterfaceBase, adaptermethod, implementation
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
 
-class TestIntegerMath(ValidationTestCase):
+class TestIntegerMath(ValidationTestCase,
+                      AdapterInterfaceBase):
     """Preferred way to write a ValidationTestCase.
     Notes for the users of this validation test case
     ------------------------------------------------
@@ -39,9 +40,9 @@ class TestIntegerMath(ValidationTestCase):
             else self.validation_data
 
         addition_measurement\
-            = self.model_adapter.get_addition(model, d.x, d.y)
+            = self.adapter.get_addition(model, d.x, d.y)
         subtraction_measurement\
-            = self.model_adapter.get_subtraction(model, d.x, d.y)
+            = self.adapter.get_subtraction(model, d.x, d.y)
 
         return ('PASS' if (all(addition_measurement == d.z) and
                            all(subtraction_measurement == d.w))
@@ -119,7 +120,7 @@ test_data = pd.DataFrame(dict(
 timpm = TestIntegerMath(validation_data=test_data)
 #in which case,
 #you have to set a ValidationTestCase's adapter instance
-timpm.model_adapter = TestIntegerMathModelPMAdapter()
+timpm.adapter = TestIntegerMathModelPMAdapter()
 
 def run_test(tst, obj):
     result = tst(obj)
@@ -148,7 +149,7 @@ class IntegerModuloMathModel:
 
 
 @implementation(TestIntegerMath.AdapterInterface, IntegerModuloMathModel)
-class TestIntegerMathModelModuleAdapter:
+class TestIntegerMathModelModuloAdapter:
     """Adapt IntegerModuloMathModel for TestIntegerMath."""
     @classmethod
     def get_addition(cls, model, x, y):
@@ -159,6 +160,6 @@ class TestIntegerMathModelModuleAdapter:
         return model.msub(x, y)
 
 timmodulo = TestIntegerMath(validation_data=test_data,
-                            model_adapter=TestIntegerMathModelModuleAdapter())
+                            adapter=TestIntegerMathModelModuloAdapter())
 
 run_test(timmodulo, IntegerModuloMathModel(1))
