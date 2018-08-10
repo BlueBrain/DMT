@@ -11,7 +11,7 @@ class TestIntegerMath(ValidationTestCase):
     ------------------------------------------------
     Provide validation logic in __call__.
     Mark all measurements, or any other data, required from the
-    model by decorator '@adapter.requires'."""
+    model by decorator '@adaptermethod'."""
 
     author = Author(name="Vishal Sood",
                     affiliation="EPFL",

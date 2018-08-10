@@ -56,6 +56,12 @@ class Interface(metaclass=InterfaceMeta):
                 )
         cls.__implementation_registry__[impl.__name__] = impl
 
+    @classmethod
+    def is_implemented_by(cls, implementation):
+        """Is this interface implemented by an implementation?"""
+        return (hasattr(implementation, '__implemented_interface__') and
+                implementation.__implemented_interface__ == cls)
+
 
 def requiredmethod(method):
     """Decorator, to be used to decorate a method of a class that must
@@ -67,6 +73,13 @@ def adaptermethod(method):
     """Decorator, to be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
     method.__isadaptermethod__  = True
+    doc = """Method defined in an Adapter Interface, will need implementation
+    ----------------------------------------------------------------------------
+    """
+    method.__doc__ = doc + "\n" + method.__doc__
+    method.__doc__ += """
+    ----------------------------------------------------------------------------
+    """
     return method
 
 def reportattribute(method):
@@ -79,7 +92,7 @@ def reportattribute(method):
     of their validation."""
     method.__isreportattribute__ = True
     return method
-    
+
 def is_interface(cls):
     """Is class 'cls' an interface.
     We establish the protocol that any class derived from Interface is
@@ -132,7 +145,7 @@ def get_interface(client_cls, name='Interface'):
         msg += "\t({}) {}: ".format(str(n), m)
         if mm.__doc__ is not None:
             msg += mm.__doc__
-        msg += "\n"
+        msg += "\n" 
         n += 1
     spec.__implementation_guide__ = msg
     return spec
@@ -149,14 +162,21 @@ def implementation_registry(an_interface):
 from abc import ABCMeta, abstractmethod
 class AIMeta(ABCMeta):
     """A metaclass that will add an AdapterInterface."""
-    def __new__(meta, name, bases, dct):
-        return super(AIMeta, meta).__new__(meta, name, bases, dct)
+    def __new__(mcs, name, bases, dct):
+        print("AIMeta will create a new {} with name {}".format(mcs.__name__, name))
+        cls = super(AIMeta, mcs).__new__(mcs, name, bases, dct)
+        return cls
 
     def __init__(cls, name, bases, dct):
+        print("AIMeta will initialize {} with name {}".format(cls.__name__, name))
         cls.AdapterInterface = get_interface(cls, name='AdapterInterface')
 
         super(AIMeta, cls).__init__(name, bases, dct)
 
+
+def adapter_documentation(cls):
+    """Documentation of a class that will use an adapter."""
+    return "AdapterInterface"
 
 class AdapterInterfaceBase(metaclass=AIMeta):
     """A base class for classes that will declare an adapter interface.
@@ -184,6 +204,39 @@ class AdapterInterfaceBase(metaclass=AIMeta):
         """Reset the adapter."""
         self._model_adapter = value
 
+    @property
+    def adapter(self):
+        """Another name for model_adapter.
+        'model_adapter' is awkward. We went for this long form to keep open
+        the possibility of having a 'data_adapter'. But looking towards a more
+        generalized approach, you may also want to be able to validated two
+        models against each other. The question is what will increase the
+        overall usability of this framework.
+
+        Thus on the side of simplicity, we argue for defining a validation
+        along with the data --- that is data is part of a validation's
+        definition. The more general notion may be defined as a 'Comparison'.
+        We can have a hierarchy, starting with 'Analysis'.
+
+        If we choose thus, then it makes sense that 'adapter' is always a
+        'model_adapter'. We do not have to change the innards -- so protected
+        variable name remains '_model_adapter'.
+        """
+        if self._model_adapter is None:
+            raise Exception("An Adapter for {} was not set!!!"\
+                            .format(self.__class__.__name__))
+        return self._model_adapter
+
+    @adapter.setter
+    def adapter(self, value):
+        """Reset the adapter, after testing that the new value is that of a
+        valid implementation."""
+        if self.AdapterInterface.is_implemented_by(value):
+            self._model_adapter = value
+        else:
+            raise ValueError("{} does not implement {} adapter's interface"\
+                             .format(value, self.__class__.__name__))
+
     @classmethod
     def accepted_models(cls):
         """Models that this class with AdapterInterface will accept ---
@@ -193,7 +246,7 @@ class AdapterInterfaceBase(metaclass=AIMeta):
             for impl in implementation_registry(cls.AdapterInterface).values()
             if get_adapted_entity(impl) is not None
         ])
-        
+
 
 def is_interface_implementation(cls):
     """Does class 'cls' implement an interface?"""
@@ -202,29 +255,36 @@ def is_interface_implementation(cls):
 def implements_interface(cls, an_interface):
     """
     Does given class implement the given interface?
-    -----------------------------------------------
+    ---------------------------------------------------------------------------
+
     Parameters
-    ----------
+    ---------------------------------------------------------------------------
     @cls :: type # class we want to check
     @an_interface <: Interface #subclass of Interface
-    -----------------------------------------------
+    ---------------------------------------------------------------------------
+
     Protocol
-    --------
-    A class 'cls' implements the interface 'an_interface'"""
-    return cls.__interface__ == an_interface
-    
-    
+    ---------------------------------------------------------------------------
+    A class 'cls' implements the interface 'an_interface'
+
+    Return
+    ---------------------------------------------------------------------------
+    @type bool
+    """
+    return (hasattr(cls, '__implemented_interface__') and
+            an_interface.__implemented_interface__ == an_interface)
+
 def implementation_guide(an_interface):
     """Instructions on how to implement an interface"""
     if not is_interface(an_interface):
         raise Exception("{} is not an interface!!!"\
                         .format(an_interface.__name__))
-    return implementation_guide(an_interface)
-    
+    return an_interface.__implementation_guide__
+
 
 def get_required_methods(cls):
     return getattr(cls, '__requiredmethods__', [])
-    
+
 #and now the implementations
 #def interface_implementation(an_interface):
 def implementation(an_interface,
@@ -260,7 +320,7 @@ def implementation(an_interface,
                   cls.author)
         an_interface.register_implementation(cls)
         cls.__isinterfaceimplementation__ = True
-        cls.__interface__ = an_interface
+        cls.__implemented_interface__ = an_interface
         if adapted_entity is not None and reported_entity is not None:
             raise ValueError("""
             Only one of 'adapted_entity', 'reported_entity'

@@ -15,7 +15,6 @@ class Report:
         self.__report_dict__ = {}
         for attr, value in self.__class__.__dict__.items():
             if is_field(value):
-                print("set {} to {}".format(attr, value))
                 try:
                     value = kwargs[attr]
                 except:

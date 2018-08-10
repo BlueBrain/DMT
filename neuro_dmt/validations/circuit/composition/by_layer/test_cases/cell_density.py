@@ -31,7 +31,9 @@ class CellDensity(SinglePhenomenonValidation):
         __name__ = "region_type",
         __type__ = type,
         __is_valid_value__ = lambda rtype: issubclass(rtype, BrainRegion),
-        __doc__ = """region type used for measuring cell density."""
+        __doc__ = """Composition phenomena are to be measured as a function of
+        a region type, for example cell density in the cortex as a function of
+        'CorticalLayer'"""
     )
     def __init__(self, validation_data, *args, **kwargs):
         """This initializer is written as a generic initializer,
@@ -71,10 +73,8 @@ class CellDensity(SinglePhenomenonValidation):
         kwargs['author']\
             = Author(name="Vishal Sood", affiliation="EPFL", user_id=1)
         
-
-
     @adaptermethod
-    def get_cell_density(circuit_model):
+    def get_cell_density(model_adapter, circuit_model):
         """Get cell density for a circuit.
         This method must be defined for the model adapter class that will
         interpret a circuit model to be validated.
@@ -95,7 +95,7 @@ class CellDensity(SinglePhenomenonValidation):
 
 
     @adaptermethod
-    def get_anatomically_ordered(circuit_model, data_frame):
+    def get_anatomically_ordered(model_adapter, circuit_model, data_frame):
         """Get an anatomically ordered data frame.
         This method must be defined for the model adapter class that will
         interpret a circuit model to be validated.
@@ -117,7 +117,7 @@ class CellDensity(SinglePhenomenonValidation):
         pass
 
     @adaptermethod
-    def get_label(circuit_model):
+    def get_label(adapter_method, circuit_model):
         """Get a label for the circuit model.
 
         Parameters
