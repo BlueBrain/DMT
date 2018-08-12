@@ -211,7 +211,8 @@ class AIMeta(ABCMeta):
         return cls
 
     def __init__(cls, name, bases, dct):
-        adapter_interface = get_interface(cls, name="AdapterInterface")
+        ainame = "{}AdapterInterface".format(cls.__name__)
+        adapter_interface = get_interface(cls, name=ainame)
         if not hasattr(cls, 'AdapterInterface') and adapter_interface:
             cls.AdapterInterface = adapter_interface
 
@@ -294,6 +295,26 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
             if get_adapted_entity(impl) is not None
         ])
 
+    def get_adapted(self, model):
+        """Get an object that is an adapted model.
+        Improve this documentation.
+        """
+        def __adapted_method(method):
+            """..."""
+            def __effective(this, *args, **kwargs):
+                """..."""
+                return getattr(self.adapter, method)(model, *args, **kwargs)
+
+            return __effective
+
+        name = """{}AdaptedTo{}"""\
+               .format(model.__class__.__name__,
+                       self.__class__.__name__)
+        return type(name, (object, ), {
+            m: __adapted_method(m)
+            for m in self.AdapterInterface.__requiredmethods__
+        })()
+        
 
 def is_interface_implementation(cls):
     """Does class 'cls' implement an interface?"""

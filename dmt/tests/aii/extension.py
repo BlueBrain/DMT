@@ -1,4 +1,25 @@
-"""We do not like the current way of specifying adapter methods."""
+"""We do not like the current way of specifying adapter methods.
+We give an example of a partial class version of the Adapter pattern,
+and one of a full class version.
+The Adapter pattern is a scheme you can follow to provide a glue between two
+disparate objects. In our example, we have validations for models of natural
+phenomena on one side, and models on the other. We would like to be able to
+apply a validation to any model (that predicts phenomenon used by the
+validation). So that the validator and the modeler can develop their code
+independently, we follow the Adapter pattern to provide the glue --- to help
+the user adapt a model to the requirements of a validation.
+
+A full class version of the Adapter pattern would inherit (in our use case)
+from both a validation class, and a model class.
+
+In our partial class version, we subclass only the validation class, providing
+the code for handling the model in the subclass. We use partial class version
+when we want to pass the model to validate explicitly as a call to the instance
+(using '__call__').
+
+The Gang of four, or industry accepted idea of an Adapter pattern might
+consider the suggestion below as an object variety of the Adapter pattern.
+"""
 
 from abc import ABC, abstractmethod
 import pandas as pd
