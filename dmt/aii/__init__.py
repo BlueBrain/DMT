@@ -426,3 +426,10 @@ def extends(base_cls):
         return type(sub_cls.__name__, (base_cls,), attrs)
 
     return effective
+
+def modelextension(validation_cls):
+    """A class decorator to convert a 'ValidationTestCase' to a full validation
+    by implementing 'modelmethods' (look at decorator method 'modelmethod'). For
+    now it acts like an alias for 'extends'.
+    """
+    return extends(validation_cls)

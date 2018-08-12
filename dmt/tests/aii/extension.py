@@ -68,7 +68,7 @@ class IntegerMathModelPM(ABC):
 
 
 
-@extends(IntegerMathTest)
+@modelextension(IntegerMathTest)
 class IntegerMathModelPMTest:
     """The user should need to implement only the methods in,
     without having to worry about an initializer. The decorator should
