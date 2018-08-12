@@ -22,7 +22,8 @@ class IntegerMathTest(ValidationTestCase,
     def __call__(self, model):
         "...call me..."
         d = self.validation_data
-        model = self.get_adapted(model)
+        model = self.AdaptedModel(model)
+        #model = self.get_adapted(model)
         addition = model.get_addition(d.x, d.y)
         subtraction = model.get_subtraction(d.x, d.y)
 

@@ -295,8 +295,9 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
             if get_adapted_entity(impl) is not None
         ])
 
-    def get_adapted(self, model):
+    def AdaptedModel(self, model):
         """Get an object that is an adapted model.
+        This function is named as a class to suggest that it returns a class!
         Improve this documentation.
         """
         def __adapted_method(method):
