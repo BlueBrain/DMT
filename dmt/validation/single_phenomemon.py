@@ -28,7 +28,7 @@ class SinglePhenomenonValidation(ValidationTestCase):
 
     @abstractmethod
     def get_caption(self):
-        """Get caption that will be shown below the validation plot.
+        """Caption that will be shown below the validation plot.
 
         Implementation Notes
         ------------------------------------------------------------------------
@@ -38,4 +38,10 @@ class SinglePhenomenonValidation(ValidationTestCase):
         the concrete implementation of SinglePhenomenonValidation will have to
         determine where to get the information required to produce a caption. 
         """
+        pass
+
+
+    @abstractmethod
+    def data_description(self):
+        """Describe the data used for this validation."""
         pass

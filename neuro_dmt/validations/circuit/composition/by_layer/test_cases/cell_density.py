@@ -13,6 +13,8 @@ from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.validations.circuit.composition import layer_composition 
+from neuro_dmt.validations.circuit.composition.by_layer \
+    import CompositionValidation
 from neuro_dmt.utils.brain_region import BrainRegion
 from neuro_dmt.validations.circuit.composition import CompositionReport
 
@@ -172,5 +174,6 @@ class CellDensity(SinglePhenomenonValidation):
             is_fail=verdict == Verdict.FAIL,
             p_value=p_val
         )
+
         return report
 
