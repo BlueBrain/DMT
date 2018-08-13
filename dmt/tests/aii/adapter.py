@@ -5,8 +5,7 @@ from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
 
-class TestIntegerMath(ValidationTestCase,
-                      AdapterInterfaceBase):
+class TestIntegerMath(ValidationTestCase):
                   
     """Preferred way to write a ValidationTestCase.
     Notes for the users of this validation test case

@@ -35,12 +35,13 @@ class InterfaceMeta(type):
                .format(name, cls.__name__)
         n = 1
         for m, mm in attrs.items():
-            msg += "\t({}) {}: ".format(str(n), m)
-            if mm.__doc__ is not None:
-                msg += mm.__doc__
-                msg += "\n" 
-                n += 1
-                msg += 80 * '-' + "\n"
+            if not m in ['__module__', '__qualname__', '__doc__']:
+                msg += "\t({}) {}: ".format(str(n), m)
+                if mm.__doc__ is not None:
+                    msg += mm.__doc__
+                    msg += "\n" 
+                    n += 1
+                    msg += 80 * '-' + "\n"
         cls.__implementation_guide__ = msg
                 
         super(InterfaceMeta, cls).__init__(name, bases, attrs)
@@ -234,7 +235,6 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     _model_adapter = None
 
     def __init__(self, *args, **kwargs):
-        print("AdapterInterface will initialize {}")
         self._model_adapter\
             = kwargs.get('model_adapter', kwargs.get('adapter', None))
 

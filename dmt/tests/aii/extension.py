@@ -23,11 +23,11 @@ consider the suggestion below as an object variety of the Adapter pattern.
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.validation.test_case import ValidationTestCase
+from dmt.validation.test_case import ValidationTestCaseBase
 from dmt.vtk.author import Author
-from dmt.aii import modelmethod, extends #we will need to change this method
+from dmt.aii import modelmethod, modelextension 
 
-class IntegerMathTest(ValidationTestCase):
+class IntegerMathTest(ValidationTestCaseBase):
     """An example to show how a validation may be written."""
     author = Author(name="Vishal Sood",
                     affiliation="EPFL",

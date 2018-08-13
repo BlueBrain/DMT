@@ -10,7 +10,7 @@ from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import Field, document_fields
 
 @document_fields
-class ValidationTestCase(Callable):
+class ValidationTestCaseBase(Callable):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
@@ -43,7 +43,7 @@ class ValidationTestCase(Callable):
 
         self.author = kwargs.get('author', Author.anonymous)
 
-        super(ValidationTestCase, self).__init__(*args, **kwargs)
+        super(ValidationTestCaseBase, self).__init__(*args, **kwargs)
 
     @property
     def validation_data(self):
@@ -78,3 +78,6 @@ class ValidationTestCase(Callable):
         *args, and **kwargs may contain parameters to be passed to the model."""
         pass
 
+class ValidationTestCase(ValidationTestCaseBase, AdapterInterfaceBase):
+    """"Just a class that mixes two."""
+    pass

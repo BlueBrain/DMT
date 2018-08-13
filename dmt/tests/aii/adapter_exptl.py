@@ -6,8 +6,7 @@ from dmt.aii import AdapterInterfaceBase, Interface
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
-class IntegerMathTest(ValidationTestCase,
-                      AdapterInterfaceBase):
+class IntegerMathTest(ValidationTestCase):
     """An example showing how to write a ValidationTestCase.
     """
     author = Author(name="Vishal Sood",

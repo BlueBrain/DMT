@@ -2,22 +2,37 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import AdapterInterfaceBase, adaptermethod, implementation
+from dmt.aii import\
+    AdapterInterfaceBase, adaptermethod, implementation, Interface
 from dmt.validation.test_case import ValidationTestCase
+from dmt.vtk.author import Author
 
-class IntegerMathTest(ValidationTestCase,
-                      AdapterInterfaceBase):
+class IntegerMathTest(ValidationTestCase):
     """To show semantics to declare interfaces/adapters."""
 
-    @adaptermethod
-    def get_addition(self, model, x, y):
-        "add two numbers"
-        pass
+    author = Author(name="Vishal Sood",
+                    affiliation="EPFL",
+                    user_id=1)
 
-    @adaptermethod
-    def get_subtraction(self, model, x, y):
-        """subtract two numbers"""
-        pass
+    class AdapterInterface(Interface):
+        """You may define a validation's required interface as a class.
+        The result is the same as using decorator 'adaptermethod' before each
+        member function required by the interface."""
+
+        def get_addition(self, model, x, y):
+            "add two numbers"
+            pass
+
+        def get_subtraction(self, model, x, y):
+            """subtract two numbers"""
+            pass
+
+        def get_multiplication(self, model, x, y):
+            """multiply two numbers"""
+            pass
+        def get_division(self, model, x, y):
+            """divide two numbers"""
+            pass
 
     def __call__(self, model):
         "...call me..."
@@ -26,10 +41,13 @@ class IntegerMathTest(ValidationTestCase,
         #model = self.get_adapted(model)
         addition = model.get_addition(d.x, d.y)
         subtraction = model.get_subtraction(d.x, d.y)
+        multiplcation = model.get_multiplication(d.x, d.y)
+        division = model.get_division(d.x, d.y)
 
         return ('PASS' if (all(addition == d.z) and
                            all(subtraction == d.w))
                 else 'FAIL')
+
 
 #here is an example of how to use ABC's as interfaces
 class IntegerMathModelPM(ABC):
@@ -48,21 +66,48 @@ class IntegerMathModelPM(ABC):
         to return another integer."""
         pass
 
+    @abstractmethod
+    def multiply(self, x, y):
+        """multiply integer x and y,
+        to return another integer. """
+        pass
+
+    @abstractmethod
+    def divide(self, x, y):
+        """divide x by y."""
+        pass
+       
 
 class GoodIntegerMathModel(IntegerMathModelPM):
+    """A good model, that does math right."""
 
     def plus(self, x, y):
         return x + y
+
     def minus(self, x, y):
         return x - y
 
+    def multiply(self, x, y):
+        return x * y
+
+    def divide(self, x, y):
+        return x / y
+
 
 class BadIntegerMathModel(IntegerMathModelPM):
+    """A bad model, that does math wrong."""
 
     def plus(self, x, y):
         return x + y
+
     def minus(self, x, y):
         return x + y
+
+    def multiply(self, x, y):
+        return x * y
+
+    def divide(self, x, y):
+        return y / x
 
 @implementation(IntegerMathTest.AdapterInterface,
                 adapted_entity=IntegerMathModelPM)
@@ -87,6 +132,14 @@ class TestIntegerMathModelPMAdapter:
     @classmethod
     def get_subtraction(cls, model, x, y):
         return model.minus(x, y)
+
+    @classmethod
+    def get_multiplication(cls, model, x, y):
+        return model.multiply(x, y)
+
+    @classmethod
+    def get_division(cls, model, x, y):
+        return model.divide(x, y)
 
 
 test_data = pd.DataFrame(dict(
@@ -129,6 +182,12 @@ class IntegerModuloMathModel:
     def msub(self, x, y):
         return (x - y) % self.__n
 
+    def mmul(self, x, y):
+        return (x * y) % self.__n
+
+    def mdiv(self, x, y):
+        return (x / y) % self.__n
+
 
 @implementation(IntegerMathTest.AdapterInterface, IntegerModuloMathModel)
 class TestIntegerMathModelModuloAdapter:
@@ -140,6 +199,14 @@ class TestIntegerMathModelModuloAdapter:
     @classmethod
     def get_subtraction(cls, model, x, y):
         return model.msub(x, y)
+
+    @classmethod
+    def get_multiplication(cls, model, x, y):
+        return model.mmul(x, y)
+
+    @classmethod
+    def get_division(cls, model, x, y):
+        return model.mdiv(x, y)
 
 timmodulo = IntegerMathTest(validation_data=test_data,
                             adapter=TestIntegerMathModelModuloAdapter())
