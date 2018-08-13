@@ -123,7 +123,9 @@ class CompositionReport(Report):
                 
             with open(report_file_path, 'w') as f:
                 f.write(str(t))
+
             return report_file_path
+
         except Exception as ex: #convert the following to a warning
             print("""WARNING!!!
             While loading the template {}.
