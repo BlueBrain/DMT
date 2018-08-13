@@ -295,22 +295,21 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
             if get_adapted_entity(impl) is not None
         ])
 
-    def AdaptedModel(self, model):
+    def adapted(self, model):
         """Get an object that is an adapted model.
-        This function is named as a class to suggest that it returns a class!
         Improve this documentation.
         """
         def __adapted_method(method):
             """..."""
+
             def __effective(this, *args, **kwargs):
                 """..."""
                 return getattr(self.adapter, method)(model, *args, **kwargs)
 
             return __effective
 
-        name = """{}AdaptedTo{}"""\
-               .format(model.__class__.__name__,
-                       self.__class__.__name__)
+        name = "{}AdaptedTo{}".format(model.__class__.__name__,
+                                      self.__class__.__name__)
         return type(name, (object, ), {
             m: __adapted_method(m)
             for m in self.AdapterInterface.__requiredmethods__
