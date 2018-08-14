@@ -8,6 +8,7 @@ model, the user must provide an adapter implmentation."""
 
 from types import FunctionType
 from abc import ABC, abstractmethod
+from dmt.aii.interface import Interface
 from dmt.vtk.author import Author
 
 class Callable(ABC):
@@ -19,93 +20,6 @@ class Callable(ABC):
         """init"""
         super(Callable, self).__init__() #or don't do anything
     
-class InterfaceMeta(type):
-    """A metaclass to be used to create Interfaces!
-    At some point we should come around to stripping any implementation
-    of required adapter methods.thus enforcing a strict interface that is not 
-    allowed to have any methods with implementations in its body."""
-    def __init__(cls, name, bases, attrs):
-        """..."""
-        cls.__requiredmethods__ = [k for k in attrs.keys()
-                                   if (k != '__module__' and
-                                       k != '__doc__' and
-                                       k != '__qualname__')]
-        msg = '\n' + 80 * '-' + "\n"
-        msg += "{} for {} requires you to implement\n"\
-               .format(name, cls.__name__)
-        n = 1
-        for m, mm in attrs.items():
-            if not m in ['__module__', '__qualname__', '__doc__']:
-                msg += "\t({}) {}: ".format(str(n), m)
-                if mm.__doc__ is not None:
-                    msg += mm.__doc__
-                    msg += "\n" 
-                    n += 1
-                    msg += 80 * '-' + "\n"
-        cls.__implementation_guide__ = msg
-                
-        super(InterfaceMeta, cls).__init__(name, bases, attrs)
-
-
-class Interface(metaclass=InterfaceMeta):
-    """Abstract base class to define an Interface."""
-
-    def __init__(self, *args, **kwargs):
-        """An Interface cannot be instantiated."""
-        raise Exception("""{} is an Interface.
-        An Interface cannot be initialized.
-        It must be implemented!!!""".format(self.__class__.__name__))
-
-    __implementation_registry__ = {}
-
-    @classmethod
-    def register_implementation(cls, impl):
-        """Register an implementation."""
-        impl_cls = impl if isinstance(impl, type) else type(impl)
-
-        unimplemented = cls.__unimplemented(impl_cls)
-        if len(unimplemented) > 0:
-            print("""To use {} as an implementation of {}'s adapter,
-            please provide: """.format(impl_cls, cls))
-            n = 1
-            for method in cls.__unimplemented(impl_cls):
-                print("{}: {}\n".format(n, method))
-                n += 1
-            print(cls.__implementation_guide__)
-            raise Exception(
-                "Unimplemented methods required by {}'s adapter interface"\
-                .format(cls)
-            )
-        cls.__implementation_registry__[impl_cls] = impl_cls
-
-    @classmethod
-    def __unimplemented(cls, impl):
-        """A list of methods that were not implemented by implementation
-        'impl'. We may want to check that 'impl' actually implements,
-        i.e. the method is not abstractmethod or still requiredmethod. However
-        we cannot check for everything."""
-        return [method for method in cls.__requiredmethods__
-                if not hasattr(impl, method)]
-
-    @classmethod
-    def is_implemented_by(cls, impl):
-        """Is this interface implemented by an implementation?
-        """
-        return len(cls.__unimplemented(impl)) == 0
-
-    @classmethod
-    def extended_with(cls, other):
-        """Extend this interface with methods from other interface."""
-        if not issubclass(other, Interface):
-            raise Exception("{} is not an interface!".format(other))
-        all_required_methods = {m: getattr(cls, m)
-                                for m in cls.__requiredmethods__}
-        for m in other.__requiredmethods__:
-            all_required_methods[m] = getattr(other, m)
-
-        return type(cls.__name__, (Interface, ), all_required_methods)
-
-
 def requiredmethod(method):
     """Decorator, to be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
@@ -151,12 +65,6 @@ def reportattribute(method):
     of their validation."""
     method.__isreportattribute__ = True
     return method
-
-def is_interface(cls):
-    """Is class 'cls' an interface.
-    We establish the protocol that any class derived from Interface is
-    an interface."""
-    return issubclass(cls, Interface)
 
 def is_required_method(method):
     """Specify the protocol that a method is required by an interface."""
