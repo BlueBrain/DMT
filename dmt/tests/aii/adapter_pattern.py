@@ -2,8 +2,9 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
+from dmt.aii import interface, adapter
 from dmt.aii import\
-    AdapterInterfaceBase, adaptermethod, implementation, Interface
+    AdapterInterfaceBase, adaptermethod
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
@@ -14,7 +15,7 @@ class IntegerMathTest(ValidationTestCase):
                     affiliation="EPFL",
                     user_id=1)
 
-    class AdapterInterface(Interface):
+    class AdapterInterface(interface.Interface):
         """You may define a validation's required interface as a class.
         The result is the same as using decorator 'adaptermethod' before each
         member function required by the interface."""
@@ -109,8 +110,9 @@ class BadIntegerMathModel(IntegerMathModelPM):
     def divide(self, x, y):
         return y / x
 
-@implementation(IntegerMathTest.AdapterInterface,
-                adapted_entity=IntegerMathModelPM)
+
+@adapter.adapter(IntegerMathModelPM)
+@interface.implementation(IntegerMathTest.AdapterInterface)
 class TestIntegerMathModelPMAdapter:
     """An adapter for TestIntegerMathModel.
     Methods in the Adapter are all class method.
@@ -189,7 +191,9 @@ class IntegerModuloMathModel:
         return (x / y) % self.__n
 
 
-@implementation(IntegerMathTest.AdapterInterface, IntegerModuloMathModel)
+
+@adapter.adapter(IntegerModuloMathModel)
+@interface.implementation(IntegerMathTest.AdapterInterface)
 class TestIntegerMathModelModuloAdapter:
     """Adapt IntegerModuloMathModel for TestIntegerMath."""
     @classmethod

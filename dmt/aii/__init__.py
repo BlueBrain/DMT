@@ -3,12 +3,13 @@ A validation should employ a language of the problem domain, and not be
 specialized for a particular problem domain. So the validation code in a
 ValidationTestCase must interface with a model through an adapter. The author
 of a ValidationTestCase must mark the methods required from the Adapter with
-decorators '@requiredmethod'. To use a ValidaionTestCase for a particular
+decorators '@interfacemethod'. To use a ValidaionTestCase for a particular
 model, the user must provide an adapter implmentation."""
 
 from types import FunctionType
 from abc import ABC, abstractmethod
-from dmt.aii.interface import Interface
+from dmt.aii.interface \
+    import Interface, get_interface, interfacemethod,interfaceattribute
 from dmt.vtk.author import Author
 
 class Callable(ABC):
@@ -29,7 +30,7 @@ def requiredmethod(method):
 def adaptermethod(method):
     """Decorator, to be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
-    method.__isadaptermethod__  = True
+    method = interfaceattribute(method)
     doc = """Method defined in an Adapter Interface, will need implementation
     ----------------------------------------------------------------------------
     """
@@ -76,7 +77,7 @@ def is_adapter_method(method):
     """Specify the Protocol that an Adapter should implement a method. This
     method will be listed in an AdapterInterface."""
     return (isinstance(method, FunctionType) and
-            getattr(method, '__isadaptermethod__', False))
+            getattr(method, '__isinterfacemethod__', False))
 
 def is_report_attribute(attr):
     """Specify the Protocol that a Report should have an attribute. This
@@ -85,24 +86,12 @@ def is_report_attribute(attr):
     
 def needs_adapter_interface(client_cls):
     """Specifies the protocol that a class specifies an interface.
-    A class that has any method with attribute '__isadaptermethod__' set to
+    A class that has any method with attribute '__isinterfacemethod__' set to
     'True' will be treated as specifying an interface.
     """
     return any([is_adapter_method(getattr(client_cls, method))
                 for method in dir(client_cls)])
                                    
-def get_interface(client_cls, name='Interface'):
-    """Create an interface for a client class.
-    Parameters
-    ----------
-    @client_cls :: type #the class that needs an interface."""
-    if not needs_adapter_interface(client_cls):
-        return None
-
-    required = {m: getattr(client_cls, m) for m in dir(client_cls)
-                if is_adapter_method(getattr(client_cls, m))}
-    return type(name, (Interface, ), required)
-
 def implementation_registry(an_interface):
     """list of implementations"""
     if not is_interface(an_interface):
@@ -220,7 +209,7 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
                                       self.__class__.__name__)
         return type(name, (object, ), {
             m: __adapted_method(m)
-            for m in self.AdapterInterface.__requiredmethods__
+            for m in self.AdapterInterface.__interfacemethods__
         })()
         
 
@@ -259,60 +248,7 @@ def implementation_guide(an_interface):
 
 
 def get_required_methods(cls):
-    return getattr(cls, '__requiredmethods__', [])
-
-#and now the implementations
-#def interface_implementation(an_interface):
-def implementation(an_interface,
-                   adapted_entity=None,
-                   reported_entity=None):
-    """A class decorator to declare that a class implements an interface, which
-    may either adapt a Model or Data-object to a Validation, or may implement a
-    reporter class.
-    ---------------------------------------------------------------------------
-
-    Parameters
-    ---------------------------------------------------------------------------
-    an_interface :: Interface# mostly generated with an appropriate decorator
-    adapted_entity :: MeasurableSystem# model / data that was adapted
-    reported_entity :: Analysis #in most cases that I can think of!
-    ---------------------------------------------------------------------------
-
-    Protocol
-    ---------------------------------------------------------------------------
-    A class 'cls' is an interface implementation
-    if cls.__isinterfaceimplementation__ == True
-    ---------------------------------------------------------------------------
-    """
-    if not issubclass(an_interface, Interface):
-        raise Exception("{} is not an Interface".format(an_interface))
-
-    def effective(cls):
-        """Effective class"""
-        if not hasattr(cls, 'author'):
-            #ISSUE A WARNING HERE with the following message
-            print("Interface {} implementation {} should attribute its author"\
-                  .format(an_interface.__name__, cls.__name__))
-            cls.author = Author.anonymous
-            print("Here we will assume that the author is Anonymous\n",
-                  cls.author)
-        an_interface.register_implementation(cls)
-        cls.__isinterfaceimplementation__ = True
-        cls.__implemented_interface__ = an_interface
-        if adapted_entity is not None and reported_entity is not None:
-            raise ValueError("""
-            Only one of 'adapted_entity', 'reported_entity'
-            may be passed as an argument!!!
-            """)
-        if adapted_entity is not None:
-            cls.__adapted_entity__ = adapted_entity
-        if reported_entity is not None:
-            cls.__reported_entity__ = reported_entity
-        return cls
-
-    return effective
-
-implements = implementation #just an alias
+    return getattr(cls, '__interfacemethods__', [])
 
 def get_implementations(an_interface):
     """all the implementations"""

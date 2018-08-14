@@ -14,6 +14,9 @@ The interface describes what an object can do, to learn how, you must look at
 the implementation.
 """
 
+from types import FunctionType
+from dmt.vtk.author import Author
+
 class InterfaceMeta(type):
     """A metaclass to be create an Interface.
     At some point we should come around to stripping any implementation
@@ -26,6 +29,7 @@ class InterfaceMeta(type):
                                    if k not in ['__module__',
                                                 '__doc__',
                                                 '__qualname__']]
+        cls.__interfacemethods__ = cls.__requiredmethods__
         msg = '\n' + 80 * '-' + "\n"
         msg += "{} for {} requires you to implement\n"\
                .format(name, cls.__name__)
@@ -58,7 +62,7 @@ class Interface(metaclass=InterfaceMeta):
         We may want to check that 'impl' actually implements,
         i.e. the method is not 'abstractmethod' or is still a 'requiredmethod'.
         However we cannot check for everything!"""
-        return [m for m in cls.__requiredmethods__ if not hasattr(impl, m)]
+        return [m for m in cls.__interfacemethods__ if not hasattr(impl, m)]
 
     @classmethod
     def register_implementation(cls, impl):
@@ -84,7 +88,6 @@ class Interface(metaclass=InterfaceMeta):
         """Is this Interface implemented by Implementation 'impl'?"""
         return len(cls.__unimplemented(impl)) == 0
 
-
     @classmethod
     def extended_with(cls, other):
         """Extend this interface with methods from another interface."""
@@ -93,9 +96,10 @@ class Interface(metaclass=InterfaceMeta):
                 "Can only extend with another. {} is not an Interface!"\
                 .format(other)
             )
-        attrs = {m: getattr(cls, m) for m in cls.__requiredmethods__}
-        attrs.update({m: getattr(other, m) for m in other.__requiredmethods__})
+        attrs = {m: getattr(cls, m) for m in cls.__interfacemethods__}
+        attrs.update({m: getattr(other, m) for m in other.__interfacemethods__})
         return type(cls.__name__, (Interface, ), attrs)
+
 
 def is_interface(cls):
     """Is class 'cls' an interface.
@@ -103,3 +107,92 @@ def is_interface(cls):
     an interface."""
     return issubclass(cls, Interface)
 
+def interfaceattribute(attr):
+    """A decorator, to be used to add a class's attribute to
+    it's AdapterInterface."""
+    attr.__isinterfaceattribute__ = True
+    return attr
+
+def interfacemethod(method):
+    """Decorator, to be used to decorate a method of a class that must
+    be included in that class's AdapterInterface."""
+    method.__isinterfacemethod__ = True
+    return method
+
+def is_interface_required_attribute(attr):
+    """Specify the protocol that an attribute is required by an interface."""
+    return getattr(attr, '__isinterfaceattribute__',
+                   getattr(attr, '__isinterfacemethod__', False))
+
+def is_interface_required_method(m):
+    """Specify the protocol that an attribute is a method
+    required by an interface. """
+    return isinstance(m, FunctionType) and is_interface_required_attribute(m)
+
+def specifies_interface(client_cls):
+    """Checks if a class has specified an Interface within it's body."""
+    return any([is_interface_required_attribute(getattr(client_cls, attr))
+                for attr in dir(client_cls)])
+
+def get_interface(client_cls, name=None):
+    """Create an interface for a client class.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    client_cls :: type #the class that may have specified an Interface
+    """
+    if not specifies_interface(client_cls):
+        return None
+
+    required = {m: getattr(client_cls, m) for m in dir(client_cls)
+                if is_interface_required_attribute(getattr(client_cls, m))}
+    name = name if name is not None \
+           else "{}Interface".format(client_cls.__name__)
+    return type(name, (Interface,), required)
+
+def implementation(an_interface):
+    """A class decorator to declare that a class implements an interface.
+    ----------------------------------------------------------------------------
+
+    Parameters
+    ----------------------------------------------------------------------------
+    an_interface :: Interface #or a subclass!
+
+    Protocol
+    ----------------------------------------------------------------------------
+    A class 'cls' is an interface implementation
+    'if cls.__isinterfaceimplementation__  == True'
+    """
+    if not is_interface(an_interface):
+        raise Exception("{} is not an interface".format(an_interface))
+
+    def effective(impl_cls):
+        if not isinstance(impl_cls, type):
+            raise Exception(
+                "'implementation' is a class decorator. {} is not a class!"\
+            .format(impl_cls)
+            )
+        """Effective class"""
+        if not hasattr(impl_cls, 'author'):
+            print("WARNING!!! {} implmentation {} should attribute its author"\
+                  .format(an_interface.__name__, impl_cls.__name__))
+            impl_cls.author = Author.anonymous
+
+        an_interface.register_implementation(impl_cls)
+        impl_cls.__isinterfaceimplementation__ = True
+        impl_cls.__implemented_interface__ = an_interface
+        return impl_cls
+
+    return effective
+
+implements = implementation #just an alias
+
+def get_implementations(an_interface):
+    """all the implementations."""
+    if not is_interface(an_interface):
+        raise Exception("{} is not an interface.".format(an_interface))
+    return an_interface.__implementation_registry__
+
+def get_adapted_entity(impl):
+    """Get the entity adapted by implementation 'impl'.
+    We assume that one implementation will adapt one model type."""

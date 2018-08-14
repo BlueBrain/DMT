@@ -2,25 +2,27 @@
 
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
-class __Field:
+class Field:
     """Creates a field from a provided class."""
 
     #__isabstractmethod__ = True
     __is_field__ = True
 
-    def __init__(self, field_name, field_type, validation=None):
+    def __init__(self, __name__, __type__,
+                 __is_valid_value__=lambda x: True,
+                 __doc__ = "A field."):
         """"
         Parameters
         -----------------------------------------------------------------------
         cls :: a type, not an instance
         validation :: a predicate function to validate values to set
         """
-        self.__field_name__ = field_name
-        self.__type__ = field_type
-        self.__is_valid = validation if validation is not None\
-                            else lambda value: True
+        self.__field_name__ = __name__
+        self.__type__ = __type__
+        self.__is_valid = __is_valid_value__
+        self.__doc__ = __doc__
         self.instance_storage_name\
-            = "${}_{}".format(field_type.__name__, field_name)
+            = "${}_{}".format(__type__.__name__, __name__)
 
     def __is_minimally_valid(self, value):
         """Minimum requirement on value to pass as a valid instance."""
@@ -62,14 +64,14 @@ class __Field:
         return "Field {}".format(str(self.__type__))
 
 
-def Field(__name__, #name of the field, 
+def field(__name__, #name of the field, 
           __type__, #type of the field value
-          __doc__ = None, #document string
-          __is_valid_value__ = lambda x: True):
+          __is_valid_value__ = lambda x: True,
+          __doc__ = None): #document string
     """A factory function to define a Field.
     It is unfortunate that we have to require a __name__ argument."""
-    F = __Field(__name__, __type__, __is_valid_value__)
-    F.__doc__ =  __doc__
+    F = Field(__name__, __type__, __is_valid_value__, __doc__)
+    #F.__doc__ =  __doc__
     return F
 
 def is_field(x):
@@ -80,33 +82,9 @@ def __get_field_attrs(cls):
     """get fields of class cls"""
     return [attr for attr, value in cls.__dict__.items() if is_field(value)]
 
-def document_fields(cls):
-    """Document any Fields that may appear in class cls.
-    Can be used as class decorator."""
-    doc_included = {}
-    field_docs = "\n\nFields\n"
-    field_docs += 70 * "-" + "\n"
-    for mcls in cls.__mro__:
-        field_attrs = [a for a, v in mcls.__dict__.items() if is_field(v)]
-        if len(field_attrs) == 0:
-            continue
-        if mcls != cls:
-            field_docs += "\nFields inherited from {}.\n".format(mcls.__name__)
-            field_docs += 70 * "-" + "\n"
-        for attr, value in mcls.__dict__.items():
-            if not doc_included.get(attr, False) and is_field(value):
-                field_docs += attr + "\n"
-                field_docs += "    type {}\n".format(value.__type__.__name__)
-                field_docs += "    {}\n".format(value.__doc__)
-                field_docs += 70 * "-" + "\n"
-                doc_included[attr] = True
-    cls.__doc__ += field_docs
-    return cls
-
 def initialize_fields(cls):
     """A class decorator that will extract fields from a class' attributes,
     and add their doc strings to that of the class."""
-    cls = document_fields(cls)
     original_init = cls.__init__
     def field_init(self, *args, **kwargs):
         """insert fields into the class dict"""
@@ -125,6 +103,81 @@ def initialize_fields(cls):
     return cls
 
 
+#now Field at the class level
+class ClassAttribute:
+    """An non-method attribute that should be defined by a deriving class
+    as a class attribute."""
+
+    def __init__(self, __name__, __type__,
+                 __is_valid_value__=lambda x: True,
+                 __doc__ = "A field."):
+        """"
+        Parameters
+        -----------------------------------------------------------------------
+        cls :: a type, not an instance
+        validation :: a predicate function to validate values to set
+        """
+        self.__field_name__ = __name__
+        self.__type__ = __type__
+        self.__is_valid = __is_valid_value__
+        self.__doc__ = __doc__
+
+    def check_validity(self, value):
+        """Check if value is valid"""
+        return isinstance(value, self.__type__) and self.__is_valid(value)
 
 
+class ClassAttributeMeta(type):
+   """Checks if a sub class definition contains the required fields.""" 
+
+   def __init__(cls, name, bases, namespace):
+       for b in cls.__bases__:
+           for m, v in b.__dict__.items():
+               if isinstance(v, ClassAttribute):
+                   cls_v = getattr(cls, m)
+                   if not isinstance(cls_v, ClassAttribute):
+                       assert v.check_validity(cls_v),\
+                           """Invalid class field value {}.
+                           Try help({})""".format(cls_v, b)
+       type.__init__(cls, name, bases, namespace)
+        
+ 
+def document_fields(cls):
+    """Document any Fields that may appear in class cls.
+    Can be used as class decorator."""
+    doc_included = {}
+    field_docs = ""
+    for mcls in cls.__mro__:
+        field_attrs = [a for a, v in mcls.__dict__.items()
+                       if isinstance(v, Field)]
+        if len(field_attrs) == 0:
+            continue
+        if mcls != cls:
+            field_docs += "\nFields inherited from {}.\n".format(mcls.__name__)
+            field_docs += 70 * "-" + "\n"
+        for attr, value in mcls.__dict__.items():
+            if not doc_included.get(attr, False) and is_field(value):
+                field_docs += attr + "\n"
+                field_docs += "    type {}\n".format(value.__type__.__name__)
+                field_docs += "    {}\n".format(value.__doc__)
+                field_docs += 70 * "-" + "\n"
+                doc_included[attr] = True
+    if len(field_docs) > 0:
+        cls.__doc__ = "\n\nFields\n"
+        cls.__doc__ += 70 * "-" + "\n"
+        cls.__doc__ += field_docs
+
+    cattr_docs = ""
+    for attr, value in cls.__dict__.items():
+        if isinstance(value, ClassAttribute):
+            cattr_docs += attr + "\n"
+            cattr_docs += "    type {}\n".format(value.__type__.__name__)
+            cattr_docs += "    {}\n".format(value.__doc__)
+            cattr_docs += 70 * "-" + "\n"
+    if len(cattr_docs) > 0:
+        cls.__doc__ = "\n\nClass Attributes\n"
+        cls.__doc__ += 70 * "-" + "\n"
+        cls.__doc__ += cattr_docs
+
+    return cls
 
