@@ -41,8 +41,18 @@ def adapter(adapted_cls):
         Parameters
         ------------------------------------------------------------------------
         cls :: type #that is the adapter of class 'adapted_cls'"""
-        cls.__adapted_type__ = 1#adapted_cls
+        cls.__adapted_type__ = adapted_cls
         return  ClassAttributeMeta(cls.__name__, (Adapter,),
                                    {a: getattr(cls, a) for a in dir(cls)})
 
     return effective
+
+def get_adapted_entity(impl):
+    """Get models implemented by an implementation.
+    We assume that one implementation will adapt only one model type."""
+    return getattr(impl, '__adapted_entity__', None)
+
+def get_adapted_entity(impl):
+    """Get the entity adapted by implementation 'impl'.
+    We assume that one implementation will adapt one model type."""
+    return getattr(impl, '__implemented_interface__', None)

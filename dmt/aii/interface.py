@@ -193,6 +193,55 @@ def get_implementations(an_interface):
         raise Exception("{} is not an interface.".format(an_interface))
     return an_interface.__implementation_registry__
 
-def get_adapted_entity(impl):
-    """Get the entity adapted by implementation 'impl'.
-    We assume that one implementation will adapt one model type."""
+def implementation_registry(an_interface):
+    """All implementations of an Interface."""
+    if not is_interface(an_interface):
+        raise Exception(
+            "{} is not an interface!!!".format(an_interface.__name__)
+        )
+    return an_interface.__implementation_registry__
+
+def is_interface_implementation(cls):
+    """Does class 'cls' implement an interface?"""
+    return getattr(cls, '__isinterfaceimplementation__', False)
+
+def implements_interface(cls, an_interface):
+    """
+    Does given class implement the given interface?
+    ---------------------------------------------------------------------------
+
+    Parameters
+    ---------------------------------------------------------------------------
+    @cls :: type # class we want to check
+    @an_interface <: Interface #subclass of Interface
+    ---------------------------------------------------------------------------
+
+    Protocol
+    ---------------------------------------------------------------------------
+    A class 'cls' implements the interface 'an_interface'
+
+    Return
+    ---------------------------------------------------------------------------
+    @type bool
+    """
+    return (hasattr(cls, '__implemented_interface__') and
+            an_interface.__implemented_interface__ == an_interface)
+
+def implementation_guide(an_interface):
+    """Instructions on how to implement an interface"""
+    if not is_interface(an_interface):
+        raise Exception("{} is not an interface!!!"\
+                        .format(an_interface.__name__))
+    return an_interface.__implementation_guide__
+
+
+def get_required_methods(cls):
+    return getattr(cls, '__interfacemethods__', [])
+
+def get_implementations(an_interface):
+    """all the implementations"""
+    if not isinstance(an_interface, Interface):
+        raise Exception("{} is not an Interface!!!"\
+                        .format(an_interface.__name__))
+    return an_interface.__implementation_registry__
+        

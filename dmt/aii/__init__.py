@@ -4,12 +4,12 @@ specialized for a particular problem domain. So the validation code in a
 ValidationTestCase must interface with a model through an adapter. The author
 of a ValidationTestCase must mark the methods required from the Adapter with
 decorators '@interfacemethod'. To use a ValidaionTestCase for a particular
-model, the user must provide an adapter implmentation."""
+model, the user must provide an adapter implementation."""
 
 from types import FunctionType
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from dmt.aii.interface \
-    import Interface, get_interface, interfacemethod,interfaceattribute
+    import Interface, get_interface, interfacemethod, interfaceattribute
 from dmt.vtk.author import Author
 
 class Callable(ABC):
@@ -31,6 +31,7 @@ def adaptermethod(method):
     """Decorator, to be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
     method = interfaceattribute(method)
+    method = interfacemethod(method)
     doc = """Method defined in an Adapter Interface, will need implementation
     ----------------------------------------------------------------------------
     """
@@ -79,29 +80,7 @@ def is_adapter_method(method):
     return (isinstance(method, FunctionType) and
             getattr(method, '__isinterfacemethod__', False))
 
-def is_report_attribute(attr):
-    """Specify the Protocol that a Report should have an attribute. This
-    method will be listed a ReportInterface."""
-    return getattr(attr, '__isreportattribute__')
-    
-def needs_adapter_interface(client_cls):
-    """Specifies the protocol that a class specifies an interface.
-    A class that has any method with attribute '__isinterfacemethod__' set to
-    'True' will be treated as specifying an interface.
-    """
-    return any([is_adapter_method(getattr(client_cls, method))
-                for method in dir(client_cls)])
-                                   
-def implementation_registry(an_interface):
-    """list of implementations"""
-    if not is_interface(an_interface):
-        raise Exception(
-            "class {} is not an interface!!!".format(an_interface.__name__)
-        )
-    return an_interface.__implementation_registry__
-            
 
-from abc import ABCMeta, abstractmethod
 class AIMeta(ABCMeta):
     """A metaclass that will add an AdapterInterface."""
     def __new__(mcs, name, bases, dct):
@@ -212,56 +191,6 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
             for m in self.AdapterInterface.__interfacemethods__
         })()
         
-
-def is_interface_implementation(cls):
-    """Does class 'cls' implement an interface?"""
-    return getattr(cls, '__isinterfaceimplementation__', False)
-
-def implements_interface(cls, an_interface):
-    """
-    Does given class implement the given interface?
-    ---------------------------------------------------------------------------
-
-    Parameters
-    ---------------------------------------------------------------------------
-    @cls :: type # class we want to check
-    @an_interface <: Interface #subclass of Interface
-    ---------------------------------------------------------------------------
-
-    Protocol
-    ---------------------------------------------------------------------------
-    A class 'cls' implements the interface 'an_interface'
-
-    Return
-    ---------------------------------------------------------------------------
-    @type bool
-    """
-    return (hasattr(cls, '__implemented_interface__') and
-            an_interface.__implemented_interface__ == an_interface)
-
-def implementation_guide(an_interface):
-    """Instructions on how to implement an interface"""
-    if not is_interface(an_interface):
-        raise Exception("{} is not an interface!!!"\
-                        .format(an_interface.__name__))
-    return an_interface.__implementation_guide__
-
-
-def get_required_methods(cls):
-    return getattr(cls, '__interfacemethods__', [])
-
-def get_implementations(an_interface):
-    """all the implementations"""
-    if not isinstance(an_interface, Interface):
-        raise Exception("{} is not an Interface!!!"\
-                        .format(an_interface.__name__))
-    return an_interface.__implementation_registry__
-        
-def get_adapted_entity(impl):
-    """Get models implemented by an implementation.
-    We assume that one implementation will adapt only one model type."""
-    return getattr(impl, '__adapted_entity__', None)
-
                 
 def is_model_method(base_cls, method):
     """Is 'method' a model method of class 'base_cls'?"""
