@@ -10,8 +10,25 @@ class Namespace:
 class Record:
     """A record, like a C-struct"""
     def __init__(self, **kwargs):
+        self.__field_names = [k for k, _ in kwargs.items()]
         self.__dict__.update(kwargs)
 
+    @property
+    def fields(self):
+        return self.__field_names
+
+    def __str__(self):
+        """String representation of this Record."""
+        return self.__repr__()
+                   
+    def __repr__(self):
+        """Represent self."""
+        msg = "Record\n"
+        for field in self.__field_names[:-1]:
+            msg += "\t{}: {},\n".format(field, getattr(self, field))
+        field = self.__field_names[-1]
+        msg += "\t{}: {}".format(field, getattr(self, field))
+        return msg
 
 class FrozenDict(collections.Mapping):
     """A dictionary that cannot be changed."""

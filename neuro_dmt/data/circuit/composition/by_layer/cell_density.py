@@ -51,11 +51,11 @@ def get_reference_datasets(reference_data_dir):
     sonja["summary"] = summarized(sonja)
     meyer2010["summary"] = summarized(meyer2010)
     
-    return [get_measurement_record('defelipe2017', defelipe2017),
-            get_measurement_record('defelipe2014', defelipe2014),
-            get_measurement_record('defelipe2011', defelipe2011),
-            get_measurement_record('defelipe2002', defelipe2002),
-            get_measurement_record('sonja', sonja),
-            get_measurement_record('meyer2010', meyer2010)]
+    return [get_measurement_record(defelipe2017),
+            get_measurement_record(defelipe2014),
+            get_measurement_record(defelipe2011),
+            get_measurement_record(defelipe2002),
+            get_measurement_record(sonja),
+            get_measurement_record(meyer2010)]
 
  
