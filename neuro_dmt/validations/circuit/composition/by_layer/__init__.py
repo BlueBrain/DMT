@@ -1,4 +1,5 @@
 """Utilities for circuit composition by layer."""
+from abc import abstractmethod
 import pandas as pd
 import numpy as np
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
@@ -7,6 +8,7 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, document_fields
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import CompositionReport
+from neuro_dmt.utils.brain_region import BrainRegion
 
 
 @document_fields
@@ -15,11 +17,11 @@ class CompositionPhenomenonValidation:
     region_type = Field(
         __name__ = "region_type",
         __type__ = type,
-        __is_valid_vlue__ = lambda rtype: isubclass(rtype, BrainRegion),
+        __is_valid_value__ = lambda rtype: issubclass(rtype, BrainRegion),
         __doc__ = """Composition phenomena are to measured as a function of
         a region type, for example cell density in the cortex as a functionf of
         'CorticalLayer'"""
-    )
+    
     def __init__(self, validation_data, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
@@ -165,25 +167,23 @@ class CompositionPhenomenonValidation:
         """
         from dmt.vtk.statistics import FischersPooler
         from scipy.special import erf
-        from numpy import abs, sqrt
 
         real_measurement = self.validated_data[0]
-        delta_mean\
-            = abs(model_measurement.data.mean - real_measurement.data.mean)
-        stdev\
-            = sqrt(real_measurement.data.std**2 + model_measurement.data.std**2)
+        delta_mean = np.abs(model_measurement.data.mean -
+                            real_measurement.data.mean)
+        stdev = np.sqrt(real_measurement.data.std**2 +
+                         model_measurement.data.std**2)
         z_score = delta_mean / stdev
-        layer_p_values\
-            = pd.DataFrame(dict(
-                region = real_measurement.data.index,
-                delta_mean = delta_mean,
-                std = stdev,
-                z_score = z_score,
-                p_value = 1. - erf(z_score)
-            ))
+        p_values = pd.DataFrame(dict(
+            region = real_measurement.data.index,
+            delta_mean = delta_mean,
+            std = stdev,
+            z_score = z_score,
+            p_value = 1. - erf(z_score)
+        ))
         return Record(
-            p_value_by_region = layer_p_values,
-            pooled = FischersPooler.eval(layer_p_values.p_value)
+            p_value_by_region = p_values,
+            pooled = float(FischersPooler.eval(p_values.p_value))
         )
 
     def get_verdict(self, p):

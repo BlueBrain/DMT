@@ -15,6 +15,11 @@ class IntegerMathTest(ValidationTestCase):
                     affiliation="EPFL",
                     user_id=1)
 
+    def data_description(self):
+        """Describe the data used by this validation."""
+        return """A data frame with columns x, y, z, and w. Column z = x + y,
+        Column w = x - y."""
+
     class AdapterInterface(interface.Interface):
         """You may define a validation's required interface as a class.
         The result is the same as using decorator 'adaptermethod' before each

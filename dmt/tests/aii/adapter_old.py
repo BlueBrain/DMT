@@ -16,6 +16,12 @@ class TestIntegerMath(ValidationTestCase):
     author = Author(name="Vishal Sood",
                     affiliation="EPFL",
                     user_id=1)
+
+    def data_description(self):
+        """Describe the data used by this validation."""
+        return """A data frame with columns x, y, z, and w. Column z = x + y,
+        Column w = x - y."""
+
     @adaptermethod
     def get_addition(adapter, model, x, y):
         """get addition of x and y"""

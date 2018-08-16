@@ -139,7 +139,7 @@ class ClassAttributeMeta(type):
                        assert v.check_validity(cls_v),\
                            """Invalid class field value {}.
                            Try help({})""".format(cls_v, b)
-       type.__init__(cls, name, bases, namespace)
+       super(ClassAttributeMeta, cls).__init__(name, bases, namespace)
         
  
 def document_fields(cls):

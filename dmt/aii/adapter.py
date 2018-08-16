@@ -31,7 +31,6 @@ class Adapter(metaclass=ClassAttributeMeta):
     )
 
 
-
 def adapter(adapted_cls):
     """A class decorator to declare that a class adapts class 'adapted_cls'."""
 

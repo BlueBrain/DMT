@@ -3,6 +3,7 @@ from dmt.aii import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from neuro_dmt.validations.circuit.composition.by_layer \
     import CompositionPhenomenonValidation
+from neuro_dmt.utils.brain_region import CorticalLayer
 
 class CellDensityValidation(CompositionPhenomenonValidation,
                             SinglePhenomenonValidation):
@@ -14,6 +15,9 @@ class CellDensityValidation(CompositionPhenomenonValidation,
         "cell density",
         "Count of cells in a unit volume."
     )
+    region_type = CorticalLayer
+
+
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""

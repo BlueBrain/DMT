@@ -30,6 +30,11 @@ class TestIntegerMath(ValidationTestCase,
         """get difference of x and y"""
         pass
 
+    def data_description(self):
+        """Describe the data used by this validation."""
+        return """A data frame with columns x, y, z, and w. Column z = x + y,
+        Column w = x - y."""
+
     def __call__(self, model, other_validation_data=None):
         """Method that each ValidationTestCase must implement.
         Parameters

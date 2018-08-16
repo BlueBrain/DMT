@@ -13,6 +13,11 @@ class TestIntegerMath(ValidationTestCase):
                     affiliation="EPFL",
                     user_id=1)
 
+    def data_description(self):
+        """Describe the data used by this validation."""
+        return """A data frame with columns x, y, z, and w. Column z = x + y,
+        Column w = x - y."""
+
     class AdapterInterface(interface.Interface):
         """Specify all the methods you require from your adapter here. In order
         to use this validation test case, the user will have to program an

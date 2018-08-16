@@ -3,7 +3,8 @@
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.author import Author
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.validations.circuit.composition import CompositionReport
+from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
+    import CompositionReport
 
 cr = CompositionReport(validated_phenomenon = Phenomenon("fake", "Fake"),
                        author = Author.anonymous,
@@ -21,6 +22,6 @@ cr = CompositionReport(validated_phenomenon = Phenomenon("fake", "Fake"),
                        p_value = 0.01,
                        caption = """you should not see anything above""",
                        is_pass = True,
-                       is_fail = False
-                       
-)
+                       is_fail = False)
+
+cr.save(".")

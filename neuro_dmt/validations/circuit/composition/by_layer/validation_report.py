@@ -101,8 +101,6 @@ class CompositionReport(Report):
         report_file_path = os.path.join(output_dir_path, file_name)
 
         try:
-            print("will save, using attributes: ")
-            print(self.__dict__.keys())
 
             #the following is a bit of a hack.
             #Cheetah template are not exactly the same attributes as this report

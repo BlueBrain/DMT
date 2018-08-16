@@ -1,13 +1,17 @@
-"""Validation test case.
+""" Some base classes for validations.
+
+Implementation Notes
+--------------------------------------------------------------------------------
 We will assume that data is attached to a validation, i.e. the author of the
 validation knows the format of the data that she is going to validate a model
-against. The initializer of ValidationTestCase will accept a data object.
+against. The initializer of a validation class will accept a data object.
 """
 
 from abc import ABC, abstractmethod
 from dmt.aii import Callable, AdapterInterfaceBase
 from dmt.vtk.author import Author
-from dmt.vtk.utils.descriptor import Field, document_fields
+from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
+from dmt.vtk.phenomenon import Phenomenon
 
 @document_fields
 class ValidationTestCaseBase(Callable):
@@ -71,6 +75,12 @@ class ValidationTestCaseBase(Callable):
         return self.validation_data
 
     @abstractmethod
+    def data_description(self):
+        """Describe the data used for this validation.
+        For example, describe where the data were obtained from."""
+        pass
+
+    @abstractmethod
     def __call__(self, *args, **kwargs):
         """A ValidationTestCase is a callable.
         In a concrete ValidationTestCase implementation,
@@ -78,6 +88,29 @@ class ValidationTestCaseBase(Callable):
         *args, and **kwargs may contain parameters to be passed to the model."""
         pass
 
+@document_fields
 class ValidationTestCase(ValidationTestCaseBase, AdapterInterfaceBase):
-    """"Just a class that mixes two."""
+    """"Just a class that mixes two.
+    ValidationTestCaseBase is useful by itself. Mixing in AdapterInterfaceBase
+     will add adapter interface goodies."""
     pass
+
+
+@document_fields
+class SinglePhenomenonValidation(ValidationTestCase):
+    """Validation of a single phenomenon.
+    A single phenomenon will be measured for a model, and compared against
+    validation data. P-value will be used as a validation criterion.
+    """
+    validated_phenomenon = Field(
+        __name__ = "validated_phenomenon",
+        __type__ = Phenomenon,
+        __doc__  = "The phenomenon that is measured for this validation."
+    )
+    def __init__(self, *args, **kwargs):
+        """Validated phenomenon must be set by the deriving class."""
+        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)
+        if 'validated_phenomenon' in kwargs:
+            self.validated_phenomenon = kwargs['validated_phenomenon']
+
+        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)

@@ -8,6 +8,7 @@ model, the user must provide an adapter implementation."""
 
 from types import FunctionType
 from abc import ABC, ABCMeta, abstractmethod
+from dmt.vtk.utils.descriptor import ClassAttribute, ClassAttributeMeta
 from dmt.aii.interface \
     import Interface, get_interface, interfacemethod, interfaceattribute
 from dmt.vtk.author import Author
@@ -81,7 +82,7 @@ def is_adapter_method(method):
             getattr(method, '__isinterfacemethod__', False))
 
 
-class AIMeta(ABCMeta):
+class AIMeta(ABCMeta, ClassAttributeMeta):
     """A metaclass that will add an AdapterInterface."""
     def __new__(mcs, name, bases, dct):
         cls = super(AIMeta, mcs).__new__(mcs, name, bases, dct)
@@ -93,7 +94,7 @@ class AIMeta(ABCMeta):
         if not hasattr(cls, 'AdapterInterface') and adapter_interface:
             cls.AdapterInterface = adapter_interface
 
-#        super(AIMeta, cls).__init__(name, bases, dct)
+        super(AIMeta, cls).__init__(name, bases, dct)
 
 
 def adapter_documentation(cls):
@@ -113,6 +114,7 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     def __init__(self, *args, **kwargs):
         self._model_adapter\
             = kwargs.get('model_adapter', kwargs.get('adapter', None))
+        super(AdapterInterfaceBase, self).__init__(*args, **kwargs)
 
     @property
     def model_adapter(self):

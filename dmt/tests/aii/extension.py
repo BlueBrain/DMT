@@ -38,6 +38,11 @@ class IntegerMathTest(ValidationTestCaseBase):
         "...."
         pass
 
+    def data_description(self):
+        """Describe the data used by this validation."""
+        return """A data frame with columns x, y, z, and w. Column z = x + y,
+        Column w = x - y."""
+
     @modelmethod
     def get_subtraction(self, model, x, y):
         """For a 'modelmethod', the second argument must be
