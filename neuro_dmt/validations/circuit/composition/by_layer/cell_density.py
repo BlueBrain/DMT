@@ -2,11 +2,10 @@
 from dmt.aii import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from neuro_dmt.validations.circuit.composition.by_layer \
-    import CompositionPhenomenonValidation
+    import ByLayerCompositionValidation
 from neuro_dmt.utils.brain_region import CorticalLayer
 
-class CellDensityValidation(CompositionPhenomenonValidation,
-                            SinglePhenomenonValidation):
+class CellDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
@@ -15,9 +14,6 @@ class CellDensityValidation(CompositionPhenomenonValidation,
         "cell density",
         "Count of cells in a unit volume."
     )
-    region_type = CorticalLayer
-
-
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
@@ -51,5 +47,10 @@ class CellDensityValidation(CompositionPhenomenonValidation,
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        model = self.adapt(circuit_model)
+        model = self.adapted(circuit_model)
         return model.get_cell_density()
+
+    def get_label(self, circuit_model):
+        """Get a label for the circuit model. Will be useful in reporting."""
+        model = self.adapted(circuit_model)
+        return model.get_label(circuit_model)

@@ -9,7 +9,7 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.utils.utils import get_file_name_base
 
-class CompositionReport(Report):
+class ValidationReport(Report):
     """A class to be used to report all of our composition validations.
     The html produced by the Cheetah Template used here will display a plot for
     the validation, with a caption, metadata about the authors and their
@@ -60,7 +60,7 @@ class CompositionReport(Report):
         __doc__  = """If the validation did not pass, did it fail? It might
         have been inconclusive."""
     )
-    p_value = Field(
+    pvalue = Field(
         __name__ = "p_value",
         __type__ = float,
         __doc__ = """P-value for observing the model measurement, when compared
@@ -81,7 +81,7 @@ class CompositionReport(Report):
             with open(template_loc, 'r') as f:
                 self.template = f.read()
                          
-        super(CompositionReport, self).__init__(*args, **kwargs)
+        super(ValidationReport, self).__init__(*args, **kwargs)
 
     def save(self, output_dir_path, report_file_name=None):
         """Save report to disc, as an html.

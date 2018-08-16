@@ -3,6 +3,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 import scipy.stats
 from scipy.special import erf
+from dmt.vtk.utils.collections import Record
+
+def pooled(pvalues):
+    """Pool pvalues and return a Record."""
+    return Record(__list__ = pvalues,
+                  pooled = FischersPooler.eval(pvalues))
 
 class StatisticalTest(object):
     """A statistical test base class"""
