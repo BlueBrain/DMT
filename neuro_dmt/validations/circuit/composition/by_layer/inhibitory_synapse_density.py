@@ -2,10 +2,10 @@
 from dmt.aii import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from neuro_dmt.validations.circuit.composition.by_layer \
-    import CompositionPhenomenonValidation
+    import ByLayerCompositionValidation
+from dmt.vtk.phenomenon import Phenomenon
 
-class InhibitorySynapseDensityValidation(CompositionPhenomenonValidation,
-                                         SinglePhenomenonValidation):
+class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
@@ -15,7 +15,6 @@ class InhibitorySynapseDensityValidation(CompositionPhenomenonValidation,
         "inhibitory synapse density",
         "Count of inhibitory synapses in a unit volume"
     )
-
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
@@ -26,6 +25,7 @@ class InhibitorySynapseDensityValidation(CompositionPhenomenonValidation,
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
             """
+            pass
 
         def get_inhibitory_synapse_density(circuit_model):
             """Get volume density of inhibitory synapses for a circuit.

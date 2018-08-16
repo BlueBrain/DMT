@@ -51,3 +51,9 @@ class ByLayerCompositionValidation(SinglePhenomenonValidation,
         """
         super(ByLayerCompositionValidation, self).__init__(*args, **kwargs)
         #we can add some 
+
+
+    def get_label(self, circuit_model):
+        """Get a label for the circuit model. Will be useful in reporting."""
+        model = self.adapted(circuit_model)
+        return model.get_label(circuit_model)

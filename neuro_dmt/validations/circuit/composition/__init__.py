@@ -3,6 +3,8 @@
 from abc import abstractmethod
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
+from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
+    ValidationReport
 from neuro_dmt.utils.brain_region import BrainRegion
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
