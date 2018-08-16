@@ -21,7 +21,7 @@ class CompositionPhenomenonValidation:
         __doc__ = """Composition phenomena are to measured as a function of
         a region type, for example cell density in the cortex as a functionf of
         'CorticalLayer'"""
-    
+
     def __init__(self, validation_data, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
@@ -45,9 +45,7 @@ class CompositionPhenomenonValidation:
         """
 
         #add keyword arguments and call super intiialization
-        kwargs.update({
-            'validation_data': validation_data,
-        })
+        kwargs.update({'validation_data': validation_data})
         super(CompositionValidation, self).__init__(*args, **kwargs)
 
         self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
@@ -75,88 +73,8 @@ class CompositionPhenomenonValidation:
                     model_measurement.method)
 
     def plot(self, model_measurement, *args, **kwargs):
-        """A method to plot data. Bars will be plotted in order passed
-        in list 'plotting_data'.
 
-        Parameters
-        ------------------------------------------------------------------------
-        plotting_datas :: [Measurement] #list of measurements to be plotted
-
-        Return
-        ------------------------------------------------------------------------
-        Directory path where plots are saved.
-
-        Implementation Note
-        ------------------------------------------------------------------------
-        For now we let 'Measurement' be a record: 
-
-        Measurement = Record(measurement_label :: String,
-        ~                    region_label :: String,
-        ~                    data :: DataFrame["region", "mean", "std"])
-
-        We assume that each Measurement.data has the same columns,
-        and the same index.
-        For example, if we are analyzing composition by cortical layer, each
-        Measurement.data should have the index
-        ['L1', 'L2', 'L3', 'L4', 'L5', 'L6']. The DataFrame may bave NaNs.
-        """
         plotting_datas = [model_measurement] + self.validation_data
-        if len(plotting_datas) == 0:
-            raise ValueError(
-                "Cannot plot without data, len(plotting_datas) == 0 "
-            )
-        output_dir_path = kwargs.get('output_dir_path', None)
-        plot_customization = kwargs.get('plot_customization', {})
-        legend_loc = plot_customization.get('legend_loc', 'upper_left')
-        fheight = plot_customization.get('fheight', 10)
-        fwidh = plot_customization.get('fwidth', None)
-        color = plot_customization.get('colors',
-                                       ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
-        file_name = kwargs.get('file_name', None)
-        
-        try:
-            title = kwargs['title']
-        except:
-            raise RequiredKeywordArgumentError("title")
-        fig = golden_figure(fheight=fheight, fwidth=fwidth)
-
-        nbar = len(plotting_datas)
-        width = 1.0 / (1.0 + nbar)
-        #expecting region_label to be same for all plotting_datas 
-        region_label = plotting_datas[0].region_label 
-        region_names = list(plotting_datas[0].index)
-        x = np.arange(len(region_names))
-        x0 = x - (nbar / 2) * width
-    
-        plot_index = 1
-        for pe in plotting_datas:
-            df = pe.data.fillna(0.0)
-            a_plot = plt.bar(x0 + plot_index * width,
-                             df['mean'].values,
-                             width,
-                             color=color[(plot_index - 1) % len(colors)],
-                             yerr=df['std'].values,
-                             label=pe.label)
-            plot_index += 1
-
-        plt.title(title, fontsize=24)
-        plt.xlabel(region_label, fontsize=20)
-        plt.xticks(x - width / 2., region_names)
-
-        fontP = FontPropertis()
-        fontP.set_size('small')
-        plt.legend(prop=fontP, loc=legend_loc)
-
-        if output_dir_path and file_name:
-            if not os.path.exists(output_dir_path):
-                os.makedirs(output_dir_path)
-            output_file = os.path.join(output_dir_path, file_name + ".png")
-            print("Generating {}".format(output_file))
-            pylab.savefig(output_file, dpi=100)
-            return output_file
-
-        return None
-
 
     def probability_of_validity(self, model_measurement):
         """Probability that a model measurement is valid.

@@ -2,6 +2,7 @@
 import os
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.descriptor import is_field
+from dmt.vtk.utils.utils import get_file_name_base
 
 class Report:
     """Report base class.
@@ -55,16 +56,10 @@ class Report:
 
         return report_file_path
 
-    @classmethod
-    def get_file_name_base(cls, file_name=None):
-        """Get the base from a file name, stripping away it's suffix."""
-        return ("report" if file_name is None else
-                '_'.join(file_name.split('.')[0:-1]).strip().replace(' ', '_'))
-
     def save(self, output_dir_path, report_file_name=None):
         """Save the results --- this uses the default method.
         Please over-ride it where you want to define your own custom save.
         """
-        file_name_base = self.__class__.get_file_name_base(report_file_name)
+        file_name_base = get_file_name_base(report_file_name)
         return self._save_default(output_dir_path, file_name_base)
                                   

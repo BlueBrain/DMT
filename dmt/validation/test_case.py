@@ -102,7 +102,7 @@ class SinglePhenomenonValidation(ValidationTestCase):
     A single phenomenon will be measured for a model, and compared against
     validation data. P-value will be used as a validation criterion.
     """
-    validated_phenomenon = Field(
+    validated_phenomenon = ClassAttribute(
         __name__ = "validated_phenomenon",
         __type__ = Phenomenon,
         __doc__  = "The phenomenon that is measured for this validation."

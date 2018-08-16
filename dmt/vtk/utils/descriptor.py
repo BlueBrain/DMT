@@ -126,6 +126,9 @@ class ClassAttribute:
         """Check if value is valid"""
         return isinstance(value, self.__type__) and self.__is_valid(value)
 
+    def __repr__(self):
+        """represent this ClassAttribute as a string."""
+        return "ClassAttribute {}".format(str(self.__type__))
 
 class ClassAttributeMeta(type):
    """Checks if a sub class definition contains the required fields.""" 

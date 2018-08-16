@@ -13,11 +13,11 @@
   to go about the business of validating models. However, we first need to
   decide what we mean by models, and what we do not. We can think of our models
   as simulations of reality.
- 
+
 ** Simulation
    It is natural to think of BBP's brain model as a simulation --- in fact we
    run /simulations/ on the circuit. With that in mind, how will we define what
-   a simulation is? 
+   a simulation is?
 
    Google:
 
@@ -27,7 +27,7 @@
    /eg: simulation of blood flowing through arteries and veins/
    2. the action of pretending; deception.
    /eg: clever simulation that's good enough to trick you/
-   3. the production of a computer model of something, especially for the 
+   3. the production of a computer model of something, especially for the
    purpose of study.
    /eg: the method was tested by computer simulation/
    #+end_src
@@ -42,7 +42,7 @@
       redirects the reader to /model/. May be /model/'s definition will be
       simpler to understand. But there will again will be a huge list of
       possible meanings --- which one should we pick?
-   
+
 
    Now consider that there is such a /simulation/ that matches
    reality (of humans) perfectly. For a /real/ human, it will be clear which one
@@ -55,16 +55,16 @@
 
    How would we define /simulation/ for a machine? But can you make an
    /objective/ definition that can be and avoid the bias of /reality as the
-   limit of simulation/. 
-   
+   limit of simulation/.
+
 
    Wikipedia:
-   
+
    #+begin_src
    ...the imitation of the operation of a real world process or system.
-   ...first requires that a model be developed; this model represents the key 
-   characteristics, behaviors and functions of the selected physical or abstract 
-   system or process. The model represents the system itself, whereas the 
+   ...first requires that a model be developed; this model represents the key
+   characteristics, behaviors and functions of the selected physical or abstract
+   system or process. The model represents the system itself, whereas the
    simulation represents the operation of the system over time.
    #+end_src
 
@@ -74,20 +74,20 @@
 ** Validation as an /as objective definition of simulation as possible/.
    To figure out reality from simulation, you should know that simulation is the
    imitation. So if you can tell the imitation from reality, you know which one
-   is the simulation. This has been a common science-fiction theme. 
+   is the simulation. This has been a common science-fiction theme.
 
    The solution is to test, imitation against reality --- under as
-   similar circumstances as possible. The smaller the difference, the harder it 
-   is to tell simulation from reality. So, from a machine's perspective we can 
-   only tell if the two are the same or different. The machine may as well be 
+   similar circumstances as possible. The smaller the difference, the harder it
+   is to tell simulation from reality. So, from a machine's perspective we can
+   only tell if the two are the same or different. The machine may as well be
    biased that the simulation is in fact the reality because both phenomena of
    validation and simulation happen /in-silico/. So be it, it does not matter.
    All we want to find out is if the two are the same or not.
-   
+
    Once we can objectively establish the extent to which a /model/ or
    /simulation/ agrees with /reality/ on a given set of phenomena, we can give a
-   quantitative measure of the /amount/ of validation. 
- 
+   quantitative measure of the /amount/ of validation.
+
    Provided with a prior about which one is reality, the machine can then
    compute the max-apriori probability of simulation /versus/ reality.
 
@@ -144,7 +144,7 @@
   Experimental data may be partitioned into two groups:
   1. data used to set the parameters of the model, and
   2. rest of the data.
-  
+
   - Statistical models ::
        For statistical models there is only one kind of data. Some of it is used
        to train the model (/i.e./ determining model parameters), the rest for
@@ -153,8 +153,8 @@
        determines the outcome. During training, the error determines the size
        and direction of parameter value updates. Error over the test data
        determines how good the model is.
-       
-  
+
+
   The /mechanistic/ scientific models we consider model the system of interest
   from the ground up. For the purpose of /validating against experimental data/
   we must *treat the model as an experimental object*.
@@ -171,7 +171,7 @@
 
   We may say that to verify a model is to validate it against experimental data
   that was used to set it's parameters.
-  
+
   A satisfactory reproduction of the data that was used to set the model's
   parameters does not constitute the model's validation. It merely verifies that
   the model has been constructed correctly: that it's /components/ have been set
@@ -179,16 +179,16 @@
 
   According to Wikipedia [[https://en.wikipedia.org/wiki/Verification_and_validation_of_computer_simulation_models][article]]
   #+begin_src
-  ...verification of a model is the process of confirming that it is correctly 
-  implemented with respect to a conceptual model, i. e. it matches 
-  specifications and assumptions deemed acceptable for the given purpose of 
+  ...verification of a model is the process of confirming that it is correctly
+  implemented with respect to a conceptual model, i. e. it matches
+  specifications and assumptions deemed acceptable for the given purpose of
   application.
   ...
-  Validation checks the accuracy of the model's representation of the real 
-  system. 
+  Validation checks the accuracy of the model's representation of the real
+  system.
   Step 1. Build a model that has high face validity.
   Step 2. Validate model assumptions.
-  Step 3. Compare the model input-output transformations to corresponding 
+  Step 3. Compare the model input-output transformations to corresponding
   input-output transformations for the real system.
   #+end_src
 
@@ -199,10 +199,10 @@
   much sense. They are abusing the term from /test-driven development (TDD). TDD
   is a process. Wikipedia teaches us:
   #+begin_src
-  ...is a software development process that relies on the repetition of a very 
-  short development cycle: requirements are turned into very specific test 
-  cases, then the software is improved to pass the new tests, only. This is 
-  opposed to software development that allows software to be added that is not 
+  ...is a software development process that relies on the repetition of a very
+  short development cycle: requirements are turned into very specific test
+  cases, then the software is improved to pass the new tests, only. This is
+  opposed to software development that allows software to be added that is not
   proven to meet requirements.
   #+end_src
   The process of TDD:
@@ -231,8 +231,8 @@
   - regression-test ::
        ensure changes to software have not changed it's (previously defined)
        functionality.
-       
-   
+
+
   Clearly, validation of a scientific model has nothing to do with the process
   of it's development. So let us not confuse ourselves by trying to find
   analogies  where they do not exist.
@@ -249,7 +249,7 @@
   find mistakes, and to improve the overall quality of software. Though I must
   notice that in my experience code review is an explicitly helpful exercise,
   competitive in a friendly manner. Peer review can sometimes become an outright
-  shouting match. 
+  shouting match.
 
   To /validate/ a quantitative model involves a lot of activities. In the
   current, human peer-review model, the proponents of the model must present
@@ -261,7 +261,7 @@
   model. Many of these activities cannot be replaced by automation, others can
   be. For example, the human reviewer should not have to look for experimental
   results to compare the model against, or have to run a computation to validate
-  model predictions against experimental measurements. 
+  model predictions against experimental measurements.
 
   The narrow focus of papers, and the print media they are published in are
   another limitation that prevents model and data integration. Both experimental
@@ -270,7 +270,7 @@
 
   Many of these requirements of model review can be fulfilled by a single
   /collaborative validation framework/.
-  
+
 
 * Validation vs Analysis
   In my previous attempts I have distinguished a circuit analysis from a
@@ -283,12 +283,12 @@
   Question to consider is where to place such a class in our /Validation/ class
   hierarchy.
 
-  
+
 
 * Previous work
-  Of course there is SciUnitTest. 
+  Of course there is SciUnitTest.
 
-** Validation API 
+** Validation API
    Developed at BBP by Juan Pablo Palacios. None of the code referenced on the
    [[https://bbpteam.epfl.ch/project/spaces/pages/viewpage.action?spaceKey=~palacios&title=Validation+API][Confluence page]] is alive. However there are some user stories on Jira that we
    can get some ideas from.
@@ -315,26 +315,26 @@
         Task Framework client API
       6. As a SCIDEV I want the Validation API to allow easy comparison of
         distributions stored in numpy arrays, according to acceptable validation
-        practices 
+        practices
       7. As a SCIDEV I want a non-trivial example of a validation using the
         Validation toolkit
       8. As a DEV I want to have a standard API for producing validation reports
-        
+
 *** Validation Report
    There was a draft spec for validation reports. It is still  [[https://bbpteam.epfl.ch/project/spaces/display/BBPWFA/Validation+Report+-+Draft+0.2][available on
    Confluence]]. We note some observations on this report.
    This specification was about how the validation results are presented on a
-   platform web interface. The /report/ is actually a summary. 
+   platform web interface. The /report/ is actually a summary.
    - Requirements ::
      1. Simple to understand
      2. Web-friendly format
-     3. Allows multiple representations of the same data 
+     3. Allows multiple representations of the same data
      4. Supports various data types (e.g. 1D bar charts and histograms, 2D
         graphs)
      5. Validation input and reference distributions must be available
      6. De-coupled from graphical representation
-     
-    
+
+
    The goal of the older validation /toolkit/ was to produce validation reports
    with data. There are examples on the confluence page that show JSONs carrying
    data that can be plotted. However, in my experience, it is hard to assume
@@ -350,7 +350,7 @@
    numbers, and the user must provide /code/ to load it. The data must be
    separate from the code, so that we can upload it to /Nexus/. We must also be
    able to update the whole /validation/ up to Nexus.
-  
+
 
 ** Original Validation Framework
 
@@ -375,14 +375,14 @@
    We will attack the problem from both ends: a data, model, and test (validation)
    collaboration framework for the general quantitative scientific endeavors, and
    the other end of the use-case of validating the BBP brain region circuit.
-   
+
    - General guidelines ::
         While developing, we should follow the rough guidelines of
         1. do not over-specify
         2. couple components loosely
         3. leave enough documentation, and expressive code
-  
-  
+
+
    We will use cell density as a guiding example.
    We know the mathematical definition of cell density. As we consider that
    definition, we can also see how open-ended it is. For a spatially extended
@@ -420,10 +420,10 @@
    CellDensity from InhibitoryCellDensity), the *MeasurableSystem* (which will
    either be a model, or a data-object), and the *Quantity* that resulted from
    measuring the /system/.
-  
+
    #+begin_src haskell
    type MagnitudeType
-  
+
    data Quantity =  Quantity { unit :: Unit
                              , magnitude :: MagnitudeType }
 
@@ -453,21 +453,21 @@
    --- so keeping *Phenomenon* abstract may be sensible. The class hierarchy of
    the domain's *Phenomenon*s can be used to structure a class hierarchy of a
    group of validations.
-   
+
    Remember that one of our aims is to leverage Python's provided libraries
    (especially Abstract Base Classes) to build features that may be useful in a
    collaborative effort to define validations against data, that may be applied
    to different model types. Keeping that in mind, here are some big questions
-   
+
    1. Who should determine the method of measuring the cell density?
       The comparing (validating, judging, testing) method would call that
       method on the provided ~model~ argument --- it's absence should display a
       nice explanatory message that such and such method needs to be implemented
-      by the model adapter ... 
+      by the model adapter ...
       So, the validation has to assume that a certain method is available on the
       ~model~ parameter. It is this /assumption/ that we need to express in an
       abstract base class. The writer of validation will have to write such a
-      class. 
+      class.
    2. Can we expect our average user to be able to write Python abstract
      classes? Probably not.
      So we need to provide a /front-end/ simple Python way of writing a Python
@@ -475,7 +475,7 @@
      We cannot solve all problems at the same time, neither can we think and
      plan for each desired feature. So we should take the first step --- and
      write the validations ourselves with ABC's.
-     
+
    3. How should we organize circuit validations, and adapter models?
 
 ** Three parties
@@ -489,7 +489,7 @@
         the guidelines / documentation of the validation base class...
    - Model adapter ::
         The role in which the user decides to adapt their model to the
-        requirements of a particular validation / set of validations. 
+        requirements of a particular validation / set of validations.
    - Data interface author ::
         The role in which the user provides the data to the validation
         repository and programs a data-reader so that the data can be loaded in
@@ -529,12 +529,12 @@
         a validation to provide their abstracts and methods as part of their
         code.
 
-** Metadata       
+** Metadata
    We need several kinds of meta-data.
 *** Author
     Author's name, affiliation, basic / simple things.
     As a collaboration platform, we could use ~Author~ as a synonym for ~User~.
-    
+
     1. Every entity that needs to be implemented by the user must have an Author.
 
 *** Citation
@@ -549,21 +549,21 @@
    for. The user must be able to generate a report for fully implemented
    validation. Reporting can get arbitrarily complex ---  Imagine a study of a
    model against a suite of experimental data. Such a study may be considered as
-   a validation report! 
+   a validation report!
 
    In fact, it seems to me that /reporting/ is the pivot around which we can
    explore the possibilities of a Data/Model/Test Validation framework.
-   
+
    <2018-08-08 Wed> Until now we have thought of /Cheetah templates/ as integral
    to what we have been programming. And we have been programming primarily the
    backend. To make durable progress we will need to shift our attention to the
    front-end, and to do that we have to start thinking of the separation of the
-   back-end and the front-end. 
+   back-end and the front-end.
 
 
    <2018-08-08 Wed> Given that we require a front back split, we will assume
    that we will use a /controller/ to relay queries / responses back and forth,
-   front to back, view to model to view. We shall not concern ourselves must 
+   front to back, view to model to view. We shall not concern ourselves must
    with the front-end for now. However we will respond with JSON from the
    controller, that will receive PODs from the models.
 
@@ -572,34 +572,34 @@
     / guidelines to separate the two.
 
     1. let Front End be concerned with Cheetah / Jinja2, or any other templating
-       system. 
+       system.
     2. let Front End be concerned with html, or pdf, or text, or whatever format
        the output is desired in.
-    3. let Back End concern itself with producing a Report. 
+    3. let Back End concern itself with producing a Report.
     4. let Report be a POD (plain old data) --- named tuple, a data-only class.
     5. let Front End have a query system that the user can manipulate to monitor
        their validations.
-    
-       
+
+
     A few precautions are also necessary
     1. Some amount of entanglement between the front and back ends is
        unavoidable.
     2. Entangled design is all right to begin with, but must be noticed and
        dealt with as early as possible.
-   
+
 
     Guidelines for double-ended development
-    1. Front End will decide how to display results of a query. 
+    1. Front End will decide how to display results of a query.
     2. Front End will send a query to Back End.
     3. Back End will respond with a properly structured JSON.
 
-    
+
     The trick is in determining the fields of this JSON. The simplest, and
     probably the most useful one, is to allow a collaboration between the two
-    ends. 
+    ends.
 
 **** Front End queries, front end user stories
-     What may the user query at the interactive web-page? 
+     What may the user query at the interactive web-page?
      1. A user may come in looking for available validations to test her model.
      2. A user may come in with data for measurement of some phenomenon, and
         look for models that study that phenomenon.
@@ -607,7 +607,7 @@
         look for other experimental studies of that phenomenon.
      4. A user may come in with a model wanting to compare it with other models
         that study the same phenomenon.
-     
+
 
     One story may evolve like this.
     1. User has a new model for a phenomenon.
@@ -624,9 +624,9 @@
          the model's predictions
        - what the validations report discuss, to judge the quality of
          documentation
-    8. User chooses a validation that she found appropriate to her requirements. 
+    8. User chooses a validation that she found appropriate to her requirements.
     9. User finds that she must provide an adaptor for her model to run her
-       chosen validation. 
+       chosen validation.
     10. User looks up the documentation and follows a tutorial to write an
         adaptor.
     11. User submits her adaptor, and allows the system to criticize her code.
@@ -637,7 +637,7 @@
     16. User decides to write her own validation, because either no validation
         was available for her use, or the ones she found were not satisfactory.
     17. User queries for available data for the phenomena that her model
-        studies. 
+        studies.
     18. User also digs / cooks up experimental data from other sources.
     19. User submits her collected experimental data.
     20. User decides to publicize submitted data, by providing proper credits,
@@ -649,18 +649,18 @@
     24. User submits all the code and data required for her validation  or
         produced by her validation for /publication/.
     25. User decides to start a public discussion that may be mediated by chosen
-       /peers/ in the system. 
+       /peers/ in the system.
     26. User subscribes for notifications about DMvTs of her interest, /i.e./
         any data, models, validation tests submitted by other users for
-        publication. 
+        publication.
     27. User decides to keep data for her private use, if she cannot provide
         proper credits and provenance.
     28. User runs her validations in a private sandbox.
     29. User appoints a chosen set of /peers/ for judging the logic of her model
-        and validation. 
+        and validation.
     30. User appoints a chosen set of /peers/ for code-review.
-   
-***** Validation by humans        
+
+***** Validation by humans
       We can think of peer-review of academic papers as validation by humans,
       instead of an automated system. Strict guidelines may be set for such a
       validation --- probably by asking the judges to list a small number of
@@ -680,9 +680,9 @@
       The point is that we want to plug in this model somewhere else in the
       bigger puzzle involving the simulation of the human brain. So the human
       /validator/ will look at the model's output and experimentally
-      morphologies and provide their judgment. 
-      
-        
+      morphologies and provide their judgment.
+
+
 
 *** Use cases
     We need to catalog different use cases
@@ -691,27 +691,27 @@
           a suite of models against a suite of experimental datasets. Not all
           such analyses may be considered a ~Validation~, but we can definitely
           call them an ~Analysis~.
-     - Jupyter Notebook :: 
-   In addition to scientific papers, analysis code in a jupyter notebook could be 
+     - Jupyter Notebook ::
+   In addition to scientific papers, analysis code in a jupyter notebook could be
    converted into a validation report. The simplest way to do this is to ask
    the author of a notebook to mark their classes and methods with specific
    decorators.
 
    Best way to find out the requirements of Jupyter Notebook to Validation is to
    repeat one well-practiced analysis manually, /i.e./ to repeat all the logic
-   of a validation such as cell density. 
+   of a validation such as cell density.
 
 *** Decorating
-    As a start, we will implement a decorator ~@reportattribute~, like 
+    As a start, we will implement a decorator ~@reportattribute~, like
     ~@requiredmethod~ and ~@adaptermethod~. The problem this address is the
-    following: 
-    
-    
-   
+    following:
+
+
+
 
 ** Aggregated Validation
    Validating a model against a single measurement is not a full validation of
-   the model. In fact, a model can never be fully validated. Validation of a 
+   the model. In fact, a model can never be fully validated. Validation of a
    model is a continuous process. So what should we call an object that will
    compare a model against an experiment for only one measurement (such as cell
    density) ? We can call it ~TestCase~ or ~ValidationTestCase~.
@@ -719,10 +719,10 @@
    - TestCase :: A validation is composed of /tests/. We validate a model
         against reality with a battery of test cases.
         #+begin_src
-        A test case is a specification of the inputs, execution conditions, 
+        A test case is a specification of the inputs, execution conditions,
         testing procedure, and expected results that define a single test to be
-        executed to achieve a particular software testing objective, such as to 
-        exercise a particular program path or to verify compliance wth a 
+        executed to achieve a particular software testing objective, such as to
+        exercise a particular program path or to verify compliance wth a
         specific requirement.
         #+end_src
         We should define individual test cases, ~ValidationTestCase~.
@@ -736,9 +736,9 @@
 
     If we think of a validation as testing a model against reality for a single
     phenomenon, then the complete definition of a Validation must contain the
-    experimental data. 
+    experimental data.
 
-    
+
 
 ** Kinds of Judges
    Or course a Judge should be as objective as possible --- a program if at all
@@ -757,7 +757,7 @@
   A list of items to do.
 ** TODO Build a class hierarchy of circuit *Phenomenon*.
    CREATED: <2018-06-28 Thu>
-** DONE <2018-06-29 Fri> Write about the three user-roles:  
+** DONE <2018-06-29 Fri> Write about the three user-roles:
    1. the user who provides wrapper for a model
    2. the user who provides the data, and a reader for that data
    3. the user who codes a validation
@@ -779,15 +779,15 @@
    measurements of a given phenomenon.
 ** TODO write a class that creates Fields
    SCHEDULED: <2018-07-09 Mon>
-   
-  
-** TODO think about an Analysis --- more general, 
+
+
+** TODO think about an Analysis --- more general,
    SCHEDULED: <2018-07-20 Fri>
-   ~class Analysis~ encompasses any study of models and data. 
+   ~class Analysis~ encompasses any study of models and data.
    or may be even a ~class Study~
 ** TODO imagine an interaction between the user and the interactive web-page
    SCHEDULED: <2018-08-08 Wed>
    We keep thinking about users --- some parts of our back-end have used that
    idea as motivation. However the user will see the front-end. We must think
    about what we want to offer the user --- /a well defined UI/. What
-   constitutes a good definition of a UI? 
+   constitutes a good definition of a UI?

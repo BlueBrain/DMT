@@ -7,6 +7,7 @@ from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
+from dmt.vtk.utils.utils import get_file_name_base
 
 class CompositionReport(Report):
     """A class to be used to report all of our composition validations.
@@ -96,7 +97,7 @@ class CompositionReport(Report):
         tothe disc. If this fails, call 'Report._save_default'.
         """
         print("Saving report to {}".format(output_dir_path))
-        file_name_base = Report.get_file_name_base(report_file_name)
+        file_name_base = get_file_name_base(report_file_name)
         file_name = file_name_base + ".html"
         report_file_path = os.path.join(output_dir_path, file_name)
 
