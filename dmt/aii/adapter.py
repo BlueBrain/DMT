@@ -17,7 +17,13 @@ from dmt.vtk.utils.descriptor \
                   
 @document_fields
 class Adapter(metaclass=ClassAttributeMeta):
-    """"Base for a class that adapts another class to an Interface."""
+    """"Base for a class that adapts another class to an Interface.
+
+    Implementation Notes
+    ----------------------------------------------------------------------------
+    Setting 'metaclass = ClassAttributeMeta' will ensure that the two class
+    attributes have been set by a deriving class (subclass).
+    """
 
     __adapted_type__ = ClassAttribute(
         __name__ = "__adapted_entity__",
