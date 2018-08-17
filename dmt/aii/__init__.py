@@ -112,22 +112,15 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     _model_adapter = None
 
     def __init__(self, *args, **kwargs):
-        self._model_adapter\
-            = kwargs.get('model_adapter', kwargs.get('adapter', None))
+        #self._model_adapter\
+        an_adapter = kwargs.get('model_adapter', kwargs.get('adapter', None))
+        if an_adapter:
+            self.adapter = an_adapter #validate and assign
+        else:
+            self._model_adapter = None
+
         super(AdapterInterfaceBase, self).__init__(*args, **kwargs)
 
-    @property
-    def model_adapter(self):
-        """The adapter implementation to be used."""
-        if self._model_adapter is None:
-            raise Exception("An Adapter for {} was not set!!!"\
-                            .format(self.__class__.__name__))
-        return self._model_adapter
-
-    @model_adapter.setter
-    def model_adapter(self, value):
-        """Reset the adapter."""
-        self._model_adapter = value
 
     @property
     def adapter(self):

@@ -1,63 +1,44 @@
+"""Test Adapter & Interface without decorators."""
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import AdapterInterfaceBase, adaptermethod
-from dmt.aii import interface
-from dmt.aii import adapter
 from dmt.validation.test_case import ValidationTestCase
+from dmt.aii import adaptermethod
 from dmt.vtk.author import Author
 
 
-class TestIntegerMath(ValidationTestCase,
-                      AdapterInterfaceBase):
-                  
-    """Preferred way to write a ValidationTestCase.
-    Notes for the users of this validation test case
-    ------------------------------------------------
-    Provide validation logic in __call__.
-    Mark all measurements, or any other data, required from the
-    model by decorator '@adaptermethod'."""
+class IntegerMathTest(ValidationTestCase):
+    """Test integer math."""
 
     author = Author(name="Vishal Sood",
                     affiliation="EPFL",
                     user_id=1)
     @adaptermethod
     def get_addition(model, x, y):
-        """get addition of x and y"""
+        """get addition of x and y."""
         pass
 
     @adaptermethod
     def get_subtraction(model, x, y):
-        """get difference of x and y"""
+        """get subtraction of x and y"""
         pass
 
     def data_description(self):
-        """Describe the data used by this validation."""
-        return """A data frame with columns x, y, z, and w. Column z = x + y,
-        Column w = x - y."""
+        """Describe validation data."""
+        return """A data frame with columns x, y, z, and w.
+        Column z = x + y, w = x - y."""
 
-    def __call__(self, model, other_validation_data=None):
-        """Method that each ValidationTestCase must implement.
-        Parameters
-        ----------
-        @model :: The model that needs to be validated (not adapted model).
-        The model adapter provided in the definition of this test case will
-        be used internally to define an interface. The user of this validation
-        test case will have to implement the resulting adapter interface."""
-
-        d = other_validation_data if other_validation_data\
-            else self.validation_data
-
-        addition_measurement\
-            = self.adapter.get_addition(model, d.x, d.y)
-        subtraction_measurement\
-            = self.adapter.get_subtraction(model, d.x, d.y)
-
-        return ('PASS' if (all(addition_measurement == d.z) and
-                           all(subtraction_measurement == d.w))
-                else 'FAIL')
+    def __call__(self, model):
+        """...Call Me..."""
+        d = self.validation_data
+        try: 
+            is_pass\
+                = (all(self.adapter.get_addition(model, d.x, d.y) == d.z) and
+                   all(self.adapter.get_subtraction(model, d.x, d.y) == d.w))
+            return 'PASS' if is_pass else 'FAIL'
+        except:
+            return 'INCONCLUSIVE'
 
 
-print("Validation TestIntegerMath authored by ", TestIntegerMath.author)
    
 #here is an example of how to use ABC's as interfaces
 class IntegerMathModelPM(ABC):
@@ -92,8 +73,7 @@ class BadIntegerMathModel(IntegerMathModelPM):
         return x + y
 
 
-@adapter.adapter(IntegerMathModelPM)
-@interface.implementation(TestIntegerMath.AdapterInterface)
+
 class TestIntegerMathModelPMAdapter:
     """An adapter for TestIntegerMathModel.
     Methods in the Adapter are all class method.
@@ -125,7 +105,7 @@ test_data = pd.DataFrame(dict(
 ))
 
 #model adapter need not be an input 
-timpm = TestIntegerMath(validation_data=test_data)
+timpm = IntegerMathTest(validation_data=test_data)
 #in which case,
 #you have to set a ValidationTestCase's adapter instance
 timpm.adapter = TestIntegerMathModelPMAdapter()
@@ -144,6 +124,8 @@ run_test(timpm, BadIntegerMathModel())
 run_test(timpm, GoodIntegerMathModel())
 
 
+
+
 class IntegerModuloMathModel:
     """Module math."""
     def __init__(self, n):
@@ -156,8 +138,6 @@ class IntegerModuloMathModel:
         return (x - y) % self.__n
 
 
-@adapter.adapter(IntegerModuloMathModel)
-@interface.implementation(TestIntegerMath.AdapterInterface)
 class TestIntegerMathModelModuloAdapter:
     """Adapt IntegerModuloMathModel for TestIntegerMath."""
     @classmethod
@@ -168,7 +148,7 @@ class TestIntegerMathModelModuloAdapter:
     def get_subtraction(cls, model, x, y):
         return model.msub(x, y)
 
-timmodulo = TestIntegerMath(validation_data=test_data,
+timmodulo = IntegerMathTest(validation_data=test_data,
                             adapter=TestIntegerMathModelModuloAdapter())
 
 run_test(timmodulo, IntegerModuloMathModel(1))

@@ -81,12 +81,13 @@ class ValidationTestCaseBase(Callable):
         pass
 
     @abstractmethod
-    def __call__(self, *args, **kwargs):
+    def __call__(self, model, *args, **kwargs):
         """A ValidationTestCase is a callable.
         In a concrete ValidationTestCase implementation,
         the first argument must be a model.
         *args, and **kwargs may contain parameters to be passed to the model."""
         pass
+
 
 @document_fields
 class ValidationTestCase(ValidationTestCaseBase, AdapterInterfaceBase):
