@@ -243,5 +243,5 @@ def get_implementations(an_interface):
     if not isinstance(an_interface, Interface):
         raise Exception("{} is not an Interface!!!"\
                         .format(an_interface.__name__))
-    return an_interface.__implementation_registry__
+    return an_interface.__implementation_registry__.values()
         

@@ -9,8 +9,9 @@ model, the user must provide an adapter implementation."""
 from types import FunctionType
 from abc import ABC, ABCMeta, abstractmethod
 from dmt.vtk.utils.descriptor import ClassAttribute, ClassAttributeMeta
-from dmt.aii.interface \
-    import Interface, get_interface, interfacemethod, interfaceattribute
+from dmt.aii.interface import \
+    get_interface, interfacemethod, interfaceattribute, get_implementations
+from dmt.aii.adapter import get_adapted_type
 from dmt.vtk.author import Author
 
 class Callable(ABC):
@@ -121,7 +122,6 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
 
         super(AdapterInterfaceBase, self).__init__(*args, **kwargs)
 
-
     @property
     def adapter(self):
         """Another name for model_adapter.
@@ -160,11 +160,10 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     def accepted_models(cls):
         """Models that this class with AdapterInterface will accept ---
         models for which at least one concrete implementation is available."""
-        return set([
-            get_adapted_entity(impl)
-            for impl in implementation_registry(cls.AdapterInterface).values()
-            if get_adapted_entity(impl) is not None
-        ])
+        adapted_entities \
+            = [get_adapted_entity(impl)
+               for impl in get_implementations(cls.AdapterInterface)]
+        return list(set([ae for ae in adapted_entities if ae is not None]))
 
     def adapted(self, model):
         """Get an object that is an adapted model.

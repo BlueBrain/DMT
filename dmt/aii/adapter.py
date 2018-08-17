@@ -52,12 +52,17 @@ def adapter(adapted_cls):
 
     return effective
 
-def get_adapted_entity(impl):
-    """Get models implemented by an implementation.
-    We assume that one implementation will adapt only one model type."""
-    return getattr(impl, '__adapted_entity__', None)
+def get_implemented_interface(impl):
+    """Get interfaces implemented by an implementation.
+    We assume that one implementation will implement one interface."""
+    return getattr(impl, '__implemented_interface__', None)
 
 def get_adapted_entity(impl):
     """Get the entity adapted by implementation 'impl'.
     We assume that one implementation will adapt one model type."""
-    return getattr(impl, '__implemented_interface__', None)
+    return get_adapted_type(impl)
+
+def get_adapted_type(cls):
+    """Get the type / class adapted by implementation 'impl'.
+    We assume that one implementation will adapt one model type."""
+    return getattr(cls, '__adapted_type__', None)
