@@ -25,14 +25,15 @@ class Adapter(metaclass=ClassAttributeMeta):
     attributes have been set by a deriving class (subclass).
     """
 
-    __adapted_type__ = ClassAttribute(
+    __adapted_types__ = ClassAttribute(
         __name__ = "__adapted_entity__",
-        __type__ = type,
-        __doc__ = """The class that this Adapter adapts to an Interface."""
+        __type__ = dict,
+        __doc__ = """A dict mapping a name to the class that this Adapter
+        adapts to an Interface. An Adapter can adapt more than classes."""
     )
-    __implemented_interface__ = ClassAttribute(
+    __implemented_interfaces__ = ClassAttribute(
         __name__ = "__implemented_interface__",
-        __type__ = type,
+        __type__ = dict,
         __doc__  = "Interface implemented by this Adapter class."
     )
 
@@ -46,23 +47,28 @@ def adapter(adapted_cls):
         Parameters
         ------------------------------------------------------------------------
         cls :: type #that is the adapter of class 'adapted_cls'"""
-        cls.__adapted_type__ = adapted_cls
+        aname = adapted_cls.__name__
+        if hasattr(cls, '__adapted_types__'):
+            cls.__adapted_types__[aname] = adapted_cls
+        else:
+            cls.__adapted_types__ = {aname: adapted_cls}
+
         return  ClassAttributeMeta(cls.__name__, (Adapter,),
                                    {a: getattr(cls, a) for a in dir(cls)})
 
     return effective
 
-def get_implemented_interface(impl):
+def get_interfaces_implemented(impl):
     """Get interfaces implemented by an implementation.
     We assume that one implementation will implement one interface."""
-    return getattr(impl, '__implemented_interface__', None)
+    return getattr(impl, '__implemented_interfaces__', None)
 
-def get_adapted_entity(impl):
+def get_entities_adapted(impl):
     """Get the entity adapted by implementation 'impl'.
     We assume that one implementation will adapt one model type."""
-    return get_adapted_type(impl)
+    return get_types_adapted(impl)
 
-def get_adapted_type(cls):
+def get_types_adapted(cls):
     """Get the type / class adapted by implementation 'impl'.
     We assume that one implementation will adapt one model type."""
-    return getattr(cls, '__adapted_type__', None)
+    return getattr(cls, '__adapted_types__', None)

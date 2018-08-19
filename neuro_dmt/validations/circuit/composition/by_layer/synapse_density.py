@@ -1,6 +1,7 @@
 """Validation of cell density by layer."""
 from dmt.aii import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
 
@@ -47,5 +48,4 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        model = self.adapted(circuit_model)
-        return model.get_synapse_density()
+        return self.adapter.get_synapse_density(circuit_model)

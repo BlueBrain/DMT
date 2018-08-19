@@ -11,7 +11,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from dmt.vtk.utils.descriptor import ClassAttribute, ClassAttributeMeta
 from dmt.aii.interface import \
     get_interface, interfacemethod, interfaceattribute, get_implementations
-from dmt.aii.adapter import get_adapted_type
+from dmt.aii.adapter import get_types_adapted
 from dmt.vtk.author import Author
 
 class Callable(ABC):
@@ -160,10 +160,14 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
     def accepted_models(cls):
         """Models that this class with AdapterInterface will accept ---
         models for which at least one concrete implementation is available."""
-        adapted_entities \
-            = [get_adapted_entity(impl)
-               for impl in get_implementations(cls.AdapterInterface)]
-        return list(set([ae for ae in adapted_entities if ae is not None]))
+        adapted_entities = {}
+        for impl in get_implementations(cls.AdaptedInterface).values():
+            adapted_entities.update(get_types_adapted(impl))
+        return adapted_entities
+        #adapted_entities \
+        #    = {k: v for k, v in get_adapted_types(impl).items()
+        #       for impl in get_implementations(cls.AdapterInterface).values()]
+        #return list(set([ae for ae in adapted_entities if ae is not None]))
 
     def adapted(self, model):
         """Get an object that is an adapted model.

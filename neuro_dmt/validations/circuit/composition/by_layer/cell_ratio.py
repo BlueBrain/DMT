@@ -1,11 +1,11 @@
 """Validation of cell density by layer."""
-from dmt.aii import Interface
+from dmt.aii.interface import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
-    import CompositionPhenomenonValidation
+    import ByLayerCompositionValidation
 
-class CellRatioValidation(CompositionPhenomenonValidation,
-                          SinglePhenomenonValidation):
+class CellRatioValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
@@ -19,7 +19,7 @@ class CellRatioValidation(CompositionPhenomenonValidation,
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
-        def get_label(circuit_model):
+        def get_label(self, circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -27,7 +27,7 @@ class CellRatioValidation(CompositionPhenomenonValidation,
             circuit_model :: ModelCircuit
             """
 
-        def get_cell_ratio(circuit_model):
+        def get_cell_ratio(self, circuit_model):
             """Get cell ratio for a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -40,8 +40,8 @@ class CellRatioValidation(CompositionPhenomenonValidation,
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
             ~      label :: String, #used as label for the measurement
-            ~      region_label :: String, #label for regions in data
-            ~      data :: DataFrame["region", "mean", "std"],
+            ~      region_label :: String, #label for regions in data, eg layer
+            ~      data :: DataFrame["mean", "std"],
             ~      method :: String)
             """
             pass
@@ -49,5 +49,4 @@ class CellRatioValidation(CompositionPhenomenonValidation,
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        model = self.adapt(circuit_model)
-        return model.get_cell_ratio()
+        return self.adapter.get_cell_ratio(circuit_model)

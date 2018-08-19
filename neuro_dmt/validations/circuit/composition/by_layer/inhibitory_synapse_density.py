@@ -1,9 +1,9 @@
 """Validation of cell density by layer."""
 from dmt.aii import Interface
 from dmt.validation.single_phenomemon import SinglePhenomenonValidation
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
-from dmt.vtk.phenomenon import Phenomenon
 
 class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -18,7 +18,8 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
-        def get_label(circuit_model):
+
+        def get_label(self, circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -27,7 +28,7 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def get_inhibitory_synapse_density(circuit_model):
+        def get_inhibitory_synapse_density(self, circuit_model):
             """Get volume density of inhibitory synapses for a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -41,7 +42,7 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
             Record(phenomenon :: Phenomenon, #that was measured
             ~      label :: String, #used as label for the measurement
             ~      region_label :: String, #label for regions in data
-            ~      data :: DataFrame["region", "mean", "std"],
+            ~      data :: DataFrame["mean", "std"],
             ~      method :: String)
             """
             pass
@@ -49,5 +50,4 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        model = self.adapt(circuit_model)
-        return model.get_inhibitory_synapse_density()
+        return self.adapter.get_inhibitory_synapse_density(circuit_model)

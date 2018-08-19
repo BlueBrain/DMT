@@ -1,8 +1,8 @@
 """Validation of cell density by layer."""
 from dmt.aii import Interface
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
-from dmt.vtk.phenomenon import Phenomenon
 
 class CellDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -15,8 +15,9 @@ class CellDensityValidation(ByLayerCompositionValidation):
     )
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
-        interface."""
-        def get_label(circuit_model):
+        interface.
+        """
+        def get_label(self, circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -25,7 +26,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def get_cell_density(circuit_model):
+        def get_cell_density(self, circuit_model):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -47,5 +48,4 @@ class CellDensityValidation(ByLayerCompositionValidation):
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        model = self.adapted(circuit_model)
-        return model.get_cell_density()
+        return self.adapter.get_cell_density(circuit_model)

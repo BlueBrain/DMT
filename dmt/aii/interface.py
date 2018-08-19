@@ -167,6 +167,7 @@ def implementation(an_interface):
         raise Exception("{} is not an interface".format(an_interface))
 
     def effective(impl_cls):
+        """Effective implementation class 'impl_cls'"""
         if not isinstance(impl_cls, type):
             raise Exception(
                 "'implementation' is a class decorator. {} is not a class!"\
@@ -180,7 +181,11 @@ def implementation(an_interface):
 
         an_interface.register_implementation(impl_cls)
         impl_cls.__isinterfaceimplementation__ = True
-        impl_cls.__implemented_interface__ = an_interface
+        iname = an_interface.__name__
+        if hasattr(impl_cls, '__implemented_interfaces__'):
+            impl_cls.__implemented_interfaces__[iname] = an_interface
+        else:
+            impl_cls.__implemented_interfaces__ = {iname: an_interface}
         return impl_cls
 
     return effective
@@ -189,7 +194,7 @@ implements = implementation #just an alias
 
 def get_implementations(an_interface):
     """all the implementations."""
-    if not is_interface(an_interface):
+    if not isinstance(an_interface, Interface):
         raise Exception("{} is not an interface.".format(an_interface))
     return an_interface.__implementation_registry__
 
@@ -238,10 +243,8 @@ def implementation_guide(an_interface):
 def get_required_methods(cls):
     return getattr(cls, '__interfacemethods__', [])
 
-def get_implementations(an_interface):
-    """all the implementations"""
-    if not isinstance(an_interface, Interface):
-        raise Exception("{} is not an Interface!!!"\
-                        .format(an_interface.__name__))
-    return an_interface.__implementation_registry__.values()
-        
+def is_satisfied(an_interface, a_class):
+    """Is interface 'an_interface' satisfied by class 'a_class'?"""
+    if not is_interface(an_interface):
+        raise Exception("{} is not an interface".format(an_interface))
+    return an_interface.is_implemented_by(a_class)
