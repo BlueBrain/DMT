@@ -31,9 +31,13 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-class BBPCircuitAdapter:
-    """Adapt a circuit from the Blue Brain Project.
-    Move code from previous attempts at ValidationFramework."""
+class BlueBrainModelAdapter:
+    """Adapt a circuit from the Blue Brain Project (BBP).
+    This adapter was developed for the O1.v6a models developed at BBP in 2017-
+    2018. The brain (micro-)circuit models are not atlas based, but are
+    organized as hexagonal columns, while respecting the connectivity patterns
+    observed in real brain circuits.
+    """
 
     @classmethod
     def get_cell_density(cls, circuit_model):
