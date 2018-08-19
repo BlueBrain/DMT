@@ -15,7 +15,7 @@ factory method to determine which kind of a Circuit we are dealing with and
 set that as the """
 from dmt.aii import interface, adapter
 
-from bluepy.api import Circuit
+from bluepy.v2.circuit import Circuit
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
