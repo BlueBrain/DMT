@@ -11,8 +11,10 @@ use 'bluepy.v2.circuit.Circuit' as a type for all of them, we will rely on
 manual book-keeping to organize all the different adapters.
 """
 from dmt.aii import interface, adapter
-
+import pandas as pd
 from bluepy.v2.circuit import Circuit
+from dmt.vtk.utils.collections import Record
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -21,8 +23,9 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
-from neuro_dmt.models.bluebrain import geometry, cell_collection, utils
-
+from neuro_dmt.models.bluebrain \
+    import geometry, cell_collection, utils, BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.geometry import Cuboid, collect_sample
 
 @adapter.adapter(Circuit)
 @interface.implementation(CellDensityValidation.AdapterInterface)
@@ -37,30 +40,71 @@ class BlueBrainModelAdapter:
     observed in real brain circuits.
     """
 
-    @classmethod
-    def get(cls, circuit, target='mc2_Column'):
-        cells = circuit.
+    def __init__(self, sampled_box_shape, sample_size, *args, **kwargs):
+        """
+        Parameters
+        ------------------------------------------------------------------------
+        sampled_box_shape :: np.ndarray[3D]#shape of the regions to sample
+        """
 
-    @classmethod
-    def get_cell_density(cls, circuit):
+        self._sampled_box_shape = sampled_box_shape
+        self._sample_size = sample_size
+        try:
+            super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
+        except:
+            pass
+
+
+    @staticmethod
+    def layer_centers(circuit):
+        """Center of the cortical layers."""
+        com = cell_collection.center_of_mass
+        return (com(circuit.cells.positions({'layer': l})) for l in range(1, 7))
+
+    def get(self, measurement, circuit, target='mc2_Column'):
+        helper = BlueBrainModelHelper(circuit)
+        layers = range(1,7)
+
+        def region_to_explore(layer):
+            """region to explore for layer."""
+            layer_bounds = helper.geometric_bounds({'layer': layer})
+            p0, p1 = layer_bounds.bbox
+            return Cuboid(p0 + self.sampled_box_shape,
+                          p1 - self.sampled_box_shape)
+
+        def layer_measurement(layer):
+            """layer measurements for layer"""
+            ms =  collect_sample(measurement,
+                                 region_to_explore(l),
+                                 sampled_bbox_shape=self._sampled_bbox_shape,
+                                 sample_size=self._sample_size)
+            return pd.Series({
+                'mean': np.mean(ms),
+                'std':  np.std(ms)
+            })
+
+        df = pd.DataFrame(layer_measurement(layer) for layer in layers)
+        df.index = ["L{}".format(layer) for layer in layers]
+        return df
+
+    def get_cell_density(self, circuit):
         """Implement this!"""
-        return geometry.collect_sample(
-            measurement=circuit.stats.cell_density,
-            region_to_explore=
+        df = self.get(circuit.stats.cell_density, circuit)
+        return Record(
+            phenomenon = Phenomenon("cell density", "cell count in unit volume"),
+            region_label = "cortical_layer",
+            data = df,
+            method = "random cubes were sampled and measured in each layer."
         )
-        raise NotImplementedError
 
-    @classmethod
     def get_cell_ratio(cls, circuit_model):
         """Implement this!"""
         raise NotImplementedError
 
-    @classmethod
     def get_inhibitory_synapse_density(cls, circuit_model):
         """Implement this!"""
         raise NotImplementedError
 
-    @classmethod
     def get_synapse_density(cls, circuit_model):
         """Implement this!"""
         raise NotImplementedError

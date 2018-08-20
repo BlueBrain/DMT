@@ -38,7 +38,6 @@ class CellDensityValidation(ByLayerCompositionValidation):
             Return
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
-            ~      label :: String, #used as label for the measurement
             ~      region_label :: String, #label for regions in data
             ~      data :: DataFrame["region", "mean", "std"],
             ~      method :: String)
