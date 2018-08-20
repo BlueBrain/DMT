@@ -1,5 +1,8 @@
 """Extension to geometry utils provided by bluepy.geometry."""
 import numpy as np
+from bluepy.v2.enums import Cell
+from bluepy.geometry.roi import ROI
+
 
 class Cuboid(ROI):
     """A box with different side lengths as a region of interest."""
@@ -48,23 +51,42 @@ def flat_bbox(center, cross_section, thickness):
 
     return Cuboid(carray + p0, carray - p1)
 
-
-def sample_location(box, n=1):
-    """Sample a random location in the confines of a bounding box.
+def random_location(box, n=None):
+    """Sample random location in the confines of a bounding box.
 
     Parameters
     ----------------------------------------------------------------------------
     box :: bluepy.geometry.ROI / 2-tuple[3D-vector]
     n :: int #number of samples to collect
+
+    Return
+    ----------------------------------------------------------------------------
+    A single vector (3D array) if n is None.
+    A matrix with each row a vector if n is an integer.
     """
-    def sample_from_interval(interval):
-        """..."""
-        return interval[0] + (interval[1] - interval[0]) * np.random.random()
 
-    if n == 1:
-        p0, p1 = box.bbox if isinstance(box, bluepy.geometry.ROI) else box
-        return np.array([sample_from_interval((p0[0], p1[0])),
-                         sample_from_interval((p0[1], p1[1])),
-                         sample_from_interval((p0[2], p1[2]))])
+    r = np.random.random(3 if n is None else [n, 3])
+    p0, p1 = box.bbox if isinstance(box, ROI) else box
+    return p0 + r * (p1 - p0) 
 
-    return (sample_location(box, 1) for i in range(n))
+def collect_sample(measurement,
+                   region_to_explore,
+                   sampled_bbox_shape=np.array([25.0, 25.0, 25.0]),
+                   sample_size=100):
+    """Collect a sample of a spatial measurement in a given region. A spatial
+    measurement measures a spatial phenomenon for a given spatial region. To
+    collect a sample for a measurement, start with a sample of spatial regions,
+    and measure them!
+
+    Parameters
+    ----------------------------------------------------------------------------
+    measurement :: Region -> Quantity
+    region_to_explore :: Region #where measurements are to be made
+    sampled_bbox_shape :: Box #dimensions of the region to be measured
+    sampled_size :: Int #number of measurements to make.
+    """
+    assert(region_to_explore is not None)
+    half_box = sampled_bbox_shape / 2.0
+    ms = (measurement(Cuboid(center - half_box, center + half_box))
+          for center in random_location(region_to_explore, n=sample_size))
+    return (m for m in ms if m is not None)

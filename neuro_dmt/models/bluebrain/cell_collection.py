@@ -1,6 +1,8 @@
 """Methods on cell collections. """
+import numpy as np
 from bluepy.v2.enums import Cell
-import geometry
+from neuro_dmt.models.bluebrain import geometry
+from neuro_dmt.models.bluebrain.geometry import Cuboid
 
 def center_of_mass(cell_collection):
     """Center of mass of a group of cells.
@@ -9,12 +11,7 @@ def center_of_mass(cell_collection):
     ----------------------------------------------------------------------------
     cell_collection :: DataFrame #obtained from  bluepy.v2.circuit.Circuit.cells query
     """
-    cell_positions = (np.array(ro[1][Cell.X], ro[1][Cell.Y], ro[1][Cell.Z])
-                      for r in cell_collection.iterrows())
-    position_sum, count = reduce(lambda (s, c), cpos: (s + cpos, c + 1),
-                                 cell_positions,
-                                 (np.array([0.0, 0.0, 0.0]), 0))
-    return position_sum / count
+    return cell_collection[[Cell.X, Cell.Y, Cell.Z]].mean()
 
 def centered_box(cell_collection, box_shape=np.array([400.0, 100.0, 230.0])):
     """A box of given shape around the center of mass of a cell group

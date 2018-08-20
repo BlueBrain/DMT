@@ -7,75 +7,62 @@ from bluepy.v2.circuit import Circuit
 from bluepy.v2.enums import Cell, Synapse, Segment, Section
 from bluepy.geometry.roi import ROI
 import neurom as nm
-import geometry
+from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+from neuro_dmt.models.bluebrain import geometry, cell_collection
 
 
-class BlueBrainModel(Circuit):
+
+class BlueBrainModelHelper:
     """Brain circuit models developed at the Blue Brain Project (BBP) can be 
     studied with the bluepy API, also developed at the BBP. This class extends
     'bluepy.v2.circuit.Circuit'."""
 
     def __init__(self, *args, **kwargs):
-        """initialize common stuff"""
-        super(BlueBrainModel, self).__init__(*args, **kwargs)
+        """initialize common stuff
+
+        Keyword Arguments
+        ------------------------------------------------------------------------
+        circuit :: bluepy.v2.circuit.Circuit #optional
+        circuit_config :: str #path to a circuit
+        ------------------------------------------------------------------------
+        Provide one of circuit or circuit_config
+        """
+        self._circuit = kwargs.get('circuit', None)
+
+        if self._circuit is None:
+            circuit_config = kwargs.get('circuit_config', None)
+            if circuit_config is None:
+                raise RequiredKeywordArgumentError(
+                    "Either circuit or circuit_config"
+                )
+            self._circuit = Circuit(circuit_config)
+
+        try:
+            super(BlueBrainModelHelper, self).__init__(*args, **kwargs)
+        except:
+            pass
 
     def geometric_bounds(self, cell_query, target=None):
-        "Geometric bounds of this circuit, determined by a bounding box around
+        """Geometric bounds of this circuit, determined by a bounding box around
         the queried cells contained in this circuit within the specified
-        'target'."
+        'target'."""
         def with_target(cell_query):
             if isinstance(target, str):
                 cell_query['$target'] = target
-            elif isinstance(target, Cell.HYPERCOLUMN):
+            elif isinstance(target, int):
                 cell_query[Cell.HYPERCOLUMN] = target
             else:
-                raise TypeError("Unhandled target type: {}"\
-                                .format(type(target)))
+                if target is not None:
+                    raise TypeError("Unhandled target type: {}"\
+                                    .format(type(target)))
             return cell_query
 
-        return geometry.bounds(
-            self.cells.position() if target is None \
-            else self.cells.get(with_target(cell_query))
-        )
-
-    def collect_sample(self, measurement,
-                       sampled_bbox_shape=np.array([25.0, 25.0, 25.0]),
-                       sample_size=100,
-                       region_to_explore=None,
-                       cell_query=None,
-                       target=None):
-        """Collect samples of a measurement.
-
-        Parameters
-        ------------------------------------------------------------------------
-        measurement :: FunctionType
-        sampled_bbox_shape :: numpy.ndarray [x, y, z] #to create ROIs around sampled locations
-        sample_size :: int
-        region_to_explore :: regionfc-cache -f -v in the circuit to explore random locations in
-        cell_query :: dict
-        """
-        if region_to_explore is None:
-            if cell_query is None:
-                raise Exception(
-                    "Neither a region to explore, nor a cell query provided."
-                )
-            region_to_explore = self.geometric_bounds(cell_query, target)
-
-        points = (geometry.sample_location(region_to_explore)
-                  for i in range(sample_size))
-
-        def sampled_bbox(center):
-            """..."""
-            half_box = sampled_bbox_shape / 2.0
-            return Cuboid(center - half_box, center + half_box)
-
-        ms = (measurement(self, sampled_bbox(center)) for center in points)
-
-        return (m for m in ms if m is not None)
+        cell_positions = self._circuit.cells.positions(with_target(cell_query))
+        return cell_collection.bounds(cell_positions)
 
     def get_segments(self, roi):
         """Get segments in a region."""
-        segidx = self.morph.spatial_index
+        segidx = self._circuit.morph.spatial_index
         if not segidx:
             raise ValueError("No spatial index for this circuit!")
         p0, p1 = roi.bbox if isinstance(roi, ROI) else roi
@@ -97,11 +84,11 @@ class BlueBrainModel(Circuit):
         pos2 = dendf[[Segment.X2, Segment.Y2, Segment.Z2]].values
         return np.sum( np.sqrt( np.sum((pos1 - pos2)**2, axis=1) ) )
 
-    def __aggregated_by_mtype(self, df, agg_func):
+    def _aggregated_by_mtype(self, df, agg_func):
         """Aggregated data-frame, by mtype."""
         cell_gids = df.gid.unique()
         mdf = df.set_index('gid')\
-                .join(self.cells.get(cell_gids, [Cell.MTYPE]))
+                .join(self._circuit.cells.get(cell_gids, [Cell.MTYPE]))
         grouped_by_mtype = mdf.groupby(u'mtype')
         mtypes = mdf.mtype.unique()
 
@@ -138,7 +125,7 @@ class BlueBrainModel(Circuit):
                                          nm.BASAL_DENDRITE,
                                          nm.APICAL_DENDRITE)})
         if by == 'mtype':
-            return self.__aggregated_by_mtype(segdf, total_length)
+            return self._aggregated_by_mtype(segdf, total_length)
         raise ValueError("Unknown criterion to get segment lengths by: {}"\
                          .format(by))
 
@@ -163,13 +150,14 @@ class BlueBrainModel(Circuit):
                                          nm.BASAL_DENDRITE,
                                          nm.APICAL_DENDRITE)})
         if by == 'mtype':
-            return self.__aggregated_by_mtype(segdf, total_volume)
+            return self._aggregated_by_mtype(segdf, total_volume)
         raise ValueError("Unknown criterion to get segment lengths by: {}"\
                          .format(by))
 
     def cell_gids_for_mtype(self, mtype, target=None):
-        cells = (self.cells.get({'$target': target}, properties=[Cell.MTYPE])
-                 if target else circuit.cells.get(properties=[Cell.MTYPE]))
+        props = [Cell.MTYPE]
+        cells = (self._circuit.cells.get({'$target': target}, properties=props)
+                 if target else self._circuit.cells.get(properties=props))
         return np.array(cells.index[cells[Cell.MTYPE] == mtype].values)
 
     def cell_counts_by_mtype(self, roi):
@@ -177,7 +165,7 @@ class BlueBrainModel(Circuit):
         q = {Cell.X: (p0[0], p1[0]),
              Cell.Y: (p0[1], p1[1]),
              Cell.Z: (p0[2], p1[2])}
-        cells = self.cells.get(q, properties=[Cell.MTYPE])
+        cells = self._circuit.cells.get(q, properties=[Cell.MTYPE])
         return cells.mtype.value_counts()
 
     def cell_counts_by_morphology(self, roi):
@@ -225,17 +213,10 @@ class BlueBrainModel(Circuit):
                                   spine_density_per_unit_len_stdev)
             return sd * total_dendrite_length
 
-        segIdx = self.morph.spatial_index
-        if not segIdx.exists(): return None
-
-        p0, p1 = roi.bbox
-        segmentDF  = segIdx.q_window_oncenter(p0, p1)
-        dendriteDF = segmentDF[
-            (segmentDF[Section.NEURITE_TYPE] == nm.BASAL_DENDRITE) |
-            (segmentDF[Section.NEURITE_TYPE] == nm.APICAL_DENDRITE)
-        ]
-
-        return spine_count(dendriteDF)
+        segdf = self.get_segments(roi)
+        dendf = segdf[(segdf[Section.NEURITE_TYPE] == nm.BASAL_DENDRITE) |
+                      (segdf[Section.NEURITE_TYPE] == nm.APICAL_DENDRITE)]
+        return spine_count(dendf)
 
     def spine_count_density(self, roi,
                             queried_spine_type=[nm.BASAL_DENDRITE,
@@ -243,16 +224,17 @@ class BlueBrainModel(Circuit):
                             spine_density_per_unit_len_mean=1.05,
                             spine_density_per_unit_len_stdev=0.35):
         
-        total_spine_length = segment_length(self, roi, queried_spine_type)
+        seg_lens = self.segment_lengths(roi)
+        total_spine_length = np.sum([seg_lens[nt] for nt in queried_spine_type])
+
         
-        randomSpineDensity = lambda: np.random.normal(
-            spine_density_per_unit_len_mean,
-            spine_density_per_unit_len_stdev
-        )
+        def random_spine_density():
+            """return a random spine density"""
+        return np.random.normal(spine_density_per_unit_len_mean,
+                                spine_density_per_unit_len_stdev)
 
         return (randomSpineDensity() * total_spine_length /roi.volume
-                if total_spine_length
-                else None)
+                if total_spine_length else None)
 
 
     def soma_volume_fraction(self, roi):
@@ -262,7 +244,7 @@ class BlueBrainModel(Circuit):
             return np.vstack([contour, spines])
 
         def volume_estimate(gid):
-            morph = self.morph.get(gid)
+            morph = self._circuit.morph.get(gid)
             try:
                 return soma.estimate_convex_hull_volume( contourWithSpines(morph) )
             except Exception as e:
@@ -272,7 +254,7 @@ class BlueBrainModel(Circuit):
 
 
         p0, p1 = roi.bbox
-        gids = self.cells.ids({Cell.X: (p0[0], p1[0]),
+        gids = self._circuit.cells.ids({Cell.X: (p0[0], p1[0]),
                                   Cell.Y: (p0[1], p1[1]),
                                   Cell.Z: (p0[2], p1[2])})
         print("for soma volume fraction, obtained ", len(gids), " neuron ids in ROI")
