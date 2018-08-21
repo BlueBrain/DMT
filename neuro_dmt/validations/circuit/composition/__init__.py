@@ -3,13 +3,10 @@
 from abc import abstractmethod
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
-    ValidationReport
 from neuro_dmt.utils.brain_region import BrainRegion
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.judgment.verdict import Verdict
 
 @document_fields
 class SpatialCompositionValidation:
@@ -18,6 +15,12 @@ class SpatialCompositionValidation:
     Make your subclasses to implement 'abstractmethods' that depend on factors
     such the  region type used for measurements, and the phenomenon validated.
     """
+    validated_phenomenon = ClassAttribute(
+        __name__ = "validated_phenomenon",
+        __type__ = Phenomenon,
+        __doc__ = """Phenomenon validated, that can be used to create a
+        report."""
+    )
     plotter_type = ClassAttribute(
         __name__ = "plotter_type",
         __type__ = type,
@@ -161,30 +164,23 @@ class SpatialCompositionValidation:
         """Get a label for the measurement validated."""
         pass
 
+    @abstractmethod
+    def get_report(self, pval):
+        """Form of the report will depend on the concrete implementation
+        of SpatialCompositionValidation."""
+        pass
+
     def __call__(self, circuit_model, *args, **kwargs):
         """...Call Me..."""
         save = kwargs.get('save', False) #Or should we save by default?
         model_measurement = self.get_measurement(circuit_model)
         model_label = self.get_label(circuit_model)
 
-        pval = self.pvalue(model_measurement)
-        verdict = self.get_verdict(pval)
-
-        report = ValidationReport(
-            validated_phenomenon = self.validated_phenomenon.title,
-            validated_image_path = self.plot(model_measurement),
-            author = self.author,
-            caption = self.get_caption(model_measurement),
-            validation_datasets = self.validation_data,
-            is_pass = verdict == Verdict.PASS,
-            is_fail = verdict == Verdict.FAIL,
-            pvalue = pval
-        )
-
+        report = self.get_report(self.pvalue(model_measurement))
         if save:
             report.save(
                 output_dir_path = kwargs.get('output_dir_path',
-                                             self.output_dir_path)
+                                             self.output_dir_path),
                 report_file_name = kwargs.get('report_file_name',
                                               self.report_file_name)
             )

@@ -1,9 +1,9 @@
 """Validation of cell density by layer."""
-from dmt.aii import Interface
-from dmt.validation.single_phenomemon import SinglePhenomenonValidation
+from dmt.aii.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import CompositionPhenomenonValidation
+from neuro_dmt.utils.brain_region import CorticalLayer
 
 class SomaVolumeFractionValidation(CompositionPhenomenonValidation,
                                    SinglePhenomenonValidation):
@@ -16,6 +16,7 @@ class SomaVolumeFractionValidation(CompositionPhenomenonValidation,
         "volume fraction",
         "Fraction of volume occupied by neurons in a unit volume."
     )
+    region_type = CorticalLayer
 
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this

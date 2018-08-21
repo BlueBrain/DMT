@@ -141,7 +141,7 @@ class ClassAttributeMeta(type):
                    if not isinstance(cls_v, ClassAttribute):
                        assert v.check_validity(cls_v),\
                            """Invalid class field value {}.
-                           Try help({})""".format(cls_v, b)
+                           Try help({}).""".format(cls_v,  b)
        super(ClassAttributeMeta, cls).__init__(name, bases, namespace)
         
  

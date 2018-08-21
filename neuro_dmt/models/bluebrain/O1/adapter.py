@@ -15,6 +15,7 @@ import pandas as pd
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.author import Author
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -39,7 +40,7 @@ class BlueBrainModelAdapter:
     organized as hexagonal columns, while respecting the connectivity patterns
     observed in real brain circuits.
     """
-
+    author = Author.zero
     def __init__(self, sampled_box_shape, sample_size, *args, **kwargs):
         """
         Parameters
@@ -49,11 +50,15 @@ class BlueBrainModelAdapter:
 
         self._sampled_box_shape = sampled_box_shape
         self._sample_size = sample_size
+        self._model_label = kwargs.get('model_label', 'blue_brain_model')
         try:
             super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
         except:
             pass
 
+    def get_label(self, circuit):
+        """method required by adapter interface."""
+        return self._model_label
 
     @staticmethod
     def layer_centers(circuit):
@@ -61,7 +66,7 @@ class BlueBrainModelAdapter:
         com = cell_collection.center_of_mass
         return (com(circuit.cells.positions({'layer': l})) for l in range(1, 7))
 
-    def get(self, measurement, circuit, target='mc2_Column'):
+    def get_measurement(self, measurement, circuit, target='mc2_Column'):
         helper = BlueBrainModelHelper(circuit)
         layers = range(1,7)
 
@@ -89,7 +94,7 @@ class BlueBrainModelAdapter:
 
     def get_cell_density(self, circuit):
         """Implement this!"""
-        df = self.get(circuit.stats.cell_density, circuit)
+        df = self.get_measurement(circuit.stats.cell_density, circuit)
         return Record(
             phenomenon = Phenomenon("cell density", "cell count in unit volume"),
             region_label = "cortical_layer",
@@ -97,16 +102,14 @@ class BlueBrainModelAdapter:
             method = "random cubes were sampled and measured in each layer."
         )
 
-    def get_cell_ratio(cls, circuit_model):
+    def get_cell_ratio(self, circuit_model):
         """Implement this!"""
         raise NotImplementedError
 
-    def get_inhibitory_synapse_density(cls, circuit_model):
+    def get_inhibitory_synapse_density(self, circuit_model):
         """Implement this!"""
         raise NotImplementedError
 
-    def get_synapse_density(cls, circuit_model):
+    def get_synapse_density(self, circuit_model):
         """Implement this!"""
         raise NotImplementedError
-
-

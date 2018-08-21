@@ -54,7 +54,7 @@ class Plot(ABC):
         fname  = file_name if file_name else self.file_name
 
         if opd:
-            if not is.path.exists(opd):
+            if not os.path.exists(opd):
                 os.makedirs(opd)
             fname_base = get_file_name_base(fn if fn else "report_plot")
             output_file_path = os.path.join(opd, "{}.png".format(fname_base))

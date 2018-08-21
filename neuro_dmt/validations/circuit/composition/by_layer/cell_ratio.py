@@ -1,9 +1,9 @@
 """Validation of cell density by layer."""
 from dmt.aii.interface import Interface
-from dmt.validation.single_phenomemon import SinglePhenomenonValidation
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
+from neuro_dmt.utils.brain_region import CorticalLayer
 
 class CellRatioValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -15,7 +15,7 @@ class CellRatioValidation(ByLayerCompositionValidation):
         "cell ratio",
         "Ratio of inhibitory to excitatory cells in a region."
     )
-
+    region_type = CorticalLayer
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""

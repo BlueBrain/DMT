@@ -59,3 +59,9 @@ class Author:
     
 #cannot create an Author inside the class body, so
 Author.anonymous = Author()
+Author.zero = Author(name = "V. Sood",
+                     affiliation = "BBP, EPFL",
+                     user_id = 0)
+Author.one  = Author(name = "H. Dictus",
+                     affiliation = "BBP, EPFL",
+                     user_id = 1)
