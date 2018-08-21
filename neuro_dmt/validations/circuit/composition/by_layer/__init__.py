@@ -1,5 +1,4 @@
 """Utilities for circuit composition by layer."""
-from abc import abstractmethod
 import pandas as pd
 import numpy as np
 from dmt.validation.test_case import SinglePhenomenonValidation
@@ -40,8 +39,8 @@ class ByLayerCompositionValidation(SinglePhenomenonValidation,
         report_file_name :: String #optional
         plot_customization :: Dict #optional
         """
-        super(ByLayerCompositionValidation, self).__init__(*args, **kwargs)
-        #we can add some 
+        super(ByLayerCompositionValidation, self)\
+            .__init__(validation_data, *args, **kwargs)
 
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""

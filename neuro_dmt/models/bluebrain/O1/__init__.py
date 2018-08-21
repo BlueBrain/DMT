@@ -1,1 +1,1 @@
-"""O1.v6a Blue Brain Model."""
+"""Blue Brain O1 circuit model."""

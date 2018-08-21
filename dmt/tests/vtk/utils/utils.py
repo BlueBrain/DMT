@@ -1,7 +1,7 @@
 """Test and develop dmt.utils.utils."""
 
 from abc import ABC, abstractmethod
-from dmt.utils.utils import ABCwithRegistryMeta
+from dmt.vtk.abc import ABCwithRegistryMeta
 
 class Color(metaclass=ABCwithRegistryMeta):
     def __init__(self, grade):
