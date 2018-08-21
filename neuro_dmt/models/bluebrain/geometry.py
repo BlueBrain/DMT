@@ -71,7 +71,7 @@ def random_location(box, n=None):
 
 def collect_sample(measurement,
                    region_to_explore,
-                   sampled_bbox_shape=np.array([25.0, 25.0, 25.0]),
+                   sampled_box_shape=np.array([25.0, 25.0, 25.0]),
                    sample_size=100):
     """Collect a sample of a spatial measurement in a given region. A spatial
     measurement measures a spatial phenomenon for a given spatial region. To
@@ -86,7 +86,7 @@ def collect_sample(measurement,
     sampled_size :: Int #number of measurements to make.
     """
     assert(region_to_explore is not None)
-    half_box = sampled_bbox_shape / 2.0
+    half_box = sampled_box_shape / 2.0
     ms = (measurement(Cuboid(center - half_box, center + half_box))
           for center in random_location(region_to_explore, n=sample_size))
     return (m for m in ms if m is not None)

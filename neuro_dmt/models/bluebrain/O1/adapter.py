@@ -11,6 +11,7 @@ use 'bluepy.v2.circuit.Circuit' as a type for all of them, we will rely on
 manual book-keeping to organize all the different adapters.
 """
 from dmt.aii import interface, adapter
+import numpy as np
 import pandas as pd
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.collections import Record
@@ -67,30 +68,31 @@ class BlueBrainModelAdapter:
         return (com(circuit.cells.positions({'layer': l})) for l in range(1, 7))
 
     def get_measurement(self, measurement, circuit, target='mc2_Column'):
-        helper = BlueBrainModelHelper(circuit)
+        helper = BlueBrainModelHelper(circuit=circuit)
         layers = range(1,7)
 
         def region_to_explore(layer):
             """region to explore for layer."""
             layer_bounds = helper.geometric_bounds({'layer': layer})
             p0, p1 = layer_bounds.bbox
-            return Cuboid(p0 + self.sampled_box_shape,
-                          p1 - self.sampled_box_shape)
+            return Cuboid(p0 + self._sampled_box_shape,
+                          p1 - self._sampled_box_shape)
 
         def layer_measurement(layer):
             """layer measurements for layer"""
-            ms =  collect_sample(measurement,
-                                 region_to_explore(l),
-                                 sampled_bbox_shape=self._sampled_bbox_shape,
-                                 sample_size=self._sample_size)
-            return pd.Series({
-                'mean': np.mean(ms),
-                'std':  np.std(ms)
-            })
+            ms =  list(collect_sample(measurement,
+                                      region_to_explore(layer),
+                                      sampled_box_shape=self._sampled_box_shape,
+                                      sample_size=self._sample_size))
+            
+            return {'mean': np.mean(ms),
+                    'std':  np.std(ms)}
 
         df = pd.DataFrame(layer_measurement(layer) for layer in layers)
         df.index = ["L{}".format(layer) for layer in layers]
         return df
+        #return {"L{}".format(layer): layer_measurement(layer)
+        #        for layer in layers}
 
     def get_cell_density(self, circuit):
         """Implement this!"""
