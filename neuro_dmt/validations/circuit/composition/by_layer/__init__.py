@@ -9,15 +9,17 @@ from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.vtk.judgment.verdict import Verdict
+from dmt.vtk.plotting.bars import BarPlot
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.utils.brain_region import Layer
 
 
 @document_fields
-class ByLayerCompositionValidation(SinglePhenomenonValidation,
-                                   SpatialCompositionValidation):
+class ByLayerCompositionValidation(SpatialCompositionValidation,
+                                   SinglePhenomenonValidation):
     """Validation of a single circuit composition phenomenon."""
+    plotter_type = BarPlot
     def __init__(self, validation_data, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
@@ -47,15 +49,19 @@ class ByLayerCompositionValidation(SinglePhenomenonValidation,
         model = self.adapted(circuit_model)
         return model.get_label(circuit_model)
 
-    def get_report(self, pval):
+    def get_report(self, model_measurement):
         """Create a report."""
+        plot_path = self.plot(model_measurement)
+        print("got from plot type {}".format(type(plot_path)))
+        print("plot at: {}".format(plot_path))
+        pval = self.pvalue(model_measurement)
         verdict = self.get_verdict(pval)
         return ValidationReport(
-            validated_phenomenon = self.validated_phenomenon.title,
-            validated_image_path = self.plot(model_measurement),
+            validated_phenomenon = self.validated_phenomenon,
+            validation_image_path = plot_path,
             author = self.author,
             caption = self.get_caption(model_measurement),
-            validation_datasets = self.validation_data,
+            validation_datasets = {d.label: d for d in self.validation_data},
             is_pass = verdict == Verdict.PASS,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval

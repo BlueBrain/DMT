@@ -11,5 +11,9 @@ def isabstract(cls):
 
 def get_file_name_base(file_name=None):
     """Get the base from a file name, stripping away it's suffix."""
-    return ("report" if file_name is None else
-            '_'.join(file_name.split('.')[0:-1]).strip().replace(' ', '_'))
+    if file_name is None:
+        return "report"
+    fname_parts = file_name.split('.')
+    if len(fname_parts) == 1:
+        return fname_parts[0].strip().replace(' ', '_')
+    return '_'.join(fname_parts[0:-1]).strip().replace(' ', '_')

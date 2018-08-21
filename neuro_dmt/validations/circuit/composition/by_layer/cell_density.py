@@ -46,6 +46,10 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
+
+    def data_description(self):
+        """Describe the experimental data used for validation."""
+        return self.validation_data[0].what
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""

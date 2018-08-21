@@ -35,9 +35,12 @@ class Field:
         """set the value of the field in an instance
         where a field has been declared."""
         if not self.__is_minimally_valid(value):
-            raise TypeError("{} cannot be set to {} of type {}"\
-                             .format(self.__type__.__name__,
-                                     value, str(type(value))))
+            raise TypeError(
+                "Cannot set field {} of type {} to value {} of type {}"\
+                .format(self.__field_name__,
+                        self.__type__.__name__,
+                        value, str(type(value)))
+            )
         if not self.__is_valid(value):
             raise ValueError(
                 "{} of type {} cannot be set to an invalid value, {}"\

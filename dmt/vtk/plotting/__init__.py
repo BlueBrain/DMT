@@ -1,5 +1,6 @@
 """Plotting utils."""
 from abc import ABC, abstractmethod
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import pylab
@@ -19,7 +20,7 @@ def golden_figure(width=None, height=None):
     width =  0.5 * (1. + np.sqrt(5)) * height if width is None else width
 
     fig = plt.figure()
-    fig.set_size(width, height)
+    fig.set_size_inches(width, height)
     return fig
 
 
@@ -35,12 +36,12 @@ class Plot(ABC):
         self.title = kwargs.get('title', self.__class__.__name__)
         self.xlabel = kwargs.get('xlabel', 'X')
         self.ylabel = kwargs.get('ylabel', 'Y')
-        self.output_dir_path = kwargs.get('output_dir_path', None)
-        self.legend_loc = kwargs.get('legend_loc', 'upper_left')
+        self.output_dir_path = kwargs.get('output_dir_path', ".")
+        self.legend_loc = kwargs.get('legend_loc', 'upper left')
         self.height = kwargs.get('height', 10)
         self.width = kwargs.get('width', None)
         self.colors = kwargs.get('colors', ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
-        self.file_name = kwargs.get('file_name', None)
+        self.file_name = kwargs.get('file_name', "report")
 
 
 
@@ -50,16 +51,21 @@ class Plot(ABC):
         pass
 
     def save(self, fig, output_dir_path=None, file_name=None):
-        opd = output_dir_path if output_dir_path else self.output_dir_path
-        fname  = file_name if file_name else self.file_name
-
+        opd = output_dir_path if output_dir_path is not None \
+              else self.output_dir_path
+        fname  = file_name if file_name is not None else self.file_name
         if opd:
+            print("Save plot at {} with file name {}".format(opd, fname))
             if not os.path.exists(opd):
                 os.makedirs(opd)
-            fname_base = get_file_name_base(fn if fn else "report_plot")
+            fname_base = get_file_name_base(fname if fname is not None
+                                            else "report_plot")
+            print("file name base {}".format(fname_base))
             output_file_path = os.path.join(opd, "{}.png".format(fname_base))
             print("Generating {}".format(output_file_path))
             fig.savefig(output_file_path, dpi=100)
+
+            print("figure has been saved")
             return output_file_path
         else:
             print("WARNING! No output directory provided. Not saving.")

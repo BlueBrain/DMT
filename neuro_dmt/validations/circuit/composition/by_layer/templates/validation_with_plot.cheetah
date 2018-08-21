@@ -14,7 +14,7 @@
 
     <ul>
       #for $k, $d in $validation_datasets.items()
-      <li><a href="$d.url">[$d.short_name]</a> -$d.citation<br>
+      <li><a href="$d.uri">[$d.label]</a> -$d.citation<br>
         <p><i>$d.what</i></p>
       </li>
       #end for
@@ -30,7 +30,7 @@
       <font color="0000FF">INCONCLUSIVE></font>
       #end if
       <br>
-      p-value: p=$p_value
+      p-value: p=$pvalue
     </p>
 
   </body

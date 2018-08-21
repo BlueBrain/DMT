@@ -83,7 +83,7 @@ class ValidationReport(Report):
                          
         super(ValidationReport, self).__init__(*args, **kwargs)
 
-    def save(self, output_dir_path, report_file_name=None):
+    def save(self, output_dir_path=".", report_file_name=None):
         """Save report to disc, as an html.
 
         Parameters
@@ -102,8 +102,7 @@ class ValidationReport(Report):
         report_file_path = os.path.join(output_dir_path, file_name)
 
         try:
-
-            #the following is a bit of a hack.
+            #the following is ugly
             #Cheetah template are not exactly the same attributes as this report
             template_dict = self.__report_dict__
             template_dict['validated_phenomenon']\

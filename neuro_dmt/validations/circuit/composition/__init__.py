@@ -1,12 +1,15 @@
 """Code relevant for validation of composition phenomena"""
 
 from abc import abstractmethod
+import os
+import numpy as np
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.utils.brain_region import BrainRegion
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.judgment.verdict import Verdict
 
 @document_fields
 class SpatialCompositionValidation:
@@ -63,13 +66,13 @@ class SpatialCompositionValidation:
        self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
        self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
        self.report_file_name = kwargs.get('report_file_name', 'report.html')
-       self.plot_customization = kwargs.get('plot_customization')
+       self.plot_customization = kwargs.get('plot_customization', {})
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
-        plotter = self.plotter_type(**plot_customization)
-        plotting_datasets = model_measurement + self.validation_data
-        plotter.plot(plotting_datasets)
+        plotter = self.plotter_type(**self.plot_customization)
+        plotting_datasets = [model_measurement] + self.validation_data
+        return plotter.plot(*plotting_datasets)
 
     def get_verdict(self, p):
         """Use p-value threshold to judge if the validation was a success.
@@ -97,14 +100,16 @@ class SpatialCompositionValidation:
         model_mesaurement :: Record(...)
         """
         from scipy.special import erf
-        from np import abs, sqrt
+        from numpy import abs, sqrt
 
-        real_measurement = self.validated_data[0]
+        real_measurement = self.validation_data[0]
         N = real_measurement.data.shape[0]
-        delta_mean \
-            = abs(model_measurement.data.mean - real_measurement.data.mean)
-        stdev \
-            = sqrt(model_measurement.data.std**2 + real_measurement.data.std**2)
+        delta_mean = abs(
+            model_measurement.data["mean"] - real_measurement.data["mean"]
+        )
+        stdev = sqrt(
+            model_measurement.data["std"]**2 + real_measurement.data["std"]**2
+        )
         z_score = delta_mean / stdev
         pval = 1. - erf(z_score)
         return pd.DataFrame(dict(
@@ -174,9 +179,7 @@ class SpatialCompositionValidation:
         """...Call Me..."""
         save = kwargs.get('save', False) #Or should we save by default?
         model_measurement = self.get_measurement(circuit_model)
-        model_label = self.get_label(circuit_model)
-
-        report = self.get_report(self.pvalue(model_measurement))
+        report = self.get_report(model_measurement)
         if save:
             report.save(
                 output_dir_path = kwargs.get('output_dir_path',

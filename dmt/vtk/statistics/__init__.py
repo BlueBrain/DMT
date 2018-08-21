@@ -34,11 +34,11 @@ class StatisticalTest(object):
         can rely on Pandas to provide meaningful exceptions."""
 
         combined_stdev = np.sqrt(X.var + Y.var)
-        zscore = np.abs(X.mean Y.mean) / combined_stdev
+        zscore = np.abs(X.mean, Y.mean) / combined_stdev
         return 1.0 - erf(zscore)
 
 
-class PValPooler(StatisticalTool):
+class PValPooler(StatisticalTest):
     """Statistical tool to handled pools of multiple p-values."""
     pass
 
@@ -143,7 +143,7 @@ class twosamplettest(StatisticalTest):
     """Two sided ttest"""
     @classmethod
     def eval(cls,
-             sample_mean_1, sample_std_1, sample_size_1
+             sample_mean_1, sample_std_1, sample_size_1,
              sample_mean_2, sample_std_2, sample_size_2):
         """
         Parameters
@@ -211,7 +211,7 @@ class onesamplettest(StatisticalTest):
 
         tt = (sample_mean_2 - sample_mean_1) / pooled_std
         pval = np.array([scipy.stats.t.sf(np.abs(tt[i], dof[i]) * 2)
-                         for i in range(len(tt)))]
+                         for i in range(len(tt))])
 
         cls.statistics = tt
         cls.p_value = pval

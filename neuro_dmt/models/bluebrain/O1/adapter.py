@@ -85,8 +85,8 @@ class BlueBrainModelAdapter:
                                       sampled_box_shape=self._sampled_box_shape,
                                       sample_size=self._sample_size))
             
-            return {'mean': np.mean(ms),
-                    'std':  np.std(ms)}
+            return {'mean': 1.e-3 * np.mean(ms),
+                    'std':  1.e-3 * np.std(ms)}
 
         df = pd.DataFrame(layer_measurement(layer) for layer in layers)
         df.index = ["L{}".format(layer) for layer in layers]
@@ -99,6 +99,7 @@ class BlueBrainModelAdapter:
         df = self.get_measurement(circuit.stats.cell_density, circuit)
         return Record(
             phenomenon = Phenomenon("cell density", "cell count in unit volume"),
+            label = self.get_label(circuit),
             region_label = "cortical_layer",
             data = df,
             method = "random cubes were sampled and measured in each layer."

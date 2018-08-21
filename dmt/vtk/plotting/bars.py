@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
-from dmt.vtk.utils.plotting import golden_figure, Plot
+from dmt.vtk.plotting import golden_figure, Plot
 
 
 
@@ -16,7 +16,7 @@ class BarPlot(Plot):
         super(BarPlot, self).__init__(*args, **kwargs)
 
 
-    def plot(*plotting_datasets, save=True):
+    def plot(self, *plotting_datasets, save=True):
         """Make the bar plot.
 
         Arguments
@@ -52,25 +52,26 @@ class BarPlot(Plot):
 
         index = 1
         for pe in plotting_datasets:
+            print("plot index {}".format(index))
             df = pe.data.fillna(0.0)
-            a_plot = plt.bar(x0 + plot_index * width,
+            a_plot = plt.bar(x0 + index * width,
                              df['mean'].values,
                              width,
-                             color=self.color[(idnex - 1) % len(self.colors)],
+                             color=self.colors[(index - 1) % len(self.colors)],
                              yerr=df['std'].values,
                              label=pe.label)
             index += 1
 
-        plt.title(title, fontsize=24)
+        plt.title(self.title, fontsize=24)
         plt.xlabel(self.xlabel, fontsize=20)
         plt.xticks(x - width / 2., xs)
 
         fontP = FontProperties()
         fontP.set_size('small')
-        plt.legend(prop=fontP, loc=legend_loc)
+        plt.legend(prop=fontP, loc=self.legend_loc)
 
         if save:
-            self.save(fig)
+            return self.save(fig)
 
         return fig
 
