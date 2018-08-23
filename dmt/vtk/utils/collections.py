@@ -28,6 +28,8 @@ class Record:
             msg += "\t{}: {},\n".format(field, getattr(self, field))
         field = self.__field_names[-1]
         msg += "\t{}: {}".format(field, getattr(self, field))
+        msg += "\n"
+        msg += "\n"
         return msg
 
 class FrozenDict(collections.Mapping):

@@ -44,6 +44,10 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         super(ByLayerCompositionValidation, self)\
             .__init__(validation_data, *args, **kwargs)
 
+    def data_description(self):
+        """Describe the experimental data used for validation."""
+        return self.validation_data[0].what
+     
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""
         model = self.adapted(circuit_model)

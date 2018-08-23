@@ -1,6 +1,6 @@
 """Measurement of cell density."""
 
-from dmt.measurement import Measurement
+from dmt.vtk.measurement import Measurement
 from neuro_dmt.phenomoena.circuit.composition \
     import CellDensity as CellDensityPhenomenon
 

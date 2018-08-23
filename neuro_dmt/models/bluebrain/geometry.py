@@ -51,7 +51,7 @@ def flat_bbox(center, cross_section, thickness):
 
     return Cuboid(carray + p0, carray - p1)
 
-def random_location(box, n=None):
+def random_location(box, n=None, dim=3):
     """Sample random location in the confines of a bounding box.
 
     Parameters
@@ -65,7 +65,7 @@ def random_location(box, n=None):
     A matrix with each row a vector if n is an integer.
     """
 
-    r = np.random.random(3 if n is None else [n, 3])
+    r = np.random.random(dim if n is None else [n, dim])
     p0, p1 = box.bbox if isinstance(box, ROI) else box
     return p0 + r * (p1 - p0) 
 
