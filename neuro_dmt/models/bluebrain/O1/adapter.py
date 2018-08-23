@@ -34,8 +34,8 @@ from neuro_dmt.models.bluebrain.geometry import \
 from neuro_dmt.models.bluebrain.measurements.circuit.composition import \
     CellDensityMeasurement, \
     CellRatioMeasurement, \
-    InhibitorySynapseRatioMeasurement, \
-    SynapseDensityMeasurement
+    InhibitorySynapseDensityMeasurement, \
+    ExtrinsicIntrinsicSynapseDensityMeasurement
 
 
 
@@ -103,7 +103,7 @@ class BlueBrainModelAdapter:
                       sample = roi_sampler)
 
 
-       def get_cell_density(self, circuit):
+    def get_cell_density(self, circuit):
         """..."""
         cd = CellDensityMeasurement(circuit)
         return cd.statistical_measurement(self.layer_roi_sampler(circuit))
@@ -115,10 +115,10 @@ class BlueBrainModelAdapter:
 
     def get_inhibitory_synapse_density(self, circuit):
         """Implement this!"""
-        isd = InhibitorySynapseRatioMeasurement(circuit)
+        isd = InhibitorySynapseDensityMeasurement(circuit)
         return isd.statistical_measurement(self.layer_roi_sampler(circuit))
 
-    def get_synapse_density(self, circuit_model):
+    def get_synapse_density(self, circuit):
         """Implement this!"""
-        sd = SynapseDensityMeasurement(circuit)
+        sd = ExtrinsicIntrinsicSynapseDensityMeasurement(circuit)
         return sd.statistical_measurement(self.layer_roi_sampler(circuit))

@@ -160,6 +160,28 @@ class BlueBrainModelHelper:
                  if target else self._circuit.cells.get(properties=props))
         return np.array(cells.index[cells[Cell.MTYPE] == mtype].values)
 
+    def cell_counts(self, roi):
+        """Counts of inhibitory and excitatory cells, in a region of interest,
+        as a pandas Series."""
+        p0, p1 = roi.bbox
+        query = {Cell.X: (p0[0], p1[0]),
+                 Cell.Y: (p0[1], p1[1]),
+                 Cell.Z: (p0[2], p1[2])}
+        props = [Cell.X, Cell.Y, Cell.Z, Cell.SYNAPSE_CLASS]
+        cells = self._circuit.cells.get(query, props)
+        cells_inh = cells[cells.synapse_class == "INH"]
+        cells_exc = cells[cells.synapse_class == "EXC"]
+
+        inh_in_roi = roi.contains(cells_inh[[Cell.X, Cell.Y, Cell.Z]].values)
+        roi_inh_count = np.count_nonzero(inh_in_roi)
+
+        exc_in_roi = roi.contains(cells_exc[[Cell.X, Cell.Y, Cell.Z]].values)
+        roi_exc_count = np.count_nonzero(exc_in_roi)
+
+        return pd.Series({"INH": roi_inh_count,
+                          "EXC": roi_exc_count,
+                          "TOT": roi_exc_count + roi_inh_count})
+
     def cell_counts_by_mtype(self, roi):
         p0, p1 = roi.bbox
         q = {Cell.X: (p0[0], p1[0]),
@@ -179,10 +201,53 @@ class BlueBrainModelHelper:
 
     def cell_densities_by_mtype(self, roi):
         mtcts = self.cell_counts_by_mtype(roi)
-        return pandas.DataFrame({
+        return pd.DataFrame({
             'mtype': mtcts.index,
             'cell_density': 1.e9 * mtcts.values / roi.volume
         })
+
+    def synapse_density(self, roi, scale_factor=1.0):
+        """
+        Synapse density withing given region of interest.
+        roi :: region of interest (bluepy.geometry.roi.ROI)
+
+        @return :: synapse density within region of interest / volume
+        [units: 1 / mm^3]
+
+        @note: When queried for synapse densities
+        in a layer (roi in a single layer),
+        this function will return all synapses,
+        including synapses on / between cells
+        whose soma-bodies fall in other layers
+        (technically cells of other layers).
+        We use this function to get synapse density of inhibitory synapses,
+        which mostly  belong to cells in the same layer as the synapse.
+        """
+        p0, p1 = roi.bbox
+        synapses = self._circuit.connectome\
+                                .spatial_index.q_window_oncenter(p0, p1)
+        synapses_exc = synapses[synapses.excitatory == True]
+        synapses_inh = synapses[synapses.excitatory == False]
+        midpoints_exc = 0.5 * (synapses_exc[[Synapse.PRE_X_CENTER,
+                                             Synapse.PRE_Y_CENTER,
+                                             Synapse.PRE_Z_CENTER]].values +
+                               synapses_exc[[Synapse.POST_X_CENTER,
+                                             Synapse.POST_Y_CENTER,
+                                             Synapse.POST_Z_CENTER]].values)
+        midpoints_inh = 0.5 * (synapses_inh[[Synapse.PRE_X_CENTER,
+                                             Synapse.PRE_Y_CENTER,
+                                             Synapse.PRE_Z_CENTER]].values +
+                               synapses_inh[[Synapse.POST_X_CENTER,
+                                             Synapse.POST_Y_CENTER,
+                                             Synapse.POST_Z_CENTER]].values)
+        syn_count_exc = np.count_nonzero(roi.contains(midpoints_exc))
+        syn_count_inh = np.count_nonzero(roi.contains(midpoints_inh))
+        synapse_count = pd.Series({
+            "EXC": syn_count_exc,
+            "INH": syn_count_inh,
+            "TOT": syn_count_inh + syn_count_exc
+        })
+        return scale_factor * 1.e9 * synapse_count / roi.volume
 
     def marker_stains(self, roi, gtypes):
         mtcounts = self.cell_counts_by_morphology(roi)\
@@ -222,18 +287,17 @@ class BlueBrainModelHelper:
                             queried_spine_type=[nm.BASAL_DENDRITE,
                                                 nm.APICAL_DENDRITE],
                             spine_density_per_unit_len_mean=1.05,
-                            spine_density_per_unit_len_stdev=0.35):
+                            spine_density_per_unit_len_std=0.35):
         
         seg_lens = self.segment_lengths(roi)
         total_spine_length = np.sum([seg_lens[nt] for nt in queried_spine_type])
-
         
         def random_spine_density():
             """return a random spine density"""
-        return np.random.normal(spine_density_per_unit_len_mean,
-                                spine_density_per_unit_len_stdev)
+            return np.random.normal(spine_density_per_unit_len_mean,
+                                    spine_density_per_unit_len_std)
 
-        return (randomSpineDensity() * total_spine_length /roi.volume
+        return (random_spine_density() * total_spine_length /roi.volume
                 if total_spine_length else None)
 
 
@@ -246,7 +310,7 @@ class BlueBrainModelHelper:
         def volume_estimate(gid):
             morph = self._circuit.morph.get(gid)
             try:
-                return soma.estimate_convex_hull_volume( contourWithSpines(morph) )
+                return soma.estimate_convex_hull_volume( contourWithSpines(morph))
             except Exception as e:
                 return None
 

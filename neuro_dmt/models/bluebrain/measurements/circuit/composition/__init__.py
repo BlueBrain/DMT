@@ -2,7 +2,8 @@
 
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.models.bluebrain import utils
+from dmt.vtk.utils.collections import Record
+from neuro_dmt.models.bluebrain import BlueBrainModelHelper
 
 class CellDensityMeasurement(measurement.Method):
     """..."""
@@ -29,62 +30,51 @@ class CellRatioMeasurement(measurement.Method):
     def __init__(self, circuit):
         """..."""
         self.__circuit = circuit
-
-    def __region_cell_counts(self, roi):
-        """Counts of inhibitory and excitatory cells, in a region of interest,
-        as a pandas Series."""
-        p0, p1 = roi.bbox
-        query = {Cell.X: (p0[0], p1[0]),
-                 Cell.Y: (p0[1], p1[1]),
-                 Cell.Z: (p0[2], p1[2]) }
-        props = [Cell.X, Cell.Y, Cell.Z, Cell.SYNAPSE_CLASS]
-        cells = circuit.cells.get(query, props)
-        cells_inh = cells[cells.synapse_class == "INH"]
-        cells_exc = cells[cells.synapse_class == "EXC"]
-
-        inh_in_roi = roi.contains(cells_inh[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_inh_count = np.count_nonzero(inh_in_roi)
-
-        exc_in_roi = roi.contains(cells_exc[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_exc_count = np.count_nonzero(exc_in_roi)
-
-        return pd.Series({"INH": roi_inh_count,
-                          "EXC": exc_in_roi,
-                          "TOT": roi_exc_count + roi_inh_count})
+        self.__helper  = BlueBrainModelHelper(circuit=circuit)
 
     def __call__(self, roi):
         """Ratio of the number of inhibitory cells to
         the number of excitatory cells in a region of interest (roi)
         of the circuit.
         """
-        ccounts = self.__region_cell_counts(roi)
-        return (1.0 + ccounts['INH']) / (1.0 + ccounts['EXC'])
+        ccounts = self.__helper.cell_counts(roi)
+        return (1.0 + ccounts['INH']) / (1.0 + ccounts['TOT'])
+
     
-class InhibitorySynapseRatioMeasurement(measurement.Method):
+class InhibitorySynapseDensityMeasurement(measurement.Method):
     """..."""
 
     label = "inhibitory_synapse_density"
 
+    phenomenon = Phenomenon("inhibitor_synapse_density",
+                            "Number of inhibitory synapses in a unit volume")
+
     def __init__(self, circuit):
         """..."""
         self.__circuit = circuit
+        self.__helper  = BlueBrainModelHelper(circuit = circuit)
 
     def __call__(self, roi):
         """Count the number of inhibitory synapses within a
         region of interest (roi), and divides the number by the roi's volume.
         """
-        utils.synapse_density(circuit, roi, 'INH', scale_factor=1.e-9)       
+        return self.__helper.synapse_density(roi, scale_factor=1.e-9)["INH"]
+
 
 class ExtrinsicIntrinsicSynapseDensityMeasurement(measurement.Method):
     """..."""
 
     label =  "synapse_density"
 
+    phenomenon = Phenomenon("synapse_density",
+                            "Number of synapses in a unit volume")
+
     _spine_density_per_unit_length = Record(mean = 1.05, std = 0.35)
 
     def __init__(self, circuit):
         """..."""
         self.__circuit = circuit
+        self.__helper  = BlueBrainModelHelper(circuit = circuit)
 
     def __call__(self, roi):
         """Compute the expected synapse density
@@ -94,8 +84,9 @@ class ExtrinsicIntrinsicSynapseDensityMeasurement(measurement.Method):
         density per unit length.
         """
         mean = self._spine_density_per_unit_length.mean
-        stdev = self._spine_density_per_unit_length.stdev
+        std  = self._spine_density_per_unit_length.std
 
-        return utils.spine_count_density(circuit, roi,
+        return self.__helper\
+                   .spine_count_density(roi,
                                          spine_density_per_unit_len_mean=mean,
-                                         spine_density_per_unit_len_stdev=stdev)
+                                         spine_density_per_unit_len_std=std)
