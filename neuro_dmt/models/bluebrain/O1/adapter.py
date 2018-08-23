@@ -103,45 +103,22 @@ class BlueBrainModelAdapter:
                       sample = roi_sampler)
 
 
-    def region_cell_counts(self, circuit, roi):
-        """Counts of inhibitory and excitatory cells, in a region of interest,
-        as a pandas Series."""
-        p0, p1 = roi.bbox
-        query = {Cell.X: (p0[0], p1[0]),
-                 Cell.Y: (p0[1], p1[1]),
-                 Cell.Z: (p0[2], p1[2]) }
-        props = [Cell.X, Cell.Y, Cell.Z, Cell.SYNAPSE_CLASS]
-        cells = circuit.cells.get(query, props)
-        cells_inh = cells[cells.synapse_class == "INH"]
-        cells_exc = cells[cells.synapse_class == "EXC"]
-
-        inh_in_roi = roi.contains(cells_inh[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_inh_count = np.count_nonzero(inh_in_roi)
-
-        exc_in_roi = roi.contains(cells_exc[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_exc_count = np.count_nonzero(exc_in_roi)
-
-        return pd.Series({"INH": roi_inh_count,
-                          "EXC": exc_in_roi,
-                          "TOT": roi_exc_count + roi_inh_count})
-
-    def get_cell_density(self, circuit):
-        """Implement this!"""
+       def get_cell_density(self, circuit):
+        """..."""
         cd = CellDensityMeasurement(circuit)
         return cd.statistical_measurement(self.layer_roi_sampler(circuit))
 
-    def get_cell_ratio(self, circuit_model):
-        """Implement this!"""
-        def region_cell_ratio(self, roi):
-            """get cell ratio in a region of interest."""
-            ccounts = region_cell_counts(circuit, roi)
-            return (1.0 + ccounts['INH']) / (1.0 + ccounts['TOT'])
-        return NotImplementedError
+    def get_cell_ratio(self, circuit):
+        """..."""
+        cr = CellRatioMeasurement(circuit)
+        return cr.statistical_measurement(self.layer_roi_sampler(circuit))
 
-    def get_inhibitory_synapse_density(self, circuit_model):
+    def get_inhibitory_synapse_density(self, circuit):
         """Implement this!"""
-        raise NotImplementedError
+        isd = InhibitorySynapseRatioMeasurement(circuit)
+        return isd.statistical_measurement(self.layer_roi_sampler(circuit))
 
     def get_synapse_density(self, circuit_model):
         """Implement this!"""
-        raise NotImplementedError
+        sd = SynapseDensityMeasurement(circuit)
+        return sd.statistical_measurement(self.layer_roi_sampler(circuit))
