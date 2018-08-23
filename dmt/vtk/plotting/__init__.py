@@ -33,10 +33,11 @@ class Plot(ABC):
         """Initialize attributes that are common to all
         Plot concrete implementations.
         """
+        print("initialize plotter {} with kwargs {}".format(self, kwargs))
         self.title = kwargs.get('title', self.__class__.__name__)
         self.xlabel = kwargs.get('xlabel', 'X')
         self.ylabel = kwargs.get('ylabel', 'Y')
-        self.output_dir_path = kwargs.get('output_dir_path', ".")
+        self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
         self.legend_loc = kwargs.get('legend_loc', 'upper left')
         self.height = kwargs.get('height', 10)
         self.width = kwargs.get('width', None)
@@ -50,23 +51,20 @@ class Plot(ABC):
         """Make the plot"""
         pass
 
-    def save(self, fig, output_dir_path=None, file_name=None):
-        opd = output_dir_path if output_dir_path is not None \
-              else self.output_dir_path
-        fname  = file_name if file_name is not None else self.file_name
+    def save(self, fig):
+        opd = self.output_dir_path
+        fname  = self.file_name
         if opd:
-            print("Save plot at {} with file name {}".format(opd, fname))
             if not os.path.exists(opd):
                 os.makedirs(opd)
             fname_base = get_file_name_base(fname if fname is not None
                                             else "report_plot")
-            print("file name base {}".format(fname_base))
-            output_file_path = os.path.join(opd, "{}.png".format(fname_base))
+            fname = "{}.png".format(fname_base)
+            output_file_path = os.path.join(opd, fname)
             print("Generating {}".format(output_file_path))
             fig.savefig(output_file_path, dpi=100)
 
-            print("figure has been saved")
-            return output_file_path
+            return (opd, fname)
         else:
             print("WARNING! No output directory provided. Not saving.")
             return fig

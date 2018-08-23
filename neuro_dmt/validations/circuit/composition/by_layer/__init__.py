@@ -1,4 +1,5 @@
 """Utilities for circuit composition by layer."""
+import os
 import pandas as pd
 import numpy as np
 from dmt.validation.test_case import SinglePhenomenonValidation
@@ -55,14 +56,15 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
 
     def get_report(self, model_measurement):
         """Create a report."""
-        plot_path = self.plot(model_measurement)
-        print("got from plot type {}".format(type(plot_path)))
-        print("plot at: {}".format(plot_path))
+        plot_dir, plot_name = self.plot(model_measurement,
+                                        output_dir_path = self.output_dir_path,
+                                        file_name = 'report.png')
         pval = self.pvalue(model_measurement)
         verdict = self.get_verdict(pval)
         return ValidationReport(
             validated_phenomenon = self.validated_phenomenon,
-            validation_image_path = plot_path,
+            validation_image_dir = ".", #keep image dir relative
+            validation_image_name = plot_name,
             author = self.author,
             caption = self.get_caption(model_measurement),
             validation_datasets = {d.label: d for d in self.validation_data},

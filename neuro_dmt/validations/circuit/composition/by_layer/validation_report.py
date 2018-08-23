@@ -26,8 +26,13 @@ class ValidationReport(Report):
         __type__ = Phenomenon,
         __doc__  = """Phenomenon that was validated."""
     )
-    validation_image_path = Field(
-        __name__ = "validation_image_path",
+    validation_image_name = Field(
+        __name__ = "validation_image_name",
+        __type__ = str,
+        __doc__  = """Name of the file in which validation image has been saved."""
+    )
+    validation_image_dir = Field(
+        __name__ = "validation_image_dir",
         __type__ = str,
         __doc__  = """Location of the image produced by the validation."""
     )
@@ -83,7 +88,7 @@ class ValidationReport(Report):
                          
         super(ValidationReport, self).__init__(*args, **kwargs)
 
-    def save(self, output_dir_path=".", report_file_name=None):
+    def save(self, output_dir_path=None, report_file_name="report.html"):
         """Save report to disc, as an html.
 
         Parameters
@@ -96,11 +101,15 @@ class ValidationReport(Report):
         Try to create a (html) string using its class' template and save that
         tothe disc. If this fails, call 'Report._save_default'.
         """
-        print("Saving report to {}".format(output_dir_path))
         file_name_base = get_file_name_base(report_file_name)
         file_name = file_name_base + ".html"
+        if output_dir_path is None:
+            output_dir_path = os.path.join(os.getcwd(), "report")
+        if not os.path.exists(output_dir_path):
+            os.makedirs(output_dir_path)
         report_file_path = os.path.join(output_dir_path, file_name)
 
+        print("Saving report to {} ".format(report_file_path))
         try:
             #the following is ugly
             #Cheetah template are not exactly the same attributes as this report

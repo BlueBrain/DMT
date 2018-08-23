@@ -19,10 +19,7 @@ bb_adapter \
 
 
 bb_validation = CellDensityValidation(validation_data,
-                                      adapter=bb_adapter,
-                                      plot_customization = {
-                                          'output_dir_path': "."
-                                      })
+                                      adapter=bb_adapter)
 
 
 cpath = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",

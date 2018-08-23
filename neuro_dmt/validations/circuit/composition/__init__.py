@@ -64,14 +64,19 @@ class SpatialCompositionValidation:
        super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
 
        self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
-       self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
+       self.output_dir_path = kwargs.get('output_dir_path',
+                                         os.path.join(os.getcwd(), "report"))
        self.report_file_name = kwargs.get('report_file_name', 'report.html')
        self.plot_customization = kwargs.get('plot_customization', {})
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
-        plotter = self.plotter_type(**self.plot_customization)
+        kwargs['output_dir_path'] = self.output_dir_path
+        kwargs.update(self.plot_customization)
+
         plotting_datasets = [model_measurement] + self.validation_data
+        plotter = self.plotter_type(**kwargs)
+
         return plotter.plot(*plotting_datasets)
 
     def get_verdict(self, p):
@@ -182,9 +187,7 @@ class SpatialCompositionValidation:
         report = self.get_report(model_measurement)
         if save:
             report.save(
-                output_dir_path = kwargs.get('output_dir_path',
-                                             self.output_dir_path),
-                report_file_name = kwargs.get('report_file_name',
-                                              self.report_file_name)
+                output_dir_path  = os.path.join(self.output_dir_path, "report"),
+                report_file_name = self.report_file_name
             )
         return report

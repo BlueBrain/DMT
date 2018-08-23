@@ -6,7 +6,7 @@
     <h3> $author_name</h3>
     <h3> Affiliation:  $author_affiliation</h3>
     <br>
-    <img src="$validation_image_path" alt="apologies.png"/>
+    <img src="$validation_image_dir/$validation_image_name" alt="apologies.png"/>
     <br>
     <p>$caption</p>
 

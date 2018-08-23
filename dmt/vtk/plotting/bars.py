@@ -52,7 +52,6 @@ class BarPlot(Plot):
 
         index = 1
         for pe in plotting_datasets:
-            print("plot index {}".format(index))
             df = pe.data.fillna(0.0)
             a_plot = plt.bar(x0 + index * width,
                              df['mean'].values,
