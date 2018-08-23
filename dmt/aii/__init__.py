@@ -8,7 +8,7 @@ model, the user must provide an adapter implementation."""
 
 from types import FunctionType
 from abc import ABC, ABCMeta, abstractmethod
-from dmt.vtk.utils.descriptor import ClassAttribute, ClassAttributeMeta
+from dmt.vtk.utils.descriptor import ClassAttributeMeta
 from dmt.aii.interface import \
     get_interface, interfacemethod, interfaceattribute, get_implementations
 from dmt.aii.adapter import get_types_adapted
@@ -86,15 +86,35 @@ def is_adapter_method(method):
 class AIMeta(ABCMeta, ClassAttributeMeta):
     """A metaclass that will add an AdapterInterface."""
     def __new__(mcs, name, bases, dct):
+        """Give an AdapterInterface to class 'cls' only if it does not
+        have one already.
+
+        Proposed Tests and Improvements
+        ------------------------------------------------------------------------
+        The user might be clumsy and add some adaptermethods in a subclass. We
+        need to test this behavior.
+        In the current implementation, if a class already has an 
+        AdapterInterface we do not do anything. As an improvement, we can
+        add methods to the existing AdapterInterface --- or set it as a
+        base-class of a newly defined AdapterInterface.
+        """
+        #print("construct {} with AIMeta and methods {}".format(name, dct.keys()))
+        if 'AdapterInterface' not in dct:
+            ainame = "{}AdapterInterface".format(name)
+            adapter_interface = get_interface(dct, name=ainame)
+            if adapter_interface is not None:
+                dct['AdapterInterface'] = adapter_interface
+            else:
+                print("""WARNING!!! 
+                AIMeta could not find or create an AdapterInterface
+                for {}
+                """.format(name))
         cls = super(AIMeta, mcs).__new__(mcs, name, bases, dct)
         return cls
 
     def __init__(cls, name, bases, dct):
-        ainame = "{}AdapterInterface".format(cls.__name__)
-        adapter_interface = get_interface(cls, name=ainame)
-        if not hasattr(cls, 'AdapterInterface') and adapter_interface:
-            cls.AdapterInterface = adapter_interface
-
+        """No specific metalcass initialization for now.
+        """
         super(AIMeta, cls).__init__(name, bases, dct)
 
 
@@ -102,7 +122,7 @@ def adapter_documentation(cls):
     """Documentation of a class that will use an adapter."""
     return "AdapterInterface"
 
-class AdapterInterfaceBase(Callable, metaclass=AIMeta):
+class AIBase(Callable, metaclass=AIMeta):
     """A base class for classes that will declare an adapter interface.
 
     Initializer
@@ -120,7 +140,7 @@ class AdapterInterfaceBase(Callable, metaclass=AIMeta):
         else:
             self._model_adapter = None
 
-        super(AdapterInterfaceBase, self).__init__(*args, **kwargs)
+        super(AIBase, self).__init__(*args, **kwargs)
 
     @property
     def adapter(self):

@@ -8,7 +8,7 @@ against. The initializer of a validation class will accept a data object.
 """
 
 from abc import ABC, abstractmethod
-from dmt.aii import Callable, AdapterInterfaceBase
+from dmt.aii import Callable, AIBase
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.phenomenon import Phenomenon
@@ -90,9 +90,9 @@ class ValidationTestCaseBase(Callable):
 
 
 @document_fields
-class ValidationTestCase(ValidationTestCaseBase, AdapterInterfaceBase):
+class ValidationTestCase(ValidationTestCaseBase, AIBase):
     """"Just a class that mixes two.
-    ValidationTestCaseBase is useful by itself. Mixing in AdapterInterfaceBase
+    ValidationTestCaseBase is useful by itself. Mixing in AIBase
      will add adapter interface goodies."""
     pass
 

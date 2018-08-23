@@ -134,12 +134,27 @@ def specifies_interface(client_cls):
     return any([is_interface_required_attribute(getattr(client_cls, attr))
                 for attr in dir(client_cls)])
 
-def get_interface(client_cls, name=None):
-    """Create an interface for a client class.
+
+def get_interface(dct, name):
+    """Get an interface from a class's method dict.
 
     Parameters
     ----------------------------------------------------------------------------
-    client_cls :: type #the class that may have specified an Interface
+    dct ::  dict #that contains the attributes defined in a class body
+    name :: str  #desired name of the class
+    """
+    required = {name: attribute for name, attribute in dct.items()
+                if is_interface_required_attribute(attribute)}
+    name = name if name.endswith("Interface") or name.endswith("interface") \
+           else "{}Interface".format(name)
+    return type(name, (Interface,), required)
+
+def get_class_interface(cls, name=None):
+    """Create an interface for class cls.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    cls :: type #the class that may have specified an Interface
     """
     if not specifies_interface(client_cls):
         return None

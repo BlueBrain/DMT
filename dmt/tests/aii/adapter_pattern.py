@@ -3,8 +3,7 @@
 from abc import ABC, abstractmethod
 import pandas as pd
 from dmt.aii import interface, adapter
-from dmt.aii import\
-    AdapterInterfaceBase, adaptermethod
+from dmt.aii import adaptermethod
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
@@ -21,9 +20,9 @@ class IntegerMathTest(ValidationTestCase):
         Column w = x - y."""
 
     class AdapterInterface(interface.Interface):
-        """You may define a validation's required interface as a class.
-        The result is the same as using decorator 'adaptermethod' before each
-        member function required by the interface."""
+        """You may define the interface required of an adapter  by a validation
+        as a class. The result is the same as using decorator 'adaptermethod'
+        before each member function required by the interface."""
 
         def get_addition(self, model, x, y):
             "add two numbers"

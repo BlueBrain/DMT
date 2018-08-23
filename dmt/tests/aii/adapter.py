@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import AdapterInterfaceBase, adaptermethod
+from dmt.aii import  adaptermethod
 from dmt.aii import interface
 from dmt.aii import adapter
 from dmt.validation.test_case import ValidationTestCase

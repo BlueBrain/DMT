@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import interface, adapter, AdapterInterfaceBase
+from dmt.aii import interface, adapter 
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
