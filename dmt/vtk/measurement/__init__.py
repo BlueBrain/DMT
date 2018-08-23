@@ -86,7 +86,8 @@ class Method(ABC):
     def statistical_measurement(self, parameter_sampler):
         """take a sample and return its statistical summary."""
         s = self.sample(parameter_sampler)
-        return Record(name = self.label,
+        return Record(phenomenon = self.phenomenon,
+                      label = self.label,
                       method = self.__call__.__doc__,
                       data = summary_statistic(s),
                       parameter_group = parameter_sampler.group.label)

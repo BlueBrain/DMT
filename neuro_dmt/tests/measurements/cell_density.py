@@ -7,6 +7,8 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.models.bluebrain import BlueBrainModelHelper, geometry
 from neuro_dmt.models.bluebrain.geometry import Cuboid
+from neuro_dmt.models.bluebrain.measurements.circuit.composition \
+    import CellDensityMeasurement
 
 def sample_region_of_interest(circuit, target='mc2_Column',
                               sampled_box_shape=np.array([50., 50., 50.]),
@@ -37,20 +39,6 @@ def sample_region_of_interest(circuit, target='mc2_Column',
     return roi_sampler
 
 
-class CellDensity(measurement.Method):
-    """test cell density measurement to test Measurement!"""
-
-    def __init__(self, circuit):
-        """A scale for cell densities."""
-        self.__circuit = circuit
-
-    label = "cell_density"
-    phenomenon = Phenomenon("cell_density", "mock cell density")
-
-    def __call__(self, roi):
-        """Random cell density"""
-        return 1.e-3 * self.__circuit.stats.cell_density(roi)
-
 
 layer_groups = Record(label = "layer",
                       values = [1,2,3,4,5,6])
@@ -59,7 +47,7 @@ layer_groups = Record(label = "layer",
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
 circuit = Circuit(cpath)
-cd = CellDensity(circuit)
+cd = CellDensityMeasurement(circuit)
 
 roi_sampler = Record(group=layer_groups,
                      sample=sample_region_of_interest(circuit))
