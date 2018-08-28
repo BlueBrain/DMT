@@ -36,6 +36,7 @@ from neuro_dmt.models.bluebrain.measurements.circuit.composition import \
     CellRatioMeasurement, \
     InhibitorySynapseDensityMeasurement, \
     ExtrinsicIntrinsicSynapseDensityMeasurement
+from neuro_dmt.models.bluebrain.O1.parameters import CorticalLayer
 
 
 
@@ -54,6 +55,7 @@ class BlueBrainModelAdapter:
     author = Author.zero
     region_label = 'layer'
     region_values = [1, 2, 3, 4, 5, 6]
+
 
     def __init__(self, sampled_box_shape, sample_size, *args, **kwargs):
         """
@@ -96,17 +98,19 @@ class BlueBrainModelAdapter:
 
         def roi_sampler(layer):
             """..."""
+
             return (get_roi(random_location(_get_region_to_explore(layer)))
                     for _ in range(self._sample_size))
 
         return Record(group = Record(label = "layer", values = [1,2,3,4,5,6]),
                       sample = roi_sampler)
 
-
-    def get_cell_density(self, circuit):
+    def get_cell_density(self, circuit, target='mc2_Column'):
         """..."""
-        cd = CellDensityMeasurement(circuit)
-        return cd.statistical_measurement(self.layer_roi_sampler(circuit))
+        cd = CellDensity(circuit, target='mc2_Column')
+        return StatisticalMeasurement(cell_density, circuit)
+        #return cd.statistical_measurement(self.layer_roi_sampler(circuit))
+        return cd.measurement(circuit, target=target)
 
     def get_cell_ratio(self, circuit):
         """..."""

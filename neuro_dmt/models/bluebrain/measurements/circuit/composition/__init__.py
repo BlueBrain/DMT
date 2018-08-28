@@ -5,15 +5,15 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.models.bluebrain import BlueBrainModelHelper
 
-class CellDensityMeasurement(measurement.Method):
+class CellDensityMeasurement(measurement.StatisticalMethod):
     """..."""
+    
 
-    def __init__(self, circuit):
-        """..."""
-        self.__circuit = circuit
-
-    label = "cell_density"
+    label = "in-silico"
     phenomenon = Phenomenon("cell_density", "Number of cells in a unit volume")
+
+    def __call__(self, circuit):
+        return 1.e-3 * circuit.stats.cell_density(roi)
 
     def __call__(self, roi):
         """Number of cells in a unit volume, [1000/mm^3]"""
@@ -23,7 +23,7 @@ class CellDensityMeasurement(measurement.Method):
 class CellRatioMeasurement(measurement.Method):
     """..."""
 
-    label = "cell_ratio"
+    label = "in-silico"
     phenomenon = Phenomenon("cell_ratio",
                             "Fraction of inhibitory cells in the circuit.")
 
@@ -44,8 +44,7 @@ class CellRatioMeasurement(measurement.Method):
 class InhibitorySynapseDensityMeasurement(measurement.Method):
     """..."""
 
-    label = "inhibitory_synapse_density"
-
+    label = "in-silico"
     phenomenon = Phenomenon("inhibitor_synapse_density",
                             "Number of inhibitory synapses in a unit volume")
 
@@ -64,8 +63,7 @@ class InhibitorySynapseDensityMeasurement(measurement.Method):
 class ExtrinsicIntrinsicSynapseDensityMeasurement(measurement.Method):
     """..."""
 
-    label =  "synapse_density"
-
+    label = "in-silico"
     phenomenon = Phenomenon("synapse_density",
                             "Number of synapses in a unit volume")
 

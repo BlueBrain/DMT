@@ -72,6 +72,7 @@ class SpatialCompositionValidation:
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
         kwargs['output_dir_path'] = self.output_dir_path
+        kwargs['xlabel'] = 'Layer'
         kwargs.update(self.plot_customization)
 
         plotting_datasets = [model_measurement] + self.validation_data

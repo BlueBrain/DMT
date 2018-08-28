@@ -18,15 +18,15 @@ bb_adapter \
                             model_label="blue_brain_O1")
 
 
-bb_validation = CellDensityValidation(validation_data,
-                                      adapter=bb_adapter)
+bluebrain_cell_density_validation = CellDensityValidation(validation_data,
+                                                          adapter=bb_adapter)
 
 
-cpath = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
-                     "O1.v6a", "20171212", "CircuitConfig")
+circuit_config = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
+                            "O1.v6a", "20171212", "CircuitConfig")
 
-circuit = Circuit(cpath)
+circuit = Circuit(circuit_config)
 
-bb_report = bb_validation(circuit)
+bluebrain_cell_density_report = bluebrain_cell_density_validation(circuit)
 
-bb_report.save()
+bluebrain_cell_density_report.save()

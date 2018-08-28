@@ -7,8 +7,12 @@ uncertainty where the result is expressed as a quantity. There is not a clear
 distinction between estimation and measurement."""
 
 from abc import ABC, abstractmethod
+import collections
 import pandas as pd
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.measurement import parameters
+from dmt.vtk.measurement.parameters import GroupParameter
 
 class Measurement:
     """Contains the result of measuring something,
@@ -91,6 +95,46 @@ class Method(ABC):
                       method = self.__call__.__doc__,
                       data = summary_statistic(s),
                       parameter_group = parameter_sampler.group.label)
+
+
+class StatisticalMeasurement:
+    """A method, augmented with statistical functionality."""
+    group_parameters = Field(
+        __name__ = "group_parameter",
+        __type__ = list,
+        __is_valid_value__ = lambda gps: all(issubclass(gp, GroupParameter),
+                                             for gp in gps)
+        __doc__ = """The GroupParameter types associated with this
+        StatisticalMethod."""
+    )
+    def __init__(self, measurement_method, group_parameters, *args, **kwargs):
+        """...
+        """
+        self.group_parameters = group_parameters
+        self.get_one = measurement_method
+        super(StatisticalMeasurement, self).__init__(*args, **kwargs)
+
+    def sample(self, model):
+        """..."""
+        df = parameters.get_values(self.group_parameters)
+        measured_values = [self.get_one(dict(row[1])) for row in df.iterrows()]
+        df[self.get_one.label] = measured_values
+        df = df.sort_values(by=[gp.label for gp in self.group_parameters])
+
+        return Record(name = self.label,
+                      method = self.__call__.__doc__,
+                      data = df,
+                      parameter_group = parameter_sampler.group.label)
+
+    def __call__(self, model, group_parameter_values=None):
+        s = self.sample(model, group_parameter_values)
+        return Record(phenomenon = self.phenomenon,
+                      label = self.label,
+                      method = self.get_one.__doc__,
+                      data = summary_statistic(s),
+                      parameter_group = parameter_sampler.group.label)
+
+
 
 def method_description(measurement_method):
     """Description of the measurement's method.
