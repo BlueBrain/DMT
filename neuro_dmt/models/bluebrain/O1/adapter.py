@@ -19,6 +19,7 @@ from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
+from dmt.vtk.measurement import StatisticalMeasurement
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -31,11 +32,8 @@ from neuro_dmt.models.bluebrain \
     import geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.geometry import \
     Cuboid, collect_sample, random_location
-from neuro_dmt.models.bluebrain.measurements.circuit.composition import \
-    CellDensityMeasurement, \
-    CellRatioMeasurement, \
-    InhibitorySynapseDensityMeasurement, \
-    ExtrinsicIntrinsicSynapseDensityMeasurement
+
+from neuro_dmt.models.bluebrain.measurements.circuit import composition
 from neuro_dmt.models.bluebrain.O1.parameters import CorticalLayer
 
 
@@ -76,6 +74,7 @@ class BlueBrainModelAdapter:
         """method required by adapter interface."""
         return self._model_label
 
+
     def layer_roi_sampler(self, circuit, target='mc2_Column'):
         """sampler ROIs for a given layer.
 
@@ -105,9 +104,22 @@ class BlueBrainModelAdapter:
         return Record(group = Record(label = "layer", values = [1,2,3,4,5,6]),
                       sample = roi_sampler)
 
+
+    def spatial_measurement(circuit, target="mc2_Column"):
+        """Statistical spatial measurement for the provided circuit,
+        and target."""
+        return StatisticalMeasurement(CellDensity, )
+
+    def get_cell_density(self, circuit, target="mc2_Column"):
+        return StatisticalMeasurement(method=composition.CellDensity,
+                                      by=CorticalLayer)(circuit, target)
+
     def get_cell_density(self, circuit, target='mc2_Column'):
         """..."""
+        from neuro_dmt.models.bluebrain.measurements.circuit.composition \
+            import CellDensity
         cd = CellDensity(circuit, target='mc2_Column')
+        return StatisticalMeasurement(cell_density, circuit)
         #return cd.statistical_measurement(self.layer_roi_sampler(circuit))
         return cd.measurement(circuit, target=target)
 

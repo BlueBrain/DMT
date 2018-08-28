@@ -10,8 +10,9 @@ from abc import ABC, abstractmethod
 import collections
 import pandas as pd
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import ClassAttribute
-from dmt.vtk.measurement.parameter import GroupParameter
+from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.measurement import parameters
+from dmt.vtk.measurement.parameters import GroupParameter
 
 class Measurement:
     """Contains the result of measuring something,
@@ -98,7 +99,7 @@ class Method(ABC):
 
 class StatisticalMeasurement:
     """A method, augmented with statistical functionality."""
-    group_parameters = ClassAttribute(
+    group_parameters = Field(
         __name__ = "group_parameter",
         __type__ = list,
         __is_valid_value__ = lambda gps: all(issubclass(gp, GroupParameter),
@@ -106,34 +107,31 @@ class StatisticalMeasurement:
         __doc__ = """The GroupParameter types associated with this
         StatisticalMethod."""
     )
-    def __init__(self, measurement_method, *args, **kwargs):
+    def __init__(self, method, by):
         """...
         """
-        self._method = measurement_method
-        super(StatisticalMeasurement, self).__init__(*args, **kwargs)
+        self.group_parameters = by
+        self.method = method
 
-    def __call__(self, model, group_parameter_values=None):
-        """"Sample measurements from model."""
-        gp = self._group_parameter
-        gpvs = self._group_parameter.values if group_parameter_values is None \
-               else group_parameter_values
-
-        if isinstance(gpvs, gp.value_type):
-            data = pd.DataFrame([{gp.label: gpvs,
-                                  self.label self.__call__(p)}
-                                 for p in gp(gpvs).sample(model)])
-        else:
-            data = pd.DataFrame([{gp.label: g
-                                  self.label self.__call__(p)}
-                                 for g in gpvs
-                                 for p in gp(g).sample(model)])
+    def sample(self, model):
+        """..."""
+        df = parameters.get_values(self.group_parameters)
+        measured_values = [self.method(model)(dict(row[1])) for row in df.iterrows()]
+        df[self.get_one.label] = measured_values
+        df = df.sort_values(by=[gp.label for gp in self.group_parameters])
 
         return Record(name = self.label,
-                      method = self.__call__.__doc__,
-                      data = data,
+                      method = self.method.__call__.__doc__, #fix this
+                      data = df,
                       parameter_group = parameter_sampler.group.label)
 
-    def measurement()
+    def __call__(self, model, group_parameter_values=None):
+        s = self.sample(model, group_parameter_values)
+        return Record(phenomenon = self.phenomenon,
+                      label = self.label,
+                      method = self.get_one.__doc__,
+                      data = summary_statistic(s),
+                      parameter_group = parameter_sampler.group.label)
 
 
 
