@@ -7,8 +7,11 @@ uncertainty where the result is expressed as a quantity. There is not a clear
 distinction between estimation and measurement."""
 
 from abc import ABC, abstractmethod
+import collections
 import pandas as pd
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.descriptor import ClassAttribute
+from dmt.vtk.measurement.parameter import GroupParameter
 
 class Measurement:
     """Contains the result of measuring something,
@@ -91,6 +94,48 @@ class Method(ABC):
                       method = self.__call__.__doc__,
                       data = summary_statistic(s),
                       parameter_group = parameter_sampler.group.label)
+
+
+class StatisticalMeasurement:
+    """A method, augmented with statistical functionality."""
+    group_parameters = ClassAttribute(
+        __name__ = "group_parameter",
+        __type__ = list,
+        __is_valid_value__ = lambda gps: all(issubclass(gp, GroupParameter),
+                                             for gp in gps)
+        __doc__ = """The GroupParameter types associated with this
+        StatisticalMethod."""
+    )
+    def __init__(self, measurement_method, *args, **kwargs):
+        """...
+        """
+        self._method = measurement_method
+        super(StatisticalMeasurement, self).__init__(*args, **kwargs)
+
+    def __call__(self, model, group_parameter_values=None):
+        """"Sample measurements from model."""
+        gp = self._group_parameter
+        gpvs = self._group_parameter.values if group_parameter_values is None \
+               else group_parameter_values
+
+        if isinstance(gpvs, gp.value_type):
+            data = pd.DataFrame([{gp.label: gpvs,
+                                  self.label self.__call__(p)}
+                                 for p in gp(gpvs).sample(model)])
+        else:
+            data = pd.DataFrame([{gp.label: g
+                                  self.label self.__call__(p)}
+                                 for g in gpvs
+                                 for p in gp(g).sample(model)])
+
+        return Record(name = self.label,
+                      method = self.__call__.__doc__,
+                      data = data,
+                      parameter_group = parameter_sampler.group.label)
+
+    def measurement()
+
+
 
 def method_description(measurement_method):
     """Description of the measurement's method.
