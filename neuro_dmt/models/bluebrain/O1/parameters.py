@@ -1,6 +1,8 @@
 """Parameters used for measurements.
 """
-from dmt.vtk.measurement.parameter import Parameter, GroupParameter
+import numpy as np
+from dmt.vtk.utils.collections import Record
+from dmt.vtk.measurement.parameters import Parameter, GroupParameter
 from bluepy.geometry.roi import ROI as RegionOfInterest
 from neuro_dmt.models.bluebrain import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.geometry import \
@@ -11,7 +13,8 @@ class CorticalLayer(GroupParameter):
     label = "Layer"
     value_type = int
     _possible_values = [1, 2, 3, 4, 5, 6]
-    grouped_type = RegionOfInterest
+    grouped_variable = Record(__type__ = RegionOfInterest,
+                              name = "roi")
 
     def __init__(self, *args, **kwargs):
         """..."""
@@ -39,9 +42,9 @@ class CorticalLayer(GroupParameter):
             6: "VI"
         }[self.value]
 
-    def sample(self, circuit, target='mc2_Column',
-               sampled_box_shape=np.array([50., 50, 50.]),
-               sample_size=None):
+    def __call__(self, circuit, target='mc2_Column',
+                 sampled_box_shape=np.array([50., 50, 50.]),
+                 sample_size=20):
         """Sample ROIs in this CorticalLayer in circuit 'circuit'.
 
         Return

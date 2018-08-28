@@ -111,7 +111,7 @@ class BlueBrainModelAdapter:
         return StatisticalMeasurement(CellDensity, )
 
     def get_cell_density(self, circuit, target="mc2_Column"):
-        return StatisticalMeasurement(method=composition.CellDensity,
+        return StatisticalMeasurement(composition.CellDensity(circuit),
                                       by=CorticalLayer)(circuit, target)
 
     def get_cell_density(self, circuit, target='mc2_Column'):

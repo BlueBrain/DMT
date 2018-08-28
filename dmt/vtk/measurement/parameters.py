@@ -6,10 +6,11 @@ To allow this divergence between it's actual value and it's representation,
 we define class Parameter."""
 
 from abc import ABC, abstractmethod
-import collecions
+import collections
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.descriptor import ClassAttribute
+from dmt.vtk.utils.collections import Record
 
 class Parameter(ABC):
     """Base class to define a measurement parameter.
@@ -62,7 +63,7 @@ class Parameter(ABC):
         """
         pass
 
-    @absractmethod
+    @abstractmethod
     def __repr__(self):
         """Representation of a value of this Parameter.
 
@@ -98,9 +99,12 @@ class GroupParameter(Parameter):
     """A parameter that groups another. For example in a brain,
     Layer is a parameter that groups positions in a brain region.
     """
-    grouped_type = ClassAttribute(
+    grouped_variable = ClassAttribute(
         __name__ = "grouped_type",
-        __type__ = type,
+        __type__ = Record,
+        __is_valid_value__ = (
+            lambda r: hasattr(r, '__type__') and hasattr(r, 'name')
+        ),
         __doc__  = """Type grouped by this GroupParameter."""
     )
     def __init__(self, *args, **kwargs):
@@ -108,7 +112,7 @@ class GroupParameter(Parameter):
         super(GroupParameter, self).__init__(*args, **kwargs)
 
     @abstractmethod
-    def sample(self, model, n=None):
+    def __call__(self, model, n=None):
         """Collect a sample of the grouped type in the context of a model.
 
         Return
@@ -135,11 +139,33 @@ def get_values(parameters):
         if len(params) == 1:
             return [ [(p0.label, v)] for v in p0.values]
         
-        return [[(params[0].label, v)] + pvs
-                for v in params[0].values for pvs in get_values(params[1:])]
+        return [[(p0.label, v)] + pvs
+                for v in p0.values for pvs in __get_value_tuples(params[1:])]
 
     return pd.DataFrame([dict(t) for t in __get_value_tuples(parameters)])
 
+def get_grouped_values(group_params, *model_args):
+    """Generate values for parameters in the list 'parameters'.
+
+    Parameters
+    ----------------------------------------------------------------------------
+    group_parameters :: List[<:GroupParameter] #list of GroupParameter subclasses
+
+    Return
+    ----------------------------------------------------------------------------
+    dict
+    """
+    def __get_tuples(params):
+        """..."""
+        p0 = params[0]
+        vs0 = ([(p0.grouped_variable.name, grouped_value), (p0.label, v)]
+               for v in p0._possible_values
+               for grouped_value in p0(v)(*model_args))
+               
+        return (vs0 if len(params) == 1 
+                else [v + pvs for v in vs0 for pvs in __get_tuples(params[1:])])
+
+    return pd.DataFrame([dict(t) for t in __get_tuples(group_params)])
 
                          
 
