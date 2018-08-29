@@ -4,8 +4,8 @@ import numpy as np
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameters import Parameter, GroupParameter
 from bluepy.geometry.roi import ROI as RegionOfInterest
-from neuro_dmt.models.bluebrain import BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.geometry import \
+from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuits.geometry import \
     Cuboid, collect_sample, random_location
 
 

@@ -3,7 +3,7 @@
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
-from neuro_dmt.models.bluebrain import BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper
 
 class CellDensity(measurement.Method):
     """..."""

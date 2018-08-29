@@ -2,13 +2,8 @@
 
 import numpy as np
 from bluepy.v2.circuit import Circuit
-from neuro_dmt.models.bluebrain import BlueBrainModelHelper, geometry
-from neuro_dmt.models.bluebrain.measurements.circuit.composition import \
-    CellDensityMeasurement, \
-    CellRatioMeasurement, \
-    InhibitorySynapseDensityMeasurement, \
-    ExtrinsicIntrinsicSynapseDensityMeasurement
-
+from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper, geometry
+from neuro_dmt.models.bluebrain.circuits.measurements.circuit import composition
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
 circuit = Circuit(cpath)
@@ -33,7 +28,7 @@ center_L6 = np.mean(roi_L6.bbox)
 
 roi = geometry.Cuboid(center_L3 - half_box, center_L3 + half_box)
 
-cdm = CellDensityMeasurement(circuit)
-crm = CellRatioMeasurement(circuit)
-isdm = InhibitorySynapseDensityMeasurement(circuit)
-sdm = ExtrinsicIntrinsicSynapseDensityMeasurement(circuit)
+cdm = composition.CellDensity(circuit)
+crm = composition.CellRatio(circuit)
+isdm = composition.InhibitorySynapseDensity(circuit)
+sdm = composition.ExtrinsicIntrinsicSynapseDensity(circuit)
