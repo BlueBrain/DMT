@@ -54,16 +54,17 @@ class BarPlot(Plot):
         for pe in plotting_datasets:
             df = pe.data.fillna(0.0)
             a_plot = plt.bar(x0 + index * width,
-                             df['mean'].values,
+                             df["mean"].values,
                              width,
                              color=self.colors[(index - 1) % len(self.colors)],
-                             yerr=df['std'].values,
+                             yerr=df["std"].values,
                              label=pe.label)
             index += 1
 
         plt.title(self.title, fontsize=24)
         plt.xlabel(self.xlabel, fontsize=20)
         plt.xticks(x - width / 2., xs)
+        plt.ylabel(self.ylabel, fontsize=20)
 
         fontP = FontProperties()
         fontP.set_size('small')

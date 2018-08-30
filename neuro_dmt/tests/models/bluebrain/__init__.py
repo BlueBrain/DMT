@@ -2,8 +2,8 @@
 
 import numpy as np
 from bluepy.v2.circuit import Circuit
-from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper, geometry
-from neuro_dmt.models.bluebrain.circuits.measurements.circuit import composition
+from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper, geometry
+from neuro_dmt.models.bluebrain.circuit.measurements import composition
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
 circuit = Circuit(cpath)

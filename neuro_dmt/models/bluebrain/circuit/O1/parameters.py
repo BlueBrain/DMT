@@ -4,8 +4,8 @@ import numpy as np
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameters import Parameter, GroupParameter
 from bluepy.geometry.roi import ROI as RegionOfInterest
-from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.circuits.geometry import \
+from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
 
@@ -27,12 +27,12 @@ class CorticalLayer(GroupParameter):
     @property
     def _has_valid_value(self):
         """Is 'value' an accepted value?"""
-        return self.value > 1 and self.value < 6
+        return self.value > 0 and self.value < 7
 
     def __repr__(self):
-        if not self.is_valid(self.value):
+        if not self.is_valid:
             raise ValueError("{} is not a valid value of {}"\
-                             .format(value, cls))
+                             .format(self.value, self.__class__))
         return {
             1: "I",
             2: "II",

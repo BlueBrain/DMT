@@ -28,13 +28,13 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
-from neuro_dmt.models.bluebrain \
+from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.geometry import \
+from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
-from neuro_dmt.models.bluebrain.measurements.circuit import composition
-from neuro_dmt.models.bluebrain.O1.parameters import CorticalLayer
+from neuro_dmt.models.bluebrain.circuit.measurements import composition
+from neuro_dmt.models.bluebrain.circuit.O1.parameters import CorticalLayer
 
 
 
@@ -53,7 +53,6 @@ class BlueBrainModelAdapter:
     author = Author.zero
     region_label = 'layer'
     region_values = [1, 2, 3, 4, 5, 6]
-
 
     def __init__(self, sampled_box_shape, sample_size, *args, **kwargs):
         """
@@ -74,66 +73,38 @@ class BlueBrainModelAdapter:
         """method required by adapter interface."""
         return self._model_label
 
+    def statistical_measurement(self, method, by, *circuit_args):
+        """..."""
+        return StatisticalMeasurement(method, by)(*circuit_args)
 
-    def layer_roi_sampler(self, circuit, target='mc2_Column'):
-        """sampler ROIs for a given layer.
-
-        Return
-        ------------------------------------------------------------------------
-        Layer -> Generator[RegionOfInterest] #Layer == int
-        """
-        helper = BlueBrainModelHelper(circuit=circuit, target=target)
-        def _get_region_to_explore(layer):
-            """..."""
-            layer_bounds = helper.geometric_bounds({'layer': layer})
-            p0, p1 = layer_bounds.bbox
-            return Cuboid(p0 + self._sampled_box_shape,
-                          p1 - self._sampled_box_shape)
-            
-        def get_roi(loc):
-            """ROI at location loc."""
-            half_box = self._sampled_box_shape / 2.
-            return Cuboid(loc - half_box, loc + half_box)
-
-        def roi_sampler(layer):
-            """..."""
-
-            return (get_roi(random_location(_get_region_to_explore(layer)))
-                    for _ in range(self._sample_size))
-
-        return Record(group = Record(label = "layer", values = [1,2,3,4,5,6]),
-                      sample = roi_sampler)
-
-
-    def spatial_measurement(circuit, target="mc2_Column"):
-        """Statistical spatial measurement for the provided circuit,
-        and target."""
-        return StatisticalMeasurement(CellDensity, )
+    def spatial_measurement(self, method, *circuit_args):
+        """..."""
+        m = self.statistical_measurement(method, CorticalLayer, *circuit_args)
+        old_index = m.data.index
+        m.data.index = [repr(CorticalLayer(i)) for i in old_index]
+        m.data.index.name = old_index.name
+        return m
 
     def get_cell_density(self, circuit, target="mc2_Column"):
-        return StatisticalMeasurement(composition.CellDensity(circuit),
-                                      by=CorticalLayer)(circuit, target)
-
-    def get_cell_density(self, circuit, target='mc2_Column'):
-        """..."""
-        from neuro_dmt.models.bluebrain.measurements.circuit.composition \
-            import CellDensity
-        cd = CellDensity(circuit, target='mc2_Column')
-        return StatisticalMeasurement(cell_density, circuit)
-        #return cd.statistical_measurement(self.layer_roi_sampler(circuit))
-        return cd.measurement(circuit, target=target)
-
+        return self.spatial_measurement(
+            composition.CellDensity(circuit),
+            circuit, target
+        )
     def get_cell_ratio(self, circuit):
         """..."""
-        cr = CellRatioMeasurement(circuit)
-        return cr.statistical_measurement(self.layer_roi_sampler(circuit))
-
+        return self.spatial_measurement(
+            composition.CellRatio(circuit),
+            circuit, target
+        )
     def get_inhibitory_synapse_density(self, circuit):
         """Implement this!"""
-        isd = InhibitorySynapseDensityMeasurement(circuit)
-        return isd.statistical_measurement(self.layer_roi_sampler(circuit))
-
+        return self.spatial_measurement(
+            composition.CellRatio(circuit),
+            circuit, target
+        )
     def get_synapse_density(self, circuit):
         """Implement this!"""
-        sd = ExtrinsicIntrinsicSynapseDensityMeasurement(circuit)
-        return sd.statistical_measurement(self.layer_roi_sampler(circuit))
+        return self.spatial_measurement(
+            composition.ExtrinsicIntrinsicSynapseDensity(circuit),
+            circuit, target
+        )

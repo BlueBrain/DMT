@@ -27,6 +27,13 @@ class Method(ABC):
     """A class that encapsulates data and methods needed by a statistical
     measurement."""
 
+    units = ClassAttribute(
+        __name__ = "units",
+        __type__ = str,
+        __doc__  = """String representation of the units of the
+        measurement value computed by this Method. Notice that in the future,
+        we may use a class Unit."""
+    )
     @property
     @abstractmethod
     def label(self):
@@ -81,33 +88,36 @@ class StatisticalMeasurement:
             self.group_parameters = [by]
         self.method = method
 
-    def sample(self, model):
+    def sample(self, *model_args):
         """..."""
         gps = self.group_parameters
-        df = get_grouped_values(gps)
+        df = get_grouped_values(gps, *model_args)
         measured_values = [
-            self.method(**row[1][[p.grouped_variable.name for p in self.gps]])
+            self.method(**row[1][[p.grouped_variable.name for p in gps]])
             for row in df.iterrows()
         ]
-        df[self.label] = measured_values
+        df[self.method.label] = measured_values
         df = df.sort_values(by=[gp.label for gp in gps])
-        return df[[self.label] + [gp.label for gp in gps]]
+        return df[[self.method.label] + [gp.label for gp in gps]]
 
-    def __call__(self, model):
+    def __call__(self, *model_args):
         """call me"""
+        data = summary_statistic(self.sample(*model_args),
+                                 [pg.label for pg in self.group_parameters])
         if len(self.group_parameters) == 1:
-            return Record(phenomenon = self.phenomenon,
-                          label = self.label,
+            return Record(phenomenon = self.method.phenomenon,
+                          label = self.method.label,
                           method = method_description(self.method),
-                          data = summary_statistic(self.sample(model)),
-                          parameter_group = self.group_parameters[0].label)
+                          data = data,
+                          units = self.method.units,
+                          parameter_group = self.group_parameters[0])
 
-        return Record(phenomenon = self.phenomenon,
-                      label = self.label,
+        return Record(phenomenon = self.method.phenomenon,
+                      label = self.method.label,
                       method = method_description(self.method),
-                      data = summary_statistic(self.sample(model)),
-                      parameter_groups = [gp.label for gp in self.group_parameters])
-
+                      data = data,
+                      units = self.method.units,
+                      parameter_groups = self.group_parameters)
 
 
 def method_description(measurement_method):
@@ -119,9 +129,17 @@ def method_description(measurement_method):
     """
     return measurement_method.__call__.__doc__
 
-def summary_statistic(measurement_sample):
-    """summarize a data-frame."""
-    return measurement_sample.data\
-                             .groupby(measurement_sample.parameter_group)\
-                             .agg(["mean", "std"])\
-                             [measurement_sample.name]
+def summary_statistic(measurement_sample,
+                      parameter_columns,
+                      measurement_columns=None):
+    """Summarize a data-frame.
+    Type of the returned data-frame depends on the type of
+    'measurement_columns'. Thus this method can accommodate more than one
+    parameter columns in the measurement to be summarized, as well as it can
+    summarize more than one measurement columns."""
+    summary = measurement_sample.groupby(parameter_columns).agg(["mean", "std"])
+    measurement_columns = measurement_columns if measurement_columns \
+                          else summary.columns.levels[0]
+    if len(measurement_columns) == 1:
+        return summary[measurement_columns[0]]
+    return summary[measurement_columns]

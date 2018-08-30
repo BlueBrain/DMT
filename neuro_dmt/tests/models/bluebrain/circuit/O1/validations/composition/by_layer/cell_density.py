@@ -4,7 +4,7 @@ import numpy as np
 from bluepy.v2.circuit import Circuit
 from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
     import CellDensityValidation
-from neuro_dmt.models.bluebrain.O1.adapter import BlueBrainModelAdapter
+from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
 from neuro_dmt.data.circuit.composition.by_layer.cell_density \
     import get_reference_datasets
 

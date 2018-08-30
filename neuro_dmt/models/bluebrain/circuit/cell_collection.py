@@ -1,8 +1,8 @@
 """Methods on cell collections. """
 import numpy as np
 from bluepy.v2.enums import Cell
-from neuro_dmt.models.bluebrain.circuits import geometry
-from neuro_dmt.models.bluebrain.circuits.geometry import Cuboid
+from neuro_dmt.models.bluebrain.circuit import geometry
+from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 
 def center_of_mass(cell_collection):
     """Center of mass of a group of cells.

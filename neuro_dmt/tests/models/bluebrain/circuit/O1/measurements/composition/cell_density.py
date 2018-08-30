@@ -6,10 +6,10 @@ from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement import StatisticalMeasurement
-from neuro_dmt.models.bluebrain.circuits.O1.parameters import CorticalLayer
-from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper, geometry
-from neuro_dmt.models.bluebrain.circuits.geometry import Cuboid
-from neuro_dmt.models.bluebrain.circuits.measurements.circuit.composition \
+from neuro_dmt.models.bluebrain.circuit.O1.parameters import CorticalLayer
+from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper, geometry
+from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
+from neuro_dmt.models.bluebrain.circuit.measurements.composition \
     import CellDensity
 
 def sample_region_of_interest(circuit, target='mc2_Column',

@@ -3,13 +3,14 @@
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
-from neuro_dmt.models.bluebrain.circuits import BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
 class CellDensity(measurement.Method):
     """..."""
 
     label = "in-silico"
-    phenomenon = Phenomenon("cell_density", "Number of cells in a unit volume")
+    phenomenon = Phenomenon("Cell Density", "Number of cells in a unit volume")
+    units = "1000/mm^3"
 
     def __init__(self, circuit):
         """..."""
@@ -26,6 +27,7 @@ class CellRatio(measurement.Method):
     label = "in-silico"
     phenomenon = Phenomenon("cell_ratio",
                             "Fraction of inhibitory cells in the circuit.")
+    units = "Count"
 
     def __init__(self, circuit):
         """..."""
@@ -47,6 +49,7 @@ class InhibitorySynapseDensity(measurement.Method):
     label = "in-silico"
     phenomenon = Phenomenon("inhibitor_synapse_density",
                             "Number of inhibitory synapses in a unit volume")
+    units = "1000/mm^3" #not sure... check 
 
     def __init__(self, circuit):
         """..."""
@@ -66,6 +69,7 @@ class ExtrinsicIntrinsicSynapseDensity(measurement.Method):
     label = "in-silico"
     phenomenon = Phenomenon("synapse_density",
                             "Number of synapses in a unit volume")
+    units = "1000/mm^3" #not sure... check 
 
     _spine_density_per_unit_length = Record(mean = 1.05, std = 0.35)
 

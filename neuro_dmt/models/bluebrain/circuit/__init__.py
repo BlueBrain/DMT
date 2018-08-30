@@ -8,7 +8,7 @@ from bluepy.v2.enums import Cell, Synapse, Segment, Section
 from bluepy.geometry.roi import ROI
 import neurom as nm
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from neuro_dmt.models.bluebrain.circuits import geometry, cell_collection
+from neuro_dmt.models.bluebrain.circuit import geometry, cell_collection
 
 
 
