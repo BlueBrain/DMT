@@ -17,3 +17,4 @@ def summarized(means, stdevs, scale_factor=1.0):
     return pd.DataFrame({'region': ['L{}'.format(l) for l in range(1, 7)],
                          'mean': scale_factor * means,
                          'std': scale_factor * stdevs})
+

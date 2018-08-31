@@ -2,11 +2,10 @@
 from dmt.aii.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
-    import CompositionPhenomenonValidation
+    import ByLayerCompositionValidation
 from neuro_dmt.utils.brain_region import CorticalLayer
 
-class SomaVolumeFractionValidation(CompositionPhenomenonValidation,
-                                   SinglePhenomenonValidation):
+class SomaVolumeFractionValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,

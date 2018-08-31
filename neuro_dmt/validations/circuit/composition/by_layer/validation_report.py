@@ -103,8 +103,10 @@ class ValidationReport(Report):
         """
         file_name_base = get_file_name_base(report_file_name)
         file_name = file_name_base + ".html"
-        if output_dir_path is None:
-            output_dir_path = os.path.join(os.getcwd(), "report")
+        output_dir_path = os.path.join(
+            output_dir_path if output_dir_path else os.getcwd(),
+            "report"
+        )
         if not os.path.exists(output_dir_path):
             os.makedirs(output_dir_path)
         report_file_path = os.path.join(output_dir_path, file_name)

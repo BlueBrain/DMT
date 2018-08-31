@@ -1,3 +1,5 @@
+#Data was curated by Armando and provided for circuit building circa early 2018
+#Original data-set had etypes which have been stripped...
 short_name: "ArmandoCurated2017"
 citation: "DOI: /gpfs/..."
 what: "cell densities by mtypes"
@@ -12,60 +14,30 @@ data:
   SLM:
     SLM_PPA:
       density: 167.0976650626
-      etypes:
-        bAC: 1
   SR:
     SR_IS1:
       density: 758.9428677503
-      etypes:
-        cAC: 1
     SR_SCA:
       density: 71.4299169647
-      etypes:
-        cAC: 1
   SP:
     SP_PC:
       density: 264000
-      etypes:
-        cACpyr: 1
     SP_PVBC:
       density: 4686.6287328556
-      etypes:
-        cNAC: 0.7
-        bAC: 0.3
     SP_CCKBC:
       density: 3050.96988034
-      etypes:
-        cAC: 1
     SP_BS:
       density: 1423.7859441587
-      etypes:
-        cNAC: 0.75
-        bAC: 0.25
     SP_AA:
       density: 1245.8127011388
-      etypes:
-        bAC: 1
     SP_Ivy:
       density: 7466.4012904986
-      etypes:
-        cNAC: 0.33
-        bAC: 0.67
   SO:
     SO_OLM:
       density: 485.7510719352
-      etypes:
-        cAC: 1
     SO_BS:
       density: 156.9805293449
-      etypes:
-        cNAC: 0.75
-        bAC: 0.25
     SO_Tri:
       density: 207.3327746065
-      etypes:
-        cAC: 1
     SO_BP:
       density: 56.2760388218
-      etypes:
-        cNAC: 1

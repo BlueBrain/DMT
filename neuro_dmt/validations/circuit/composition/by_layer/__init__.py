@@ -19,8 +19,13 @@ from neuro_dmt.utils.brain_region import Layer
 @document_fields
 class ByLayerCompositionValidation(SpatialCompositionValidation,
                                    SinglePhenomenonValidation):
-    """Validation of a single circuit composition phenomenon."""
+    """Validation of a single circuit composition phenomenon.
+    Validation is against reference data that provide experimental data
+    as a function of layer. This base class may be used for validation
+    composition of any brain region that is composed of layers.
+    """
     plotter_type = BarPlot
+
     def __init__(self, validation_data, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
@@ -72,3 +77,15 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval
         )
+
+
+from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
+    import CellDensityValidation
+from neuro_dmt.validations.circuit.composition.by_layer.cell_ratio \
+    import CellRatioValidation
+from neuro_dmt.validations.circuit.composition.by_layer.inhibitory_synapse_density \
+    import InhibitorySynapseDensityValidation
+from neuro_dmt.validations.circuit.composition.by_layer.synapse_density \
+    import SynapseDensityValidation
+from neuro_dmt.validations.circuit.composition.by_layer.soma_volume_fraction \
+    import SomaVolumeFractionValidation

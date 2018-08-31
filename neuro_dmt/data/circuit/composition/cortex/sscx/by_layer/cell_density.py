@@ -3,7 +3,8 @@ import numpy as np
 import dmt.vtk.datasets as datasets
 
 from dmt.vtk.utils.collections import Record
-from neuro_dmt.data.circuit.composition.by_layer import summarized
+from neuro_dmt.data.circuit.composition.cortex.sscx.by_layer \
+    import summarized
     
 
 def get_reference_datasets(reference_data_dir):

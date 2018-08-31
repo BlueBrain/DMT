@@ -160,7 +160,7 @@ class BlueBrainModelHelper:
                  if target else self._circuit.cells.get(properties=props))
         return np.array(cells.index[cells[Cell.MTYPE] == mtype].values)
 
-    def cell_counts(self, roi):
+    def cell_counts_by_cell_type(self, roi):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
         p0, p1 = roi.bbox
@@ -181,6 +181,10 @@ class BlueBrainModelHelper:
         return pd.Series({"INH": roi_inh_count,
                           "EXC": roi_exc_count,
                           "TOT": roi_exc_count + roi_inh_count})
+
+    def cell_counts(self, roi):
+        """Alias, for compatibility. Remember to remove..."""
+        return self.cell_counts_by_cell_type(roi)
 
     def cell_counts_by_mtype(self, roi):
         p0, p1 = roi.bbox
