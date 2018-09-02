@@ -10,8 +10,8 @@ class Mtype(GroupParameter):
     """Mtype groups cell gids."""
     label = "mtype"
     value_type = str
-    grouped_variable = Record(__type__ = int,
-                              name="cell_gid")
+    grouped_variable = Record(__type__ = int, name="cell_gid")
+                              
 
     def __init__(self, circuit, *args, **kwargs):
         """..."""
@@ -71,6 +71,17 @@ class Mtype(GroupParameter):
 
         return ((mtype, g) for mtype in self.values for g in __get_gids(mtype))
                 
+
+class PreMtype(Mtype):
+    """PreMtype is the same as Mtype except some labels..."""
+    label = "pre_mtype"
+    grouped_variable = Record(__type__=int, name="pre_gid")
+
+
+class PostMtype(Mtype):
+    """PostMtype is the same as Mtype except some labels..."""
+    label = "post_mtype"
+    grouped_variable = Record(__type__=int, name="post_gid")
 
 
 class Pathway(GroupParameter):

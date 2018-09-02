@@ -97,7 +97,7 @@ class GroupParameter(Parameter):
         __is_valid_value__ = (
             lambda r: hasattr(r, '__type__') and hasattr(r, 'name')
         ),
-        __doc__  = """Type grouped by this GroupParameter."""
+        __doc__  = """Metadata for the variable grouped by this GroupParameter."""
     )
     def __init__(self, *args, **kwargs):
         """..."""
@@ -147,16 +147,18 @@ def get_grouped_values(group_params, *args, **kwargs):
     ----------------------------------------------------------------------------
     dict
     """
-    def __get_tuples(params):
+    def __get_tuples(index):
         """..."""
-        if len(params) == 0:
+        if index == len(group_params):
             return ()
-        p0 = params[0]
-        print("get tuples for {} parameters with 0th: {}".format(len(params), p[0]))
-        vs0 = ([(p0.grouped_variable.name, grouped_value), (p0.label, value)]
-               for (value, grouped_value) in p0(*args, **kwargs))
-        return (vs0 if len(params) == 1 
-                else [v + pvs for v in vs0 for pvs in __get_tuples(params[1:])])
+        p0 = group_params[index]
+        vs0 = [[(p0.grouped_variable.name, grouped_value), (p0.label, value)]
+               for (value, grouped_value) in p0(*args, **kwargs)]
+        if index + 1 == len(group_params):
+            return vs0
+        else:
+            vsrest = __get_tuples(index + 1)
+            return [v0 + v1 for v0 in vs0 for v1 in vsrest]
 
-    return pd.DataFrame([dict(t) for t in __get_tuples(group_params)])
+    return pd.DataFrame([dict(t) for t in __get_tuples(0)])
 
