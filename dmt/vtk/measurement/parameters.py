@@ -149,7 +149,10 @@ def get_grouped_values(group_params, *args, **kwargs):
     """
     def __get_tuples(params):
         """..."""
+        if len(params) == 0:
+            return ()
         p0 = params[0]
+        print("get tuples for {} parameters with 0th: {}".format(len(params), p[0]))
         vs0 = ([(p0.grouped_variable.name, grouped_value), (p0.label, value)]
                for (value, grouped_value) in p0(*args, **kwargs))
         return (vs0 if len(params) == 1 

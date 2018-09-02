@@ -37,6 +37,9 @@ class BlueBrainModelHelper:
                 )
             self._circuit = Circuit(circuit_config)
 
+        self._cells = self._circuit.cells
+        self._conn  = self._circuit.connectome
+
         try:
             super(BlueBrainModelHelper, self).__init__(*args, **kwargs)
         except:
@@ -57,7 +60,7 @@ class BlueBrainModelHelper:
                                     .format(type(target)))
             return cell_query
 
-        cell_positions = self._circuit.cells.positions(with_target(cell_query))
+        cell_positions = self._cells.positions(with_target(cell_query))
         return cell_collection.bounds(cell_positions)
 
     def get_segments(self, roi):
@@ -88,7 +91,7 @@ class BlueBrainModelHelper:
         """Aggregated data-frame, by mtype."""
         cell_gids = df.gid.unique()
         mdf = df.set_index('gid')\
-                .join(self._circuit.cells.get(cell_gids, [Cell.MTYPE]))
+                .join(self._cells.get(cell_gids, [Cell.MTYPE]))
         grouped_by_mtype = mdf.groupby(u'mtype')
         mtypes = mdf.mtype.unique()
 
@@ -157,9 +160,9 @@ class BlueBrainModelHelper:
     def cell_mtypes(self, target=None):
         """mtypes of cells."""
         props = [Cell.MTYPE]
-        return (self._circuit.cells.get(properties=props)
+        return (self._cells.get(properties=props)
                 if target is None else
-                self._circuit.cells.get({"$target": target}, properties=props))
+                self._cells.get({"$target": target}, properties=props))
 
     def cell_gids_for_mtype(self, mtype, target="mc2_Column"):
         mtypes = self.cell_mtypes(target=target)
@@ -173,7 +176,7 @@ class BlueBrainModelHelper:
                  Cell.Y: (p0[1], p1[1]),
                  Cell.Z: (p0[2], p1[2])}
         props = [Cell.X, Cell.Y, Cell.Z, Cell.SYNAPSE_CLASS]
-        cells = self._circuit.cells.get(query, props)
+        cells = self._cells.get(query, props)
         cells_inh = cells[cells.synapse_class == "INH"]
         cells_exc = cells[cells.synapse_class == "EXC"]
 
@@ -196,7 +199,7 @@ class BlueBrainModelHelper:
         q = {Cell.X: (p0[0], p1[0]),
              Cell.Y: (p0[1], p1[1]),
              Cell.Z: (p0[2], p1[2])}
-        cells = self._circuit.cells.get(q, properties=[Cell.MTYPE])
+        cells = self._cells.get(q, properties=[Cell.MTYPE])
         return cells.mtype.value_counts()
 
     def cell_counts_by_morphology(self, roi):
@@ -327,7 +330,7 @@ class BlueBrainModelHelper:
 
 
         p0, p1 = roi.bbox
-        gids = self._circuit.cells.ids({Cell.X: (p0[0], p1[0]),
+        gids = self._cells.ids({Cell.X: (p0[0], p1[0]),
                                   Cell.Y: (p0[1], p1[1]),
                                   Cell.Z: (p0[2], p1[2])})
         print("for soma volume fraction, obtained ", len(gids), " neuron ids in ROI")
