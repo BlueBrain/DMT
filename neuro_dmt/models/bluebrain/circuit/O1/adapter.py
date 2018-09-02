@@ -73,38 +73,38 @@ class BlueBrainModelAdapter:
         """method required by adapter interface."""
         return self._model_label
 
-    def statistical_measurement(self, method, by, *circuit_args):
+    def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
-        return StatisticalMeasurement(method, by)(*circuit_args)
+        return StatisticalMeasurement(method, by)(*args, **kwargs)
 
-    def spatial_measurement(self, method, *circuit_args):
+    def spatial_measurement(self, method, circuit, target=None):
         """..."""
-        m = self.statistical_measurement(method, CorticalLayer, *circuit_args)
-        old_index = m.data.index
-        m.data.index = [repr(CorticalLayer(i)) for i in old_index]
-        m.data.index.name = old_index.name
-        return m
+        cortical_layer = CorticalLayer(circuit)
+        measurement\
+            = self.statistical_measurement(method, by=cortical_layer,
+                                           target=target,
+                                           sampled_box_shape=self._sampled_box_shape,
+                                           sample_size=self._sample_size)
+        old_index = measurement.data.index
+        measurement.data.index = [cortical_layer.repr(i) for i in old_index]
+        measurement.data.index.name = old_index.name
+        return measurement
 
     def get_cell_density(self, circuit, target="mc2_Column"):
-        return self.spatial_measurement(
-            composition.CellDensity(circuit),
-            circuit, target
-        )
+        method = composition.CellDensity(circuit)
+        return self.spatial_measurement(method, circuit, target=target)
+                                        
     def get_cell_ratio(self, circuit):
         """..."""
-        return self.spatial_measurement(
-            composition.CellRatio(circuit),
-            circuit, target
-        )
-    def get_inhibitory_synapse_density(self, circuit):
+        method = composition.CellRatio(circuit)
+        return self.spatial_measurement(method , circuit, target=target)
+
+    def get_inhibitory_synapse_density(self, circuit, target="mc2_Column"):
         """Implement this!"""
-        return self.spatial_measurement(
-            composition.CellRatio(circuit),
-            circuit, target
-        )
-    def get_synapse_density(self, circuit):
+        method = composition.InhibitorySynapseDensity(circuit),
+        return self.spatial_measurement(method, circuit, target=target)
+
+    def get_synapse_density(self, circuit, target="mc2_Column"):
         """Implement this!"""
-        return self.spatial_measurement(
-            composition.ExtrinsicIntrinsicSynapseDensity(circuit),
-            circuit, target
-        )
+        method = composition.ExtrinsicIntrinsicSynapseDensity(circuit),
+        return self.spatial_measurement(method, circuit, target=target)

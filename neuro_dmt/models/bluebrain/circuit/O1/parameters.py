@@ -2,35 +2,44 @@
 """
 import numpy as np
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.measurement.parameters import Parameter, GroupParameter
+from dmt.vtk.measurement.parameters import GroupParameter
 from bluepy.geometry.roi import ROI as RegionOfInterest
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
-    Cuboid, collect_sample, random_location
+    Cuboid,  random_location
 
 
 class CorticalLayer(GroupParameter):
+    """Data and methods associated with cortical layers in a brain region
+    circuit."""
     label = "Layer"
     value_type = int
-    _possible_values = [1, 2, 3, 4, 5, 6]
-    grouped_variable = Record(__type__ = RegionOfInterest,
-                              name = "roi")
+    grouped_variable = Record(__type__ = RegionOfInterest, name = "roi")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, circuit, *args, **kwargs):
         """..."""
+        self._circuit = circuit
+        self._helper = BlueBrainModelHelper(circuit=circuit)
+                                            
         super(CorticalLayer, self).__init__(*args, **kwargs)
+        self._values = set([1, 2, 3, 4, 5, 6])
 
     @property
-    def order(self):
-        return self.value
+    def values(self):
+        """..."""
+        return self._values
 
-    @property
-    def _has_valid_value(self):
-        """Is 'value' an accepted value?"""
-        return self.value > 0 and self.value < 7
+    def is_valid(self, value):
+        """Is 'value' a valid value?"""
+        return value > 0 and value < 7
 
-    def __repr__(self):
-        if not self.is_valid:
+    def order(self, value):
+        """Order of value."""
+        return value
+
+    def repr(self, value):
+        """Represent value 'value'"""
+        if not self.is_valid(value):
             raise ValueError("{} is not a valid value of {}"\
                              .format(self.value, self.__class__))
         return {
@@ -40,29 +49,42 @@ class CorticalLayer(GroupParameter):
             4: "IV",
             5: "V",
             6: "VI"
-        }[self.value]
+        }[value]
 
-    def __call__(self, circuit, target='mc2_Column',
-                 sampled_box_shape=np.array([50., 50, 50.]),
-                 sample_size=20):
-        """Sample ROIs in this CorticalLayer in circuit 'circuit'.
+    def __call__(self, *args, **kwargs):
+        """Sample ROIS.
 
         Return
         ------------------------------------------------------------------------
-        Tuple(value_type, grouped_type)
+        Generator[(value, RegionOfInterest)]
         """
-        helper = BlueBrainModelHelper(circuit=circuit, target=target)
+        target = kwargs.get("target", None)
+        sampled_box_shape = kwargs.get("sampled_box_shape",
+                                       np.array([50., 50., 50.]))
+        sample_size = kwargs.get("sample_size", 20)
 
-        half_box = sampled_box_shape / 2.
-        def get_roi(loc):
-            """ROI at location 'loc'."""
-            return Cuboid(loc - half_box, loc + half_box)
+        def query(l):
+            """Query for layer 'l'"""
+            return {"layer": l, "$target": target} if target else {"layer": l}
 
-        layer_bounds = helper.geometric_bounds({'layer': self.value})
-        p0, p1 = layer_bounds.bbox
-        region_to_explore = Cuboid(p0 + half_box, p1 - half_box)
+        bounds = {l: self._helper.geometric_bounds(query(l)).bbox
+                  for l in self.values}
+                  
+        half = sampled_box_shape / 2.0
+        region_to_explore = {l: Cuboid(bounds[l][0] + half, bounds[l][1] - half)
+            for l in self.values}
 
-        return (get_roi(random_location(region_to_explore))
+        def __get_roi(layer):
+            """Get a region of interest in layer 'layer'."""
+            loc = random_location(region_to_explore[layer])
+            return Cuboid(loc - half, loc + half) #or a Cube?
+
+        return ((layer, __get_roi(layer))
+                for layer in self.values
                 for _ in range(sample_size))
+                
+
+
+
 
 

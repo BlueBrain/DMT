@@ -113,7 +113,8 @@ class SpatialCompositionValidation:
         from numpy import abs, sqrt
 
         real_measurement = self.validation_data[0]
-        N = real_measurement.data.shape[0]
+        print("model measurement ", model_measurement.data)
+        print("real measurement ", real_measurement.data)
         delta_mean = abs(
             model_measurement.data["mean"] - real_measurement.data["mean"]
         )

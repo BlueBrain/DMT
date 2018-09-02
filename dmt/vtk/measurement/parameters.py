@@ -14,6 +14,8 @@ from dmt.vtk.utils.collections import Record
 
 class Parameter(ABC):
     """Base class to define a measurement parameter.
+    While a Parameter can be defined theoretically, we will be
+    interested Parameters in the context of a particular model.
     """
     label = ClassAttribute(
         __name__ = "label",
@@ -25,32 +27,28 @@ class Parameter(ABC):
         __type__ = type,
         __doc__  = """Type of the values assumed by this Parameter."""
     )
-    _possible_values = ClassAttribute(
-        __name__ = "possible_values",
-        __type__ = collections.Iterable,
-        __doc__  = """All possible values assumed by this Parameter.
-        This may be a list, or a generator, or your custom Iterable."""
-    )
-    def __init__(self, v, *args, **kwargs):
-        """Initialize with value v."""
-        if not isinstance(v, self.value_type):
-            raise TypeError("{} is not the expected type {}"\
-                            .format(v, self.value_type))
-        self._value = v
-
-    @property
-    def value(self):
-        return self._value
-
     @property
     @abstractmethod
-    def _has_valid_value(self):
-        """Is 'value' an accepted value?"""
+    def values(self):
+        """Values assumed by the model.
+
+        Return
+        -----------------------------------------------------------------------
+        Iterable.
+        """
+        pass
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    @abstractmethod
+    def is_valid(self, value):
+        """Is value 'v' an accepted value?"""
         pass
 
     @property
     @abstractmethod
-    def order(self):
+    def order(self, value):
         """
         Where is value in relation to other values of this Parameter?
         Represented as an int.
@@ -64,8 +62,8 @@ class Parameter(ABC):
         pass
 
     @abstractmethod
-    def __repr__(self):
-        """Representation of a value of this Parameter.
+    def repr(self, value):
+        """Representation of value 'value' of this Parameter.
 
         Parameters
         ------------------------------------------------------------------------
@@ -77,13 +75,7 @@ class Parameter(ABC):
         """
         pass
 
-    @property
-    def is_valid(self):
-        """Is value 'v' an accepted value?"""
-        return self._has_valid_value
-
-    @classmethod
-    def random_value(cls, n=None):
+    def random_value(self, n=None):
         """Get n random values.
         Values will be replaced after each choice.
 
@@ -92,7 +84,7 @@ class Parameter(ABC):
         value_type #if n is None
         [value_type] #if n is not None
         """
-        return cls(np.random.choice(cls._possible_values, n))
+        return np.random.choice(self.values, n)
 
 
 class GroupParameter(Parameter):
@@ -117,7 +109,7 @@ class GroupParameter(Parameter):
 
         Return
         ------------------------------------------------------------------------
-        Tuple(value_type, grouped_type)
+        grouped_variable.__type__
         """
         pass
 
@@ -144,7 +136,7 @@ def get_values(parameters):
 
     return pd.DataFrame([dict(t) for t in __get_value_tuples(parameters)])
 
-def get_grouped_values(group_params, *model_args):
+def get_grouped_values(group_params, *args, **kwargs):
     """Generate values for parameters in the list 'parameters'.
 
     Parameters
@@ -158,14 +150,10 @@ def get_grouped_values(group_params, *model_args):
     def __get_tuples(params):
         """..."""
         p0 = params[0]
-        vs0 = ([(p0.grouped_variable.name, grouped_value), (p0.label, v)]
-               for v in p0._possible_values
-               for grouped_value in p0(v)(*model_args))
-               
+        vs0 = ([(p0.grouped_variable.name, grouped_value), (p0.label, value)]
+               for (value, grouped_value) in p0(*args, **kwargs))
         return (vs0 if len(params) == 1 
                 else [v + pvs for v in vs0 for pvs in __get_tuples(params[1:])])
 
     return pd.DataFrame([dict(t) for t in __get_tuples(group_params)])
-
-                         
 

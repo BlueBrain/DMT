@@ -37,6 +37,8 @@ class BlueBrainModelHelper:
                 )
             self._circuit = Circuit(circuit_config)
 
+        self._cell_mtypes = None #initialize when first called
+
         try:
             super(BlueBrainModelHelper, self).__init__(*args, **kwargs)
         except:
@@ -154,11 +156,18 @@ class BlueBrainModelHelper:
         raise ValueError("Unknown criterion to get segment lengths by: {}"\
                          .format(by))
 
-    def cell_gids_for_mtype(self, mtype, target=None):
-        props = [Cell.MTYPE]
-        cells = (self._circuit.cells.get({'$target': target}, properties=props)
-                 if target else self._circuit.cells.get(properties=props))
-        return np.array(cells.index[cells[Cell.MTYPE] == mtype].values)
+    @property
+    def cell_mtypes(self):
+        """mtypes of cells."""
+        if not self._cell_mtypes:
+            self._cell_mtypes \
+                =  self._circuit.cells.get(properties=[Cell.MTYPE])
+        return self._cell_mtypes
+
+    def cell_gids_for_mtype(self, mtype):
+        return np.array(self.cell_mtypes.index[
+            self.cell_mtypes[Cell.MTYPE] == mtype
+        ].values)
 
     def cell_counts_by_cell_type(self, roi):
         """Counts of inhibitory and excitatory cells, in a region of interest,

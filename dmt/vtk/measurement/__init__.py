@@ -74,7 +74,7 @@ class StatisticalMeasurement:
     group_parameters = Field(
         __name__ = "group_parameter",
         __type__ = list,
-        __is_valid_value__ = lambda gps: all(issubclass(gp, GroupParameter)
+        __is_valid_value__ = lambda gps: all(isinstance(gp, GroupParameter)
                                              for gp in gps),
         __doc__ = """The GroupParameter types associated with this
         StatisticalMethod."""
@@ -88,10 +88,10 @@ class StatisticalMeasurement:
             self.group_parameters = [by]
         self.method = method
 
-    def sample(self, *model_args):
+    def sample(self, *args, **kwargs):
         """..."""
         gps = self.group_parameters
-        df = get_grouped_values(gps, *model_args)
+        df = get_grouped_values(gps, *args, **kwargs)
         measured_values = [
             self.method(**row[1][[p.grouped_variable.name for p in gps]])
             for row in df.iterrows()
@@ -100,9 +100,9 @@ class StatisticalMeasurement:
         df = df.sort_values(by=[gp.label for gp in gps])
         return df[[self.method.label] + [gp.label for gp in gps]]
 
-    def __call__(self, *model_args):
+    def __call__(self, *args, **kwargs):
         """call me"""
-        data = summary_statistic(self.sample(*model_args),
+        data = summary_statistic(self.sample(*args, **kwargs),
                                  [pg.label for pg in self.group_parameters])
         if len(self.group_parameters) == 1:
             return Record(phenomenon = self.method.phenomenon,
