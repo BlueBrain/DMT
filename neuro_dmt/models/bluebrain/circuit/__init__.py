@@ -157,6 +157,11 @@ class BlueBrainModelHelper:
         raise ValueError("Unknown criterion to get segment lengths by: {}"\
                          .format(by))
 
+    def target_cells(self, target=None):
+        """GIDs of cells in a target."""
+        return (set(self._cells.get({"$target": target}).index)
+                if target else set(self._cells.get().index))
+
     def cell_mtypes(self, target=None):
         """mtypes of cells."""
         props = [Cell.MTYPE]

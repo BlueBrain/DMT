@@ -13,7 +13,6 @@ module purge
 module load nix/python/3.6-full
 module load nix/hpc/flatindexer-py3
 
-source ~/.bashrc
 echo "Will launch" 
 ~/.vmgr_repo/nix36/bin/activate
 python connectome.py
