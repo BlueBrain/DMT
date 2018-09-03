@@ -1,8 +1,9 @@
 """Brain models developed at the Blue Brain Project, EPFL."""
-
+import sys
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+import bluepy
 from bluepy.v2.circuit import Circuit
 from bluepy.v2.enums import Cell, Synapse, Segment, Section
 from bluepy.geometry.roi import ROI
@@ -38,7 +39,11 @@ class BlueBrainModelHelper:
             self._circuit = Circuit(circuit_config)
 
         self._cells = self._circuit.cells
-        self._conn  = self._circuit.connectome
+        try:
+            self._conn  = self._circuit.connectome
+        except(bluepy.exceptions.BluePyError):
+            sys.stderr.write('\nWarning: circuit does not have connectome\n')
+            self._conn = None
 
         try:
             super(BlueBrainModelHelper, self).__init__(*args, **kwargs)
