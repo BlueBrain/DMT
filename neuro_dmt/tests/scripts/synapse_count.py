@@ -9,6 +9,13 @@ from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
     import PairSynapseCount, EfferentSynapseCount
 
+def log_message(msg):
+    print("TIME: {}".format(time.localtime()))
+    print(msg)
+    with open("./synapse_count.log", "a") as f:
+        f.write("TIME: {}".format(time.localtime()))
+        f.write(msg)
+
 if __name__ == "__main__":
     cpath\
         = "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/20171206/CircuitConfig"
@@ -22,13 +29,11 @@ if __name__ == "__main__":
     for i in range(20):
         n = np.sum([eff_syn_count(g) for g in np.random.choice(cells, 1000)])
         syn_count_samples.append(n)
-        print("TIME: {}".format(time.localtime()))
-        print("sample {} synapse number {}".format(i, n))
+        log_message("sample {} synapse number {}".format(i, n))
 
     mean = np.mean(syn_count_samples)
     std  = np.std(syn_count_samples)
-    print("TIME: {}".format(time.localtime()))
-    print("mean: {}, std: {}".format(mean, std))
+    log_message("mean: {}, std: {}".format(mean, std))
 
     
 

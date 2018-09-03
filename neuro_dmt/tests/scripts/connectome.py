@@ -8,7 +8,7 @@ from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
     import PairSynapseCount
 
-cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
+cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/20171206/CircuitConfig"
 circuit = Circuit(cpath)
 
 mtype_pre = PreMtype(circuit)
@@ -17,6 +17,12 @@ mtype_post = PostMtype(circuit)
 syn_count = StatisticalMeasurement(method=PairSynapseCount(circuit),
                                    by=[mtype_pre, mtype_post])
 
+def log_message(msg):
+    print("TIME: {}".format(time.localtime()))
+    print(msg)
+    with open("./connectome_test.log", "a") as f:
+        f.write("TIME: {}".format(time.localtime()))
+        f.write(msg)
 
 def usage():
     print("Explain how to use.")
@@ -24,19 +30,10 @@ def usage():
 if __name__=="__main__":
     today = datetime.date.today().strftime("%Y%m%d")
     now = time.localtime()
-    print("TIME: {}-{}".format(today, now))
-    print("Testing synapse count.")
-    with open("./output.log", "w") as f:
-        f.write("TIME: {}\n".format(now))
-        f.write("Testing synapse count.")
-    measurement = syn_count(sample_size=2)
+    log_message("Testing synapse count.")
+    measurement = syn_count(sample_size=100)
     now = time.localtime()
-    print("TIME: {}-{}".format(today, now))
-    print("Synapses counted for {} pathways."\
-          .format(measurement.data.shape[0]))
-    with open("./output.log", "w") as f:
-        f.write("TIME: {}\n".format(now))
-        f.write("Synapses counted for {} pathways."\
+    log_message("Synapses counted for {} pathways."\
                 .format(measurement.data.shape[0]))
-    print("writing data frame to CSV")
+    log_message("writing data frame to CSV")
     measurement.data.to_csv("./pathway_synapse_count.csv")
