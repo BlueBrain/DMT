@@ -1,6 +1,7 @@
 """Collection utils."""
 
 import collections
+from itertools import *
 
 class Namespace:
     """A namespace!"""
@@ -66,3 +67,21 @@ class FrozenDict(collections.Mapping):
         return FrozenDict(new_store)
 
 
+#some functions to work with collections / iterables
+
+def take(n, xs):
+    """Take n elements from a collection
+
+    Parameters
+    ---------------------------------------------------------------------------
+    n :: int #number of items to retrieve
+    xs :: iterable #...
+    """
+    return islice(xs, n)
+
+def drop(n, xs):
+    return islice(xs, n, None)
+
+def step(n, xs):
+    return islice(xs, None, None, n)
+    

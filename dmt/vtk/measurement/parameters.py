@@ -104,6 +104,13 @@ class GroupParameter(Parameter):
         super(GroupParameter, self).__init__(*args, **kwargs)
 
     @abstractmethod
+    def grouped_values(self, value):
+        """All the values of the grouped variable covered by value 'value' of
+        this GroupParameter. Please return a generator when you expect a large
+        number of grouped values."""
+        pass
+        
+    @abstractmethod
     def __call__(self, model, n=None):
         """Collect a sample of the grouped type in the context of a model.
 

@@ -2,6 +2,7 @@
 import time
 import datetime
 from bluepy.v2.circuit import Circuit
+from dmt.vtk.utils.logging import Logger
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.measurement.parameters import get_grouped_values
 from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
@@ -28,12 +29,16 @@ def usage():
     print("Explain how to use.")
 
 if __name__=="__main__":
-    today = datetime.date.today().strftime("%Y%m%d")
+    logger = Logger("Pathway Synapses Test")
+
+    logger.info("Test if group variables are working fine.")
+    df = get_grouped_values([mtype_pre, mtype_post])
+    logger.info("grouped variable data frame size {}".format(df.shape))
+    logger.info("Get the measurement")
+    measurement = syn_count(sample_size=10)
+    logger.info("measurement shape {}".format(measurement.data.shape))
     now = time.localtime()
-    log_message("Testing synapse count.")
-    measurement = syn_count(sample_size=100)
-    now = time.localtime()
-    log_message("Synapses counted for {} pathways."\
+    logger.info("Synapses counted for {} pathways."\
                 .format(measurement.data.shape[0]))
-    log_message("writing data frame to CSV")
+    logger.info("writing data frame to CSV")
     measurement.data.to_csv("./pathway_synapse_count.csv")

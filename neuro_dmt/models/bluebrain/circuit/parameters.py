@@ -2,7 +2,7 @@
 
 import numpy as np
 from bluepy.v2.enums import Cell
-from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.collections import *
 from dmt.vtk.measurement.parameters import Parameter, GroupParameter
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
@@ -20,14 +20,22 @@ class Mtype(GroupParameter):
         self._helper  = BlueBrainModelHelper(circuit=circuit)
         self._values = None #initialized when 'self.values' first called
         self._order_dict  = None #initialized when 'self.order' first called
+        self._mtype_groups = None #cells GIDs for a given mtype
         super(Mtype, self).__init__(*args, **kwargs)
+
+    @property
+    def mtype_groups(self):
+        """..."""
+        if self._mtype_groups is None:
+            self._mtype_groups = self._helper.cell_mtypes().groupby(Cell.MTYPE)
+        return self._mtype_groups
 
     @property
     def values(self):
         """What mtypes may cells have in a circuit?
         Since this computation can be expensive, we will cache the results."""
         if not self._values:
-            self._values = set(self._helper.cell_mtypes()[Cell.MTYPE]) 
+            self._values = set(self.mtype_groups.keys())
         return self._values
 
     def order(self, mtype):
@@ -46,24 +54,37 @@ class Mtype(GroupParameter):
         """..."""
         return value
 
-    def __call__(self, **kwargs):
+    def cell_gids(self, mtype):
+        """Cell gids for a given mtype."""
+        return self.mtype_groups[mtype]
+
+    def grouped_values(self, mtype, *args, **kwargs):
+        """Generator of all the values of the grouped variable"""
+        target = kwargs.get("target", None)
+        target_cells = self._helper.target_cells(target)
+
+        while True:
+            try:
+                g = np.random.choice(self.cell_gids(mtype))
+            except:
+                raise ValueError("No cells of mtype {} in the circuit."\
+                                 .format(mtype))
+            if g in target_cells:
+                yield g
+            else:
+                continue
+
+    def __call__(self, *args, **kwargs):
         """Sample cell gids for each mtype in circuit 'self._circuit'.
 
         Return
         ------------------------------------------------------------------------
         Generator[(mtype, gid)]
         """
-        target = kwargs.get("target", None)
-        sample_size = kwargs.get("sample_size", 20)
+        n = kwargs.get("sample_size", 20)
 
-        mtypes = self._helper.cell_mtypes(target=target)
-        def __get_gids(mtype):
-            """..."""
-            mgids = np.array(mtypes[mtypes[Cell.MTYPE] == mtype].index)
-            return (np.random.choice(mgids, sample_size, replace=False)
-                    if sample_size < len(mgids) else mgids)
-
-        return ((mtype, g) for mtype in self.values for g in __get_gids(mtype))
+        return ((mtype, g) for mtype in self.values
+                for g in take(n, self.grouped_values(mtype, *args, **kwargs)))
                 
 
 class PreMtype(Mtype):
@@ -140,13 +161,24 @@ class Pathway(GroupParameter):
         if pre_mtype not in self._connections:
             self._connections[pre_mtype] = {}
         if post_mtype not in self._connections[pre_mtype]:
-            pre_gids = self.mtypes[self.mtypes[Cell.MTYPE] == pre_mtype].index
+            pre_gids = self.mtypes.index[self.mtypes[Cell.MTYPE] == pre_mtype]
 
             self._connections[pre_mtype][post_mtype]\
                 = [(pre, post) for pre in pre_gids for post in __efferent(pre)]
 
         return self._connections[pre_mtype][post_mtype]
 
+
+    def grouped_values(self, pathway, *args, **kwargs):
+        """..."""
+        target = kwargs.get("target", None)
+        target_cells = self._helper.target_cells(target)
+
+        pre_mtype = pathway[0]
+        post_mtype = pathway[1]
+
+        raise NotImplementedError("Complete this!")
+        
 
     def __call__(self, **kwargs):
         """Sample cell gid pairs for each pathway in circuit 'self._circuit'.
@@ -157,10 +189,7 @@ class Pathway(GroupParameter):
         ~                Tuple[pre_gid   :: int, post_gid   :: int]] ]
         """
 
-        target = kwargs.get("target", None)
         sample_size = kwargs.get("sample_size", 20)
-
-        target_cells = self._helper.target_cells(target)
 
         cs = [(pre, post) for pre,post in self.connections(pre_mtype, post_mtype)
               if pre in target_cells and post in target_cells]

@@ -3,18 +3,12 @@ import time
 import datetime
 import numpy as np
 from bluepy.v2.circuit import Circuit
+from dmt.vtk.utils.logging import Logger
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.measurement.parameters import get_grouped_values
 from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
     import PairSynapseCount, EfferentSynapseCount
-
-def log_message(msg):
-    print("TIME: {}".format(time.localtime()))
-    print(msg)
-    with open("./synapse_count.log", "a") as f:
-        f.write("TIME: {}".format(time.localtime()))
-        f.write(msg)
 
 if __name__ == "__main__":
     cpath\
@@ -23,17 +17,16 @@ if __name__ == "__main__":
     cells = circuit.cells.get().index
     eff_syn_count = EfferentSynapseCount(circuit)
 
-    print("TIME: {}".format(time.localtime()))
-    print("Count number of synapses.")
+    logger = Logger("Synapse Count Test")
     syn_count_samples = []
     for i in range(20):
         n = np.sum([eff_syn_count(g) for g in np.random.choice(cells, 1000)])
         syn_count_samples.append(n)
-        log_message("sample {} synapse number {}".format(i, n))
+        logger.info("sample {} synapse number {}".format(i, n))
 
     mean = np.mean(syn_count_samples)
     std  = np.std(syn_count_samples)
-    log_message("mean: {}, std: {}".format(mean, std))
+    logger.info("mean: {}, std: {}".format(mean, std))
 
     
 

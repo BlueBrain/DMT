@@ -3,6 +3,7 @@
 import numpy as np
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameters import GroupParameter
+from dmt.vtk.utils.collections import *
 from bluepy.geometry.roi import ROI as RegionOfInterest
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
@@ -51,6 +52,26 @@ class CorticalLayer(GroupParameter):
             6: "VI"
         }[value]
 
+    def grouped_values(self, layer, *args, **kwargs):
+        """All the values of the grouped variable covered by value 'value' of
+        this CorticalLayer.
+        This is implemented as an infinite stream of randomly generated
+        regions of interest in a layer.
+        """
+        target = kwargs.get("target", None)
+        sampled_box_shape = kwargs.get("sampled_box_shape",
+                                       np.array([50., 50., 50.]))
+        
+        q = {"layer": layer, "$target": target} if target else {"layer": layer}
+        bounds = self._helper.geometric_bounds(q).bbox
+                  
+        half_box = sampled_box_shape / 2.0
+        region_to_explore = Cuboid(bounds[0] + half_box, bounds[1] - half_box)
+
+        while True:
+            loc = random_location(region_to_explore)
+            yield Cuboid(loc - half_box, loc + half_box) #or a Cube?
+
     def __call__(self, *args, **kwargs):
         """Sample ROIS.
 
@@ -58,33 +79,8 @@ class CorticalLayer(GroupParameter):
         ------------------------------------------------------------------------
         Generator[(value, RegionOfInterest)]
         """
-        target = kwargs.get("target", None)
-        sampled_box_shape = kwargs.get("sampled_box_shape",
-                                       np.array([50., 50., 50.]))
-        sample_size = kwargs.get("sample_size", 20)
+        n = kwargs.get("sample_size", 20)
 
-        def query(l):
-            """Query for layer 'l'"""
-            return {"layer": l, "$target": target} if target else {"layer": l}
-
-        bounds = {l: self._helper.geometric_bounds(query(l)).bbox
-                  for l in self.values}
-                  
-        half = sampled_box_shape / 2.0
-        region_to_explore = {l: Cuboid(bounds[l][0] + half, bounds[l][1] - half)
-            for l in self.values}
-
-        def __get_roi(layer):
-            """Get a region of interest in layer 'layer'."""
-            loc = random_location(region_to_explore[layer])
-            return Cuboid(loc - half, loc + half) #or a Cube?
-
-        return ((layer, __get_roi(layer))
+        return ((layer, roi)
                 for layer in self.values
-                for _ in range(sample_size))
-                
-
-
-
-
-
+                for roi in take(n, self.grouped_values(layer, *args, **kwargs)))

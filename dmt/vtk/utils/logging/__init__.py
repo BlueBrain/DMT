@@ -42,10 +42,13 @@ class Logger:
                  *args, **kwargs):
         """..."""
         self._name = name if name else "Output Log"
-        self._in_file\
-            = (None if (output_dir_path is None and file_name is None)
-               else os.path.join(output_dir_path if output_dir_path else os.getcwd(),
-                                 file_name if file_name else "output.log"))
+        self._in_file = (
+            None if (output_dir_path is None and file_name is None) else 
+            os.path.join(
+                output_dir_path if output_dir_path else os.getcwd(),
+                file_name if file_name else ".".join(self._name.lower())
+            )
+        )
         super(Logger, self).__init__(*args, **kwargs)
         if self._in_file:
             self._log_message(self._name)
