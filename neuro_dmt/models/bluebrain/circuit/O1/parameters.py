@@ -52,7 +52,7 @@ class CorticalLayer(GroupParameter):
             6: "VI"
         }[value]
 
-    def grouped_values(self, layer, *args, **kwargs):
+    def random_grouped_values(self, layer, *args, **kwargs):
         """All the values of the grouped variable covered by value 'value' of
         this CorticalLayer.
         This is implemented as an infinite stream of randomly generated
@@ -72,15 +72,3 @@ class CorticalLayer(GroupParameter):
             loc = random_location(region_to_explore)
             yield Cuboid(loc - half_box, loc + half_box) #or a Cube?
 
-    def __call__(self, *args, **kwargs):
-        """Sample ROIS.
-
-        Return
-        ------------------------------------------------------------------------
-        Generator[(value, RegionOfInterest)]
-        """
-        n = kwargs.get("sample_size", 20)
-
-        return ((layer, roi)
-                for layer in self.values
-                for roi in take(n, self.grouped_values(layer, *args, **kwargs)))

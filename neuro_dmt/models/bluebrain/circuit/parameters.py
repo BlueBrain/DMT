@@ -58,34 +58,24 @@ class Mtype(GroupParameter):
         """Cell gids for a given mtype."""
         return self.mtype_groups[mtype]
 
-    def grouped_values(self, mtype, *args, **kwargs):
+    def random_grouped_values(self, mtype, *args, **kwargs):
         """Generator of all the values of the grouped variable"""
         target = kwargs.get("target", None)
         target_cells = self._helper.target_cells(target)
 
         while True:
             try:
-                g = np.random.choice(self.cell_gids(mtype))
+                gids = self.cell_gids(mtype)
+                assert(len(gids) > 0)
             except:
                 raise ValueError("No cells of mtype {} in the circuit."\
                                  .format(mtype))
+            g = np.random.choice(gids)
             if g in target_cells:
                 yield g
             else:
                 continue
 
-    def __call__(self, *args, **kwargs):
-        """Sample cell gids for each mtype in circuit 'self._circuit'.
-
-        Return
-        ------------------------------------------------------------------------
-        Generator[(mtype, gid)]
-        """
-        n = kwargs.get("sample_size", 20)
-
-        return ((mtype, g) for mtype in self.values
-                for g in take(n, self.grouped_values(mtype, *args, **kwargs)))
-                
 
 class PreMtype(Mtype):
     """PreMtype is the same as Mtype except some labels..."""
@@ -154,7 +144,7 @@ class Pathway(GroupParameter):
             """..."""
             conn = self._circuit.connectome
             return (post_gid for post_gid in conn.efferent_gids(pre_gid)
-                    if self.mtypes.iloc[post_gid] == post_mtype)
+                    if self.mtypes.loc[post_gid] == post_mtype)
                    
         if not self._connections:
             self._connections = {}
@@ -162,37 +152,30 @@ class Pathway(GroupParameter):
             self._connections[pre_mtype] = {}
         if post_mtype not in self._connections[pre_mtype]:
             pre_gids = self.mtypes.index[self.mtypes[Cell.MTYPE] == pre_mtype]
-
             self._connections[pre_mtype][post_mtype]\
                 = [(pre, post) for pre in pre_gids for post in __efferent(pre)]
 
         return self._connections[pre_mtype][post_mtype]
 
-
-    def grouped_values(self, pathway, *args, **kwargs):
+    def random_grouped_values(self, pathway, *args, **kwargs):
         """..."""
         target = kwargs.get("target", None)
         target_cells = self._helper.target_cells(target)
+        n = kwargs.get("sample_size", 20)
 
         pre_mtype = pathway[0]
         post_mtype = pathway[1]
 
-        raise NotImplementedError("Complete this!")
-        
+        while True:
+            try:
+                cs = self.connections(pre_mtype, post_mtype)
+                assert(len(cs) > 0)
+            except:
+                raise ValueError("{}-->{} not a valid pathway"\
+                                 .format(pre_mtype, post_mtype))
 
-    def __call__(self, **kwargs):
-        """Sample cell gid pairs for each pathway in circuit 'self._circuit'.
-
-        Return
-        ------------------------------------------------------------------------
-        Iterable[ Tuple[ Tuple[pre_mtype :: str, post_mtype :: str],
-        ~                Tuple[pre_gid   :: int, post_gid   :: int]] ]
-        """
-
-        sample_size = kwargs.get("sample_size", 20)
-
-        cs = [(pre, post) for pre,post in self.connections(pre_mtype, post_mtype)
-              if pre in target_cells and post in target_cells]
-
-        return ((p, c) for p in self.values
-                for c in np.random.choice(cs, n, replace=False))
+            pre_gid, post_gid = np.random.choice(cs)
+            if pre_gid in target_cells and post_gid in target_cells:
+                yield (pre_gid, post_gid)
+            else:
+                continue
