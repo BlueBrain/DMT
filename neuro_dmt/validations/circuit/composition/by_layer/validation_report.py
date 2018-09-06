@@ -112,6 +112,7 @@ class ValidationReport(Report):
         report_file_path = os.path.join(output_dir_path, file_name)
 
         print("Saving report to {} ".format(report_file_path))
+
         try:
             #the following is ugly
             #Cheetah template are not exactly the same attributes as this report

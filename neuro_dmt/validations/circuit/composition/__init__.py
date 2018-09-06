@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.utils.brain_region import BrainRegion
-from dmt.vtk.plotting import Plot
+from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
@@ -27,9 +27,9 @@ class SpatialCompositionValidation:
     plotter_type = ClassAttribute(
         __name__ = "plotter_type",
         __type__ = type,
-        __is_valid_value__ = lambda ptype: issubclass(ptype, Plot),
+        __is_valid_value__ = lambda ptype: issubclass(ptype, ComparisonPlot),
         __doc__ = """A subclass of {} to be used plot the results of
-        this validation.""".format(Plot)
+        this validation.""".format(ComparisonPlot)
     )
     region_type = ClassAttribute(
         __name__ = "region_type",
@@ -63,11 +63,42 @@ class SpatialCompositionValidation:
        kwargs.update({'validation_data': validation_data})
        super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
 
+       self._primary_compared = kwargs.get("primary_compared", None)
        self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
        self.output_dir_path = kwargs.get('output_dir_path',
                                          os.path.join(os.getcwd(), "report"))
        self.report_file_name = kwargs.get('report_file_name', 'report.html')
        self.plot_customization = kwargs.get('plot_customization', {})
+
+    @property
+    def validation_data(self):
+        """..."""
+        if self._validation_data is None:
+            raise Exception("Test case {} does not use validation data"\
+                            .format(self.__class__.__name__))
+        if not isinstance(self._validation_data, dict):
+            return self._validation_data
+        if len(self._validation_data) == 1:
+            return list(self._validation_data.values())[0]
+        
+        dataset_names = [k for k in self._validation_data.keys()]
+
+        flattened_data = pd.concat(
+            [self._validation_data[n].data for n in dataset_names]
+        ).set_index(
+            pd.MultiIndex.from_tuples([
+                (n, l) for n in dataset_names
+                for l in sorted(self._validation_data[n].data.region)
+            ],
+            names=("dataset", "region"))
+        )[["mean", "std"]]
+
+        return flattened_data
+
+    @property
+    def primary_dataset(self):
+        """..."""
+        return self._validation_data[self._primary_dataset]
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
@@ -78,11 +109,14 @@ class SpatialCompositionValidation:
         kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
                                            model_measurement.units)
         kwargs.update(self.plot_customization)
-
-        plotting_datasets = [model_measurement] + self.validation_data
-        plotter = self.plotter_type(**kwargs)
-
-        return plotter.plot(*plotting_datasets)
+        cdf = self.validation_data
+        plotter = self.plotter_type(Record(data=model_measurement.data,
+                                           label=model_measurement.label),
+                                    *args, **kwargs)\
+                      .comparing("dataset")\
+                      .against(self.validation_data)\
+                      .for_given("region")
+        return plotter.plot()
 
     def get_verdict(self, p):
         """Use p-value threshold to judge if the validation was a success.
@@ -112,21 +146,23 @@ class SpatialCompositionValidation:
         from scipy.special import erf
         from numpy import abs, sqrt
 
-        real_measurement = self.validation_data[0]
-        delta_mean = abs(
-            model_measurement.data["mean"] - real_measurement.data["mean"]
-        )
-        stdev = sqrt(
-            model_measurement.data["std"]**2 + real_measurement.data["std"]**2
-        )
-        z_score = delta_mean / stdev
-        pval = 1. - erf(z_score)
-        return pd.DataFrame(dict(
-            delta_mean = delta_mean,
-            std = stdev,
-            z_score = z_score,
-            pvalue = pval
-        ))
+        real_measurement = self.primary_dataset
+        if real_measurement is not None:
+            delta_mean = abs(
+                model_measurement.data["mean"] - real_measurement.data["mean"]
+            )
+            stdev = sqrt(
+                model_measurement.data["std"]**2 + real_measurement.data["std"]**2
+            )
+            z_score = delta_mean / stdev
+            pval = 1. - erf(z_score)
+            return pd.DataFrame(dict(
+                delta_mean = delta_mean,
+                std = stdev,
+                z_score = z_score,
+                pvalue = pval
+            ))
+        return pd.DataFrame()
 
     def pvalue(self, model_measurement):
         """Scalar valued  p-value.

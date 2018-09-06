@@ -10,7 +10,7 @@ from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.vtk.judgment.verdict import Verdict
-from dmt.vtk.plotting.bars import BarPlot
+from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.utils.brain_region import Layer
@@ -24,7 +24,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
     as a function of layer. This base class may be used for validation
     composition of any brain region that is composed of layers.
     """
-    plotter_type = BarPlot
+    plotter_type = BarPlotComparison
 
     def __init__(self, validation_data, *args, **kwargs):
         """
@@ -72,7 +72,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             validation_image_name = plot_name,
             author = self.author,
             caption = self.get_caption(model_measurement),
-            validation_datasets = {d.label: d for d in self.validation_data},
+            validation_datasets = self._validation_data,
             is_pass = verdict == Verdict.PASS,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval

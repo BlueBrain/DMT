@@ -33,8 +33,10 @@ class ValidationTestCaseBase(Callable):
         data set, or the directory location of a validation data set, or none,
         but not both.
         """
-        self.__validation_data = kwargs.get('validation_data', None)
-        if (self.__validation_data is None and
+        data_record = kwargs.get('validation_data', None)
+        self._validation_data = data_record.data
+        self._primary_dataset = data_record.primary
+        if (self._validation_data is None and
             'validation_data_location' in kwargs):
             if not hasattr(self, '_load_validation_data'):
                 raise NotImplementedError(
@@ -42,7 +44,7 @@ class ValidationTestCaseBase(Callable):
                     you must implement method '_load_validation_data' for {}"\
                     .format(self.__class__.__name__)
                 )
-            self.__validation_data\
+            self._validation_data\
                 = self._load_validation_data(kwargs['validation_data_location'])
 
         self.author = kwargs.get('author', Author.anonymous)
@@ -57,12 +59,22 @@ class ValidationTestCaseBase(Callable):
         Notes
         ------------------------------------------------------------------------
         We talk of validation being against real data.
-        ------------------------------------------------------------------------
+        The form of the data will be known only to the concrete implementation
+        of ValidationTestCaseBase. Here we assume that data is expected by the
+        caller as it is.
+
+        Please, feel free to specialize this method to your implementation.
         """
         if self.__validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
-        return self.__validation_data
+        return self._validation_data
+
+    @property
+    @abstractmethod
+    def primary_dataset(self):
+        """Primary validation dataset."""
+        pass
 
     @property
     def reference_data(self):
