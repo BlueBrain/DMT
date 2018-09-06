@@ -190,27 +190,28 @@ class InterboutonInterval(measurement.Method):
         return 1. / self._circuit.stats.bouton_density(gid)
 
 
-class PathwayStrength(measurement.Method):
-    """Number of synapses in a mtype --> mtype pathway."""
+class ConnectionStrength(measurement.Method):
+    """Number of synapses in a cell --> cell connection."""
 
     label = "in-silico"
-    phenomenon = Phenomenon("Pathway strength",
-                            "Number of synapses in a mtype -> mtype pathway")
+    phenomenon = Phenomenon("Connection strength",
+                            "Number of synapses between cells in a connection.")
     unit = "Count"
 
     def __init__(self, circuit):
         self._circuit = circuit
 
-    def __call__(self, pathway):
+    def __call__(self, cnxn):
         """...Call Me...
 
         Parameters
         ------------------------------------------------------------------------
-        pathway :: Tuple[pre_mtype :: str, post_mtype :: str]
+        cnxn :: Tuple[pre_gid :: str, post_gid :: str]
 
         Returns
         ------------------------------------------------------------------------
         int #number of synapses
         """
         conn = self._circuit.connectome
-        return len(conn.pair_synapses(pre_gid=pathway[0], post_gid=pathway[1]))
+        return len(conn.pair_synapses(pre_gid=cnxn[0], post_gid=cnxn[1]))
+
