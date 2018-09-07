@@ -13,7 +13,7 @@
     <h1>Datasets</h1>
 
     <ul>
-      #for $k, $d in $validation_datasets.items()
+      #for $d in $validation_datasets
       <li><a href="$d.uri">[$d.label]</a> -$d.citation<br>
         <p><i>$d.what</i></p>
       </li>

@@ -49,7 +49,7 @@ class ValidationReport(Report):
     )
     validation_datasets = Field(
         __name__ = "validation_datasets",
-        __type__ = dict,
+        __type__ = list,
         __doc__ = """List of metadata, one element for each dataset used by the
         validation. Please take a look at documentation of the validation."""
     )

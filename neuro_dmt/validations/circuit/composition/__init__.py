@@ -46,11 +46,17 @@ class SpatialCompositionValidation:
 
        Arguments
        -------------------------------------------------------------------------
-       validation_data :: List[Record(measurement_label :: String,
-       ~                              region_label :: String,
-       ~                              data :: DataFrame["region", "mean", "std"])],
-       ~                              citation :: Citation,
-       ~                              what :: String)]
+       validation_data :: Either[
+       ~   Record[data :: Dict[String -> MeasurementRecord], primary :: String],
+       ~   Dict[String -> MeasurementRecord]
+       ]
+       where
+       MeasurementRecord = List[Record(measurement_label :: String,
+       ~                               region_label :: String,
+       ~                               data :: DataFrame["mean", "std"])],
+       ~                               citation :: Either[Citation, String],
+       ~                               uri :: String,
+       ~                               what :: String)]
        -------------------------------------------------------------------------
 
        Keyword Arguments
@@ -63,42 +69,11 @@ class SpatialCompositionValidation:
        kwargs.update({'validation_data': validation_data})
        super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
 
-       self._primary_compared = kwargs.get("primary_compared", None)
        self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
        self.output_dir_path = kwargs.get('output_dir_path',
                                          os.path.join(os.getcwd(), "report"))
        self.report_file_name = kwargs.get('report_file_name', 'report.html')
        self.plot_customization = kwargs.get('plot_customization', {})
-
-    @property
-    def validation_data(self):
-        """..."""
-        if self._validation_data is None:
-            raise Exception("Test case {} does not use validation data"\
-                            .format(self.__class__.__name__))
-        if not isinstance(self._validation_data, dict):
-            return self._validation_data
-        if len(self._validation_data) == 1:
-            return list(self._validation_data.values())[0]
-        
-        dataset_names = [k for k in self._validation_data.keys()]
-
-        flattened_data = pd.concat(
-            [self._validation_data[n].data for n in dataset_names]
-        ).set_index(
-            pd.MultiIndex.from_tuples([
-                (n, l) for n in dataset_names
-                for l in sorted(self._validation_data[n].data.region)
-            ],
-            names=("dataset", "region"))
-        )[["mean", "std"]]
-
-        return flattened_data
-
-    @property
-    def primary_dataset(self):
-        """..."""
-        return self._validation_data[self._primary_dataset]
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
