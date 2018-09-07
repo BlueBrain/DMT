@@ -9,19 +9,19 @@ against. The initializer of a validation class will accept a data object.
 
 from abc import ABC, abstractmethod
 from dmt.aii import Callable, AIBase
+from dmt.analysis import Analysis
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 
 @document_fields
-class ValidationTestCaseBase(Callable):
+class ValidationTestCase(Analysis):
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
     Provide validation logic in method '__call__'.
     Mark all model measurements that validation needs
-    with decorator '@adapter.requires', and use them like this,
-    'measurement_data = self.get_measurement_data(model, parameters)'.
+    with decorator '@adaptermethod', and use them like any other method.
     """
     author = Field(
         __name__ = "author",
@@ -89,12 +89,11 @@ class ValidationTestCaseBase(Callable):
         pass
 
 
-@document_fields
-class ValidationTestCase(ValidationTestCaseBase, AIBase):
-    """"Just a class that mixes two.
-    ValidationTestCaseBase is useful by itself. Mixing in AIBase
-     will add adapter interface goodies."""
-    pass
+#class ValidationTestCase(ValidationTestCaseBase, AIBase):
+#    """"Just a class that mixes two.
+#    ValidationTestCaseBase is useful by itself. Mixing in AIBase
+#     will add adapter interface goodies."""
+#    pass
 
 
 @document_fields

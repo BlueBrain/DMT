@@ -2,7 +2,7 @@
 import os
 import pandas as pd
 import numpy as np
-from dmt.validation.test_case import SinglePhenomenonValidation
+from dmt.analysis.validation.test_case import SinglePhenomenonValidation
 from neuro_dmt.validations.circuit.composition \
     import SpatialCompositionValidation
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError

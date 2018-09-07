@@ -22,7 +22,13 @@ class Callable(ABC):
     def __init__(self, *args, **kwargs):
         """init"""
         super(Callable, self).__init__() #or don't do anything
-    
+
+    @abstractmethod
+    def __call__(self, *args, **kwargs):
+        """Callabele must have a call method."""
+        pass
+
+
 def requiredmethod(method):
     """Decorator, to be used to decorate a method of a class that must
     be included in that class's AdapterInterface."""
