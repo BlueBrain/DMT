@@ -74,8 +74,6 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
 
         if not isinstance(data, dict):
             return data
-        if len(data) == 1:
-            return list(data.values())[0]
         
         dataset_names = [k for k in data.keys()]
 

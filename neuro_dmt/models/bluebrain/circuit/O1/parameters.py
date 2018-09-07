@@ -1,5 +1,6 @@
 """Parameters used for measurements.
 """
+from abc import abstractmethod
 import numpy as np
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameters import GroupParameter
@@ -10,25 +11,60 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 
 
-class CorticalLayer(GroupParameter):
-    """Data and methods associated with cortical layers in a brain region
-    circuit."""
+class Layer(GroupParameter):
+    """A generic layer in any brain region."""
     label = "Layer"
-    value_type = int
-    grouped_variable = Record(__type__ = RegionOfInterest, name = "roi")
+    grouped_variable = Record(__type__=RegionOfInterest, name="roi")
 
     def __init__(self, circuit, *args, **kwargs):
         """..."""
         self._circuit = circuit
         self._helper = BlueBrainModelHelper(circuit=circuit)
-                                            
-        super(CorticalLayer, self).__init__(*args, **kwargs)
-        self._values = set([1, 2, 3, 4, 5, 6])
+
+
+        super(Layer, self).__init__(*args, **kwargs)
 
     @property
     def values(self):
         """..."""
         return self._values
+
+    @abstractmethod
+    def query(self, layer):
+        """Query to be used by bluepy"""
+        pass
+
+    def random_grouped_values(self, layer, *args, **kwargs):
+        """All the values of the grouped variable covered by value 'value' of
+        this CorticalLayer.
+        This is implemented as an infinite stream of randomly generated
+        regions of interest in a layer.
+        """
+        target = kwargs.get("target", None)
+        sampled_box_shape = kwargs.get("sampled_box_shape",
+                                       np.array([50., 50., 50.]))
+        q = self.query(layer, target=target)
+        bounds = self._helper.geometric_bounds(q)
+        if bounds is None:
+            return []
+                  
+        half_box = sampled_box_shape / 2.0
+        region_to_explore = Cuboid(bounds.bbox[0] + half_box,
+                                   bounds.bbox[1] - half_box)
+
+        while True:
+            loc = random_location(region_to_explore)
+            yield Cuboid(loc - half_box, loc + half_box) #or a Cube?
+
+
+class CorticalLayer(Layer):
+    """Data and methods associated with cortical layers in a brain region
+    circuit."""
+    value_type = int
+    def __init__(self, circuit, *args, **kwargs):
+        """..."""
+        super(CorticalLayer, self).__init__(circuit, *args, **kwargs)
+        self._values = set([1, 2, 3, 4, 5, 6])
 
     def is_valid(self, value):
         """Is 'value' a valid value?"""
@@ -52,23 +88,30 @@ class CorticalLayer(GroupParameter):
             6: "VI"
         }[value]
 
-    def random_grouped_values(self, layer, *args, **kwargs):
-        """All the values of the grouped variable covered by value 'value' of
-        this CorticalLayer.
-        This is implemented as an infinite stream of randomly generated
-        regions of interest in a layer.
-        """
-        target = kwargs.get("target", None)
-        sampled_box_shape = kwargs.get("sampled_box_shape",
-                                       np.array([50., 50., 50.]))
-        
-        q = {"layer": layer, "$target": target} if target else {"layer": layer}
-        bounds = self._helper.geometric_bounds(q).bbox
-                  
-        half_box = sampled_box_shape / 2.0
-        region_to_explore = Cuboid(bounds[0] + half_box, bounds[1] - half_box)
+    def query(self, layer, target=None):
+         return ({"layer": layer, "$target": target}
+                 if target else {"layer": layer})
 
-        while True:
-            loc = random_location(region_to_explore)
-            yield Cuboid(loc - half_box, loc + half_box) #or a Cube?
 
+class HippocampalLayer(Layer):
+    value_type = str
+    def __init__(self, circuit, *args, **kwargs):
+        """..."""
+        super(HippocampalLayer, self).__init__(circuit, *args, **kwargs)
+        self._values = set(["SLM", "SR", "SP", "SO"])
+
+    def is_valid(self, value):
+        """..."""
+        return value in self._values
+
+    def repr(self, value):
+        """..."""
+        return value
+
+    def order(self, value):
+        """..."""
+        return dict(SLM=0, SR=1, SP=2, SO=3)[value]
+
+    def query(self, layer, target=None):
+         return ({"layer": layer, "$target": target}
+                 if target else {"layer": layer})

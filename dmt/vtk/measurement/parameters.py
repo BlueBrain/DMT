@@ -153,6 +153,12 @@ def get_grouped_values(group_params, *args, **kwargs):
     dict
     """
     n = kwargs.get("sample_size", 20)
+    for p in group_params:
+        for v in p.values:
+            xs = [x.bbox
+                  for x in take(n, p.random_grouped_values(v, *args, **kwargs))]
+            print("value grouped under {} value {} found {}".format(v, p, len(xs)))
+
     def __get_tuples(index):
         """..."""
         if index == len(group_params):

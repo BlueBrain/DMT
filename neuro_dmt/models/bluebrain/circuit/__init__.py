@@ -66,7 +66,10 @@ class BlueBrainModelHelper:
             return cell_query
 
         cell_positions = self._cells.positions(with_target(cell_query))
-        return cell_collection.bounds(cell_positions)
+        if cell_positions.shape[0] > 0: 
+            return cell_collection.bounds(cell_positions)
+
+        return None
 
     def get_segments(self, roi):
         """Get segments in a region."""
@@ -96,7 +99,7 @@ class BlueBrainModelHelper:
         """Aggregated data-frame, by mtype."""
         cell_gids = df.gid.unique()
         mdf = df.set_index('gid')\
-                .join(self._cells.get(cell_gids, [Cell.MTYPE]))
+                .join(self._cells.get(cell_gids, properties=[Cell.MTYPE]))
         grouped_by_mtype = mdf.groupby(u'mtype')
         mtypes = mdf.mtype.unique()
 

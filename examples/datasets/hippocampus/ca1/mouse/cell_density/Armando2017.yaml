@@ -12,32 +12,20 @@ version: "v1.0"
 
 data:
   SLM:
-    SLM_PPA:
-      density: 167.0976650626
+    SLM_PPA: 167.0976650626
   SR:
-    SR_IS1:
-      density: 758.9428677503
-    SR_SCA:
-      density: 71.4299169647
+    SR_IS1: 758.9428677503
+    SR_SCA: 71.4299169647
   SP:
-    SP_PC:
-      density: 264000
-    SP_PVBC:
-      density: 4686.6287328556
-    SP_CCKBC:
-      density: 3050.96988034
-    SP_BS:
-      density: 1423.7859441587
-    SP_AA:
-      density: 1245.8127011388
-    SP_Ivy:
-      density: 7466.4012904986
+    SP_PC: 264000.00
+    SP_PVBC: 4686.6287328556
+    SP_CCKBC: 3050.96988034
+    SP_BS: 1423.7859441587
+    SP_AA: 1245.8127011388
+    SP_Ivy: 7466.4012904986
   SO:
-    SO_OLM:
-      density: 485.7510719352
-    SO_BS:
-      density: 156.9805293449
-    SO_Tri:
-      density: 207.3327746065
-    SO_BP:
-      density: 56.2760388218
+    SO_OLM: 485.7510719352
+    SO_BS: 156.9805293449
+    SO_Tri: 207.3327746065
+    SO_BP: 56.2760388218
+      

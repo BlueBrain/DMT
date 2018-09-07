@@ -20,6 +20,8 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
+from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.measurement.parameters import GroupParameter
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -54,16 +56,18 @@ class BlueBrainModelAdapter:
     region_label = 'layer'
     region_values = [1, 2, 3, 4, 5, 6]
 
-    def __init__(self, sampled_box_shape, sample_size, *args, **kwargs):
+    def __init__(self, sampled_box_shape, sample_size,
+                 *args, **kwargs):
         """
         Parameters
         ------------------------------------------------------------------------
+        spatial_parameter :: Callable #should return a GroupParameter
         sampled_box_shape :: np.ndarray[3D]#shape of the regions to sample
         """
-
         self._sampled_box_shape = sampled_box_shape
         self._sample_size = sample_size
         self._model_label = kwargs.get('model_label', 'blue_brain_model')
+        self._spatial_parameter = kwargs.get("spatial_parameter", None)
         try:
             super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
         except:
@@ -73,20 +77,33 @@ class BlueBrainModelAdapter:
         """method required by adapter interface."""
         return self._model_label
 
+    @property
+    def spatial_parameter(self):
+        """..."""
+        return self._spatial_parameter
+
+    @spatial_parameter.setter
+    def spatial_parameter(self, value):
+        """..."""
+        if not isinstance(value, GroupParameter):
+            raise ValueError("{} not a {}".format(value, "GroupParameter"))
+        self._spatial_parameter = value
+
     def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
         return StatisticalMeasurement(method, by)(*args, **kwargs)
 
     def spatial_measurement(self, method, circuit, target=None):
         """..."""
-        cortical_layer = CorticalLayer(circuit)
+        spatial_parameter = self._spatial_parameter(circuit)
         measurement\
-            = self.statistical_measurement(method, by=cortical_layer,
+            = self.statistical_measurement(method,
+                                           by=spatial_parameter,
                                            target=target,
                                            sampled_box_shape=self._sampled_box_shape,
                                            sample_size=self._sample_size)
         old_index = measurement.data.index
-        measurement.data.index = [cortical_layer.repr(i) for i in old_index]
+        measurement.data.index = [spatial_parameter.repr(i) for i in old_index]
         measurement.data.index.name = old_index.name
         return measurement
 

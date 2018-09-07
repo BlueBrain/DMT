@@ -29,7 +29,11 @@ class BarPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         compdata = self._data
+        print("plot model data")
+        print(self._data)
         datasets = self._comparison_data
+        print("validation datasets")
+        print(datasets)
         compared_values = self.compared_values
         comparison_level = self._comparison_level
         given = self._given_vars
