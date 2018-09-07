@@ -39,7 +39,8 @@ class Plot(ABC):
         self.title = kwargs.get('title', self.__class__.__name__)
         self.xlabel = kwargs.get('xlabel', 'X')
         self.ylabel = kwargs.get('ylabel', 'Y')
-        self.output_dir_path = kwargs.get('output_dir_path', os.getcwd())
+        self.output_dir_path = kwargs.get('output_dir_path',
+                                          os.path.join(os.getcwd(), "report"))
         self.legend_loc = kwargs.get('legend_loc', 'upper left')
         self.height = kwargs.get('height', 10)
         self.width = kwargs.get('width', None)

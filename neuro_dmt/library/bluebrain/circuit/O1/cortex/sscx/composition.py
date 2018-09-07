@@ -46,6 +46,11 @@ class BlueBrainValidation(ABC):
                                     model_label=model_name)
         self._output_report_path = output_report_path
 
+    @abstractmethod
+    def get_validation(self, reference_data_path):
+        """..."""
+        pass
+
     def __call__(self, reference_data_path, circuit_config_path):
         """...Call Me..."""
         circuit = Circuit(circuit_config_path)
@@ -67,5 +72,6 @@ class BlueBrainCellDensityValidation(BlueBrainValidation):
         from neuro_dmt.validations.circuit.composition.by_layer \
             import CellDensityValidation
         validation_data = reference_datasets.cell_density(reference_data_path)
-        return CellDensityValidation(validation_data, adapter=self._adapter)
+        return CellDensityValidation(validation_data,
+                                     adapter=self._adapter)
                                        

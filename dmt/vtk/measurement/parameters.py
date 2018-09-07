@@ -10,7 +10,7 @@ import collections
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.descriptor import ClassAttribute
-from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.collections import Record, take
 
 class Parameter(ABC):
     """Base class to define a measurement parameter.
@@ -104,19 +104,17 @@ class GroupParameter(Parameter):
         super(GroupParameter, self).__init__(*args, **kwargs)
 
     @abstractmethod
-    def grouped_values(self, value):
+    def random_grouped_values(self, value):
         """All the values of the grouped variable covered by value 'value' of
-        this GroupParameter. Please return a generator when you expect a large
-        number of grouped values."""
-        pass
-        
-    @abstractmethod
-    def __call__(self, model, n=None):
-        """Collect a sample of the grouped type in the context of a model.
+        this GroupParameter. 
+
+        Parameters
+        ------------------------------------------------------------------------
+        value :: self.value_type #
 
         Return
         ------------------------------------------------------------------------
-        grouped_variable.__type__
+        Generator[Tuple(self.value_type, self.grouped_variable.type)]
         """
         pass
 
@@ -154,13 +152,15 @@ def get_grouped_values(group_params, *args, **kwargs):
     ----------------------------------------------------------------------------
     dict
     """
+    n = kwargs.get("sample_size", 20)
     def __get_tuples(index):
         """..."""
         if index == len(group_params):
             return ()
         p0 = group_params[index]
-        vs0 = [[(p0.grouped_variable.name, grouped_value), (p0.label, value)]
-               for (value, grouped_value) in p0(*args, **kwargs)]
+        vs0 = [[(p0.grouped_variable.name, gv), (p0.label, v)]
+               for v in p0.values
+               for gv in take(n, p0.random_grouped_values(v, *args, **kwargs))]
         if index + 1 == len(group_params):
             return vs0
         else:

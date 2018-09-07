@@ -33,6 +33,10 @@ class Record:
         msg += "\n"
         return msg
 
+    def get(self, key, default=None):
+        """Make Record behave like a dict"""
+        return getattr(self, key, default)
+
 class FrozenDict(collections.Mapping):
     """A dictionary that cannot be changed."""
 

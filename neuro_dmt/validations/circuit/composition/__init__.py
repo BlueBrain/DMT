@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.utils.brain_region import BrainRegion
-from dmt.vtk.plotting import Plot
+from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
@@ -27,9 +27,9 @@ class SpatialCompositionValidation:
     plotter_type = ClassAttribute(
         __name__ = "plotter_type",
         __type__ = type,
-        __is_valid_value__ = lambda ptype: issubclass(ptype, Plot),
+        __is_valid_value__ = lambda ptype: issubclass(ptype, ComparisonPlot),
         __doc__ = """A subclass of {} to be used plot the results of
-        this validation.""".format(Plot)
+        this validation.""".format(ComparisonPlot)
     )
     region_type = ClassAttribute(
         __name__ = "region_type",
@@ -46,11 +46,17 @@ class SpatialCompositionValidation:
 
        Arguments
        -------------------------------------------------------------------------
-       validation_data :: List[Record(measurement_label :: String,
-       ~                              region_label :: String,
-       ~                              data :: DataFrame["region", "mean", "std"])],
-       ~                              citation :: Citation,
-       ~                              what :: String)]
+       validation_data :: Either[
+       ~   Record[data :: Dict[String -> MeasurementRecord], primary :: String],
+       ~   Dict[String -> MeasurementRecord]
+       ]
+       where
+       MeasurementRecord = List[Record(measurement_label :: String,
+       ~                               region_label :: String,
+       ~                               data :: DataFrame["mean", "std"])],
+       ~                               citation :: Either[Citation, String],
+       ~                               uri :: String,
+       ~                               what :: String)]
        -------------------------------------------------------------------------
 
        Keyword Arguments
@@ -78,11 +84,14 @@ class SpatialCompositionValidation:
         kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
                                            model_measurement.units)
         kwargs.update(self.plot_customization)
-
-        plotting_datasets = [model_measurement] + self.validation_data
-        plotter = self.plotter_type(**kwargs)
-
-        return plotter.plot(*plotting_datasets)
+        cdf = self.validation_data
+        plotter = self.plotter_type(Record(data=model_measurement.data,
+                                           label=model_measurement.label),
+                                    *args, **kwargs)\
+                      .comparing("dataset")\
+                      .against(self.validation_data)\
+                      .for_given("region")
+        return plotter.plot()
 
     def get_verdict(self, p):
         """Use p-value threshold to judge if the validation was a success.
@@ -112,21 +121,23 @@ class SpatialCompositionValidation:
         from scipy.special import erf
         from numpy import abs, sqrt
 
-        real_measurement = self.validation_data[0]
-        delta_mean = abs(
-            model_measurement.data["mean"] - real_measurement.data["mean"]
-        )
-        stdev = sqrt(
-            model_measurement.data["std"]**2 + real_measurement.data["std"]**2
-        )
-        z_score = delta_mean / stdev
-        pval = 1. - erf(z_score)
-        return pd.DataFrame(dict(
-            delta_mean = delta_mean,
-            std = stdev,
-            z_score = z_score,
-            pvalue = pval
-        ))
+        real_measurement = self.primary_dataset
+        if real_measurement is not None:
+            delta_mean = abs(
+                model_measurement.data["mean"] - real_measurement.data["mean"]
+            )
+            stdev = sqrt(
+                model_measurement.data["std"]**2 + real_measurement.data["std"]**2
+            )
+            z_score = delta_mean / stdev
+            pval = 1. - erf(z_score)
+            return pd.DataFrame(dict(
+                delta_mean = delta_mean,
+                std = stdev,
+                z_score = z_score,
+                pvalue = pval
+            ))
+        return pd.DataFrame()
 
     def pvalue(self, model_measurement):
         """Scalar valued  p-value.

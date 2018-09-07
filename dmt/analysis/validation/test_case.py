@@ -33,36 +33,58 @@ class ValidationTestCase(Analysis):
         data set, or the directory location of a validation data set, or none,
         but not both.
         """
-        self.__validation_data = kwargs.get('validation_data', None)
-        if (self.__validation_data is None and
-            'validation_data_location' in kwargs):
-            if not hasattr(self, '_load_validation_data'):
+        self._validation_data = self.get_validation_data(**kwargs)
+        self.author = kwargs.get('author', Author.anonymous)
+        super(ValidationTestCaseBase, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def get_validation_data(cls, **kwargs):
+        """Read validation data from keyword arguments.
+        This method is called by the initializer."""
+        if "validation_data" in kwargs:
+            return kwargs["validation_data"]
+        data_location = kwargs.get("validation_data_location", None)
+        if data_location is not None:
+            if not hasattr(self, "_load_validation_data"):
                 raise NotImplementedError(
                     "To load data from a directory location\
                     you must implement method '_load_validation_data' for {}"\
-                    .format(self.__class__.__name__)
+                    .format(cls.__name__)
                 )
-            self.__validation_data\
-                = self._load_validation_data(kwargs['validation_data_location'])
-
-        self.author = kwargs.get('author', Author.anonymous)
-
-        super(ValidationTestCaseBase, self).__init__(*args, **kwargs)
+            return self._load_validation_data(data_location)
+        return None
 
     @property
     def validation_data(self):
         """Data to validate a model against.
         However, you are allowed to create a validation without data!!!
-        ------------------------------------------------------------------------
-        Notes
+
+        Note
         ------------------------------------------------------------------------
         We talk of validation being against real data.
-        ------------------------------------------------------------------------
+        The form of the data will be known only to the concrete implementation
+        of ValidationTestCaseBase. Here we assume that data is expected by the
+        caller as it is.
+
+        Please, feel free to specialize this method to your implementation.
         """
         if self.__validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
-        return self.__validation_data
+        return self._validation_data
+
+    @property
+    def primary_dataset(self):
+        """Primary validation dataset
+
+        Note
+        ------------------------------------------------------------------------
+        We assume that self._validation_data is a singleton, and return it as
+        also the primary data set to validate with.
+
+        A deriving class may override.
+        """
+        return self._validation_data
 
     @property
     def reference_data(self):

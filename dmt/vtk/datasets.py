@@ -1,5 +1,6 @@
 import os
 import yaml
+from dmt.vtk.utils.collections import Record
 
 def load_file(fpath, load):
     """
@@ -9,7 +10,8 @@ def load_file(fpath, load):
     @param load:  function to load the file (like yaml.load, or json.load)
     @return: python dict
     """
-    with open(fpath) as f: return load(f)
+    with open(fpath) as f:
+        return Record(**load(f))
 
 def load_yaml(dpath, reference):
     """

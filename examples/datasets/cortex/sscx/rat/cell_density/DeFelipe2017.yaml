@@ -3,7 +3,7 @@
 # Current CircuitValidations assume a YAML, which I am porting the existing
 # datasets to, from Python classes in the legacy ValidationFramework.
 
-short_name: "DeFelipe2014"
+short_name: "DeFelipe2017"
 uri: >-
   ssh://ebmuller@bbpgit.epfl.ch/user/ebmuller/
   recipe-generation.git/data_archive/P14 NEUN-September-2014.xlsx

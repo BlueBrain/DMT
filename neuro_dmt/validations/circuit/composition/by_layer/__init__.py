@@ -10,7 +10,7 @@ from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.vtk.judgment.verdict import Verdict
-from dmt.vtk.plotting.bars import BarPlot
+from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.utils.brain_region import Layer
@@ -24,7 +24,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
     as a function of layer. This base class may be used for validation
     composition of any brain region that is composed of layers.
     """
-    plotter_type = BarPlot
+    plotter_type = BarPlotComparison
 
     def __init__(self, validation_data, *args, **kwargs):
         """
@@ -50,9 +50,62 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         super(ByLayerCompositionValidation, self)\
             .__init__(validation_data, *args, **kwargs)
 
+    @property
+    def primary_dataset(self):
+        """Override"""
+        if isinstance(self._validation_data, Record):
+            return self._validation_data.data[self._validation_data.primary]
+        if isinstance(self._validation_data, dict):
+            if len(self._validation_data) == 1:
+                return list(self._validation_data.values())[0]
+        if isinstance(self._validation_data, lsit):
+            return self._validation_data[0]
+        return self._validation_data
+
+    @property
+    def validation_data(self):
+        """Override"""
+        if self._validation_data is None:
+            raise Exception("Test case {} does not use validation data"\
+                            .format(self.__class__.__name__))
+        data = (self._validation_data.data
+                if isinstance(self._validation_data, Record) else
+                self._validation_data)
+
+        if not isinstance(data, dict):
+            return data
+        if len(data) == 1:
+            return list(data.values())[0]
+        
+        dataset_names = [k for k in data.keys()]
+
+        flattened_data = pd.concat(
+            [data[n].data for n in dataset_names]
+        ).set_index(
+            pd.MultiIndex.from_tuples([
+                (n, l) for n in dataset_names
+                for l in sorted(data[n].data.region)
+            ],
+            names=("dataset", "region"))
+        )[["mean", "std"]]
+
+        return flattened_data
+
+    @property
+    def validation_datasets(self):
+        """Return validation data as a dict."""
+        data = (self._validation_data.data
+                if isinstance(self._validation_data, Record) else
+                self._validation_data)
+        if isinstance(data, dict):
+            return data
+        if isinstance(data, list):
+            return {d.label: d for d in data}
+        return {data.label: data}
+        
     def data_description(self):
         """Describe the experimental data used for validation."""
-        return self.validation_data[0].what
+        return self.primary_dataset.what
      
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""
@@ -72,7 +125,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             validation_image_name = plot_name,
             author = self.author,
             caption = self.get_caption(model_measurement),
-            validation_datasets = {d.label: d for d in self.validation_data},
+            validation_datasets = self.validation_datasets,
             is_pass = verdict == Verdict.PASS,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval
