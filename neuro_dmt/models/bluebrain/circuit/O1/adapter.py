@@ -102,9 +102,17 @@ class BlueBrainModelAdapter:
                                            target=target,
                                            sampled_box_shape=self._sampled_box_shape,
                                            sample_size=self._sample_size)
+
+        missing = list(spatial_parameter.values - set(measurement.data.index))
+        missingdf = pd.DataFrame({'mean': len(missing) * [0, ],
+                                  'std': len(missing) * [0, ]})
+        missingdf.index = missing
+        measurement.data = pd.concat((measurement.data, missingdf))
+
         old_index = measurement.data.index
         measurement.data.index = [spatial_parameter.repr(i) for i in old_index]
         measurement.data.index.name = old_index.name
+
         return measurement
 
     def get_cell_density(self, circuit, target="mc2_Column"):
