@@ -92,16 +92,16 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         return flattened_data
 
     @property
-    def __validation_datasets(self):
-        """Return validation data as a list."""
+    def validation_datasets(self):
+        """Return validation data as a dict."""
         data = (self._validation_data.data
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
         if isinstance(data, dict):
-            return list(data.values())
-        if isinstance(data, list):
             return data
-        return [data]
+        if isinstance(data, list):
+            return {d.label: d for d in data}
+        return {data.label: data}
         
     def data_description(self):
         """Describe the experimental data used for validation."""
@@ -125,7 +125,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             validation_image_name = plot_name,
             author = self.author,
             caption = self.get_caption(model_measurement),
-            validation_datasets = self.__validation_datasets,
+            validation_datasets = self.validation_datasets,
             is_pass = verdict == Verdict.PASS,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval
