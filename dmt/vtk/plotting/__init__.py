@@ -47,7 +47,11 @@ class Plot(ABC):
         self.colors = kwargs.get('colors', ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
         self.file_name = kwargs.get('file_name', "report")
 
-
+    def with_customization(self, **kwargs):
+        """Update customization to the plot."""
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        return self
 
     @abstractmethod
     def plot(self, *args, **kwargs):

@@ -31,7 +31,7 @@ def get_reference_datasets(reference_data_dir):
 
     return Record(
         primary=defelipe2017.short_name,
-        data={
+        datasets={
             defelipe2017.short_name: with_metadata(defelipe2017,
                                                    summarized(
                                                        defelipe2017.density_means,

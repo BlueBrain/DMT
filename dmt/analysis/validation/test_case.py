@@ -35,7 +35,7 @@ class ValidationTestCase(Analysis):
         """
         self._validation_data = self.get_validation_data(**kwargs)
         self.author = kwargs.get('author', Author.anonymous)
-        super(ValidationTestCaseBase, self).__init__(*args, **kwargs)
+        super(ValidationTestCase, self).__init__(*args, **kwargs)
 
     @classmethod
     def get_validation_data(cls, **kwargs):

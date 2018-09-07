@@ -14,7 +14,7 @@ class BarPlotComparison(ComparisonPlot):
         """..."""
         super(BarPlotComparison, self).__init__(*args, **kwargs)
 
-    def plot(self, save=True):
+    def plot(self, with_customiztion=None, save=True):
         """
         Compare this ComparisonPlot's data against those in datasets.
 

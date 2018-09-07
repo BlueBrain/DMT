@@ -54,7 +54,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
     def primary_dataset(self):
         """Override"""
         if isinstance(self._validation_data, Record):
-            return self._validation_data.data[self._validation_data.primary]
+            return self._validation_data.datasets[self._validation_data.primary]
         if isinstance(self._validation_data, dict):
             if len(self._validation_data) == 1:
                 return list(self._validation_data.values())[0]
@@ -68,7 +68,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         if self._validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
-        data = (self._validation_data.data
+        data = (self._validation_data.datasets
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
 
@@ -94,7 +94,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
     @property
     def validation_datasets(self):
         """Return validation data as a dict."""
-        data = (self._validation_data.data
+        data = (self._validation_data.datasets
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
         if isinstance(data, dict):

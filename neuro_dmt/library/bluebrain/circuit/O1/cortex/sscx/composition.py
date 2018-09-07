@@ -72,6 +72,6 @@ class BlueBrainCellDensityValidation(BlueBrainValidation):
         from neuro_dmt.validations.circuit.composition.by_layer \
             import CellDensityValidation
         validation_data = reference_datasets.cell_density(reference_data_path)
-        return CellDensityValidation(validation_data,
-                                     adapter=self._adapter)
+        return CellDensityValidation(validation_data, adapter=self._adapter)
+                                     
                                        

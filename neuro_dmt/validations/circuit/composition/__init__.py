@@ -86,11 +86,12 @@ class SpatialCompositionValidation:
         kwargs.update(self.plot_customization)
         cdf = self.validation_data
         plotter = self.plotter_type(Record(data=model_measurement.data,
-                                           label=model_measurement.label),
-                                    *args, **kwargs)\
+                                           label=model_measurement.label))\
                       .comparing("dataset")\
                       .against(self.validation_data)\
-                      .for_given("region")
+                      .for_given("region")\
+                      .with_customization(**kwargs)
+
         return plotter.plot()
 
     def get_verdict(self, p):
