@@ -14,6 +14,12 @@ class BarPlotComparison(ComparisonPlot):
         """..."""
         super(BarPlotComparison, self).__init__(*args, **kwargs)
 
+    @property
+    def compared_datasets(self):
+        return (cv.label,
+                self._comparison_data.xs(cv.name, level=self._comparison_level)
+                for cv in self.compared_values)
+
     def plot(self, with_customiztion=None, save=True):
         """
         Compare this ComparisonPlot's data against those in datasets.
@@ -29,39 +35,21 @@ class BarPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         compdata = self._data
-        print("plot model data")
-        print(self._data)
         datasets = self._comparison_data
-        print("validation datasets")
-        print(datasets)
         compared_values = self.compared_values
         comparison_level = self._comparison_level
-        given = self._given_vars
         if compdata.shape[0] == 0:
             raise ValueError("Empty comparison data.")
 
         fig = golden_figure(height=self.height, width=self.width)
 
         nbar =  1 + len(compared_values)
-        print("make {} bars".format(nbar))
         width = 1.0 / (1.0 + nbar)
-        
-        if given:
-           if isinstance(given, list): 
-               xs = datasets.index.levels[ datasets.index.names.index(given[0])]
-           else:
-               xs = datasets.index.levels[ datasets.index.names.index(given)]
-        else:
-            xs = datasets.index
 
-        g = given[0] if isinstance(given, list) else given
-        print("given ", g)
-        i = datasets.index.names.index(g) if g else None
-        xs = self._data.index if not given else datasets.index.levels[i]
-        print("x axis will be ", xs)
+        xs = self.given_var_values
         x = np.arange(len(xs))
-        print("that resolves to ", x)
         x0 = x - (nbar / 2) * width
+
         def _plot_index(i, df, label):
             return plt.bar(x0 + index * width,
                            df["mean"].values,
@@ -72,11 +60,8 @@ class BarPlotComparison(ComparisonPlot):
         index = 1
         _plot_index(index, self._data, "in-silico")
         index += 1
-        for cv in compared_values:
-            df = datasets.xs(cv.name, level=comparison_level)
-            print(cv)
-            print(df)
-            a_plot = _plot_index(index, df, cv.label)
+        for data_label, data_frame in self.compared_datasets:
+            a_plot = _plot_index(index, data_frame, data_label)
             index += 1
 
         plt.title(self.title, fontsize=24)

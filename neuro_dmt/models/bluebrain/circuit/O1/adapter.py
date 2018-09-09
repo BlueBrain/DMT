@@ -109,6 +109,7 @@ class BlueBrainModelAdapter:
         missingdf.index = missing
         measurement.data = pd.concat((measurement.data, missingdf))
 
+        #we may want to use GroupParameter.order at this point...
         old_index = measurement.data.index
         measurement.data.index = [spatial_parameter.repr(i) for i in old_index]
         measurement.data.index.name = old_index.name
