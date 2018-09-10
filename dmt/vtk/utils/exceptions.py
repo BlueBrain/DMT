@@ -4,10 +4,12 @@ class RequiredKeywordArgumentError(KeyError):
         self.message = key
         super(RequiredKeywordArgumentError, self).__init__(key, *args)
 
+
 class RequiredArgumentError(KeyError):
     def __init__(self, pos, argname, *args):
         self.message = argname + " at pos " + str(pos)
         super(RequiredArgumentError, self).__init__(self.message, *args)
+
 
 class InvalidArgumentError(Exception):
     pass
@@ -22,3 +24,9 @@ class InvalidArgumentTypeError(Exception):
 
 class InvaldTraitDefinitionError(Exception):
     pass
+
+
+class ValueNotSetError(Exception):
+    def __init__(self, attribute, obj, *args):
+        self.message = "Attribute {} of {} was not set.".format(attribute, obj)
+

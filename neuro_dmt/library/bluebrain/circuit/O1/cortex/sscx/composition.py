@@ -12,6 +12,7 @@ from neuro_dmt.library.bluebrain.circuit import BlueBrainValidation
 from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.O1.parameters import CorticalLayer
 
+
 class BlueBrainCellDensityValidation(BlueBrainValidation):
     """..."""
     model_adapter = BlueBrainModelAdapter

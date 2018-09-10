@@ -85,7 +85,7 @@ class BlueBrainModelAdapter:
     @spatial_parameter.setter
     def spatial_parameter(self, value):
         """..."""
-        if not isinstance(value, GroupParameter):
+        if not issubclass(value, GroupParameter):
             raise ValueError("{} not a {}".format(value, "GroupParameter"))
         self._spatial_parameter = value
 
@@ -103,17 +103,19 @@ class BlueBrainModelAdapter:
                                            sampled_box_shape=self._sampled_box_shape,
                                            sample_size=self._sample_size)
 
-        missing = list(spatial_parameter.values - set(measurement.data.index))
+        data = measurement.data.copy()
+        missing = list(spatial_parameter.values - set(data.index))
         missingdf = pd.DataFrame({'mean': len(missing) * [0, ],
-                                  'std': len(missing) * [0, ]})
-        missingdf.index = missing
-        measurement.data = pd.concat((measurement.data, missingdf))
-
-        #we may want to use GroupParameter.order at this point...
-        old_index = measurement.data.index
-        measurement.data.index = [spatial_parameter.repr(i) for i in old_index]
-        measurement.data.index.name = old_index.name
-
+                                  'std': len(missing) * [0, ]})\
+                      .set_index(pd.Index(missing, name=data.index.name))
+        full_df = pd.concat((data, missingdf))
+        index = pd.Index([spatial_parameter.repr(i) for i in full_df.index],
+                         dtype='object', name=full_df.index.name)
+        full_df.index = index
+        print("Measured data.")
+        print(full_df)
+        full_df["order"] = [spatial_parameter.order(i) for i in full_df.index]
+        measurement.data = full_df.sort_values(by="order")[["mean", "std"]]
         return measurement
 
     def get_cell_density(self, circuit, target="mc2_Column"):

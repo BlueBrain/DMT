@@ -2,6 +2,7 @@
 from abc import abstractmethod
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.exceptions import ValueNotSetError
 
 class ComparisonPlot(Plot):
     """Abstract base class for Specialized Plot for a comparison."""
@@ -50,11 +51,24 @@ class ComparisonPlot(Plot):
         return idx.levels[idx.names.index(level)]
 
     @property
+    def comparison_data(self):
+        """..."""
+        if self._comparison_data is None:
+            raise ValueError("{} has no comparison data!".format(self))
+        return self._comparison_data
+
+    @property
+    def comparison_level(self):
+        """..."""
+        if self._comparison_level is None:
+            raise ValueNotSetError("_comparison_level", self)
+    
+    @property
     def compared_values(self):
         if self._compared_values:
             return self._compared_values
-        return (Record(name=name, label=name)
-                for name in self.level_values(self._comparison_level))
+        return [Record(name=name, label=name)
+                for name in self.level_values(self._comparison_level)]
 
     @property
     def given(self):

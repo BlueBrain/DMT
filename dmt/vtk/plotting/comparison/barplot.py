@@ -16,9 +16,10 @@ class BarPlotComparison(ComparisonPlot):
 
     @property
     def compared_datasets(self):
-        return (cv.label,
-                self._comparison_data.xs(cv.name, level=self._comparison_level)
-                for cv in self.compared_values)
+        for cv in self.compared_values:
+            label = cv.label
+            data = self.comparison_data.xs(cv.name, level=self.comparison_level)
+            yield (label, data)
 
     def plot(self, with_customiztion=None, save=True):
         """
@@ -48,7 +49,7 @@ class BarPlotComparison(ComparisonPlot):
 
         xs = self.given_var_values
         x = np.arange(len(xs))
-        x0 = x - (nbar / 2) * width
+        x0 = x - (1 + nbar / 2) * width
 
         def _plot_index(i, df, label):
             return plt.bar(x0 + index * width,
