@@ -91,7 +91,9 @@ class BlueBrainModelAdapter:
 
     def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
-        return StatisticalMeasurement(method, by)(*args, **kwargs)
+        sm = StatisticalMeasurement(method, by)(*args, **kwargs)
+        sm.data = by.filled(sm.data)
+        return sm
 
     def spatial_measurement(self, method, circuit, target=None):
         """..."""
@@ -102,20 +104,6 @@ class BlueBrainModelAdapter:
                                            target=target,
                                            sampled_box_shape=self._sampled_box_shape,
                                            sample_size=self._sample_size)
-
-        data = measurement.data.copy()
-        missing = list(spatial_parameter.values - set(data.index))
-        missingdf = pd.DataFrame({'mean': len(missing) * [0, ],
-                                  'std': len(missing) * [0, ]})\
-                      .set_index(pd.Index(missing, name=data.index.name))
-        full_df = pd.concat((data, missingdf))
-        index = pd.Index([spatial_parameter.repr(i) for i in full_df.index],
-                         dtype='object', name=full_df.index.name)
-        full_df.index = index
-        print("Measured data.")
-        print(full_df)
-        full_df["order"] = [spatial_parameter.order(i) for i in full_df.index]
-        measurement.data = full_df.sort_values(by="order")[["mean", "std"]]
         return measurement
 
     def get_cell_density(self, circuit, target="mc2_Column"):

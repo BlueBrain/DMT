@@ -90,14 +90,25 @@ class Parameter(ABC):
     def filled(self, dataframe, ascending=True):
         """Filled and sorted Dataframe by index,
         which is of the type of this Parameter."""
+        if dataframe.index.name != self.label:
+            raise ValueError(
+                "Cannot fill values.'dataframe' index {} != {} "\
+                .format(dataframe.index.name, self.label)
+            )
+                                                  
+        IndexType = type(dataframe.index)
         missing = list(self.values - set(dataframe.index))
         missing_df = pd.DataFrame({'mean': len(missing) * [0.],
-                                   'std': len(missing) * [0.]})
-        full_df = pd.concat(dataframe, missing_df)
+                                   'std': len(missing) * [0.]})\
+                       .set_index(IndexType(missing,
+                                            dtype=dataframe.index.dtype,
+                                            name=self.label))
+        full_df = pd.concat([dataframe, missing_df])
         index = pd.Index([self.repr(i) for i in full_df.index],
                          dtype="object", name=self.label)
+        print("index {}".format(index))
+        full_df["order"] = [self.order(v) for v in index]
         full_df.index = index
-        full_df["order"] = [self.order(v) for v in dataframe.index]
         return full_df.sort_values(by="order")[["mean", "std"]]
 
 
