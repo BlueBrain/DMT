@@ -1,4 +1,5 @@
 """Logging utilities."""
+import sys
 import os
 import time
 from dmt.vtk.utils.collections import Record
@@ -37,6 +38,11 @@ class Logger:
                                           two_char(now.tm_min),
                                           two_char(now.tm_sec))
 
+    @staticmethod
+    def err_print(*args, **kwargs):
+        """Print to stderr"""
+        print(*args, file=sys.stderr, **kwargs)
+
     def __init__(self, name=None,
                  output_dir_path=None, file_name=None,
                  *args, **kwargs):
@@ -62,7 +68,7 @@ class Logger:
         """
         msg = "{} {}:: {}"\
               .format(Logger.timestamp(time.localtime()), msg_type, msg)
-        print(msg)
+        Logger.err_print(msg)
         if self._in_file:
             with open(self._in_file, "a")  as f:
                 f.write("{}\n".format(msg))

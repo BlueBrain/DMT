@@ -54,12 +54,16 @@ class BlueBrainValidation(ABC):
         """..."""
         pass
 
-    def __call__(self, reference_data_path, circuit_config_path):
+    def __call__(self, reference_data_path, circuit_config_path,
+                 plotter_type=None):
         """...Call Me..."""
         print("{} called".format(self))
         circuit = Circuit(circuit_config_path)
 
         validation = self.get_validation(reference_data_path)
+        print("""Blue Brain validation for {},
+        with plotter_type {}""".format(validation.validated_phenomenon.name,
+                                       validation.plotter_type.__name__))
 
         report = validation(circuit)
 
