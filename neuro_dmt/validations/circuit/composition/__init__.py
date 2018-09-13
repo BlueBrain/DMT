@@ -84,7 +84,6 @@ class SpatialCompositionValidation:
         kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
                                            model_measurement.units)
         kwargs.update(self.plot_customization)
-        cdf = self.validation_data
         plotter = self.plotter_type(Record(data=model_measurement.data,
                                            label=model_measurement.label))\
                       .comparing("dataset")\
@@ -196,16 +195,8 @@ class SpatialCompositionValidation:
         of SpatialCompositionValidation."""
         pass
 
-    def set_measurement_parameters(self, circuit_model):
-        """Set measurement parameters in the validation data.
-        Some parameters values (or their representation) in the validation data
-        may need adjustment for a given model.
-        In case you need to, just implement this method."""
-        pass
-
     def __call__(self, circuit_model, *args, **kwargs):
         """...Call Me..."""
-        self.set_measurement_parameters(circuit_model)
         model_measurement = self.get_measurement(circuit_model)
         report = self.get_report(model_measurement)
 

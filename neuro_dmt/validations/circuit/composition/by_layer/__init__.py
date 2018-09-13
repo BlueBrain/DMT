@@ -66,6 +66,54 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
 
         return self._validation_data
 
+    def _set_measurement_parameters(self, circuit_model):
+        """..."""
+
+        def __parameter_filled(p, dataframe):
+            """set parameter p for a single dataframe"""
+            return p.filled(dataframe)
+
+        data = (self._validation_data.data
+                if isinstance(self._validation_data, Record) else
+                self._validation_data)
+        if isinstance(data, dict):
+            self._validation_data = {k: }
+        if isinstance(data, list):
+            return {d.label: d for d in data}
+        return {data.label: data}
+        
+    @property
+    def set_parameters(self, dataframe):
+        """Set the parameters in the index of dataframe to
+        match the model's measurements.
+
+        Notes
+        ------------------------------------------------------------------------
+        What should decide how the plots, report, etc. look like? Customization
+        of reports, things like what symbols to represent 'Layer' with, Roman
+        or Hindu numerals? Should the customization be model side or
+        experimental side? 
+
+        Currently we let the modeler control the reports as it seemed natural
+        at the time of the current implementation. However, this conflicts with
+        a central theme of our design:
+
+        THE EXPERIMENTAL SIDE IMPLEMENTS VALIDATION.
+
+        After all, experiments are used to test our
+        beliefs about phenomena, and a model is just a complex and sophisticated
+        way of encoding our beliefs. Here, we think of beliefs as a joint
+        probability distribution of all the possible ways this world may be
+        organized.
+
+        As a result we have to handle the awkward situation of having the model
+        adapter handle experimental data to have their parameter representation
+        match that of the model's own measurement.
+        We plan the shift of this responsibility from modeling side to the side 
+        of experimenting to be our next big change.
+        """
+        
+
     @property
     def validation_data(self):
         """Override"""
@@ -100,23 +148,6 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             return {d.label: d for d in data}
         return {data.label: data}
         
-    def _set_measurement_parameters(self, circuit_model):
-        """..."""
-
-        def __parameter_filled(p, dataframe):
-            """set parameter p for a single dataframe"""
-            return p.filled(dataframe)
-
-        data = (self._validation_data.data
-                if isinstance(self._validation_data, Record) else
-                self._validation_data)
-        if isinstance(data, dict):
-            self._validation_data = {k: }
-        if isinstance(data, list):
-            return {d.label: d for d in data}
-        return {data.label: data}
-        
-
     def data_description(self):
         """Describe the experimental data used for validation."""
         return self.primary_dataset.what

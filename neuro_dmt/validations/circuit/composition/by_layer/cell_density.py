@@ -28,7 +28,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def set_measurement_parameters(self, circuit_model, dataframe):
+        def measurement_parameters(self, circuit_model, dataframe):
             """Set the spatial parameters in the index of 'dataframe',
             that were used for measurements.
 

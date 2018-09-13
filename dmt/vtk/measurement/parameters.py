@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 import collections
 import numpy as np
 import pandas as pd
-from dmt.vtk.utils.descriptor import ClassAttribute
+from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.utils.collections import Record, take
 from dmt.vtk.utils.pandas import flatten, level_values
 
@@ -28,45 +28,144 @@ class Parameter(ABC):
         __type__ = type,
         __doc__  = """Type of the values assumed by this Parameter."""
     )
-    @property
     @abstractmethod
-    def values(self):
+    def values(self, *args, *kwargs):
         """Values assumed by the model.
 
         Return
         -----------------------------------------------------------------------
-        set
+        iterable (generator for infinite parameters)
         """
         pass
 
     def __init__(self, *args, **kwargs):
         pass
 
-    @abstractmethod
     def is_valid(self, value):
-        """Is value 'v' an accepted value?"""
-        pass
+        """Is value 'v' an accepted value?
+        We provide a default value, the subclass may override."""
+        return isinstance(value, self.value_type)
 
-    @property
-    @abstractmethod
     def order(self, value):
         """
         Where is value in relation to other values of this Parameter?
-        Represented as an int.
-        Use ascending order, and positive values --- thus a value of 1 is
-        the smallest.
+        We provide a default implementation, assuming that value itself
+        is ordered. The user who knows better may adapt to her needs.
+        Return
+        ------------------------------------------------------------------------
+        <: OrderedType
+        """
+        return value
+
+    def repr(self, value):
+        """Representation of value 'value' of this Parameter.
+
+        Parameters
+        ------------------------------------------------------------------------
+        value :: ValueType #a value of this parameter.
+
+        Implementation Notes
+        ------------------------------------------------------------------------
+        We provide a default implementation. You may generalize it.
+        """
+        assert(self.is_valid(value))
+        return "{}".format(value)
+
+class Grouper:
+    """A parameter that groups another. For example in a brain,
+    Layer is a parameter that groups positions in a brain region.
+    """
+    grouped_variable = ClassAttribute(
+        __name__ = "grouped_type",
+        __type__ = Record,
+        __is_valid_value__ = (
+            lambda r: hasattr(r, '__type__') and hasattr(r, 'name')
+        ),
+        __doc__  = """Metadata for the variable grouped by this GroupParameter."""
+    )
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super(GroupParameter, self).__init__(*args, **kwargs)
+
+    @abstractmethod
+    def random_grouped_values(self, value):
+        """All the values of the grouped variable covered by value 'value' of
+        this GroupParameter. 
+
+        Parameters
+        ------------------------------------------------------------------------
+        value :: self.value_type #
 
         Return
         ------------------------------------------------------------------------
-        int #positive integer > 0 that represents the order of value. 
+        Generator[Tuple(self.value_type, self.grouped_variable.type)]
         """
         pass
 
-    @property
-    def order_dict(self):
+    def __call__(self, size=20):
+        """Return a Pandas Series of size 'size'."""
+
+
+
+class FiniteValuedParameter(Parameter):
+    """If the number of all possible values of a parameter is finite,
+    we can require certain finite data representations of its attributes,
+    and adapt Parameter abstractmethods."""
+    value_type = ClassAttribute(
+        __name__ = "value_type",
+        __type__ = type,
+        __doc__  = """Type of the values assumed by this Parameter."""
+    )
+    value_order = Field(
+        __name__ = "__value_order__",
+        __type__ = dict, 
+        __is_valid_value__ = lambda self, value_order_dict: all(
+            (isinstance(value, self.value_type) and
+             isinstance(order, int) and order >= 0)
+            for value, order in value_order_dict.items()
+        ),
+        __doc__="""A dict mapping values to their order.""" 
+    )
+    repr_dict = Field(
+        __name__ = "repr_dict",
+        __type__ = dict,
+        __is_valid_value__ = lambda self, vrdict: all(
+            isinstance(value, self.value_type) and isinstance(rep, str)
+            for value, rep in vrdict.items()
+        ),
+        __doc__="""A dict mapping values to their string representation. You
+        may not pass this value to this base class' initializer. There will be
+        a default implementation."""
+    )
+    def __init__(self, *args, **kwargs):
         """..."""
-        return {v: self.order(v) for v in self.values}
-    
+        self.value_order = kwargs.get("value_order", None)
+        self.repr_dict = kwargs.get("representation", dict())
+
+    @property
+    def values(self):
+        """..."""
+        return set(self.value_order.keys())
+
+    def is_valid(value):
+        """..."""
+        value in self.value_order
+
+    def order(self, value):
+        """Order to sort.
+        You can call this method with both value_type value and string value
+        returned by the repr method."""
+        if not self._is_valid(value):
+            raise ValueError("{} is not a valid value of this parameter."\
+                             format(value))
+        return self.value_order[value]
+
+    def repr(self, value):
+        """..."""
+        assert(self.is_valid(value))
+        return self.repr_dict.get(value, "{}".format(value))
+
+
     @property
     def ordered_values(self):
         """Ordered values 'vs'.
@@ -80,20 +179,6 @@ class Parameter(ABC):
         df = pd.DataFrame(values=values, order=[self.order(v) for v in values])\
                .sort(by="order")
         return list(df["values"])
-
-    @abstractmethod
-    def repr(self, value):
-        """Representation of value 'value' of this Parameter.
-
-        Parameters
-        ------------------------------------------------------------------------
-        value :: ValueType #a value of this parameter.
-
-        Implementation Notes
-        ------------------------------------------------------------------------
-        Implement this method as a class method.
-        """
-        pass
 
     def random_value(self, n=None):
         """Get n random values.
@@ -181,36 +266,6 @@ class Parameter(ABC):
         return self.sorted(full_df, ascending=ascending) if sorted else full_df
 
 
-class GroupParameter(Parameter):
-    """A parameter that groups another. For example in a brain,
-    Layer is a parameter that groups positions in a brain region.
-    """
-    grouped_variable = ClassAttribute(
-        __name__ = "grouped_type",
-        __type__ = Record,
-        __is_valid_value__ = (
-            lambda r: hasattr(r, '__type__') and hasattr(r, 'name')
-        ),
-        __doc__  = """Metadata for the variable grouped by this GroupParameter."""
-    )
-    def __init__(self, *args, **kwargs):
-        """..."""
-        super(GroupParameter, self).__init__(*args, **kwargs)
-
-    @abstractmethod
-    def random_grouped_values(self, value):
-        """All the values of the grouped variable covered by value 'value' of
-        this GroupParameter. 
-
-        Parameters
-        ------------------------------------------------------------------------
-        value :: self.value_type #
-
-        Return
-        ------------------------------------------------------------------------
-        Generator[Tuple(self.value_type, self.grouped_variable.type)]
-        """
-        pass
 
 
 def get_values(parameters):
