@@ -29,4 +29,3 @@ class InvaldTraitDefinitionError(Exception):
 class ValueNotSetError(Exception):
     def __init__(self, attribute, obj, *args):
         self.message = "Attribute {} of {} was not set.".format(attribute, obj)
-

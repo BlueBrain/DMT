@@ -46,7 +46,15 @@ class CellRatioValidation(ByLayerCompositionValidation):
             """
             pass
 
+
+        def get_spatial_parameter(self, circuit_model):
+            """Get the spatial parameter used."""
+            pass
+
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
         return self.adapter.get_cell_ratio(circuit_model)
+
+    def get_spatial_parameter(self, circuit_model):
+        return self.adapter.spatial_parameter

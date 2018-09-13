@@ -286,6 +286,8 @@
 
 
 * Previous work
+
+
   Of course there is SciUnitTest.
 
 ** Validation API
@@ -366,6 +368,165 @@
    in ~neuro_dmt~? We can start by writing that code under
    ~neuro_dmt/bbp_circuit/~, and move any generally applicable code to a more
    general location.
+
+  
+* Plotting
+  Plotting is an independent component of validation. We should strive to define
+  plotting classes that follow some grammar of graphics with clean semantics.
+
+** A grammar for plotting
+   You should be able to plot the same data in different forms, with a very high
+   level semantics. The grammar for plotting is a domain specific language for
+   plotting. 
+** Bar plots
+   Bar plots are fairly easy to produce in ~matplotlib~. We already have grouped
+   bars. We should review our bar plots and have it expose a clean interface
+   that we can then generalize to other kinds of plots. Lets start by learning
+   from ~ggplot~.
+** Cross Plot
+   This is a clever plot. It is applicable where we compare two data-sets, for
+   example model data against a single experimental data.
+   
+
+* Practice 
+** Hippocampus
+   Armando presented <2018-09-05 Wed>.
+   - Cell Composition Validation :: Three plots, all bar plots
+     1. Whats the deal with SLM and SR in the plot? They look combined.
+     2. Cell type dependent bar plots. Should these be also by layer?
+     3. Interneuron fractions were plotted by their ~mtype~. Were these fractions
+        computed by layer, that is was the denominator the number of cells in a
+        layer, or total cells in the whole circuit?
+     4. Mixed bars for overall cell density in the CA1, and PC cells in layer SP
+        with bars for density by layer. This type of composite/mixed plots will
+        be harder to plot. In principle we can produce any grouped bars (see
+        appropriate section in Plotting).
+   - Connectome Validation 1 :: Two plots probably drawn with MR's code.
+     1. Bouton Density compares experimental values against model values.
+     2. Synapses per connection compares experimental values against model
+        values.
+     These could have been bar plots, except for the large number of cell ~mtypes~.
+     1. Number of efferent synapses /vs/ mtype, by cell-type. A synapse has a
+        pre and post end. AR's plots are for number of synapses by /pre-mtype/,
+        a different panel of bar plots by the type of post-cell. AR uses PC and
+        interneuron as the type of the post-cell. We will need to add this
+        category of cell types!
+     2. Divergence ? Ask Armando. This can be redone to display the same
+        information. *We do not understand this plot.*
+        May be it is the fraction of synaptic inputs from PC vs INT to a given
+        mtype. 
+   - Connctome Validation 3 :: connection probability as a function of
+        soma-distance.
+     1. over all comparison between model and experiment at a given soma
+        distance. or may be not a function of distance at all (*ASK*)
+     2. mtype-->mtype ...
+   - Connection Analysis 1 :: number of afferent synapses
+     1. vs mtype, pre-type is PC or INT, post type is mtype...
+     
+* Prediction
+  Validation of a model is in hindsight. Looking forward, there are experiments
+  that a scientist may think of but unable to to do on the bench. However, if
+  they can think of the experimental data they expect to gather, they can write
+  down an analysis of that data. If the user can express as an /adapter/
+  /interface/ the measurements they expect from a model, we have an /analysis/
+  that can be enhanced to a /validation/ when relevant experimental data becomes
+  available. Meanwhile, such a /prediction analysis/ can be compared across
+  different models provided adapters for both  are available.
+
+  ~Prediction~ can exist in our code independently from ~Analysis~ --- in fact
+  as a subclass of ~Analysis~. A ~Prediction~ must have a 
+  ~predicted_phenomenon :: Phenomenon~ 
+
+  ~Prediction~ is just an ~Observation~ made by a model.
+  ~Observation~ sounds like a synonym of ~Measurement~.
+
+  #+begin_src haskell
+  data Observation = Observation { phenomenon :: Phenomenon
+  ~                              , measurement :: Measurement}
+  #+end_src
+
+  #+begin_src python
+  class Measurement:
+  ~  phenomenon = Field(
+  ~     __name__ = "phenomenon",
+  ~     __type__ = Phenomenon,
+  ~     __doc__  = "The physical phenomenon measured"
+  ~  )
+  ~  units = Field(
+  ~     __name__ = "units",
+  ~     __type__ = Units,
+  ~     __doc__  = "Physical units of this measurement"
+  ~  )
+  ~  quantity_type = Field(
+  ~     __name__ = "quantity_type"
+  ~     __type__ = type,
+  ~     __doc__  = """Type of the quantity that represents the amplitude of
+  ~     this measurement. A measurement is not just the outcome, but also the 
+  ~     inputs --- that is each measurement consists of dependent variables,
+  ~     and independent variables. 
+  ~     For singleton measurements the quantity type may be a float or a 
+  ~     vector depending on the phenomenon measured. For full information,
+  ~     the return type must be a Pandas Series --- with a multi-level index
+  ~     with a level for each of the input parameters of the measurement 
+  ~     method. The benefit of returning a quantity containing the measurement
+  ~     parameters is that this allows the downstream step of putting singleton
+  ~     measurements into a data-frame without the need of doing anything more
+  ~     than call 'pandas.concat' method on a list of pandas Series.
+  ~      
+  ~     For a statistical measurement we will use a pandas DataFrame containing
+  ~     the mean and  standard deviation in two columns. In case the 
+  ~     measurement outcome is vector valued, we may use a multi-level column
+  ~     structure, akin to the multi-level index we have used to handle 
+  ~     multiple measurement parameters. The code representing the measurement 
+  ~     method's parameters should have the same name as used for the 
+  ~     corresponding levels in the returned data-frame's index."""
+  ~   ) 
+  #+end_src
+
+  If we stick to ~Pandas Series or DataFrames~, we can set requirements as 
+  follows
+
+  #+begin_src python
+  class Measurement:
+  ~  phenomenon = Field(
+  ~     __name__ = "phenomenon",
+  ~     __type__ = Phenomenon,
+  ~     __doc__  = "The physical phenomenon measured"
+  ~  )
+  ~  units = Field(
+  ~     __name__ = "units",
+  ~     __type__ = Units,
+  ~     __doc__  = "Physical units of this measurement"
+  ~  )
+  ~  parameters = Field(
+  ~     __name__ = "param_names",
+  ~     __type__ = list, #of the (single word) names of parameters of the measurement method
+  ~     __doc__  = """Order of the list 'param_names' will correspond to"""
+  ~  )
+  ~  quantity = Field(
+  ~     __name__ = "quantity",
+  ~     __type__ = EitherType(pandas.Series, pandas.DataFrame),
+  ~     __doc__  = "The magnitude of this measurement"
+  ~  )
+  ~    
+  ~  def _check_arguments(self, params_dict):
+  ~     for p in self.parameters:
+  ~        if p not in params_dict:
+  ~           raise ValueError(
+  ~              "Required parameter {} not passed to measurement method".format(p)
+  ~           )
+  ~  def index(self, params_dict):
+  ~     self.__check_arguments(params_dict)
+  ~     n = len(self.parameters)
+  ~     if n == 0:
+  ~        return pandas.Index([])
+  ~     if n == 1:
+  ~        p = parameters[0]
+  ~        return pandas.Index([params[p]], name=p)
+  ~     return pandas.MultiIndex\
+  ~                  .from_tuples([tuple(params[n] for n in self.parameters)],
+  ~                               names=self.parameters)
+  #+end_src
 
 * Requirements
   Validation is about DMT: Data, Models, and Tests
@@ -791,3 +952,44 @@
    idea as motivation. However the user will see the front-end. We must think
    about what we want to offer the user --- /a well defined UI/. What
    constitutes a good definition of a UI?
+** TODO define a measurement as discussed in a section above.
+   SCHEDULED: <2018-09-13 Thu>
+   With the current design of the code, there is no natural place or a natural
+   way to define a ~Measurement~.
+   The simplest way to have the same affect as a ~class Measurement~ is to 
+   require same functionality inside the ~measurement.Method~ subclass. So we 
+   for example, will have the following:
+   #+begin_src python
+   class CellDensity(measurement.Method):
+   ~   """..."""
+
+   ~   label = "in-silico"
+   ~   phenomenon = Phenomenon("Cell Density", "Number of cells in a unit volume")
+   ~   units = "1000/mm^3"
+   ~   parameters = ["roi"]
+   ~
+   ~   def __init__(self, circuit):
+   ~       """This intializer can be placed in the super class... even if 
+   ~   helper may not always be needed."""
+   ~       self.__circuit = circuit
+   ~       self.__helper  = BlueBrainModelHelper(circuit=circuit)
+
+   ~   def __call__(self, **params):
+   ~      """...Call Me..."""
+   ~      self._check_arguments(params)
+   ~      plist = [params[p] for p in self.parameters]
+   ~      value = 1.e-3 * self.__helper.get_cell_density(*plist)
+   ~      return Measurement(
+   ~         quantity=pd.Dataframe([{self.label: value}], index=self.index(params),
+   ~         units=self.units
+   ~         phenomenon=self.phenomenon
+   ~         parameters=self.parameters
+   ~      )
+   #+end_src
+   To improve the previous implementation, we should insist on using subclasses 
+   of our ~class Parameter~. This way ~parameters~ will be a ~List[Parameter]~.
+   This will enforce better documentation for each measurement, that can slowly
+   build into a library of measurements.
+   If we enforce return of pandas objects from a singleton measurement, we can
+   easily stack up a bunch of these measurements and make statistical summaries.
+ 

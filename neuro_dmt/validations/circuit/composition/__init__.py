@@ -89,7 +89,7 @@ class SpatialCompositionValidation:
                                            label=model_measurement.label))\
                       .comparing("dataset")\
                       .against(self.validation_data)\
-                      .for_given("region")\
+                      .for_given(self.region_type.label)\
                       .with_customization(**kwargs)
 
         return plotter.plot()
@@ -196,11 +196,20 @@ class SpatialCompositionValidation:
         of SpatialCompositionValidation."""
         pass
 
+    def set_measurement_parameters(self, circuit_model):
+        """Set measurement parameters in the validation data.
+        Some parameters values (or their representation) in the validation data
+        may need adjustment for a given model.
+        In case you need to, just implement this method."""
+        pass
+
     def __call__(self, circuit_model, *args, **kwargs):
         """...Call Me..."""
-        save = kwargs.get('save', False) #Or should we save by default?
+        self.set_measurement_parameters(circuit_model)
         model_measurement = self.get_measurement(circuit_model)
         report = self.get_report(model_measurement)
+
+        save = kwargs.get('save', False) #Or should we save by default?
         if save:
             report.save(
                 output_dir_path  = os.path.join(self.output_dir_path, "report"),

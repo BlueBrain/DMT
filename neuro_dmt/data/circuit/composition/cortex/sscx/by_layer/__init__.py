@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from dmt.vtk.utils.collections import Record
 
-LAYER = "region"
+LAYER = "Layer"
 
 def with_metadata(reference_dataset, reference_dataframe):
     return Record(
@@ -17,7 +17,7 @@ def with_metadata(reference_dataset, reference_dataframe):
 def summarized(means, stdevs, scale_factor=1.0):
     means = np.array(means)
     stdevs = np.array(stdevs)
-    return pd.DataFrame({'region':  range(1, 7),
+    return pd.DataFrame({LAYER:  range(1, 7),
                          'mean': scale_factor * means,
-                         'std': scale_factor * stdevs})
+                         'std': scale_factor * stdevs}).set_index(LAYER)
 

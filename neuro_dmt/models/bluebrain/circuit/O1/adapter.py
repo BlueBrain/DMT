@@ -89,11 +89,15 @@ class BlueBrainModelAdapter:
             raise ValueError("{} not a {}".format(value, "GroupParameter"))
         self._spatial_parameter = value
 
+    def filled_measurement(self, measurement, by):
+        """..."""
+        measurement.data = by.filled(measurement.data)
+        return measurement
+
     def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
         sm = StatisticalMeasurement(method, by)(*args, **kwargs)
-        sm.data = by.filled(sm.data)
-        return sm
+        return self.filled_measurement(sm, by)
 
     def spatial_measurement(self, method, circuit, target=None):
         """..."""

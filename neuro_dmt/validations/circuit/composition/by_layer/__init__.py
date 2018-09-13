@@ -1,19 +1,16 @@
 """Utilities for circuit composition by layer."""
-import os
-import pandas as pd
-import numpy as np
+from abc import abstractmethod
 from dmt.analysis.validation.test_case import SinglePhenomenonValidation
-from neuro_dmt.validations.circuit.composition \
-    import SpatialCompositionValidation
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import Field, document_fields
-from dmt.vtk.judgment.verdict import Verdict
+from dmt.vtk.utils.descriptor import  document_fields
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
+from dmt.vtk.utils.pandas import flatten
+from dmt.vtk.utils.exceptions import ValueNotSetError
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
-from neuro_dmt.utils.brain_region import Layer
+from neuro_dmt.validations.circuit.composition \
+    import SpatialCompositionValidation
 
 
 @document_fields
@@ -55,11 +52,18 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         """Override"""
         if isinstance(self._validation_data, Record):
             return self._validation_data.datasets[self._validation_data.primary]
+
         if isinstance(self._validation_data, dict):
             if len(self._validation_data) == 1:
                 return list(self._validation_data.values())[0]
-        if isinstance(self._validation_data, lsit):
+            if self._primary_dataset:
+                return self._validation_data[self._primary_dataset]
+            else:
+                raise ValueNotSetError("_primary_dataset", self)
+
+        if isinstance(self._validation_data, list):
             return self._validation_data[0]
+
         return self._validation_data
 
     @property
@@ -71,28 +75,23 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         data = (self._validation_data.datasets
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
-
+        
         if not isinstance(data, dict):
             return data
-        
+
+        assert(isinstance(data, dict))
+        if len(data) == 1:
+            return list(data.values())[0]
+
         dataset_names = [k for k in data.keys()]
-
-        flattened_data = pd.concat(
-            [data[n].data for n in dataset_names]
-        ).set_index(
-            pd.MultiIndex.from_tuples([
-                (n, l) for n in dataset_names
-                for l in sorted(data[n].data.region)
-            ],
-            names=("dataset", "region"))
-        )[["mean", "std"]]
-
-        return flattened_data
+                           
+        return flatten({n: data[n].data for n in dataset_names},
+                       names=["dataset"])[["mean", "std"]]
 
     @property
     def validation_datasets(self):
         """Return validation data as a dict."""
-        data = (self._validation_data.datasets
+        data = (self._validation_data.data
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
         if isinstance(data, dict):
@@ -101,14 +100,30 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
             return {d.label: d for d in data}
         return {data.label: data}
         
+    def _set_measurement_parameters(self, circuit_model):
+        """..."""
+
+        def __parameter_filled(p, dataframe):
+            """set parameter p for a single dataframe"""
+            return p.filled(dataframe)
+
+        data = (self._validation_data.data
+                if isinstance(self._validation_data, Record) else
+                self._validation_data)
+        if isinstance(data, dict):
+            self._validation_data = {k: }
+        if isinstance(data, list):
+            return {d.label: d for d in data}
+        return {data.label: data}
+        
+
     def data_description(self):
         """Describe the experimental data used for validation."""
         return self.primary_dataset.what
      
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""
-        model = self.adapted(circuit_model)
-        return model.get_label(circuit_model)
+        return self.adapter.get_label(circuit_model)
 
     def get_report(self, model_measurement):
         """Create a report."""

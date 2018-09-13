@@ -26,8 +26,8 @@ class ComparisonPlot(Plot):
     def against(self, datasets, given=()):
         """Compare data against..."""
         if self._comparison_level is None:
-            raise(TypeError("{}'s comparison_level not specified."\
-                            .format(self.__class__)))
+            raise Exception("{}'s comparison_level not specified."\
+                            .format(self.__class__))
         self._comparison_data=datasets
         self._given_vars = given
         return self
@@ -40,8 +40,22 @@ class ComparisonPlot(Plot):
     def for_given(self, *given):
         """..."""
         if self._comparison_data is None:
-            raise TypeError("{}'s comparison_data not specified.".\
+            raise Exception("{}'s comparison_data not specified.".\
                             format(self.__class__))
+        for g in given:
+            if g not in self._data.index.names:
+                raise Exception(
+                    """The 'given' var '{}' is not in {}'s data's index.
+                    Please choose from {}."""\
+                    .format(g, self, self._data.index.names)
+                )
+            if g not in self._comparison_data.index.names:
+                raise Exception(
+                    """The 'given' var '{}' is not in {}'s comparison_data's index.
+                    Please choose from {}."""\
+                    .format(g, self, self._comparison_data.index.names)
+                )
+
         return self.against(self._comparison_data, given=given)
 
     def level_values(self, level=None):

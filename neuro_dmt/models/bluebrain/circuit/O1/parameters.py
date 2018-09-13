@@ -72,7 +72,16 @@ class CorticalLayer(Layer):
 
     def order(self, value):
         """Order of value."""
-        return value
+        if isinstance(value, int):
+            return value
+        return {
+            "I": 1,
+            "II": 2,
+            "III": 3,
+            "IV": 4,
+            "V": 5,
+            "VI": 6
+        }[value]
 
     def repr(self, value):
         """Represent value 'value'"""

@@ -28,6 +28,19 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
+        def set_measurement_parameters(self, circuit_model, dataframe):
+            """Set the spatial parameters in the index of 'dataframe',
+            that were used for measurements.
+
+            Parameters
+            --------------------------------------------------------------------
+
+            Returns
+            --------------------------------------------------------------------
+            A type that can fill in the missing values of a dataframe.
+            """
+            pass
+
         def get_cell_density(self, circuit_model):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
@@ -37,7 +50,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
             
-            Return
+            Returns
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
             ~      region_label :: String, #label for regions in data
@@ -50,3 +63,4 @@ class CellDensityValidation(ByLayerCompositionValidation):
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
         return self.adapter.get_cell_density(circuit_model)
+

@@ -17,11 +17,11 @@ class BrainRegion(ABC):
     __label__ :: String #deriving class should modify, eg Cortical Layer.
     """
 
-    __label__ = "region"
+    label = "region"
 
-    __subtypes__ = {} #may not be necessary
+    subtypes = {} #may not be necessary
 
-    __values__ = [] #may not be necessary
+    values = [] #may not be necessary
 
     """Layer in the cortex."""
     def __init__(self, value):
@@ -52,29 +52,26 @@ class BrainRegion(ABC):
 class Layer(BrainRegion):
     """Layer is a type of brain region.
     Still abstract class."""
-    __label__ = "Layer"
+    label = "Layer"
     pass
 
 
 class CorticalLayer(Layer):
 
-    __label__ = "Cortical Layer"
     @property
     def __str__(self):
-        return "L{}".format(self._value)
+        return {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"}[self._value]
         
 
-CorticalLayer.__values__ = [CorticalLayer(l)
-                            for l in ['1', '2', '3a', '3b', '3',
-                                      '4', '5a', '5b', '5', '6a', '6b', 6]]
+CorticalLayer.values\
+    = [CorticalLayer(l) for l in range(1, 7)]
 
 class HippocampalLayer(Layer):
-
-    __label__ = "Hippocampal Layer"
 
     @property
     def __str__(self):
         return self._value
 
-HippocampalLayer.__values__ = [HippocampalLayer(l)
-                               for l in ['SLM', 'SR', 'SP', 'SO']]
+HippocampalLayer.values\
+    = [HippocampalLayer(l) for l in ['SLM', 'SR', 'SP', 'SO']]
+                               

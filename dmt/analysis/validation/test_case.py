@@ -32,8 +32,15 @@ class ValidationTestCase(Analysis):
         """A validation test case can be initialized either with a validation
         data set, or the directory location of a validation data set, or none,
         but not both.
+
+        Keyword Arguments
+        ------------------------------------------------------------------------
+        primary_dataset :: String #the key into validation_data dict that
+        ~                         #corresponds to the dataset to use to evaluate
+        ~                         #p-values or other validation statistics.
         """
         self._validation_data = self.get_validation_data(**kwargs)
+        self._primary_dataset = kwargs.get("primary_dataset", None)#used to track which of validation data is primary
         self.author = kwargs.get('author', Author.anonymous)
         super(ValidationTestCase, self).__init__(*args, **kwargs)
 
@@ -68,7 +75,7 @@ class ValidationTestCase(Analysis):
 
         Please, feel free to specialize this method to your implementation.
         """
-        if self.__validation_data is None:
+        if self._validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
         return self._validation_data

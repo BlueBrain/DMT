@@ -1,6 +1,6 @@
 """Crosses to compare two equivalent data."""
-
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
@@ -47,14 +47,41 @@ class CrossPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         fig = golden_figure(height=self.height, width=self.width)
-        ys = list(self._data["mean"].values)
-        xdata = self.compared_datasets[0]
-        xs = list(xdata.data["mean"].values)
-        plt.errorbar(xs, ys, fmt="o",
-                     xerr=xdata.data["std"].values,
-                     yerr=self._data["std"].values)
-        min_val = np.min(xs + ys)
-        max_val = np.max(xs + ys)
+        ydata = self._data
+        xdata = self.compared_datasets[0].data
+        given = self.given
+        given_values = self.level_values(given) if given else self._data.index
+        def __get_row(data_frame, given_val):
+            """..."""
+            print("get row {} of dataframe {}".format(given_val, data_frame))
+            if given and isinstance(data_frame.index, pd.MultiIndex):
+                return data_frame.xs(given_val, level=given)
+
+            return data_frame.loc[given_val]
+
+        print("xdata: ")
+        print(xdata)
+        print("ydata:")
+        print(ydata)
+            
+        for v in given_values:
+            print("for given {} xdata: {} ydata {}"\
+                  .format(v, __get_row(xdata, v), __get_row(ydata, v)))
+
+        ys = ydata["mean"].values
+        yerr = ydata["std"].values
+        ymax = np.max(ys + yerr)
+        ymin = np.min(ys - yerr)
+
+        xs = xdata.data["mean"].values
+        xerr = xdata.data["std"].values
+        xmax = np.max(xs + xerr)
+        xmin = np.min(xs - xerr)
+
+        plt.errorbar(xs, ys, fmt="o", xerr=xerr, yerr=yerr)
+
+        min_val = min(xmin,  ymin)
+        max_val = np.max(xmax, ymax)
         plt.plot([min_val, max_val], [min_val, max_val], "-")
 
         plt.title(self.title, fontsize=24)
