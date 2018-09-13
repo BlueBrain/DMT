@@ -1,16 +1,18 @@
 """An attempt at creating Fields out of a class."""
 
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+from dmt.vtk.utils.exceptions import \
+    RequiredKeywordArgumentError, RequiredArgumentError
+from dmt.vtk.utils.logging import WithLogging
 
-class Field:
+class Field(WithLogging):
     """Creates a field from a provided class."""
 
-    #__isabstractmethod__ = True
     __is_field__ = True
 
     def __init__(self, __name__, __type__,
-                 __is_valid_value__=lambda x: True,
-                 __doc__ = "A field."):
+                 __is_valid_value__=lambda x, instance: True,
+                 __doc__ = "A field.",
+                 *args, **kwargs):
         """"
         Parameters
         -----------------------------------------------------------------------
@@ -19,21 +21,37 @@ class Field:
         """
         self.__field_name__ = __name__
         self.__type__ = __type__
-        self.__is_valid = __is_valid_value__
+        self.__is_valid_value = __is_valid_value__
         self.__doc__ = __doc__
         self.instance_storage_name\
             = "${}_{}".format(__type__.__name__, __name__)
+
+        super(Field, self).__init__(*args, **kwargs)
 
     def __is_minimally_valid(self, value):
         """Minimum requirement on value to pass as a valid instance."""
         return isinstance(value, self.__type__)
 
-    def is_valid(self, value):
-        return self.__is_minimally_valid(value) and self.__is_valid(value)
+    def is_valid(self, value, *args, **kwargs):
+        """is valid value?"""
+        throw = kwargs.get("throw", False)
+        try: 
+            self.__assert_validity(value, *args)
+        except Exception as exception:
+            if throw:
+                raise exception
+            self.logger.warning("Caught {}: {}"\
+                                .format(exception.__class__.__name__, exception))
+            return False
+        return True
 
-    def __set__(self, instance, value):
-        """set the value of the field in an instance
-        where a field has been declared."""
+    def __assert_validity(self, *args):
+        """..."""
+        l = len(args)
+        if l == 0:
+            RequiredArgumentError(1, "value")
+
+        value = args[0] 
         if not self.__is_minimally_valid(value):
             raise TypeError(
                 "Cannot set field {} of type {} to value {} of type {}"\
@@ -41,10 +59,35 @@ class Field:
                         self.__type__.__name__,
                         value, str(type(value)))
             )
-        if not self.__is_valid(value):
-            raise ValueError(
-                "{} of type {} cannot be set to an invalid value, {}"\
-                .format(self.instance_storage_name, self.__type__.__name__, value))
+        else:
+            self.logger.info("Value {} is valid".format(value))
+        error = ValueError(
+            "Field '{}' of type {} cannot be set to an invalid value, {}"\
+            .format(self.__field_name__,
+                    self.__type__.__name__,
+                    value)
+        )
+        if l > 1:
+            instance = args[1]
+            try:
+                if not self.__is_valid_value(instance, value):
+                    raise error 
+            except Exception as exception:
+                 raise exception
+            return
+
+        assert(l == 1)
+        try:
+            if not self.__is_valid_value(value):
+                raise error
+        except Exception as exception:
+            raise exception
+        return
+
+    def __set__(self, instance, value):
+        """set the value of the field in an instance
+        where a field has been declared."""
+        self.__assert_validity(value, instance)
         setattr(instance, self.instance_storage_name, value)
 
     def __get__(self, instance, owner):

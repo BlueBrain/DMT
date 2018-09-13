@@ -13,6 +13,10 @@ class Logger:
                           warning="WARNING",
                           error="ERROR",
                           assertion="ASSERTION")
+    level = dict(INFO=0,
+                 WARNING=1,
+                 ERROR=2,
+                 ASSERTION=3)
     @staticmethod
     def timestamp(now=None, *args, **kwargs):
         """Time stamp.
@@ -43,10 +47,12 @@ class Logger:
         """Print to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def __init__(self, name=None,
+    def __init__(self, level=None, name=None,
                  output_dir_path=None, file_name=None,
                  *args, **kwargs):
         """..."""
+        self._level\
+            = Logger.level[level if level  else Logger.message_type.error]
         self._name = name if name else "Output Log"
         self._in_file = (
             None if (output_dir_path is None and file_name is None) else 
@@ -55,7 +61,7 @@ class Logger:
                 file_name if file_name else ".".join(self._name.lower())
             )
         )
-        super(Logger, self).__init__(*args, **kwargs)
+        #super(Logger, self).__init__(*args, **kwargs)
         if self._in_file:
             self._log_message(self._name)
 
@@ -66,13 +72,16 @@ class Logger:
         ------------------------------------------------------------------------
         msg :: str #to be logged
         """
-        msg = "{} {}:: {}"\
-              .format(Logger.timestamp(time.localtime()), msg_type, msg)
-        Logger.err_print(msg)
-        if self._in_file:
-            with open(self._in_file, "a")  as f:
-                f.write("{}\n".format(msg))
-
+        if Logger.level[msg_type] >= self._level:
+            msg = "{} {}:: {}"\
+                  .format(Logger.timestamp(time.localtime()), msg_type, msg)
+            Logger.err_print(msg)
+            if self._in_file:
+                with open(self._in_file, "a")  as f:
+                    f.write("{}\n".format(msg))
+        else:
+            return
+                    
     def info(self, msg):
         """..."""
         self._log_message(msg, self.message_type.info)
@@ -95,8 +104,10 @@ class LazyLogger(Logger):
     Store logs in a file and flush to disc when prompted
     or after a given number of messages."""
 
-    def __init__(self, flush_threshold=10000,
-                 output_dir_path=None, file_name=None,
+    def __init__(self, name=None, 
+                 output_dir_path=None,
+                 file_name=None,
+                 flush_threshold=None,
                  *args, **kwargs):
         """
         Parameters
@@ -104,8 +115,9 @@ class LazyLogger(Logger):
         flush_threshold :: int #number of messages after which to flush.
         """
         self._logs = [] #list of logs
-        self._flush_threshold = flush_threshold
-        super(LazyLogger, self).__init__(output_dir_path=output_dir_path,
+        self._flush_threshold = flush_threshold if flush_threshold else 10000
+        super(LazyLogger, self).__init__(name=name,
+                                         output_dir_path=output_dir_path,
                                          file_name=file_name,
                                          *args, **kwargs)
         opd = output_dir_path if output_dir_path else os.getcwd()
@@ -129,3 +141,48 @@ class LazyLogger(Logger):
                                  message_type=msg_type))
         if len(self._logs) > self._flush_threshold:
             self.flush()
+
+class WithLogging:
+    """A base class that will allow the deriving class to log to an
+    output resource. Attribute values to pass to Logger will be read
+    from keyword arguments."""
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ------------------------------------------------------------------------
+        output :: Either[File, stdio]#where logger will output to.
+        """
+        self._logger = Logger(name=kwargs.get("logger_name", None),
+                              level=kwargs.get("logger_level", None),
+                              output_dir_path=kwargs.get("log_output_dir_path", None),
+                              file_name=kwargs.get("log_file_name", None),
+                              *args, **kwargs)
+
+    @property
+    def logger(self):
+        """..."""
+        return self._logger
+
+class WithLazyLogging:
+    """A base class that will allow the deriving class to log to an
+    output resource. Attribute values to pass to Logger will be read
+    from keyword arguments."""
+    def __init__(self, *args, **kwargs):
+        """
+        Parameters
+        ------------------------------------------------------------------------
+        output :: Either[File, stdio]#where logger will output to.
+        """
+        self.logger = LazyLogger(
+            name=kwargs.get("log_name", None),
+            output_dir_path=kwargs.get("log_output_dir_path", None),
+            file_name=kwargs.get("log_file_name", None),
+            flush_threshold=kwargs.get("log_flush_threshold", None)
+            *args, **kwargs)
+
+        super(WithLazyLogging, self).__init__(*args, **kwargs)
+
+    @property
+    def logger(self):
+        """..."""
+        return self._logger
