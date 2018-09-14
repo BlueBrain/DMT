@@ -11,8 +11,8 @@ import collections
 import pandas as pd
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
-from dmt.vtk.measurement import parameters
-from dmt.vtk.measurement.parameters import GroupParameter, get_grouped_values
+from dmt.vtk.measurement.parameter.group import get_grouped_values
+    
 
 class Measurement:
     """Contains the result of measuring something,
@@ -74,7 +74,7 @@ class StatisticalMeasurement:
     group_parameters = Field(
         __name__ = "group_parameter",
         __type__ = list,
-        __is_valid_value__ = lambda gps: all(isinstance(gp, GroupParameter)
+        __is_valid_value__ = lambda gps: all(isinstance(gp, Grouper)
                                              for gp in gps),
         __doc__ = """The GroupParameter types associated with this
         StatisticalMethod."""

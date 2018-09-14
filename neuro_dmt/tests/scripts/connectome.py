@@ -4,7 +4,7 @@ import datetime
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.logging import Logger
 from dmt.vtk.measurement import StatisticalMeasurement
-from dmt.vtk.measurement.parameters import get_grouped_values
+from dmt.vtk.measurement.parameter import get_grouped_values
 from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
     import PairSynapseCount

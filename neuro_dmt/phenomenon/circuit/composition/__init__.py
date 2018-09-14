@@ -1,6 +1,6 @@
 """Phenomena related to the composition of a brain region"""
 
-from dmt.phenomenon import Phenomenon
+from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.phenomenon.circuit import BrainRegionPhenomenon
 
 cell_density = Phenomenon(name = "cell density",

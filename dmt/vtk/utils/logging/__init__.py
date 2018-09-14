@@ -47,8 +47,10 @@ class Logger:
         """Print to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def __init__(self, level=None, name=None,
-                 output_dir_path=None, file_name=None,
+    def __init__(self,  name=None,
+                 output_dir_path=None,
+                 file_name=None,
+                 level=None,
                  *args, **kwargs):
         """..."""
         self._level\

@@ -3,9 +3,26 @@
 import numpy as np
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections import *
-from dmt.vtk.measurement.parameters import Parameter, GroupParameter
+from dmt.vtk.measurement.parameter import Parameter, GroupParameter
+from dmt.vtk.measurement.parameter.group import ParameterAggregator
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
+
+class LayerROIs(ParameterAggregator):
+    """..."""
+    LayerType = Field(
+        __name__ = "LayerType",
+        __type__ = Layer,
+        __is_valid_value__ = lambda t: issubclass(t, Layer),
+        __doc__ = """Layer type."""
+    )
+    def __init__(self, *args, **kwargs):
+        """..."""
+        circuit = kwargs['circuit']
+        self._circuit = circuit
+        self._helper  = BlueBrainModelHelper(circuit=circuit)
+        super(LayerROIs, self).__init__(*args, **kwargs)
+ 
 
 class Mtype(GroupParameter):
     """Mtype groups cell gids."""

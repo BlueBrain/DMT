@@ -2,14 +2,19 @@
 """
 from abc import abstractmethod
 import numpy as np
+import pandas as pd
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.measurement.parameters import Parameter, GroupParameter
+from dmt.vtk.measurement.parameter import Parameter
+from dmt.vtk.measurement.parameter.group import \
+    GroupParameter, ParameterAggregator
 from dmt.vtk.utils.collections import *
+from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from bluepy.geometry.roi import ROI
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
-from neuro_dmt.measurement.parameter import CorticalLayer, HippocampalLayer
+from neuro_dmt.measurement.parameter import \
+    Layer, CorticalLayer, HippocampalLayer
 
 
 class RegionOfInterest(Parameter):
@@ -25,7 +30,8 @@ class RegionOfInterest(Parameter):
         self._circuit = kwargs["circuit"]
         self._helper = BlueBrainModelHelper(circuit=self._circuit)
 
-    def values(self, query, sampled_box_shape=50.*np.ones(3)):
+    def random_values(self, query, *args, **kwargs):
+        sampled_box_shape = kwargs.get("sampled_box_shape", 50.*np.ones(3))
         """Generator of ROIs."""
         bounds = self._helper.geometric_bounds(query)
         if bounds is None:
@@ -38,51 +44,43 @@ class RegionOfInterest(Parameter):
             yield Cuboid(loc - half_box, loc + half_box)
 
 
-class BBO1Layer(GroupParameter):
-    """A generic layer in any brain region."""
-    grouped_variable = Record(__type__ = RegionOfInterest, name = "roi")
-
-    def __init__(self, *args, **kwargs):
+class LayerROIs(ParameterAggregator):
+    """..."""
+    def __init__(self, circuit, *args, **kwargs):
         """..."""
-        assert("circuit" in kwargs)
-        self._circuit = kwargs["circuit"]
-        self._helper = BlueBrainModelHelper(circuit=self._circuit)
-        super(BBO1Layer, self).__init__(*args, **kwargs)
+        self._circuit = circuit
+        self._helper = BlueBrainModelHelper(circuit=circuit)
+        self.aggregate = 
 
     @abstractmethod
     def query(self, layer, target=None):
-        """Query to be used by bluepy"""
-        pass
+        """A dict that can be passed to circuit.cells.get(...)"""
+        return \
+            {"layer": layer, "$target": target} if target else {"layer": layer}
 
     def random_grouped_values(self, layer, *args, **kwargs):
-        target = kwargs.get("target", None)
-        sampled_box_shape = kwargs.get("sampled_box_shape",
-                                        np.array([50., 50., 50.]))
-        return RegionOfInterest(circuit=self._circuit).values(
-            self.query(layer, target=target),
-            sampled_box_shape = sampled_box_shape
-        )
-        
-
-class BBO1CorticalLayer(CorticalLayer, BBO1Layer):
-    """Data and methods associated with cortical layers in a brain region
-    circuit."""
-    def __init__(self, circuit, *args, **kwargs):
         """..."""
-        kwargs.update({"circuit": circuit})
-        super(BBO1CorticalLayer, self).__init__(*args, **kwargs)
+        target=kwargs.get("target", None)
+        query = self.query(layer, target=target)
+                                          
+        for roi in self._grouped.values(query, *args, **kwargs):
+            yield pd.DataFrame({self._grouped.label: [roi]},
+                               index=self.index(layer))
 
+
+class CorticalLayerROIs(LayerROIs):
+    """Aggregates ROIs in cortical layers."""
+    LayerType = CorticalLayer
+                 
     def query(self, layer, target=None):
-         return ({"layer": layer, "$target": target}
-                 if target else {"layer": layer})
+        """A dict that can be passed to circuit.cells.get(...)"""
+        return \
+            {"layer": layer, "$target": target} if target else {"layer": layer}
 
+class HippocampalLayerROIs(LayerROIs):
+    """Aggregates ROIs in hippocampal layers."""
+    LayerType = HippocampalLayer
 
-class BBO1HippocampalLayer(CorticalLayer, BBO1Layer):
-    def __init__(self, circuit, *args, **kwargs):
-        """..."""
-        kwargs.update({"circuit": circuit})
-        super(BBO1HippocampalLayer, self).__init__(*args, **kwargs)
-
-    def query(self, layer, target=None):
-         return ({"layer": layer, "$target": target}
-                 if target else {"layer": layer})
+    def query(self, layer):
+        """A dict that can be passed to circuit.cells.get(...)"""
+        return {"layer": layer}

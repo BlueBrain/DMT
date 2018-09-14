@@ -21,7 +21,7 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.measurement.parameters import GroupParameter
+from dmt.vtk.measurement.parameter import GroupParameter
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
