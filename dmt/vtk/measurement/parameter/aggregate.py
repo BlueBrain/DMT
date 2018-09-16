@@ -4,7 +4,7 @@ import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random import RandomParameter
-from dmt.vtk.utils.collections import take
+from dmt.vtk.utils.collections import take, Record
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 class ParameterAggregator:
@@ -33,27 +33,26 @@ class ParameterAggregator:
         """..."""
         def __get_tuples(group_parameters):
             """..."""
-            print("get tuples for ", [gp.label for gp in group_parameters])
             if len(group_parameters) == 0:
                 return [[]]
             vstail = __get_tuples(group_parameters[1:])
             gphead = group_parameters[0]
             vshead = [[(gphead.label, value)] for value in gphead.values]
-            print("head", vshead)
             return [v0 + v1 for v0 in vshead for v1 in vstail]
 
-        return pd.DataFrame([dict(g)
-                             for g in __get_tuples(self.aggregate_variables)])
+        for g in __get_tuples(self.aggregate_variables):
+            yield Record(**dict(g))
 
     def random_grouped_values(self, group, *args, **kwargs):
         """A generator of random grouped values.
         Concrete implementation should returned an indexed Pandas DataFrame
         """
-        for grouped_value in self.grouped_variable\
-                                 .random_values(group, *args, **kwargs):
+        rgvs = take(kwargs.get("size", 20),
+                    self.grouped_variable.random_values(group, *args, **kwargs))
+        for grouped_value in rgvs:
             yield pd.DataFrame(
                 {self.grouped_variable.label: [grouped_value]},
-                index=self.index(group)
+                index=self.index([group])
             )
     def repr(self, value):
         """..."""
@@ -67,22 +66,17 @@ class ParameterAggregator:
                                  .format(value))
         return str(value)
 
-    def index(self, aggregate_values=None, __repr__=True):
-        """Index for Pandas DataFrame containing parameter values."""
-        if aggregate_values is None:
-            aggregate_values = self.aggregate_variable.values
-        else:
-            if not (isinstance(aggregate_values, list)
-                    or isinstance(aggregate_values, tuple) or
-                    isinstance(aggregate_values, set)):
-                aggregate_values = [aggregate_values,]
+    def index(self, groups=None, __repr__=True):
+        """Index for the Pandas DataFrame containing parameter values."""
+        if groups is None:
+            groups = self.groups
 
-                assert(all([self.aggregate_variable.is_valid(v)
-                            for v in aggregate_values]))
-        return pd.MultiIndex.from_tuples(
-            [(self.repr(v) if __repr__ else v,) for v in aggregate_values],
-            names=[self.aggregate_variable.label]
-        )
+        groups_as_dict = [g.as_dict for g in groups]
+
+        variables = [v.label for v in self.aggregate_variables]
+        group_tuples = [tuple(getattr(g, v) for v in variables) for g in groups]
+
+        return pd.MultiIndex.from_tuples(group_tuples, names=variables)
 
     def sample(self, *args, group=None, **kwargs):
         """..."""
@@ -93,10 +87,9 @@ class ParameterAggregator:
             )))
 
         if group:
-            assert(self.aggregate_variable.is_valid(group))
             return __sample(group)
 
         return pd.concat([
-            __sample(group) for group in self.aggregate_variable.values
+            __sample(group) for group in self.groups
         ])
 

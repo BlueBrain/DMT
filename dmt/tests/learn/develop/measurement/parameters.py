@@ -5,6 +5,7 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random import RandomParameter
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
+from dmt.vtk.measurement.parameter.aggregate import ParameterAggregator
 from dmt.vtk.measurement.parameter.group import get_grouped_values
 
 class Layer(FiniteValuedParameter):
@@ -29,7 +30,7 @@ class LayerModuloRandomNumber(Layer, RandomParameter):
             yield np.random.randint(layer)
 
 class LayerCellDensities(Layer, RandomParameter):
-    label="cell-density"
+    label="cell_density"
     __type__=float
 
     def __init__(self, *args, **kwargs):
@@ -50,7 +51,7 @@ layer_cell_density = l.make_aggregator(LayerCellDensities())
 
 class HyperColumn(FiniteValuedParameter):
     """HyperColumn"""
-    label = "hyper-column"
+    label = "hyper_column"
     value_type = int
     def __init__(self, *args, **kwargs):
         """..."""
@@ -65,17 +66,34 @@ h = HyperColumn()
 
 
 class CellDensityByLayerAndHyperColumn(RandomParameter):
-    label = "cell-density"
+    label = "cell_density"
     value_type = float
-    def __init__(self, layer, hyper_column, *args, **kwargs):
+    def __init__(self, lh, *args, **kwargs):
+        """
+        Parameter
+        ------------------------------------------------------------------------
+        lh :: Record(
+        ~    layer :: Layer,
+        ~    hyper_column :: HyperColumn
+        )
+        """
         model = kwargs.get("model", None)
-        self.cell_density = np.zeros([len(layer.values),
-                                      len(hyper_column.values)])
-        for l in layer.values:
-            for h in hyper_column.values:
+        self.cell_density = np.zeros([len(lh.layer.values),
+                                      len(lh.hyper_column.values)])
+        for l in lh.layer.values:
+            for h in lh.hyper_column.values:
                 self.cell_density[l-1, h-1]\
                     = model[l][h] if model else l * h * np.random.random()
 
 
-    def random_values(self, l, h, *args, **kwargs):
-        return self.cell_density[l-1][h-1] * np.random.random()
+    def random_values(self, lh, *args, **kwargs):
+        l = lh.layer
+        h = lh.hyper_column
+        while True:
+            yield self.cell_density[l-1][h-1] * np.random.random()
+
+
+lhagg = ParameterAggregator((l, h,),
+                            CellDensityByLayerAndHyperColumn(
+                                Record(layer=l, hyper_column=h)
+                            ))

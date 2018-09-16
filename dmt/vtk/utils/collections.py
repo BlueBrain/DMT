@@ -11,7 +11,7 @@ class Namespace:
 class Record:
     """A record, like a C-struct"""
     def __init__(self, **kwargs):
-        self.__field_names = [k for k, _ in kwargs.items()]
+        self.__field_names = [k for k in kwargs.keys()]
         self.__dict__.update(kwargs)
 
     @property
@@ -32,6 +32,10 @@ class Record:
         msg += "\n"
         msg += "\n"
         return msg
+
+    @property
+    def as_dict(self):
+        return {k: getattr(self, k) for k in self.__field_names}
 
     def get(self, key, default=None):
         """Make Record behave like a dict"""
