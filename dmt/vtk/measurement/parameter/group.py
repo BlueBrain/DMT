@@ -78,21 +78,17 @@ def get_grouped_values(group_params, *args, **kwargs):
     ----------------------------------------------------------------------------
     dict
     """
-    n = kwargs.get("sample_size", 20)
-    for p in group_params:
-        for v in p.values:
-            xs = [x.bbox
-                  for x in take(n, p.random_grouped_values(v, *args, **kwargs))]
-            print("value grouped under {} value {} found {}".format(v, p, len(xs)))
 
     def __get_tuples(index):
         """..."""
         if index == len(group_params):
             return ()
         p0 = group_params[index]
-        vs0 = [[(p0.grouped_variable.name, gv), (p0.label, v)]
-               for v in p0.aggregate_variable.values
-               for gv in take(n, p0.random_grouped_values(v, *args, **kwargs))]
+        vs0 = [[(p0.grouped_variable.label, gv),
+                (p0.aggregate_variable.label, v)]
+               for v in p0.groups
+               for gv in take(kwargs.get("size", 20),
+                              p0.random_grouped_values(v, *args, **kwargs))]
         if index + 1 == len(group_params):
             return vs0
         else:

@@ -178,4 +178,4 @@ class FiniteValuedParameter(Parameter):
         ------------------------------------------------------------------------
         grouped_variable <: RandomParameter
         """
-        return ParameterAggregator(self, grouped_variable)
+        return ParameterAggregator((self,), grouped_variable)
