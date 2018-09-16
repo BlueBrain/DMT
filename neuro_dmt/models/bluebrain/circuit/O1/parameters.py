@@ -17,6 +17,8 @@ from neuro_dmt.measurement.parameter import \
     Layer, CorticalLayer, HippocampalLayer
 
 
+def grouped_regions_of_interest(spatial_parameter):
+    raise NotImplementedError
 class RegionOfInterest(Parameter):
     """Region of interest formalized as a measurement.Parameter."""
 

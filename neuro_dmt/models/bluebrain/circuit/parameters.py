@@ -3,7 +3,8 @@
 import numpy as np
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections import *
-from dmt.vtk.measurement.parameter import Parameter, GroupParameter
+from dmt.vtk.measurement.parameter import Parameter
+from dmt.vtk.measurement.parameter.group import Grouper
 from dmt.vtk.measurement.parameter.group import ParameterAggregator
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
@@ -24,7 +25,7 @@ class LayerROIs(ParameterAggregator):
         super(LayerROIs, self).__init__(*args, **kwargs)
  
 
-class Mtype(GroupParameter):
+class Mtype(Grouper):
     """Mtype groups cell gids."""
     label = "mtype"
     value_type = str
@@ -106,7 +107,7 @@ class PostMtype(Mtype):
     grouped_variable = Record(__type__=int, name="post_gid")
 
 
-class Pathway(GroupParameter):
+class Pathway(Grouper):
     """Pathway groups mtype-->mtype connections."""
 
     label = "pathway"

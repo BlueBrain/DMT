@@ -5,7 +5,8 @@ import os
 import numpy as np
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.utils.brain_region import BrainRegion
+#from neuro_dmt.utils.brain_region import BrainRegion
+from neuro_dmt.measurement.parameter import SpatialParameter
 from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
 from dmt.vtk.utils.collections import Record
@@ -31,14 +32,14 @@ class SpatialCompositionValidation:
         __doc__ = """A subclass of {} to be used plot the results of
         this validation.""".format(ComparisonPlot)
     )
-    region_type = ClassAttribute(
-        __name__ = "region_type",
+    _spatial_parameter = Field(
+        __name__ = "spatial_parameter",
         __type__ = type,
-        __is_valid_value__ = lambda rtype: issubclass(rtype, BrainRegion),
+        __is_valid_value__ = lambda sp: isinstance(sp, SpatialParameter),
         __doc__ = """A composition phenomenon must be measured as a function
-        of location in the brain --- region type is the type of these
+        of location in the brain --- spatial_parameter describes a class of this 
         location. For example, you may want cell density as a function of
-        CorticalLayer."""
+        'CorticalLayer'."""
     )
     def __init__(self, validation_data, *args, **kwargs):
        """This validation will be made against multiple datasets. Each dataset

@@ -3,7 +3,8 @@ from dmt.aii.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
-from neuro_dmt.utils.brain_region import CorticalLayer
+#from neuro_dmt.utils.brain_region import CorticalLayer
+from neuro_dmt.measurement.parameter import CorticalLayer
 
 class CellDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -28,20 +29,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def measurement_parameters(self, circuit_model, dataframe):
-            """Set the spatial parameters in the index of 'dataframe',
-            that were used for measurements.
-
-            Parameters
-            --------------------------------------------------------------------
-
-            Returns
-            --------------------------------------------------------------------
-            A type that can fill in the missing values of a dataframe.
-            """
-            pass
-
-        def get_cell_density(self, circuit_model):
+        def get_cell_density(self, circuit_model, spatial_parameter):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -49,6 +37,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             Parameters
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
+            spatial_parameter :: SpatialParameter #that cell density be measured for
             
             Returns
             --------------------------------------------------------------------
@@ -56,6 +45,11 @@ class CellDensityValidation(ByLayerCompositionValidation):
             ~      region_label :: String, #label for regions in data
             ~      data :: DataFrame["region", "mean", "std"],
             ~      method :: String)
+
+            Example
+            --------------------------------------------------------------------
+            If 'spatial_parameter' is 'CorticalLayer', the adapter should return
+            cell density as a function of cortical layers in the circuit.
             """
             pass
 

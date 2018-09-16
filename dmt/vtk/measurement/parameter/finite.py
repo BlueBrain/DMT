@@ -1,10 +1,13 @@
 """Base class for Parameter that may assume only one of a few values."""
 
+import copy
 import numpy as np
 import pandas as pd
+from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.utils.pandas import flatten, level_values
 from dmt.vtk.measurement.parameter import Parameter
+from dmt.vtk.measurement.parameter.aggregate import ParameterAggregator
 
 class FiniteValuedParameter(Parameter):
     """If the number of all possible values of a parameter is finite,
@@ -40,6 +43,7 @@ class FiniteValuedParameter(Parameter):
         """..."""
         self.value_order = kwargs.get("value_order", None)
         self.repr_dict = kwargs.get("representation", dict())
+        super(FiniteValuedParameter, self).__init__(*args, **kwargs)
 
     @property
     def values(self):
@@ -166,3 +170,12 @@ class FiniteValuedParameter(Parameter):
 
 
 
+    def make_aggregator(self, grouped_variable):
+        """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.
+        The grouped variable must be of the following form:
+
+        Parameters
+        ------------------------------------------------------------------------
+        grouped_variable <: RandomParameter
+        """
+        return ParameterAggregator(self, grouped_variable)

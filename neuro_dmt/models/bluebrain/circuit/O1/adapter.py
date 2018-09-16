@@ -36,7 +36,9 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
 from neuro_dmt.models.bluebrain.circuit.measurements import composition
-from neuro_dmt.models.bluebrain.circuit.O1.parameters import CorticalLayer
+from neuro_dmt.measurement.parameter import grouped_regions_of_interest
+from neuro_dmt.models.bluebrain.circuit.O1.parameters import \
+    grouped_regions_of_interest
 
 
 
@@ -61,13 +63,11 @@ class BlueBrainModelAdapter:
         """
         Parameters
         ------------------------------------------------------------------------
-        spatial_parameter :: Callable #should return a GroupParameter
         sampled_box_shape :: np.ndarray[3D]#shape of the regions to sample
         """
         self._sampled_box_shape = sampled_box_shape
         self._sample_size = sample_size
         self._model_label = kwargs.get('model_label', 'blue_brain_model')
-        self._spatial_parameter = kwargs.get("spatial_parameter", None)
         try:
             super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
         except:
@@ -76,18 +76,6 @@ class BlueBrainModelAdapter:
     def get_label(self, circuit):
         """method required by adapter interface."""
         return self._model_label
-
-    @property
-    def spatial_parameter(self):
-        """..."""
-        return self._spatial_parameter
-
-    @spatial_parameter.setter
-    def spatial_parameter(self, value):
-        """..."""
-        if not issubclass(value, GroupParameter):
-            raise ValueError("{} not a {}".format(value, "GroupParameter"))
-        self._spatial_parameter = value
 
     def filled_measurement(self, measurement, by):
         """..."""
@@ -99,18 +87,23 @@ class BlueBrainModelAdapter:
         sm = StatisticalMeasurement(method, by)(*args, **kwargs)
         return self.filled_measurement(sm, by)
 
-    def spatial_measurement(self, method, circuit, target=None):
+    def spatial_measurement(self, method, circuit, spatial_parameter,
+                            target=None):
         """..."""
-        spatial_parameter = self._spatial_parameter(circuit)
-        measurement\
-            = self.statistical_measurement(method,
-                                           by=spatial_parameter,
-                                           target=target,
-                                           sampled_box_shape=self._sampled_box_shape,
-                                           sample_size=self._sample_size)
+        measurement= self.statistical_measurement(
+            method,
+            by=spatial_parameter.as_group_parameter(
+                Record(name="roi", __type__=ROI, generator=self.get_layer_rois)
+            )
+            by=grouped_regions_of_interest(spatial_parameter),
+            target=target,
+            sampled_box_shape=self._sampled_box_shape,
+            sample_size=self._sample_size
+        )
         return measurement
 
-    def get_cell_density(self, circuit, target="mc2_Column"):
+    def get_cell_density(self, circuit, spatial_parameter=None,
+                         target="mc2_Column"):
         method = composition.CellDensity(circuit)
         return self.spatial_measurement(method, circuit, target=target)
                                         

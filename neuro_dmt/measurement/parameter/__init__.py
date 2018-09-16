@@ -5,6 +5,8 @@ look up the documentation to write an appropriate base class."""
 
 from abc import ABC, abstractmethod
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
+from dmt.vtk.measurement.parameter.group import GroupParameter
+
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 
@@ -40,3 +42,8 @@ class HippocampalLayer(Layer):
             "repr_dict":  {"SLM": "SLM", "SR": "SR", "SP": "SP", "SO": "SO"}
         })
         super(HippocampalLayer, self).__init__(*args, **kwargs)
+
+
+def grouped_regions_of_interest(spatial_parameter):
+
+    """Make a spatial_parameter behave like a GroupParameter"""

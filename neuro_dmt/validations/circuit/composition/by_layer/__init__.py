@@ -23,7 +23,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
     """
     plotter_type = BarPlotComparison
 
-    def __init__(self, validation_data, *args, **kwargs):
+    def __init__(self, spatial_parameter, validation_data, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
         should provide a 'Record' as specified below.
@@ -44,6 +44,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         report_file_name :: String #optional
         plot_customization :: Dict #optional
         """
+        self._spatial_parameter = spatial_parameter
         super(ByLayerCompositionValidation, self)\
             .__init__(validation_data, *args, **kwargs)
 
