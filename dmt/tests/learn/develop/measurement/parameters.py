@@ -147,10 +147,8 @@ class RandomCellDensity(measurement.Method):
             return roi * np.random.random()
 
 
-
-sm = StatisticalMeasurement(method=RandomCellDensity(),
-                            by=get_conditioned_random_variate(
-                                (layer, hyper_column,),
-                                RegionOfInterestByLayerAndHyperColumn()
-                            ))
+sm = StatisticalMeasurement(
+    get_conditioned_random_variate((layer, hyper_column,),
+                                   RegionOfInterestByLayerAndHyperColumn())
+)
 

@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter import Parameter
+from dmt.vtk.measurement.parameter.random \
+    import RandomVariate, ConditionedRandomVariate
 from dmt.vtk.measurement.parameter.group import \
     GroupParameter, ParameterAggregator
 from dmt.vtk.utils.collections import *
@@ -17,9 +19,7 @@ from neuro_dmt.measurement.parameter import \
     Layer, CorticalLayer, HippocampalLayer
 
 
-def grouped_regions_of_interest(spatial_parameter):
-    raise NotImplementedError
-class RegionOfInterest(Parameter):
+class RegionOfInterest(RandomVariate):
     """Region of interest formalized as a measurement.Parameter."""
 
     label = "roi"
@@ -32,7 +32,7 @@ class RegionOfInterest(Parameter):
         self._circuit = kwargs["circuit"]
         self._helper = BlueBrainModelHelper(circuit=self._circuit)
 
-    def random_values(self, query, *args, **kwargs):
+    def values(self, query, *args, **kwargs):
         sampled_box_shape = kwargs.get("sampled_box_shape", 50.*np.ones(3))
         """Generator of ROIs."""
         bounds = self._helper.geometric_bounds(query)

@@ -4,28 +4,14 @@ import numpy as np
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections import *
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.parameter.group import Grouper
-from dmt.vtk.measurement.parameter.group import ParameterAggregator
+from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
+from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
 
-class LayerROIs(ParameterAggregator):
-    """..."""
-    LayerType = Field(
-        __name__ = "LayerType",
-        __type__ = Layer,
-        __is_valid_value__ = lambda t: issubclass(t, Layer),
-        __doc__ = """Layer type."""
-    )
-    def __init__(self, *args, **kwargs):
-        """..."""
-        circuit = kwargs['circuit']
-        self._circuit = circuit
-        self._helper  = BlueBrainModelHelper(circuit=circuit)
-        super(LayerROIs, self).__init__(*args, **kwargs)
- 
 
-class Mtype(Grouper):
+
+class Mtype(ConditionedRandomVariate):
     """Mtype groups cell gids."""
     label = "mtype"
     value_type = str
@@ -107,7 +93,7 @@ class PostMtype(Mtype):
     grouped_variable = Record(__type__=int, name="post_gid")
 
 
-class Pathway(Grouper):
+class Pathway(ConditionedRandomVariate):
     """Pathway groups mtype-->mtype connections."""
 
     label = "pathway"
