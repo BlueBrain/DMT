@@ -140,15 +140,10 @@ def get_conditioned_random_variate(conditioning_variables, random_variate,
     """Creates a class instance on the fly."""
     kwargs.update(dict(conditioning_variables=conditioning_variables,
                        label=random_variate.label))
+    name = "Conditioned{}RandomVariate".format(
+        "".join(w.capitalize() for w in random_variate.label.split('_'))
+    )
+    T = type(name, (ConditionedRandomVariate, random_variate.__class__), {} )
+    return T(*args, **kwargs)
 
-    class _ConditionedRandomVariate(ConditionedRandomVariate,
-                                     random_variate.__class__):
-        """..."""
-        def __init__(self, *args, **kwargs):
-            """..."""
-            super(_ConditionedRandomVariate, self).__init__(*args, **kwargs)
-
-
-
-    return _ConditionedRandomVariate(*args, **kwargs)
                                          

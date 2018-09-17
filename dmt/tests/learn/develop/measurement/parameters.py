@@ -21,7 +21,7 @@ class Layer(FiniteValuedParameter):
         })
         super(Layer, self).__init__(*args, **kwargs)
 
-l = Layer()
+layer = Layer()
 class LayerModuloRandomNumber(ConditionedRandomVariate):
     label="random"
     __type__=int
@@ -78,9 +78,9 @@ class CellDensityModel(RandomVariate):
 
 
 layer_modulo = LayerModuloRandomNumber(1.0)
-layer_module_fly = l.make_aggregator(lm_random)
+layer_module_fly = layer.make_aggregator(lm_random)
 layer_cell_density = LayerCellDensity()
-layer_cell_density_fly = l.make_aggregator(CellDensityModel(1.0).values)
+layer_cell_density_fly = layer.make_aggregator(CellDensityModel(1.0).values)
 
 
 class HyperColumn(FiniteValuedParameter):
@@ -96,10 +96,9 @@ class HyperColumn(FiniteValuedParameter):
         super(HyperColumn, self).__init__(*args, **kwargs)
 
 
-h = HyperColumn()
+hyper_column = HyperColumn()
 
-
-class CellDensityByLayerAndHyperColumn(ConditionedRandomVariate):
+class CellDensityByLayerAndHyperColumn(RandomVariate):
     label = "cell_density"
     value_type = float
     def __init__(self, *args, **kwargs):
@@ -108,14 +107,12 @@ class CellDensityByLayerAndHyperColumn(ConditionedRandomVariate):
         model = kwargs.get("model", None)
         self.cell_density = np.zeros([len(layer.values),
                                       len(hyper_column.values)])
-        for l in l.values:
-            for h in h.values:
+        for l in layer.values:
+            for h in hyper_column.values:
                 self.cell_density[l-1, h-1]\
                     = model[l][h] if model else l * h * np.random.random()
 
-        super(CellDensityByLayerAndHyperColumn, self)\
-            .__init__(conditioning_variables=(layer, hyper_column,),
-                      *args, **kwargs)
+        super(CellDensityByLayerAndHyperColumn, self).__init__(*args, **kwargs)
 
 
     def values(self, condition, *args, **kwargs):
