@@ -7,7 +7,7 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.utils.pandas import flatten, level_values
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.parameter.aggregate import ParameterAggregator
+from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
 
 class FiniteValuedParameter(Parameter):
     """If the number of all possible values of a parameter is finite,
@@ -170,12 +170,14 @@ class FiniteValuedParameter(Parameter):
 
 
 
-    def make_aggregator(self, grouped_variable):
+    def make_aggregator(self, rand_var_gen_func):
         """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.
         The grouped variable must be of the following form:
 
         Parameters
         ------------------------------------------------------------------------
-        grouped_variable <: RandomParameter
+        ran_var_gen_func :: FunctionType # a generator function that generates
+        ~                                # random values under a given condition.
         """
-        return ParameterAggregator((self,), grouped_variable)
+        return ConditionedRandomVariate(conditioning_variables=(self,),
+                                        values=rand_var_gen_func)

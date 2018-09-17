@@ -2,9 +2,9 @@
 
 from abc import abstractmethod
 import pandas as pd
-from dmt.vtk.measurement.parameter.generator import ParamGenerator
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
+from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
 from dmt.vtk.utils.collections import take, Record
 from dmt.vtk.utils.descriptor import ClassAttribute
 
@@ -41,9 +41,6 @@ class Grouper:
         pass
 
 
-
-
-
 #some relevant methods as well
 def get_values(parameters):
     """Generate values for parameters in the list 'parameters'.
@@ -67,8 +64,23 @@ def get_values(parameters):
 
     return pd.DataFrame([dict(t) for t in __get_value_tuples(parameters)])
 
-def get_grouped_values(group_params, *args, **kwargs):
-    """Generate values for parameters in the list 'parameters'.
+
+def get_grouped_values(group_parameters, random_variate, *args, **kwargs):
+    """Generate values for a random variable.
+
+    Parameters
+    ---------------------------------------------------------------------------
+
+    Return
+    ---------------------------------------------------------------------------
+    """
+    crv = get_conditioned_random_variate(group_parameters, random_variate,
+                                         *args, **kwargs)
+    return crv.sample(*args, **kwargs)
+
+    
+def get_grouped_values0(group_params, *args, **kwargs):
+    """Generate values for parameters in the list 'group_params'.
 
     Parameters
     ----------------------------------------------------------------------------

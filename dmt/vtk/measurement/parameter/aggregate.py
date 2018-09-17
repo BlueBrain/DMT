@@ -3,21 +3,22 @@ from abc import abstractmethod
 import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.parameter.random import RandomParameter
+from dmt.vtk.measurement.parameter.random import RandomVariate
 from dmt.vtk.utils.collections import take, Record
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+
 
 class ParameterAggregator:
     """Aggregate a parameter to define another."""
     grouped_variable = Field(
         __name__ = "grouped_variable",
-        __type__ = RandomParameter, # <: Parameter
+        __type__ = RandomVariate, 
         __doc__  = """The grouped parameter."""
     )
     aggregate_variables = Field(
         __name__ = "aggregate_variables",
         __type__ = tuple, #List[Parameter],#should actually be FiniteValuedParameter, but that causes loopy dependence
-        __is_valid_value__ = lambda this, ps: [issubclass(p, Parameter) for p in ps],
+        __is_valid_value__ = lambda this, ps: all(issubclass(p, Parameter) for p in ps),
         __doc__  = """The (finte-valued) parameter that stands for groups of
         the grouped variable."""
     )
@@ -89,7 +90,5 @@ class ParameterAggregator:
         if group:
             return __sample(group)
 
-        return pd.concat([
-            __sample(group) for group in self.groups
-        ])
+        return pd.concat([__sample(group) for group in self.groups])
 
