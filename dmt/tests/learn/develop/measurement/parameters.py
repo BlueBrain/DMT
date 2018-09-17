@@ -4,9 +4,9 @@ import numpy as np
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random \
-    import RandomVariate, ConditionedRandomVariate
+    import RandomVariate, ConditionedRandomVariate, get_conditioned_random_variate
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
-#from dmt.vtk.measurement.parameter.aggregate import ParameterAggregator
+from dmt.vtk.measurement import StatisticalMeasurement
 
 class Layer(FiniteValuedParameter):
     """Layer"""
@@ -121,4 +121,36 @@ class CellDensityByLayerAndHyperColumn(RandomVariate):
         h = condition.hyper_column
         while True:
             yield max(self.cell_density[l-1][h-1] * np.random.random(), 0.0)
+
+class RegionOfInterestByLayerAndHyperColumn(RandomVariate):
+    """..."""
+    label = "roi"
+    value_type = float
+    def __init__(self, *args, **kwargs):
+        super(RegionOfInterestByLayerAndHyperColumn, self).__init__(*args, **kwargs)
+
+    def values(self, condition, *args, **kwargs):
+        yield condition.layer * condition.hyper_column * np.random.random()
+
+
+from dmt.vtk import measurement
+from dmt.vtk.phenomenon import Phenomenon
+class RandomCellDensity(measurement.Method):
+    """..."""
+    label = "cell_density"
+    phenomenon = Phenomenon("cell_density", "count of cells in a unit volume")
+    units = "1"
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, roi):
+            return roi * np.random.random()
+
+
+
+sm = StatisticalMeasurement(method=RandomCellDensity(),
+                            by=get_conditioned_random_variate(
+                                (layer, hyper_column,),
+                                RegionOfInterestByLayerAndHyperColumn()
+                            ))
 

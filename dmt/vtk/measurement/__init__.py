@@ -12,6 +12,8 @@ import pandas as pd
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.measurement.parameter.group import get_grouped_values
+from dmt.vtk.measurement.parameter.random \
+    import RandomVariate, ConditionedRandomVariate
     
 
 class Measurement:
@@ -69,55 +71,41 @@ class Method(ABC):
         return self.__call__(**measurement_parameters)
 
  
+
 class StatisticalMeasurement:
     """A method, augmented with statistical functionality."""
-    group_parameters = Field(
-        __name__ = "group_parameter",
-        __type__ = list,
-        __is_valid_value__ = lambda gps: all(isinstance(gp, Grouper)
-                                             for gp in gps),
-        __doc__ = """The GroupParameter types associated with this
-        StatisticalMethod."""
-    )
     def __init__(self, method, by):
         """...
         """
-        if isinstance(by, list):
-            self.group_parameters = by
-        else:
-            self.group_parameters = [by]
         self.method = method
+        self.random_variate = by
 
     def sample(self, *args, **kwargs):
         """..."""
-        gps = self.group_parameters
-        df = get_grouped_values(gps, *args, **kwargs)
-        measured_values = [
-            self.method(**row[1][[p.grouped_variable.name for p in gps]])
-            for row in df.iterrows()
-        ]
-        df[self.method.label] = measured_values
-        df = df.sort_values(by=[gp.label for gp in gps])
-        return df[[self.method.label] + [gp.label for gp in gps]]
+
+        vdf = self.random_variate.sample(*args, **kwargs)
+        vdf[self.method.label]\
+            = [self.method(**row[1]) for row in vdf.iterrows()]
+        return vdf[[self.method.label]]
 
     def __call__(self, *args, **kwargs):
         """call me"""
-        data = summary_statistic(self.sample(*args, **kwargs),
-                                 [pg.label for pg in self.group_parameters])
-        if len(self.group_parameters) == 1:
+        data = summary_statistic(self.sample(*args, **kwargs))
+        levels = data.index.names
+        if len(levels) == 1:
             return Record(phenomenon = self.method.phenomenon,
                           label = self.method.label,
                           method = method_description(self.method),
                           data = data,
                           units = self.method.units,
-                          parameter_group = self.group_parameters[0])
+                          parameter_group = levels[0])
 
         return Record(phenomenon = self.method.phenomenon,
                       label = self.method.label,
                       method = method_description(self.method),
                       data = data,
                       units = self.method.units,
-                      parameter_groups = self.group_parameters)
+                      parameter_groups = levels)
 
 
 def method_description(measurement_method):
@@ -130,14 +118,19 @@ def method_description(measurement_method):
     return measurement_method.__call__.__doc__
 
 def summary_statistic(measurement_sample,
-                      parameter_columns,
+                      parameter_columns=None,
                       measurement_columns=None):
     """Summarize a data-frame.
     Type of the returned data-frame depends on the type of
     'measurement_columns'. Thus this method can accommodate more than one
     parameter columns in the measurement to be summarized, as well as it can
     summarize more than one measurement columns."""
-    summary = measurement_sample.groupby(parameter_columns).agg(["mean", "std"])
+    aggregators = ["mean", "std"]
+    if not parameter_columns:
+        return measurement_sample.groupby(level=measurement_sample.index.names)\
+                                 .agg(aggregators)
+
+    summary = measurement_sample.groupby(parameter_columns).agg(aggregators)
     measurement_columns = measurement_columns if measurement_columns \
                           else summary.columns.levels[0]
     if len(measurement_columns) == 1:

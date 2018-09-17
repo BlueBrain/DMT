@@ -117,7 +117,6 @@ class ConditionedRandomVariate(RandomVariate):
             names=variables
         )
 
-
     def sample(self, *args, condition=None, **kwargs):
         """..."""
         def __sample(condition):
@@ -131,9 +130,6 @@ class ConditionedRandomVariate(RandomVariate):
 
         return pd.concat([__sample(condition) for condition in self.conditions])
 
-
-
-        
 
 def get_conditioned_random_variate(conditioning_variables, random_variate,
                                    *args, **kwargs):
