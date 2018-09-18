@@ -19,6 +19,19 @@ from neuro_dmt.measurement.parameter import \
     Layer, CorticalLayer, HippocampalLayer
 
 
+class RandomRegionOfInterest(ConditionedRandomVariate):
+    """Sample random ROIs, conditioned on values of other variables."""
+    label = "roi"
+    value_type = ROI
+
+    def __init__(self, circuit, key_maker, *args, **kwargs):
+        """...
+        Parameters
+        ------------------------------------------------------------------------
+        circuit :: bluepy.v2.Circuit,
+        key_maker :: condition -> dict #that will be sent as a query.
+        """
+
 class RegionOfInterest(RandomVariate):
     """Region of interest formalized as a measurement.Parameter."""
 

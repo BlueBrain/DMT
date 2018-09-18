@@ -993,3 +993,83 @@
    If we enforce return of pandas objects from a singleton measurement, we can
    easily stack up a bunch of these measurements and make statistical summaries.
  
+
+* Ontology
+  I will need to have my own /ontology/ of the brain to build my code against.
+  This ontology is not going to allow me to file and retrieve data --- but
+  provide a naming scheme that enables expression of scientific and programming
+  ideas. 
+
+** Phenomena, Parameter, and Measurements
+   These concepts are inter-related.
+   - Phenomenon :: A phenomenon is anything that manifests itself. A phenomenon
+        may be an observable fact, or event. A phenomenon may be described by a
+        system of information related to matter, energy, or space-time.
+   - Parameter :: a numerical or other measurable factor forming one of a set
+        that defines a system or sets the conditions of its operation. A limit
+        or boundary which defines the scope of a particular process or activity.
+   - Measurement :: assignment of a number to a characteristic of an object or
+        event.
+   - Method :: specifies /measurement/ of a /phenomenon/.
+
+        
+   So, we /measure/ a /phenomenon/. ~Phenomenon~, ~Measurement~, and ~Method~
+   are okay, their conceptual connotations are already part of our code-base.
+   The problem is with ~Parameter~.  Is ~Parameter~ also a ~Phenomenon~?
+   However, we cannot follow that line of logic too far. Everything that can be
+   assigned a number is a ~Phenomenon~!
+
+   We can use the definition presented above only as a guideline. For us, the
+   definition works if we have defined ~System~:
+   
+   - System :: Model, reality, experiments and measurements of these, or their
+        parts, each of these can be thought as a system. A circuit is a system
+        that is composed of smaller system --- cells. But cells are not the only
+        micro-systems embedded inside the circuit. Synpatic processes can also
+        be described as a system. To /isolate/ a system in our /understanding/
+        we have to do two excercises: 
+     1. Identify the processes involved /inside/ the system, /i.e./ the
+        players and their roles.
+     2. And, describe the system's boundary. That is specify what /is/ the
+        system, and what /is not/ the system.
+
+*** Measurement. As a system. MeasurementSystem.
+    Consider description of a system again:
+     1. Identify the processes involved /inside/ the system, /i.e./ the
+        players and their roles.
+     2. And, describe the system's boundary. That is specify what /is/ the
+        system, and what /is not/ the system.
+
+
+     Describing the interior is easy. The harder part is to describe the
+     boundary. This is where ~Parameter~ comes. A ~Parameter~ set describes a
+     system. What a ~Parameter~ set really describes is the /boundary/ of a
+     system.  Consider measurement as a system.
+
+     Consider ~Measurement~ of a ~CellDensity~, as a /function/ of ~Layer~. We
+     might have defined a ~LayerCellDensity~ that would be more descriptive.
+     Instead, we decided to define ~CellDensity~ as a ~measurement.Method~ ...
+     /i.e./ ~CellDensity~ describes (to the computer!) a method to compute a
+     cell density. /This method has to operate at as low a level as possible./
+     What we mean, in the context of cell density, is that we should explicitly
+     provide a measurement method for cell density as a function a of location
+     in space. Computing cell density will involve computing a volume and
+     counting cells inside that volume. Exact details of the process of
+     computing cell density should be part of the  description of ~CellDensity~,
+     and must be implemented by the model adapter. However, the model adapter
+     must use a language that can be shared with users of the adapter, that is
+     testers (validators), and experimentalists. We need to /set boundaries/ of
+     such a communication. We can say
+
+     #+begin_src python
+     cell_density = self.adapter.get_cell_density(circuit_model, by=cortical_layer)
+     #+end_src
+     Here ~cortical_layer~ is a ~Parameter~ because it defines the scope of the
+     measurement being requested in that method call.
+
+*** Parameter
+    Should we require a ~Parameter~ to describe what it quantifies? 
+    The name ~cortical_layer~ is fairly clear to read, but the computer should
+    be able to translate the /code/ of ~cortical_layer~ into behavior.
+     
+     

@@ -21,7 +21,7 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.measurement.parameter import GroupParameter
+from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -92,6 +92,7 @@ class BlueBrainModelAdapter:
         """..."""
         measurement= self.statistical_measurement(
             method,
+            by=
             by=spatial_parameter.as_group_parameter(
                 Record(name="roi", __type__=ROI, generator=self.get_layer_rois)
             )
@@ -105,7 +106,7 @@ class BlueBrainModelAdapter:
     def get_cell_density(self, circuit, spatial_parameter=None,
                          target="mc2_Column"):
         method = composition.CellDensity(circuit)
-        return self.spatial_measurement(method, circuit, target=target)
+        return self.spatial_measurement(method, by=spatial_parameter, circuit, target=target)
                                         
     def get_cell_ratio(self, circuit):
         """..."""

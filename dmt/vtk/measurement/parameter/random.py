@@ -111,10 +111,11 @@ class ConditionedRandomVariate(RandomVariate):
         if conditions is None:
             conditions = self.conditions
 
-        variables = [var.label for var in self.conditioning_variables]
         return pd.MultiIndex.from_tuples(
-            [tuple(getattr(c, v) for v in variables) for c in conditions],
-            names=variables
+            [tuple(var.repr(getattr(c, var.label))
+                   for var in self.conditioning_variables)
+             for c in conditions],
+            names=[var.label for var in self.conditioning_variables]
         )
 
     def sample(self, *args, condition=None, **kwargs):
