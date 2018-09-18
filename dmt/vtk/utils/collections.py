@@ -41,6 +41,10 @@ class Record:
         """Make Record behave like a dict"""
         return getattr(self, key, default)
 
+    def __call__(self, key, default=None):
+        """Make Record a function!"""
+        return self.get(key, default)
+
 class FrozenDict(collections.Mapping):
     """A dictionary that cannot be changed."""
 

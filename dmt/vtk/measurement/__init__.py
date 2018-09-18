@@ -100,7 +100,7 @@ class StatisticalMeasurement:
         if len(levels) == 1:
             return Record(phenomenon = method.phenomenon,
                           label = method.label,
-                          method = method_description(method),
+                          methd = method_description(method),
                           data = data,
                           units = method.units,
                           parameter_group = levels[0])
