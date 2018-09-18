@@ -15,7 +15,6 @@ class CellDensityValidation(ByLayerCompositionValidation):
         "cell density",
         "Count of cells in a unit volume."
     )
-    region_type = CorticalLayer
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface.

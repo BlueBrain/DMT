@@ -13,10 +13,16 @@ class Logger:
                           warning="WARNING",
                           error="ERROR",
                           assertion="ASSERTION")
-    level = dict(INFO=0,
-                 WARNING=1,
-                 ERROR=2,
-                 ASSERTION=3)
+
+    level = Record(DEBUG=0,#log everything
+                   DEVELOP=1,#no INFO
+                   PROD=2)#log only errors and assertions
+
+    message_level = Record(INFO=0,
+                           WARNING=1,
+                           ERROR=2,
+                           ASSERTION=3)
+
     @staticmethod
     def timestamp(now=None, *args, **kwargs):
         """Time stamp.
@@ -53,8 +59,8 @@ class Logger:
                  level=None,
                  *args, **kwargs):
         """..."""
-        self._level\
-            = Logger.level[level if level  else Logger.message_type.error]
+        self._level = level if level else Logger.level.PROD
+            
         self._name = name if name else "Output Log"
         self._in_file = (
             None if (output_dir_path is None and file_name is None) else 
@@ -67,14 +73,14 @@ class Logger:
         if self._in_file:
             self._log_message(self._name)
 
-    def _log_message(self, msg, msg_type=""):
+    def _log_message(self, msg, msg_type="INFO"):
         """"Log message with time.
             
         Parameters
         ------------------------------------------------------------------------
         msg :: str #to be logged
         """
-        if Logger.level[msg_type] >= self._level:
+        if Logger.message_level(msg_type) >= self._level:
             msg = "{} {}:: {}"\
                   .format(Logger.timestamp(time.localtime()), msg_type, msg)
             Logger.err_print(msg)

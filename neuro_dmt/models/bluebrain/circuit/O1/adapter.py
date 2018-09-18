@@ -21,7 +21,7 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.measurement.parameter import GroupParameter
+from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -36,9 +36,6 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
 from neuro_dmt.models.bluebrain.circuit.measurements import composition
-from neuro_dmt.measurement.parameter import grouped_regions_of_interest
-from neuro_dmt.models.bluebrain.circuit.O1.parameters import \
-    grouped_regions_of_interest
 
 
 
@@ -56,7 +53,6 @@ class BlueBrainModelAdapter:
     """
     author = Author.zero
     region_label = 'layer'
-    region_values = [1, 2, 3, 4, 5, 6]
 
     def __init__(self, sampled_box_shape, sample_size,
                  *args, **kwargs):
@@ -87,16 +83,16 @@ class BlueBrainModelAdapter:
         sm = StatisticalMeasurement(method, by)(*args, **kwargs)
         return self.filled_measurement(sm, by)
 
-    def spatial_measurement(self, method, circuit, spatial_parameter,
-                            target=None):
+    def spatial_measurement(self, method, circuit, by, target=None):
         """..."""
+
         measurement= self.statistical_measurement(
             method,
+            by=
             by=spatial_parameter.as_group_parameter(
                 Record(name="roi", __type__=ROI, generator=self.get_layer_rois)
             )
-            by=grouped_regions_of_interest(spatial_parameter),
-            target=target,
+            target=target, #track this kwarg --- how is it propagate?
             sampled_box_shape=self._sampled_box_shape,
             sample_size=self._sample_size
         )
@@ -105,7 +101,8 @@ class BlueBrainModelAdapter:
     def get_cell_density(self, circuit, spatial_parameter=None,
                          target="mc2_Column"):
         method = composition.CellDensity(circuit)
-        return self.spatial_measurement(method, circuit, target=target)
+        return self.spatial_measurement(method, by=spatial_parameter,
+                                        circuit, target=target)
                                         
     def get_cell_ratio(self, circuit):
         """..."""

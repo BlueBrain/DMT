@@ -8,6 +8,7 @@ from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.measurement.parameter.random import \
     RandomVariate, ConditionedRandomVariate, get_conditioned_random_variate
 from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.logging import Logger
 from neuro_dmt.models.bluebrain.circuit.parameters \
     import PreMtype, PostMtype, Pathway
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
@@ -16,6 +17,9 @@ from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, random_location
 from neuro_dmt.measurement.parameter import CorticalLayer
+from neuro_dmt.models.bluebrain.circuit.O1.parameters \
+    import RandomRegionOfInterest,  RandomRegionOfInterestByCorticalLayer
+
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
 circuit = Circuit(cpath)
@@ -30,32 +34,16 @@ circuit = Circuit(cpath)
 
 cl = CorticalLayer()
 
-class BBCorticalLayerROIs(ConditionedRandomVariate):
-    label = "roi"
-    value_type = ROI
-    def __init__(self, *args, **kwargs):
-        self._circuit = kwargs["circuit"]
-        self._helper  = BlueBrainModelHelper(circuit=circuit)
-        super(BBCorticalLayerROIs, self).__init__(*args, **kwargs)
 
-    def query(self, condition):
-        """..."""
-        return {'layer': condition.layer}
-
-    def values(self, condition, *args, **kwargs):
-        """..."""
-        sampled_box_shape = kwargs.get("sampled_box_shape", 50.*np.ones(3))
-        bounds = self._helper.geometric_bounds(self.query(condition))
-        if bounds is None:
-            return ()
-        half_box = sampled_box_shape / 2.
-        region_to_explore = Cuboid(bounds.bbox[0] + half_box,
-                                   bounds.bbox[1] - half_box)
-        while True:
-            loc = random_location(region_to_explore)
-            yield Cuboid(loc - half_box, loc + half_box)
-
-bbcl = BBCorticalLayerROIs(circuit=circuit, conditioning_variables=(cl,))
+bbcl1 = RandomRegionOfInterestByCorticalLayer(circuit, size=2)
+                                             
+bbcl2 = RandomRegionOfInterest(circuit,
+                               conditioning_variables=(CorticalLayer(),),
+                               logger_level=Logger.level.DEVELOP,
+                               query=lambda self, condition, target=None:(
+                                   {"layer": condition.layer, "$target": target}
+                                   if target else
+                                   {"layer": condition.layer}))
 
 #bblcrv = get_conditioned_random_variate((cl,), bbcl, circuit=circuit)
 
