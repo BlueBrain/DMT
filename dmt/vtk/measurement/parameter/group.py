@@ -1,12 +1,47 @@
 """A parameter like that groups another parameter"""
 
 from abc import abstractmethod
+import collections
 import pandas as pd
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
-from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
+#from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.utils.collections import take, Record
 from dmt.vtk.utils.descriptor import ClassAttribute
+
+
+class ParameterGroup:
+    """A group of parameters."""
+
+    def __init__(self, arg0, *args, **kwargs):
+        """...
+
+        Parameters
+        ------------------------------------------------------------------------
+        parameters :: Iterable(FiniteValuedParameter)
+        """
+        self.__parameters = (
+            arg0 if isinstance(arg0, collections.Iterable)
+            else (arg0,) + args
+        )
+
+    @property
+    def parameters(self):
+        """..."""
+        return self.__parameters
+
+    @property
+    def kwargs(self):
+        """A dict that can be used as keyword arguments for a function."""
+        def __get_tuple_values(params):
+            """..."""
+            if not params:
+                return [[]]
+            head_tuples = [[(params[0].label, v)] for v in params[0].values]
+            tail_tuples = __get_tuple_values(params[1:])
+            return [h+t for h in head_tuples for t in tail_tuples]
+
+        for param_values in __get_tuple_values(self.parameters):
+            yield dict(param_values)
 
 
 class Grouper:
@@ -23,7 +58,7 @@ class Grouper:
     )
     def __init__(self, *args, **kwargs):
         """..."""
-        super(GroupParameter, self).__init__(*args, **kwargs)
+        super(Group, self).__init__(*args, **kwargs)
 
     @abstractmethod
     def random_grouped_values(self, value):
@@ -63,48 +98,3 @@ def get_values(parameters):
                 for v in p0.values for pvs in __get_value_tuples(params[1:])]
 
     return pd.DataFrame([dict(t) for t in __get_value_tuples(parameters)])
-
-
-def get_grouped_values(group_parameters, random_variate, *args, **kwargs):
-    """Generate values for a random variable.
-
-    Parameters
-    ---------------------------------------------------------------------------
-
-    Return
-    ---------------------------------------------------------------------------
-    """
-    crv = get_conditioned_random_variate(group_parameters, random_variate,
-                                         *args, **kwargs)
-    return crv.sample(*args, **kwargs)
-
-    
-def get_grouped_values0(group_params, *args, **kwargs):
-    """Generate values for parameters in the list 'group_params'.
-
-    Parameters
-    ----------------------------------------------------------------------------
-    group_parameters :: List[<:GroupParameter] #list of GroupParameter subclasses
-
-    Return
-    ----------------------------------------------------------------------------
-    dict
-    """
-
-    def __get_tuples(index):
-        """..."""
-        if index == len(group_params):
-            return ()
-        p0 = group_params[index]
-        vs0 = [[(p0.grouped_variable.label, gv),
-                (p0.aggregate_variable.label, v)]
-               for v in p0.groups
-               for gv in take(kwargs.get("size", 20),
-                              p0.random_grouped_values(v, *args, **kwargs))]
-        if index + 1 == len(group_params):
-            return vs0
-        else:
-            vsrest = __get_tuples(index + 1)
-            return [v0 + v1 for v0 in vs0 for v1 in vsrest]
-
-    return pd.DataFrame([dict(t) for t in __get_tuples(0)])

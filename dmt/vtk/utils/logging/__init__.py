@@ -69,9 +69,14 @@ class Logger:
                 file_name if file_name else ".".join(self._name.lower())
             )
         )
-        #super(Logger, self).__init__(*args, **kwargs)
         if self._in_file:
             self._log_message(self._name)
+
+        self.__statistics = {t: 0 for t in self.message_level.fields}
+        try:
+            super(Logger, self).__init__(*args, **kwargs)
+        except:
+            pass
 
     def _log_message(self, msg, msg_type="INFO"):
         """"Log message with time.
@@ -81,30 +86,49 @@ class Logger:
         msg :: str #to be logged
         """
         if Logger.message_level(msg_type) >= self._level:
-            msg = "{} {}:: {}"\
-                  .format(Logger.timestamp(time.localtime()), msg_type, msg)
+            msg = "{}@{} {}:: {}"\
+                  .format(self._name,
+                          Logger.timestamp(time.localtime()),
+                          msg_type, msg)
             Logger.err_print(msg)
             if self._in_file:
                 with open(self._in_file, "a")  as f:
                     f.write("{}\n".format(msg))
+
         else:
-            return
-                    
+            pass
+        self.__statistics[msg_type] += 1
+        return self.__statistics
+
     def info(self, msg):
         """..."""
-        self._log_message(msg, self.message_type.info)
+        return self._log_message(msg, self.message_type.info)
+
+    def inform(self, msg):
+        """..."""
+        return self.info(msg)
 
     def warning(self, msg):
         """..."""
-        self._log_message(msg, self.message_type.warning)
+        return self._log_message(msg, self.message_type.warning)
+
+    def warn(self, msg):
+        """..."""
+        return self.warning(msg)
 
     def error(self, msg):
         """..."""
-        self._log_message(msg, self.message_type.error)
+        return self._log_message(msg, self.message_type.error)
 
-    def assertion(self, msg):
-        """..."""
-        self._log_message(msg, self.message_type.assertion)
+    def assertion(self, success, msg):
+        """...
+        Parameters
+        ------------------------------------------------------------------------
+        success :: Boolean
+        """
+        x = self._log_message(msg, self.message_type.assertion)
+        assert success, msg
+        return x
 
 
 class LazyLogger(Logger):

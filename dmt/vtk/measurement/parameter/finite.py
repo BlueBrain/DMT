@@ -13,13 +13,8 @@ class FiniteValuedParameter(Parameter):
     """If the number of all possible values of a parameter is finite,
     we can require certain finite data representations of its attributes,
     and adapt Parameter abstractmethods."""
-    value_type = ClassAttribute(
-        __name__ = "value_type",
-        __type__ = type,
-        __doc__  = """Type of the values assumed by this Parameter."""
-    )
     value_order = Field(
-        __name__ = "__value_order__",
+        __name__ = "value_order",
         __type__ = dict, 
         __is_valid_value__ = lambda self, value_order_dict: all(
             (isinstance(value, self.value_type) and
@@ -28,8 +23,8 @@ class FiniteValuedParameter(Parameter):
         ),
         __doc__="""A dict mapping values to their order.""" 
     )
-    repr_dict = Field(
-        __name__ = "repr_dict",
+    value_repr = Field(
+        __name__ = "value_repr",
         __type__ = dict,
         __is_valid_value__ = lambda self, vrdict: all(
             isinstance(value, self.value_type) and isinstance(rep, str)
@@ -39,10 +34,18 @@ class FiniteValuedParameter(Parameter):
         may not pass this value to this base class' initializer. There will be
         a default implementation."""
     )
-    def __init__(self, *args, **kwargs):
+    def __init__(self, value_order={}, value_repr={},
+                 label="label", value_type=type(None),
+                 *args, **kwargs):
         """..."""
-        self.value_order = kwargs.get("value_order", None)
-        self.repr_dict = kwargs.get("representation", dict())
+        if isinstance(self.__class__.value_order, Field):
+            self.value_order = value_order
+        if isinstance(self.__class__.value_repr, Field):
+            self.value_repr = value_repr
+        if isinstance(self.__class__.label, Field):
+            self.label = label
+        if isinstance(self.__class__.value_type, Field):
+            self.value_type = value_type
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
 
     @property
@@ -66,7 +69,7 @@ class FiniteValuedParameter(Parameter):
     def repr(self, value):
         """..."""
         assert(self.is_valid(value))
-        return self.repr_dict.get(value, "{}".format(value))
+        return self.value_repr.get(value, "{}".format(value))
 
 
     @property

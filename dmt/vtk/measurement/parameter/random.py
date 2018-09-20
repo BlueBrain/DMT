@@ -7,7 +7,9 @@ import inspect
 import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
+from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.collections import Record, take
+from dmt.vtk.utils.logging import Logger
 
 class RandomVariate(ABC):
     """Like a Parameter, but yields random values.
@@ -27,7 +29,15 @@ class RandomVariate(ABC):
     def __init__(self, *args, **kwargs):
         if "label" in kwargs:
             self.label = kwargs["label"]
-        
+
+
+    @property
+    def logger(self):
+        """Log from this class, if you want to"""
+        if not hasattr(self, "_logger"):
+            self._logger = Logger("{}Logger".format())
+
+
     @abstractmethod
     def values(self, *args, **kwargs):
         """Returns a generator."""
@@ -40,96 +50,62 @@ class RandomVariate(ABC):
         return str(value)
 
 
-
 class ConditionedRandomVariate(RandomVariate):
     """RandomVariate conditioned on other variables."""
-    conditioning_variables = Field(
-        __name__ = "conditioning_variables",
-        __type__ = tuple,
-        __is_valid_value__ = lambda self, ps: all(isinstance(p, Parameter) for p in ps),
-        __doc__  = """Variables that determine the distribution
-        of this RandomVariable."""
+    condition_type = Field(
+        __name__="condition_type",
+        __type__=Record,
+        __doc__="""Record mapping field names to their types.""",
+        __examples__=[Record(layer=int, target=str)]
     )
-    values = Field(
-        __name__ = "values",
-        __type__ =  types.FunctionType,
-        __is_valid_value__ = lambda instance, v: inspect.isgeneratorfunction(v),
-        __doc__ = """Yields random values of this random variable. The input
-        parameters to this generator function must be values of
-        the conditioning variables."""
-    )
-    def __init__(self, *args, **kwargs):
+    def __init__(self, label=None, values = None,
+                 *args, **kwargs):
         """Initialize this class with a 'values' parameter, or
         implement a 'values' method in a subclass.
 
         Parameters
         ------------------------------------------------------------------------
-        values :: self.condition_type -> value_type #method for random generation.
+        label :: String
         """ 
-        self.conditioning_variables = kwargs["conditioning_variables"]
 
-        values = kwargs.get("values", None)
-        if values is not None:
-            self.__class__.values = values
-
-        label = kwargs.get("label", None)
         if label is not None:
             self.label = label
 
         super(ConditionedRandomVariate, self).__init__(*args, **kwargs)
 
-    @property
-    def conditions(self):
-        """..."""
-        def __get_tuples(conditioning_variables):
-            """..."""
-            if not conditioning_variables:
-                return [[]]
-
-            head_tuples = [[(conditioning_variables[0].label, value)]
-                           for value in conditioning_variables[0].values]
-            tail_tuples = __get_tuples(conditioning_variables[1:])
-            return [h+t for h in head_tuples for t in tail_tuples]
-
-        for cs in __get_tuples(self.conditioning_variables):
-            yield Record(**dict(cs))
-
     def assert_condition_is_valid(self, condition):
         """..."""
-        assert(all(hasattr(condition, variable.label)
-                   for variable in self.conditioning_variables))
-        
-    def conditioned_values(self, condition, *args, **kwargs):
-        """Generate values of this RandomVariate for given conditions."""
-        for value in take(kwargs.get("size", 20),
-                          self.values(condition, *args, **kwargs)):
-            yield pd.DataFrame({self.label: [value]},
-                               index=self.index([condition]))
-                    
-    def index(self, conditions=None, __repr__=True):
-        """A Pandas index for the provided conditions."""
-        if conditions is None:
-            conditions = self.conditions
+        if not hasattr(self, "conditions"):
+            raise Exception("No 'conditions' attribute was set.")
+        return self.conditions.is_valid(condition)
 
-        return pd.MultiIndex.from_tuples(
-            [tuple(var.repr(getattr(c, var.label))
-                   for var in self.conditioning_variables)
-             for c in conditions],
-            names=[var.label for var in self.conditioning_variables]
-        )
 
-    def sample(self, *args, condition=None, **kwargs):
+    def is_valid(self, condition_generator):
         """..."""
+        cg = condition_generator
+        fields = self.condition_type.fields
+        return(all(f in cg.labels for f in fields ) and
+               all(issubclass(cg.get_type(f), self.condition_type.get(f))
+                   for f in fields))
+                   
+    @abstractmethod
+    def values(self, condition, *args, **kwargs):
+        """Yield random values for given condition."""
+        pass
+
+    def conditioned_values(self, condition, *args, **kwargs):
+        """Yield random values of this RandomVariate for given conditions,
+        with the condition as a Pandas DataFrame."""
+        for v in self.values(condition, *args, **kwargs):
+            yield pd.DataFrame({self.label: [v]}, index=self.index([condition]))
+                    
+    def sample(self, conditions, size=20, *args, **kwargs):
+        assert(self.is_valid(conditions))
         def __sample(condition):
-            return pd.concat(list(take(
-                kwargs.get("size", 20),
-                self.conditioned_values(condition=condition, *args, **kwargs)
-            )))
-
-        if condition:
-            return __sample(condition)
-
-        return pd.concat([__sample(condition) for condition in self.conditions])
+            return pd.concat(list(
+                take(size, self.conditioned_values(condition, *args, **kwargs))
+            ))
+        return pd.concat([__sample(condition) for condition in conditions])
 
 
 def get_conditioned_random_variate(conditioning_variables, random_variate,

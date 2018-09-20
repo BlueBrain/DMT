@@ -18,12 +18,12 @@ class Parameter(ABC):
     While a Parameter can be defined theoretically, we will be
     interested Parameters in the context of a particular model.
     """
-    label = ClassAttribute(
+    label = Field(
         __name__ = "label",
         __type__ = str,
         __doc__  = """A short name for this Parameter -- no spaces."""
     )
-    value_type = ClassAttribute(
+    value_type = Field(
         __name__ = "value_type",
         __type__ = type,
         __doc__  = """Type of the values assumed by this Parameter."""

@@ -12,6 +12,7 @@ class Field(WithLogging):
     def __init__(self, __name__, __type__,
                  __is_valid_value__=lambda x, instance: True,
                  __doc__ = "A field.",
+                 __examples__=[],
                  *args, **kwargs):
         """"
         Parameters
@@ -22,11 +23,22 @@ class Field(WithLogging):
         self.__field_name__ = __name__
         self.__type__ = __type__
         self.__is_valid_value = __is_valid_value__
+        __doc__ = __doc__.strip()
         self.__doc__ = __doc__
+        if __examples__:
+            self.__doc__ += "{}You may check {}.examples for further guidance."\
+                            .format('. ' if __doc__[-1] != '.' else ' ',
+                                    self.__field_name__)
+        self.__examples__=__examples__
         self.instance_storage_name\
             = "${}_{}".format(__type__.__name__, __name__)
 
         super(Field, self).__init__(*args, **kwargs)
+
+    @property
+    def examples(self):
+        """..."""
+        return self.__examples__
 
     def __is_minimally_valid(self, value):
         """Minimum requirement on value to pass as a valid instance."""
@@ -96,7 +108,7 @@ class Field(WithLogging):
         if not instance is None:
             return getattr(instance, self.instance_storage_name)
         if not self.__field_name__ in dir(owner):
-            print("{} is not a field member of {}"\
+            print("{} is not a Field member of {}"\
                   .format(self.__field_name__, owner.__name__))
             return None
         for mo in owner.__mro__:

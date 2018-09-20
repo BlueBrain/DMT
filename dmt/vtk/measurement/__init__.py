@@ -12,7 +12,6 @@ import pandas as pd
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.parameter.group import get_grouped_values
 from dmt.vtk.measurement.parameter.random \
     import RandomVariate, ConditionedRandomVariate
     
@@ -80,37 +79,44 @@ class StatisticalMeasurement:
         __type__ = RandomVariate,
         __doc__  = """A random variate can be sampled."""
     )
-    def __init__(self, random_variate, size=20):
+    sample_size = Field(
+        __name__="sample_size",
+        __type__=int,
+        __doc__="""Number of samples to be drawn for each statistical measurement."""
+    )
+    def __init__(self, random_variate, sample_size=20):
         """..."""
         self.random_variate = random_variate
-        self.sample_size = size
+        self.sample_size = sample_size
 
-    def sample(self, method, *args, **kwargs):
+    def sample(self, method, size=20, *args, **kwargs):
         """..."""
-        params = self.random_variate.sample(*args, **kwargs)
+        params = self.random_variate.sample(size=size, *args, **kwargs)
         measurement = [method(**row[1]) for row in params.iterrows()]
         return pd.DataFrame({method.label: measurement}, index=params.index)
 
-    def __call__(self, method, *args, **kwargs):
+    def __call__(self, method, size=None, *args, **kwargs):
         """call me"""
-        if "size" not in kwargs:
-            kwargs["size"] = self.sample_size
-        data = summary_statistic(self.sample(method, *args, **kwargs))
+        data = summary_statistic(self.sample(
+            method,
+            size=(size if size else self.sample_size),
+            *args, **kwargs
+        ))
         levels = data.index.names
         if len(levels) == 1:
-            return Record(phenomenon = method.phenomenon,
-                          label = method.label,
-                          methd = method_description(method),
-                          data = data,
-                          units = method.units,
-                          parameter_group = levels[0])
+            return Record(phenomenon=method.phenomenon,
+                          label=method.label,
+                          method=method_description(method),
+                          data=data,
+                          units=method.units,
+                          parameter_group=levels[0])
 
-        return Record(phenomenon = method.phenomenon,
-                      label = method.label,
-                      method = method_description(method),
-                      data = data,
-                      units = method.units,
-                      parameter_groups = levels)
+        return Record(phenomenon=method.phenomenon,
+                      label=method.label,
+                      method=method_description(method),
+                      data=data,
+                      units=method.units,
+                      parameter_groups=levels)
 
 
 def method_description(measurement_method):

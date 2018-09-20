@@ -22,6 +22,7 @@ from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
+from dmt.vtk.utils.logging import Logger
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -32,11 +33,12 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuit.O1.parameters \
+    import SpatialRandomVariate, RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
 from neuro_dmt.models.bluebrain.circuit.measurements import composition
-
 
 
 @adapter.adapter(Circuit)
@@ -52,18 +54,40 @@ class BlueBrainModelAdapter:
     observed in real brain circuits.
     """
     author = Author.zero
-    region_label = 'layer'
+    label = 'layer'
 
-    def __init__(self, sampled_box_shape, sample_size,
-                 *args, **kwargs):
+    spatial_random_variate = Field(
+        __name__="spatial_parameter",
+        __type__=SpatialParameter, #define this
+        __doc__="""A slot to set this adapter's spatial parameter --- with
+        respect to which a circuit's spatial phenomena can be measured. """
+    )
+
+    sample_size = Field(
+        __name__="sample_size",
+        __type__=int,
+        __doc__="""Number of samples to be drawn for each statistical measurement."""
+    )
+    model_label = Field(
+        __name__="model_label",
+        __type__=str,
+        __doc__="""Label to be used in reporting."""
+    )
+
+    #def __init__(self, sampled_box_shape, sample_size,
+    #             *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+                 
         """
         Parameters
         ------------------------------------------------------------------------
         sampled_box_shape :: np.ndarray[3D]#shape of the regions to sample
         """
-        self._sampled_box_shape = sampled_box_shape
-        self._sample_size = sample_size
-        self._model_label = kwargs.get('model_label', 'blue_brain_model')
+        self._logger = Logger("{}Logger".format(self.__class__.__name__),
+                              level=kwargs.get("logger_level", Logger.level.PROD))
+        #self._sampled_box_shape = sampled_box_shape
+        self.sample_size = kwargs.get("sample_size", 20)
+        self.model_label = kwargs.get('model_label', 'in-silico')
         try:
             super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
         except:
@@ -71,17 +95,33 @@ class BlueBrainModelAdapter:
 
     def get_label(self, circuit):
         """method required by adapter interface."""
-        return self._model_label
+        return self.model_label
 
-    def filled_measurement(self, measurement, by):
-        """..."""
+    def filled(self, measurement, by):
+        """...
+
+        Parameters
+        ------------------------------------------------------------------------
+        measurement :: pandas.DataFrame,  #with an index and columns 'mean' and 'std'
+        by :: List[FiniteValuedParameter] #the parameters conditioning
+        ~                                 #self.spatial_random_variate
+        """
+        by = by if by else [self.spatial_parameter]
         measurement.data = by.filled(measurement.data)
         return measurement
 
     def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
-        sm = StatisticalMeasurement(method, by)(*args, **kwargs)
-        return self.filled_measurement(sm, by)
+        return self.filled(
+            StatisticalMeasurement(
+                random_variate=by,
+                sample_size=self.sample_size
+            )(method, *args, **kwargs),
+            by=by
+        )
+        sm = StatisticalMeasurement(random_variate=by,
+                                    sample_size=self.sample_size)
+        return self.filled_measurement(sm(method), by)
 
     def spatial_measurement(self, method, circuit, by, target=None):
         """..."""
