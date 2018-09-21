@@ -4,12 +4,14 @@ import copy
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.utils.descriptor import ClassAttribute, Field, WithFCA
 from dmt.vtk.utils.pandas import flatten, level_values
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
+from dmt.vtk.utils.logging import Logger, with_logging
 
-class FiniteValuedParameter(Parameter):
+@with_logging(Logger.level.STUDY)
+class FiniteValuedParameter(Parameter, WithFCA):
     """If the number of all possible values of a parameter is finite,
     we can require certain finite data representations of its attributes,
     and adapt Parameter abstractmethods."""
@@ -34,19 +36,9 @@ class FiniteValuedParameter(Parameter):
         may not pass this value to this base class' initializer. There will be
         a default implementation."""
     )
-    def __init__(self, value_order={}, value_repr={},
-                 label="label", value_type=type(None),
-                 *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """..."""
-        cls = self.__class__
-        if isinstance(cls.value_order, Field):
-            self.value_order = value_order
-        if isinstance(cls.value_repr, Field):
-            self.value_repr = value_repr
-        if isinstance(cls.label, Field):
-            self.label = label
-        if isinstance(cls.value_type, Field):
-            self.value_type = value_type
+        self.logger.info("initialize with kwargs {}".format(kwargs))
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
 
     @property

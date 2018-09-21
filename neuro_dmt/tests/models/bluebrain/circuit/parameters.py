@@ -31,10 +31,11 @@ circuit = Circuit(cpath)
 #syn_count = StatisticalMeasurement(method=PairSynapseCount(circuit),
 #                                   by=[mtype_pre, mtype_post])
 
-
+logger = Logger(client=None, name="Parameters", level=Logger.level.STUDY)
 
 cl = CorticalLayer()
 
+logger.inform("initialized one cortical layer.")
 
 bbcl1 = RandomRegionOfInterestByCorticalLayer(circuit, size=2)
                                              

@@ -206,7 +206,7 @@ class ClassAttributeMeta(type):
        super(ClassAttributeMeta, cls).__init__(name, bases, namespace)
         
 
-@with_logging(Logger.level.PROD)
+@with_logging(Logger.level.STUDY)
 class WithFCA:
     """Check if a the class definition has 'Field's or 'ClassAttribute's,
     and adapt '__init__' accordingly. This will be useful for
@@ -222,6 +222,7 @@ class WithFCA:
         So a good mixin will be one that mixes in very specific features.
         """
         self.logger.inform("hit WithFCA")
+        self.logger.inform("with kwargs: {}".format(kwargs))
         cls = self.__class__
         fields = cls.get_fields()
         self.logger.inform("fields: {}".format(fields))

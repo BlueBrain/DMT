@@ -12,7 +12,9 @@ import pandas as pd
 from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.utils.collections import Record, take
 from dmt.vtk.utils.pandas import flatten, level_values
+from dmt.vtk.utils.logging import with_logging, Logger
 
+@with_logging(Logger.level.STUDY)
 class Parameter(ABC):
     """Base class to define a measurement parameter.
     While a Parameter can be defined theoretically, we will be
@@ -39,7 +41,11 @@ class Parameter(ABC):
         pass
 
     def __init__(self, *args, **kwargs):
-        pass
+        """...
+        """
+        self.logger.inform("initialize Parameter instance with kwargs: {}"\
+                           .format(kwargs))
+        super(Parameter, self).__init__(*args, **kwargs)
 
     def is_valid(self, value):
         """Is value 'v' an accepted value?
