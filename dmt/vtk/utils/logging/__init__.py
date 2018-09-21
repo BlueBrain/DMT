@@ -3,25 +3,28 @@ import sys
 import os
 import time
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.logging.message import *
 
 class Logger:
     """Log messages.
     This class will not store any messages and log eagerly.
     For lazy logging (that spits out it's contents when told to)
     use LazyLogger."""
-    message_type = Record(info="INFO",
-                          warning="WARNING",
-                          error="ERROR",
-                          assertion="ASSERTION")
 
-    level = Record(DEBUG=0,#log everything
-                   DEVELOP=1,#no INFO
-                   PROD=2)#log only errors and assertions
+    level = Record(STUDY=0,
+                   TEST=0,
+                   DEBUG=1,#log everything
+                   DEVELOP=2,#no INFO
+                   PROD=3)#log only errors and assertions
 
-    message_level = Record(INFO=0,
-                           WARNING=1,
-                           ERROR=2,
-                           ASSERTION=3)
+    message_type = Record(funda=Funda,
+                          info=Info,
+                          note=Note,
+                          remark=Remark,
+                          debug=DebugInfo,
+                          warn=Warn,
+                          error=Error,
+                          assertion=Assertion)
 
     @staticmethod
     def timestamp(now=None, *args, **kwargs):
@@ -53,15 +56,25 @@ class Logger:
         """Print to stderr"""
         print(*args, file=sys.stderr, **kwargs)
 
-    def __init__(self,  name=None,
+    def __init__(self, client,
+                 name=None,
+                 level=None,
                  output_dir_path=None,
                  file_name=None,
-                 level=None,
                  *args, **kwargs):
         """..."""
-        self._level = level if level else Logger.level.PROD
-            
-        self._name = name if name else "Output Log"
+        print("hit Logger")
+        print("kwargs: ", kwargs)
+        print("level: {}".format(level))
+        print("odp: {}".format("NA" if not output_dir_path else output_dir_path))
+        print("fn: {}".format("NA" if not file_name else file_name))
+        print("--------------------------")
+        self._level = level if level is not None else Logger.level.PROD
+        self._client = client
+        self._name\
+            = client if isinstance(client, str) else (
+                name if name else "{}InstanceLogger".format(client.__name__)
+            )
         self._in_file = (
             None if (output_dir_path is None and file_name is None) else 
             os.path.join(
@@ -72,45 +85,71 @@ class Logger:
         if self._in_file:
             self._log_message(self._name)
 
-        self.__statistics = {t: 0 for t in self.message_level.fields}
+        self.__statistics = {mt.label: 0 for mt in self.message_type.values}
         try:
             super(Logger, self).__init__(*args, **kwargs)
         except:
             pass
 
-    def _log_message(self, msg, msg_type="INFO"):
+    def _log_message(self, msg):
         """"Log message with time.
             
         Parameters
         ------------------------------------------------------------------------
-        msg :: str #to be logged
+        msg :: Message #to be logged
         """
-        if Logger.message_level(msg_type) >= self._level:
-            msg = "{}@{} {}:: {}"\
-                  .format(self._name,
-                          Logger.timestamp(time.localtime()),
-                          msg_type, msg)
-            Logger.err_print(msg)
+        if msg.level >= self._level:
+            Logger.err_print("{}@{} {}:: {}"\
+                             .format(self._name,
+                                     Logger.timestamp(time.localtime()),
+                                     msg.label, msg.value))
             if self._in_file:
                 with open(self._in_file, "a")  as f:
                     f.write("{}\n".format(msg))
 
         else:
             pass
-        self.__statistics[msg_type] += 1
+
+        try:
+            self.__statistics[msg.label] += 1
+        except KeyError:
+            self._log_message(Info("{}: {}".format(msg.label, msg.value)))
+
         return self.__statistics
+
+    @property
+    def client(self):
+        """..."""
+        return self._client
 
     def info(self, msg):
         """..."""
-        return self._log_message(msg, self.message_type.info)
+        return self._log_message(Info(msg))
+
+    def note(self, msg):
+        """..."""
+        return self._log_message(Note(msg))
 
     def inform(self, msg):
         """..."""
         return self.info(msg)
 
+    def study(self, msg):
+        return self._log_message(Funda(msg))
+
+    def remark(self, msg):
+        return self._log_message(Remark(msg))
+
+    def debug(self, msg):
+        return self._log_message(DebugInfo(msg))
+
     def warning(self, msg):
         """..."""
-        return self._log_message(msg, self.message_type.warning)
+        return self._log_message(Warning(msg))
+
+    def beware(self, msg):
+        """..."""
+        return self.warning(msg)
 
     def warn(self, msg):
         """..."""
@@ -118,7 +157,7 @@ class Logger:
 
     def error(self, msg):
         """..."""
-        return self._log_message(msg, self.message_type.error)
+        return self._log_message(Error(msg))
 
     def assertion(self, success, msg):
         """...
@@ -126,7 +165,7 @@ class Logger:
         ------------------------------------------------------------------------
         success :: Boolean
         """
-        x = self._log_message(msg, self.message_type.assertion)
+        x = self._log_message(Assertion(msg))
         assert success, msg
         return x
 
@@ -137,6 +176,7 @@ class LazyLogger(Logger):
     or after a given number of messages."""
 
     def __init__(self, name=None, 
+                 level=None,
                  output_dir_path=None,
                  file_name=None,
                  flush_threshold=None,
@@ -184,16 +224,26 @@ class WithLogging:
         ------------------------------------------------------------------------
         output :: Either[File, stdio]#where logger will output to.
         """
-        self._logger = Logger(name=kwargs.get("logger_name", None),
-                              level=kwargs.get("logger_level", None),
-                              output_dir_path=kwargs.get("log_output_dir_path", None),
-                              file_name=kwargs.get("log_file_name", None),
-                              *args, **kwargs)
+        print("hit WithLogging")
+        print("kwargs: ", kwargs)
+        print("--------------------------")
+        self._logger = Logger(self.__class__, *args, **kwargs)
+                              
 
     @property
     def logger(self):
         """..."""
         return self._logger
+
+
+def with_logging(level, *args, **kwargs):
+    """class decorator"""
+    def effective(cls):
+        """class decorator"""
+        cls.logger =  Logger(cls, level=level, *args, **kwargs)
+        return cls
+    return effective
+
 
 class WithLazyLogging:
     """A base class that will allow the deriving class to log to an
@@ -206,7 +256,8 @@ class WithLazyLogging:
         output :: Either[File, stdio]#where logger will output to.
         """
         self.logger = LazyLogger(
-            name=kwargs.get("log_name", None),
+            name="{}Logger".format(self.__class__.__name__),
+            level=Logger.level.DEVELOP,
             output_dir_path=kwargs.get("log_output_dir_path", None),
             file_name=kwargs.get("log_file_name", None),
             flush_threshold=kwargs.get("log_flush_threshold", None)

@@ -1,10 +1,13 @@
 """An attempt at creating Fields out of a class."""
-
+from abc import ABCMeta
 from dmt.vtk.utils.exceptions import \
     RequiredKeywordArgumentError, RequiredArgumentError
-from dmt.vtk.utils.logging import WithLogging
+from dmt.vtk.utils.logging import Logger, with_logging
 
-class Field(WithLogging):
+logger_level = Logger.level.STUDY
+
+@with_logging(logger_level)
+class Field:
     """Creates a field from a provided class."""
 
     __is_field__ = True
@@ -202,7 +205,65 @@ class ClassAttributeMeta(type):
                            Try help({}).""".format(cls_v,  b)
        super(ClassAttributeMeta, cls).__init__(name, bases, namespace)
         
- 
+
+@with_logging(Logger.level.PROD)
+class WithFCA:
+    """Check if a the class definition has 'Field's or 'ClassAttribute's,
+    and adapt '__init__' accordingly. This will be useful for
+    documenting / typing abstract attributes, in association with 'ABC'."""
+
+    def __init__(self, *args, **kwargs):
+        """
+        A mixin class' '__init__' should provide attributes that are
+        required for providing the mixin's features. A mixin may declare
+        abstractmethods, assuming those are provided by the mixing class.
+        The mixing class may use yet another mixin for providing the missing
+        attributes.
+        So a good mixin will be one that mixes in very specific features.
+        """
+        self.logger.inform("hit WithFCA")
+        cls = self.__class__
+        fields = cls.get_fields()
+        self.logger.inform("fields: {}".format(fields))
+        for field in fields:
+            self.logger.inform("iterating field {}".format(field))
+            if isinstance(getattr(cls, field), Field):
+                if field in kwargs:
+                    setattr(self, field, kwargs[field])
+                    self.logger.inform("Found attribute {}".format(field))
+                else:
+                    raise TypeError(
+                        "Can't instantiate abstract class {} "
+                        "with undefined Field {}"
+                        .format(self.__class__.__name__, field)
+                    )
+        try:
+            super(FCAMixin, self).__init__(*args, **kwargs)
+        except:
+            pass
+
+    @classmethod
+    def get_fields(cls):
+        """Writing a method in a metaclass should be interesting."""
+        cls.logger.inform("getting fields")
+        for k in cls.__dict__.keys():
+            cls.logger.inform(k)
+        cls.logger.inform("------------------------------------------")
+        return [
+            attr for attr in dir(cls) if isinstance(getattr(cls, attr), Field)
+        ]
+        #return [attribute for attribute, value in cls.__dict__.items()
+        #        if isinstance(value, Field)]
+
+    @classmethod
+    def get_class_attributes(cls):
+        """We do not assign any data  members to a metaclass,
+        nor do we need access to this metaclass's subclasses
+        for the purpose of this method. So all of its methods can be
+        'staticmethod'"""
+        return [attribute for attribute, value in cls.__dict__.items()
+                if isinstance(value, ClassAttribute)]
+
 def document_fields(cls):
     """Document any Fields that may appear in class cls.
     Can be used as class decorator."""

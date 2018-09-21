@@ -37,6 +37,10 @@ class Record:
     def as_dict(self):
         return {k: getattr(self, k) for k in self.__field_names}
 
+    @property
+    def values(self):
+        return (v for v in self.as_dict.values())
+
     def get(self, key, default=None):
         """Make Record behave like a dict"""
         return getattr(self, key, default)

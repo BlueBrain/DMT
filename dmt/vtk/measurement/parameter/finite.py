@@ -38,13 +38,14 @@ class FiniteValuedParameter(Parameter):
                  label="label", value_type=type(None),
                  *args, **kwargs):
         """..."""
-        if isinstance(self.__class__.value_order, Field):
+        cls = self.__class__
+        if isinstance(cls.value_order, Field):
             self.value_order = value_order
-        if isinstance(self.__class__.value_repr, Field):
+        if isinstance(cls.value_repr, Field):
             self.value_repr = value_repr
-        if isinstance(self.__class__.label, Field):
+        if isinstance(cls.label, Field):
             self.label = label
-        if isinstance(self.__class__.value_type, Field):
+        if isinstance(cls.value_type, Field):
             self.value_type = value_type
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
 
