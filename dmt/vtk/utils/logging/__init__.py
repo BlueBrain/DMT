@@ -63,12 +63,6 @@ class Logger:
                  file_name=None,
                  *args, **kwargs):
         """..."""
-        print("hit Logger")
-        print("kwargs: ", kwargs)
-        print("level: {}".format(level))
-        print("odp: {}".format("NA" if not output_dir_path else output_dir_path))
-        print("fn: {}".format("NA" if not file_name else file_name))
-        print("--------------------------")
         self._level = level if level is not None else Logger.level.PROD
         self._client = client
         self._name\
@@ -98,6 +92,7 @@ class Logger:
         ------------------------------------------------------------------------
         msg :: Message #to be logged
         """
+        print("msg level {} logger level {}".format(msg.level, self._level))
         if msg.level >= self._level:
             Logger.err_print("{}@{} {}:: {}"\
                              .format(self._name,
@@ -224,9 +219,6 @@ class WithLogging:
         ------------------------------------------------------------------------
         output :: Either[File, stdio]#where logger will output to.
         """
-        print("hit WithLogging")
-        print("kwargs: ", kwargs)
-        print("--------------------------")
         self._logger = Logger(self.__class__, *args, **kwargs)
                               
 
@@ -243,7 +235,6 @@ def with_logging(level, *args, **kwargs):
         cls.logger =  Logger(cls, level=level, *args, **kwargs)
         return cls
     return effective
-
 
 class WithLazyLogging:
     """A base class that will allow the deriving class to log to an

@@ -224,7 +224,7 @@ class WithFCA:
         self.logger.inform("hit WithFCA")
         self.logger.inform("with kwargs: {}".format(kwargs))
         cls = self.__class__
-        fields = cls.get_fields()
+        fields = self.get_fields()
         self.logger.inform("fields: {}".format(fields))
         for field in fields:
             self.logger.inform("iterating field {}".format(field))
@@ -239,30 +239,25 @@ class WithFCA:
                         .format(self.__class__.__name__, field)
                     )
         try:
-            super(FCAMixin, self).__init__(*args, **kwargs)
-        except:
-            pass
+            super(WithFCA, self).__init__(*args, **kwargs)
+        except TypeError as te:
+            self.logger.error("TypeError: {}".format(te))
 
     @classmethod
     def get_fields(cls):
-        """Writing a method in a metaclass should be interesting."""
-        cls.logger.inform("getting fields")
-        for k in cls.__dict__.keys():
-            cls.logger.inform(k)
-        cls.logger.inform("------------------------------------------")
+        """..."""
+        #cls.logger.inform("getting fields")
+        #for k in cls.__dict__.keys():
+        #    cls.logger.inform(k)
+        #cls.logger.inform("------------------------------------------")
         return [
             attr for attr in dir(cls) if isinstance(getattr(cls, attr), Field)
         ]
-        #return [attribute for attribute, value in cls.__dict__.items()
-        #        if isinstance(value, Field)]
 
     @classmethod
     def get_class_attributes(cls):
-        """We do not assign any data  members to a metaclass,
-        nor do we need access to this metaclass's subclasses
-        for the purpose of this method. So all of its methods can be
-        'staticmethod'"""
-        return [attribute for attribute, value in cls.__dict__.items()
+        """..."""
+        return [attribute for attribute, value in dir(cls)
                 if isinstance(value, ClassAttribute)]
 
 def document_fields(cls):

@@ -30,6 +30,11 @@ class ParameterGroup:
         return self.__parameters
 
     @property
+    def labels(self):
+        """Parameter labels"""
+        return [p.label for p in self.__parameters]
+
+    @property
     def kwargs(self):
         """A dict that can be used as keyword arguments for a function."""
         def __get_tuple_values(params):

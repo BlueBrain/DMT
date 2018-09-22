@@ -8,14 +8,28 @@ from dmt.vtk.measurement.parameter.group import ParameterGroup
 
 class Condition:
     """Collection of fields that together condition a statistical measurement."""
-    def __init__(self, **kwargs):
+    def __init__(self, label_value_pairs):
         """..."""
-        self.value = Record(**kwargs)
+        self.__label_value_pairs = label_value_pairs
+        self.__record = Record(**dict(label_value_pairs))
+
+    @property
+    def value(self):
+        """..."""
+        return self.__record
 
     @property
     def fields(self):
         """..."""
-        return self.value.fields
+        return self.__record.fields
+
+    @property
+    def index(self):
+        """A Pandas Index object."""
+        return pd.MultiIndex.from_tuples(
+            [tuple(value for _, value in self.__label_value_pairs)],
+            names=[label for label, _ in self.__label_value_pairs]
+        )
 
     def is_valid(self, value):
         """..."""
@@ -36,36 +50,31 @@ class ConditionGenerator(ParameterGroup):
             
 
     @property
-    def labels(self):
-        """..."""
-        return tuple(l for l in self.__conditioning_variables.keys())
-
-    @property
     def conditioning_variables(self):
         """..."""
-        return tuple(self.__conditioning_variables[l] for l in self.labels)
+        return self.parameters
 
-    @property
     def value_type(self, label):
         """Types of parameters' values."""
         return self.__conditioning_variables[label].value_type
 
     def __iter__(self):
-        return self.kwargs
+        for d in self.kwargs:
+            yield Condition([(label, d[label]) for label in self.labels])
 
     @property
     def values(self):
         """..."""
         return pd.DataFrame([x for x in self])
 
-    def index(self, conditions=None):
+    def index(self, conditions=None, size=20):
         """..."""
         if not conditions:
             conditions = self
         def __tuple(condition):
             """..."""
-            return tuple(variable.repr(condition[variable.label])
-                         for variable in self.conditioning_variables)
+            return size * tuple(variable.repr(condition.value.get(variable.label))
+                                for variable in self.conditioning_variables)
         return pd.MultiIndex.from_tuples([__tuple(c) for c in conditions],
                                          names=self.labels)
 

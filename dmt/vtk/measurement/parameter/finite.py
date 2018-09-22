@@ -38,7 +38,6 @@ class FiniteValuedParameter(Parameter, WithFCA):
     )
     def __init__(self, *args, **kwargs):
         """..."""
-        self.logger.info("initialize with kwargs {}".format(kwargs))
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
 
     @property

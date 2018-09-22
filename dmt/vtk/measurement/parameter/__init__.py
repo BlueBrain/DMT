@@ -43,8 +43,8 @@ class Parameter(ABC):
     def __init__(self, *args, **kwargs):
         """...
         """
-        self.logger.inform("initialize Parameter instance with kwargs: {}"\
-                           .format(kwargs))
+        self.logger.inform("initialize {} instance with kwargs: {}"\
+                           .format(self.__class__.__name__, kwargs))
         super(Parameter, self).__init__(*args, **kwargs)
 
     def is_valid(self, value):
