@@ -57,14 +57,26 @@ class Remark(Info):
     just allows the user to remark if they are feeling like it!"""
     label = "REMARK"
 
+class Advice(Message):
+    """Another type of Info?"""
+    label = "ADVICE"
+
 class DebugInfo(Info):
     """Another type of Info"""
     label = "DEBUGINFO"
 
-class Warn(Message):
+class Alert(Message): #Warning is reserved by the language
     """..."""
     level = 2
     label = "WARNING"
+
+class Notice(Alert):
+    """..."""
+    label = "NOTICE"
+
+class Attention(Alert):
+    """..."""
+    label = "ATTENTION"
 
 class Error(Message):
     """..."""

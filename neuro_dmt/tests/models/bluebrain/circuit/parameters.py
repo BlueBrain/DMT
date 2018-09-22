@@ -20,8 +20,10 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
 from neuro_dmt.measurement.parameter import CorticalLayer
 from neuro_dmt.models.bluebrain.circuit.O1.parameters import \
     NamedTarget,\
-    RandomRegionOfInterestByCorticalLayer,\
-    RandomRegionOfInterestByHippocampalLayer
+    CorticalRandomPosition,\
+    RandomRegionOfInterest, \
+    CorticalRandomBoxCorners, \
+    CorticalRandomRegionOfInterest
 
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
@@ -39,9 +41,8 @@ cl = CorticalLayer()
 
 logger.inform("initialized one cortical layer.")
 
-bbcl1 = RandomRegionOfInterestByCorticalLayer(circuit, size=2)
+bbcl1 = CorticalRandomRegionOfInterest(circuit, size=2)
                                              
-bbcl2 = RandomRegionOfInterestByHippocampalLayer(circuit, size=2)
 
 #bblcrv = get_conditioned_random_variate((cl,), bbcl, circuit=circuit)
 
@@ -52,3 +53,6 @@ nt = NamedTarget()
 
 cg = ConditionGenerator(cl, nt)
 
+rpos = CorticalRandomPosition(circuit)
+rrois = CorticalRandomRegionOfInterest(circuit)
+rbox = CorticalRandomBoxCorners(circuit)

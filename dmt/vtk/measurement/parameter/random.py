@@ -8,7 +8,7 @@ import inspect
 import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.condition import Condition
+from dmt.vtk.measurement.condition import Condition, ConditionGenerator
 from dmt.vtk.utils.collections import Record, take
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.descriptor import WithFCA
@@ -53,22 +53,21 @@ class ConditionedRandomVariate(RandomVariate):
         __doc__="""Record mapping field names to their types.""",
         __examples__=[Record(layer=int, target=str)]
     )
-    def __init__(self, *args, **kwargs):
+    def __init__(self, conditions=None, *args, **kwargs):
         """Initialize this class with a 'values' parameter, or
         implement a 'values' method in a subclass.
 
         Parameters
         ------------------------------------------------------------------------
         label :: String
-        """ 
+        """
+        self._conditions = conditions
         super(ConditionedRandomVariate, self).__init__(*args, **kwargs)
 
-    def assert_condition_is_valid(self, condition):
+    @property
+    def conditions(self):
         """..."""
-        if not hasattr(self, "conditions"):
-            raise Exception("No 'conditions' attribute was set.")
-        return self.conditions.is_valid(condition)
-
+        return self._conditions
 
     def is_valid(self, condition_generator):
         """..."""
@@ -77,15 +76,45 @@ class ConditionedRandomVariate(RandomVariate):
         return(all(f in cg.labels for f in fields ) and
                all(issubclass(cg.value_type(f), self.condition_type.get(f))
                    for f in fields))
+
+    def check_validity(self, condition_generator):
+        """..."""
+        
                    
+    def with_condition_generator(self, condition_generator):
+        """..."""
+        instance = copy.deepcopy(self)
+        instance._conditions = condition_generator
+        return instance
+
+    def given(self, conditioning_variables):
+        """..."""
+        return self.with_condition_generator(
+            ConditionGenerator(conditioning_variables)
+        )
+
     @abstractmethod
     def conditioned_values(self, condition, *args, **kwargs):
         """Yield random values of this RandomVariate for given conditions.a
         """
         pass
 
-    def sample(self, conditions, size=20, *args, **kwargs):
-        assert(self.is_valid(conditions))
+    def sample(self, conditions=None, size=20, *args, **kwargs):
+        conditions = conditions if conditions else self._conditions
+        if conditions is None:
+            self.logger.warn(
+                "Cannot sample without condition generator 'conditions'"
+            )
+            return None
+
+        if not self.is_valid(conditions):
+            self.logger.warn(
+                """Invalid condition generator.
+                Please provide one that produces conditions of type:\n {}"""\
+                .format(self.condition_type)
+            )
+            return None
+
         def __sample(condition):
             return pd.concat(
                 [pd.DataFrame({self.label: [v]},index=condition.index)
@@ -93,14 +122,15 @@ class ConditionedRandomVariate(RandomVariate):
             )
         return pd.concat([__sample(condition) for condition in conditions])
 
-    def transform(self, function):
+    def transform(self,  t):
         """Transform this ConditionedRandomVariate by transforming its value
         outputs."""
         modified = copy.deepcopy(self)
         def conditioned_values(condition, *args, **kwargs):
             for v in self.conditioned_values(condition, *args, **kwargs):
-                yield function(v)
+                yield t.function(v)
 
+        modified.label = t.label
         modified.conditioned_values = conditioned_values
         return modified
 

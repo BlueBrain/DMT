@@ -1,14 +1,139 @@
 """Parameters that should be valid for all Blue Brain Circuit Models."""
 
+from abc import ABC, abstractmethod
 import numpy as np
 from bluepy.v2.enums import Cell
+from bluepy.geometry.roi import ROI
 from dmt.vtk.utils.collections import *
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
+from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
+from neuro_dmt.models.bluebrain.circuit.geometry import \
+    Cuboid,  random_location
 
 
+
+class NamedTarget(FiniteValuedParameter):
+    """..."""
+    value_type = str
+    label = "target"
+    def __init__(self, *args, **kwargs):
+        self.__values = ["mc{}_Column".format(n) for n in range(1, 7)]
+        super(NamedTarget, self).__init__(
+            value_order = dict(zip(self.__values, range(len(self.__values)))),
+            value_repr = dict(zip(self.__values, self.__values)),
+            *args, **kwargs
+        )
+    
+
+class CircuitRandomVariate(ConditionedRandomVariate):
+    """Generator of random values, for a (blue) brain circuit."""
+    def __init__(self, circuit, *args, **kwargs):
+        """...
+        Parameters
+        ------------------------------------------------------------------------
+        circuit :: bluepy.v2.Circuit,
+        query :: condition -> dict #that will be sent as a query.
+        """
+        self._circuit = circuit
+        self._helper = BlueBrainModelHelper(circuit=circuit)
+
+        super(CircuitRandomVariate, self).__init__(*args, **kwargs)
+
+    @property
+    def circuit(self):
+        """..."""
+        return self._circuit
+
+class RandomPosition(CircuitRandomVariate):
+    """Generate random positions in the circuit region."""
+    label = "position"
+    value_type = np.ndarray #dimension 3
+
+    def __init__(self, circuit, offset=50., *args, **kwargs):
+        """...
+        Parameters
+        ------------------------------------------------------------------------
+        circuit :: bluepy.v2.Circuit,
+        query :: condition -> dict #that will be sent as a query.
+        """
+        self.offset = offset
+
+        super(RandomPosition, self).__init__(circuit, *args, **kwargs)
+
+    @abstractmethod
+    def query(self, condition, *args, **kwargs):
+        pass
+
+    def conditioned_values(self, condition, *args, **kwargs):
+        """Generator of positions."""
+        bounds = self._helper.geometric_bounds(self.query(condition))
+        if bounds is None:
+            return ()
+        while True:
+            yield random_location(Cuboid(bounds.bbox[0] + self.offset,
+                                         bounds.bbox[1] - self.offset))
+
+
+class RandomRegionOfInterest(RandomPosition):
+    """Random ROIs"""
+    value_type = ROI
+    label = "roi"
+
+    def __init__(self, circuit,
+                 sampled_box_shape=50.*np.ones(3),
+                 *args, **kwargs):
+        """..."""
+        self.sampled_box_shape = sampled_box_shape
+        super(RandomRegionOfInterest, self)\
+            .__init__(circuit, *args, **kwargs)
+
+    def conditioned_values(self, condition, *args, **kwargs):
+        """..."""
+        half_box = self.sampled_box_shape / 2.
+        positions = super(RandomRegionOfInterest, self)\
+                    .conditioned_values(condition, *args, **kwargs)
+        for position in positions:
+            yield Cuboid(position - half_box, position + half_box)
+
+
+class RandomBoxCorners(RandomRegionOfInterest):
+    """..."""
+    value_type = tuple #length 2
+    label = "box_corners"
+    def __init__(self, circuit, sampled_box_shape=50.*np.ones(3),
+                 *args, **kwargs):
+        """..."""
+        super(RandomBoxCorners, self)\
+            .__init__(circuit, sampled_box_shape=sampled_box_shape,
+                      *args, **kwargs)
+
+    def conditioned_values(self, condition, *args, **kwargs):
+        """"..."""
+        rois = super(RandomBoxCorners, self)\
+               .conditioned_values(condition, *args, **kwargs)
+        for roi in rois:
+            yield roi.bbox
+
+
+class BrainRegionSpecific(ABC):
+    """Brain region specific methods.
+    These methods will typcially be abstract in some other code.
+    BrainRegionSpecific classes will not be useful on their known.
+    They simply provide code specialized to particular brain regions."""
+    condition_type = Field(
+        __name__="condition_type",
+        __type__=Record,
+        __doc__="""Specify the type of measurement conditions
+        that a brain region can generate. Such a condition is necessary
+        to construct pandas DataFrames for brain-specific measurements.""",
+        __examples__=[Record(layer=int, target=str)]
+    )
+    @abstractmethod
+    def query(self, condition, *args, **kwargs):
+        pass
 
 
 class Mtype(ConditionedRandomVariate):

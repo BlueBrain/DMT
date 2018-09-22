@@ -17,14 +17,14 @@ class Logger:
                    DEVELOP=2,#no INFO
                    PROD=3)#log only errors and assertions
 
-    message_type = Record(funda=Funda,
-                          info=Info,
-                          note=Note,
-                          remark=Remark,
-                          debug=DebugInfo,
-                          warn=Warn,
-                          error=Error,
-                          assertion=Assertion)
+    message_types = Record(funda=Funda,
+                           info=Info,
+                           note=Note,
+                           remark=Remark,
+                           debug=DebugInfo,
+                           warn=Alert,
+                           error=Error,
+                           assertion=Assertion)
 
     @staticmethod
     def timestamp(now=None, *args, **kwargs):
@@ -79,7 +79,7 @@ class Logger:
         if self._in_file:
             self._log_message(self._name)
 
-        self.__statistics = {mt.label: 0 for mt in self.message_type.values}
+        self.__statistics = {mt.label: 0 for mt in self.message_types.values}
         try:
             super(Logger, self).__init__(*args, **kwargs)
         except:
@@ -92,7 +92,6 @@ class Logger:
         ------------------------------------------------------------------------
         msg :: Message #to be logged
         """
-        print("msg level {} logger level {}".format(msg.level, self._level))
         if msg.level >= self._level:
             Logger.err_print("{}@{} {}:: {}"\
                              .format(self._name,
@@ -140,7 +139,7 @@ class Logger:
 
     def warning(self, msg):
         """..."""
-        return self._log_message(Warning(msg))
+        return self._log_message(Alert(msg))
 
     def beware(self, msg):
         """..."""

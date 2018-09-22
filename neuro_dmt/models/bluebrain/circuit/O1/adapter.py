@@ -58,7 +58,7 @@ class BlueBrainModelAdapter:
 
     spatial_random_variate = Field(
         __name__="spatial_parameter",
-        __type__=SpatialParameter, #define this
+        __type__=SpatialRandomVariate, #define this
         __doc__="""A slot to set this adapter's spatial parameter --- with
         respect to which a circuit's spatial phenomena can be measured. """
     )
@@ -125,13 +125,10 @@ class BlueBrainModelAdapter:
 
     def spatial_measurement(self, method, circuit, by, target=None):
         """..."""
-
+       
         measurement= self.statistical_measurement(
             method,
-            by=
-            by=spatial_parameter.as_group_parameter(
-                Record(name="roi", __type__=ROI, generator=self.get_layer_rois)
-            )
+            by=self.spatial_random_variate.given(by),
             target=target, #track this kwarg --- how is it propagate?
             sampled_box_shape=self._sampled_box_shape,
             sample_size=self._sample_size
