@@ -33,8 +33,8 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.circuit.O1.parameters \
-    import SpatialRandomVariate, RandomRegionOfInterest
+from neuro_dmt.models.bluebrain.circuit.parameters import \
+    CircuitRandomVariate
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
@@ -58,7 +58,7 @@ class BlueBrainModelAdapter:
 
     spatial_random_variate = Field(
         __name__="spatial_parameter",
-        __type__=SpatialRandomVariate, #define this
+        __type__=CircuitRandomVariate, #define this
         __doc__="""A slot to set this adapter's spatial parameter --- with
         respect to which a circuit's spatial phenomena can be measured. """
     )
@@ -123,9 +123,9 @@ class BlueBrainModelAdapter:
                                     sample_size=self.sample_size)
         return self.filled_measurement(sm(method), by)
 
-    def spatial_measurement(self, method, circuit, by, target=None):
+    def spatial_measurement(self, method, circuit, conditioning_variables,
+                            target=None):
         """..."""
-       
         measurement= self.statistical_measurement(
             method,
             by=self.spatial_random_variate.given(by),

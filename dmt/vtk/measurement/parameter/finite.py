@@ -8,6 +8,7 @@ from dmt.vtk.utils.descriptor import ClassAttribute, Field, WithFCA
 from dmt.vtk.utils.pandas import flatten, level_values
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
+from dmt.vtk.measurement.condition import ConditionGenerator
 from dmt.vtk.utils.logging import Logger, with_logging
 
 @with_logging(Logger.level.STUDY)
@@ -174,5 +175,13 @@ class FiniteValuedParameter(Parameter, WithFCA):
         ran_var_gen_func :: FunctionType # a generator function that generates
         ~                                # random values under a given condition.
         """
-        return ConditionedRandomVariate(conditioning_variables=(self,),
-                                        values=rand_var_gen_func)
+        @classmethod
+        def conditioned_values(cls, condition, *args, **kwargs):
+            """..."""
+            return rand_var_gen_func(condition, *args, **kwargs)
+
+        T = type("{}ConditionedRandomVariate".format(self.__class__.__name),
+                 (ConditionedRandomVariate,),
+                 {"conditioned_values": conditioned_values})
+
+        return T(conditions=(self,))

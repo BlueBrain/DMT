@@ -30,16 +30,16 @@ class NamedTarget(FiniteValuedParameter):
 
 class CircuitRandomVariate(ConditionedRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
-    def __init__(self, circuit, *args, **kwargs):
+    def __init__(self, circuit, target=None, *args, **kwargs):
         """...
         Parameters
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
-        query :: condition -> dict #that will be sent as a query.
+        named_target :: str #named group of cells
         """
         self._circuit = circuit
         self._helper = BlueBrainModelHelper(circuit=circuit)
-
+        self._target = target
         super(CircuitRandomVariate, self).__init__(*args, **kwargs)
 
     @property
@@ -47,29 +47,42 @@ class CircuitRandomVariate(ConditionedRandomVariate):
         """..."""
         return self._circuit
 
+    @abstractmethod
+    def cell_query(self, condition, *args, **kwargs):
+        pass
+
+    def with_target(self, query_dict, target_label = "$target"):
+        """Add target to a condition"""
+        query_dict[target_label] = self._target
+        return query_dict
+
+
 class RandomPosition(CircuitRandomVariate):
     """Generate random positions in the circuit region."""
     label = "position"
     value_type = np.ndarray #dimension 3
 
-    def __init__(self, circuit, offset=50., *args, **kwargs):
+    def __init__(self, circuit, brain_region, offset=50., *args, **kwargs):
         """...
         Parameters
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
-        query :: condition -> dict #that will be sent as a query.
         """
+        self.brain_region = brain_region
         self.offset = offset
 
         super(RandomPosition, self).__init__(circuit, *args, **kwargs)
 
-    @abstractmethod
-    def query(self, condition, *args, **kwargs):
-        pass
+    def cell_query(self, condition, *args, **kwargs):
+        """...redirect to brain region."""
+        return self.brain_region.cell_query(condition, *args, **kwargs)
 
     def conditioned_values(self, condition, *args, **kwargs):
         """Generator of positions."""
-        bounds = self._helper.geometric_bounds(self.query(condition))
+        bounds\
+            = self._helper\
+                  .geometric_bounds(self.cell_query(condition),
+                                    target=self._target)
         if bounds is None:
             return ()
         while True:
@@ -131,9 +144,23 @@ class BrainRegionSpecific(ABC):
         to construct pandas DataFrames for brain-specific measurements.""",
         __examples__=[Record(layer=int, target=str)]
     )
-    @abstractmethod
-    def query(self, condition, *args, **kwargs):
-        pass
+    region_label = Field(
+        __name__="region_label",
+        __type__=str,
+        __doc__="""Name of the brain region that this class specifies.""",
+        __examples__=["cortical", "thalamic"]
+    )
+    subregion_label = Field(
+        __name__="subregion_label",
+        __type__=str,
+        __doc__="""Name of the class of sub-regions as a parameter name.
+        This field should preferably be set in instance initialization.
+        This can help the code become clearer.""",
+        __examples__=["layer", "nuclei"]
+    )
+    def cell_query(self, condition, *args, **kwargs):
+        """A dict that can be passed to circuit.cells.get(...)"""
+        return {self.subregion_label: condition.value.get(self.subregion_label)}
 
 
 class Mtype(ConditionedRandomVariate):

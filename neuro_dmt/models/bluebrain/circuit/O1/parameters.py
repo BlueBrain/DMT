@@ -28,19 +28,21 @@ from neuro_dmt.models.bluebrain.circuit.parameters import \
 
 class Cortical(BrainRegionSpecific):
     """..."""
-    condition_type = Record(layer=int, target=str)
-    @classmethod
-    def query(cls, condition):
+    region_label = "cortical"
+    sub_region_label = "layer"
+    condition_type = Record(layer=int)
+    def cell_query(self, condition):
         """A dict that can be passed to circuit.cells.get(...)"""
-        return ({"layer": condition.value.layer, "$target": condition.value.target}
-                if condition.value.target else {"layer": condition.value.layer})
+        return {self.sub_region_label: condition.value.get(self.sub_region_label)}
 
 
 class Hippocampal(BrainRegionSpecific):
     """..."""
+    region_label = "hippocampal"
+    sub_region_label = "layer"
     condition_type = Record(layer=int)
     @classmethod
-    def query(cls, condition):
+    def cell_query(cls, condition):
         """A dict that can be passed to circuit.cells.get(...)"""
         return {"layer": condition.layer}
 
@@ -52,6 +54,22 @@ class CorticalRandomPosition(Cortical, RandomPosition):
         super(CorticalRandomPosition, self)\
             .__init__(circuit, *args, **kwargs)
             
+
+class CorticalRandomPositionByLayer(RandomPosition):
+    """..."""
+    def __init__(self, circuit, *args, **kwargs):
+        """..."""
+        super(CorticalRandomPositionByLayer, self)\
+            .__init__(circuit,
+                      brain_region=Cortical("layer"),
+                      *args, **kwargs)
+
+#just an example, remove!
+def cortical_random_positions_by_layer(circuit, offset=50, *args, **kwargs):
+    """..."""
+    return RandomPosition(circuit, Cortical("layer"), offset=offset,
+                          *args, **kwargs)
+    
 
 class HippocampalRandomPosition(Hippocampal, RandomPosition):
     """..."""
@@ -98,6 +116,7 @@ class CorticalRandomBoxCorners(Cortical, RandomBoxCorners):
         """..."""
         super(CorticalRandomBoxCorners, self)\
             .__init__(circuit, *args, **kwargs)
+
 
 def get_cortical_roi(circuit,
                      sample_box_shape=50.*np.ones(3),

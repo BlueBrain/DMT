@@ -37,6 +37,7 @@ class CorticalLayer(Layer):
             *args, **kwargs
         )
 
+
 class CorticalLayer23Fused(Layer):
     """Represents cortical layers, when layers 2 and 3 are fused into one."""
     value_type = int
@@ -48,6 +49,7 @@ class CorticalLayer23Fused(Layer):
             value_repr={1: "I", 2: "II/III", 3: "II/III", 4:"IV", 5: "V", 6: "VI"},
             *args, **kwargs
         )
+
 
 class CorticalLayer5abSplit(Layer):
     """Represents cortical layers when layer 5 is split into 5a, and 5b."""
@@ -62,6 +64,7 @@ class CorticalLayer5abSplit(Layer):
                         "4": "IV", "5a": "Va", "5b": "Vb", "6": "VI"},
             *args, **kwargs
         )
+
 
 class HippocampalLayer(Layer):
     """Layer in the hippocampus."""
