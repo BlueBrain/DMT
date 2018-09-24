@@ -18,6 +18,10 @@ class Condition:
         """..."""
         return self.__record
 
+    def get_value(self, label):
+        """..."""
+        return self.value.get(label)
+
     @property
     def fields(self):
         """..."""
@@ -48,7 +52,6 @@ class ConditionGenerator(ParameterGroup):
         )
         super(ConditionGenerator, self).__init__(arg0, *args, **kwargs)
             
-
     @property
     def conditioning_variables(self):
         """..."""

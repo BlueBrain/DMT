@@ -52,6 +52,11 @@ class Note(Message):
     level = 0
     label = "NOTE"
 
+class DevNote(Message):
+    """Developer may need """
+    level = 0
+    label = "DevelopersNote"
+
 class Remark(Info):
     """A type of 'Info',
     just allows the user to remark if they are feeling like it!"""

@@ -17,7 +17,6 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 from neuro_dmt.measurement.parameter import \
     Layer, CorticalLayer, HippocampalLayer
-
 from neuro_dmt.models.bluebrain.circuit.parameters import \
     NamedTarget, \
     RandomPosition, \
@@ -29,62 +28,34 @@ from neuro_dmt.models.bluebrain.circuit.parameters import \
 class Cortical(BrainRegionSpecific):
     """..."""
     region_label = "cortical"
-    sub_region_label = "layer"
-    condition_type = Record(layer=int)
-    def cell_query(self, condition):
-        """A dict that can be passed to circuit.cells.get(...)"""
-        return {self.sub_region_label: condition.value.get(self.sub_region_label)}
+
+    def __init__(self, by=tuple(), target="mc2_Column", *args, **kwargs):
+        """..."""
+        cell_group_params = by if by else ("layer", "$target")
+        super(Cortical, self).__init__(cell_group_params, target=target,
+                                       *args, **kwargs)
+
+    def cell_query(self, condition, *args, **kwargs):
+        """A dict that can be passed to circuit.cells.get(...).
+        Concrete implementation may override """
+        return {p: condition.get_value(p) for p in self.cell_group_params}
 
 
 class Hippocampal(BrainRegionSpecific):
     """..."""
     region_label = "hippocampal"
-    sub_region_label = "layer"
-    condition_type = Record(layer=int)
-    @classmethod
-    def cell_query(cls, condition):
-        """A dict that can be passed to circuit.cells.get(...)"""
-        return {"layer": condition.layer}
 
-
-class CorticalRandomPosition(Cortical, RandomPosition):
-    """..."""
-    def __init__(self, circuit, *args, **kwargs):
+    def __init__(self, by=None, *args, **kwargs):
         """..."""
-        super(CorticalRandomPosition, self)\
-            .__init__(circuit, *args, **kwargs)
-            
+        cell_group_params = by if by else ("layer",)
+        super(Hippocampal, self).__init__(cell_group_params, *args, **kwargs)
 
-class CorticalRandomPositionByLayer(RandomPosition):
-    """..."""
-    def __init__(self, circuit, *args, **kwargs):
-        """..."""
-        super(CorticalRandomPositionByLayer, self)\
-            .__init__(circuit,
-                      brain_region=Cortical("layer"),
-                      *args, **kwargs)
+    def cell_query(self, condition, *args, **kwargs):
+        """A dict that can be passed to circuit.cells.get(...).
+        Concrete implementation may override """
+        return {p: condition.get_value(p) for p in self.cell_group_params}
 
-#just an example, remove!
-def cortical_random_positions_by_layer(circuit, offset=50, *args, **kwargs):
-    """..."""
-    return RandomPosition(circuit, Cortical("layer"), offset=offset,
-                          *args, **kwargs)
     
-
-class HippocampalRandomPosition(Hippocampal, RandomPosition):
-    """..."""
-    condition_type = Record(layer=int)
-    def __init__(self, circuit, *args, **kwargs):
-        """Will use CorticalLayer as conditioning variable.
-        Override to use another.
-
-        Parameters
-        ------------------------------------------------------------------------
-        circuit :: bluepy.v2.Circuit,
-        """
-        super(HippocampalRandomPosition, self).__init__(circuit, *args, *kwargs)
-            
-
 def transform(instance, method_name, mapping):
     """..."""
     modified_instance = copy.deepcopy(instance)
@@ -100,22 +71,6 @@ def transform(instance, method_name, mapping):
 
     setattr(modified_instance, method_name, modified_method)
     return modified_instance
-
-
-class CorticalRandomRegionOfInterest(Cortical, RandomRegionOfInterest):
-    """..."""
-    def __init__(self, circuit, *args, **kwargs):
-        """..."""
-        super(CorticalRandomRegionOfInterest, self)\
-            .__init__(circuit, *args, **kwargs)
-
-
-class CorticalRandomBoxCorners(Cortical, RandomBoxCorners):
-    """..."""
-    def __init__(self, circuit, *args, **kwargs):
-        """..."""
-        super(CorticalRandomBoxCorners, self)\
-            .__init__(circuit, *args, **kwargs)
 
 
 def get_cortical_roi(circuit,

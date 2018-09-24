@@ -21,15 +21,21 @@ class Record:
     def __str__(self):
         """String representation of this Record."""
         return self.__repr__()
+
+    def __len__(self):
+        return len(self.__field_names)
                    
     def __repr__(self):
         """Represent self."""
         msg = "Record\n"
-        for field in self.__field_names[:-1]:
-            msg += "\t{}: {},\n".format(field, getattr(self, field))
-        field = self.__field_names[-1]
-        msg += "\t{}: {}".format(field, getattr(self, field))
-        msg += "\n"
+        if len(self) > 0:
+            for field in self.__field_names[:-1]:
+                msg += "\t{}: {},\n".format(field, getattr(self, field))
+                field = self.__field_names[-1]
+                msg += "\t{}: {}".format(field, getattr(self, field))
+                msg += "\n"
+        else:
+            msg += "()"
         msg += "\n"
         return msg
 

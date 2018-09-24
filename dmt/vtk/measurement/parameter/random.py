@@ -71,27 +71,44 @@ class ConditionedRandomVariate(RandomVariate):
 
     def is_valid(self, condition_generator):
         """..."""
-        cg = condition_generator
         fields = self.condition_type.fields
-        return(all(f in cg.labels for f in fields ) and
-               all(issubclass(cg.value_type(f), self.condition_type.get(f))
+        return(all(f in condition_generator.labels for f in fields ) and
+               all(issubclass(condition_generator.value_type(f),
+                              self.condition_type.get(f))
                    for f in fields))
 
-    def check_validity(self, condition_generator):
-        """..."""
-        
-                   
-    def with_condition_generator(self, condition_generator):
+    def __with_condition_generator(self, condition_generator):
         """..."""
         instance = copy.deepcopy(self)
         instance._conditions = condition_generator
         return instance
 
-    def given(self, conditioning_variables):
+    def __with_condition_type(self, condition_type):
         """..."""
-        return self.with_condition_generator(
-            ConditionGenerator(conditioning_variables)
-        )
+        instance = copy.deepcopy(self)
+        instance.condition_type = condition_type
+        return instance
+
+    def given(self, *conditioning_vars, reset_condition_type=False):
+        """..."""
+        cname = self.__class__.__name__
+        if reset_condition_type:
+            self.condition_type \
+                = Record(**{v.label: v.value_type for v in conditioning_vars})
+                
+        for v in conditioning_vars:
+            l = v.label
+            if l not in self.condition_type.fields:
+                raise AttributeError(
+                    "Missing conditioning variable {} in {} instance condition_type."\
+                    .format(l, cname)
+                )
+            if not issubclass(v.value_type, self.condition_type.get(l)):
+                raise AttributeError(
+                    "Unsupported type for conditioning variable {} in {} instance condition_type."\
+                    .format(l, cname)
+                )
+        return self.__with_condition_generator(ConditionGenerator(conditioning_vars))
 
     @abstractmethod
     def conditioned_values(self, condition, *args, **kwargs):

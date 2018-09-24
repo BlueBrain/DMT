@@ -124,6 +124,10 @@ class Logger:
         """..."""
         return self._log_message(Note(msg))
 
+    def devnote(self, msg):
+        """..."""
+        return self._log_message(DevNote(msg))
+
     def inform(self, msg):
         """..."""
         return self.info(msg)
@@ -149,6 +153,11 @@ class Logger:
         """..."""
         return self.warning(msg)
 
+
+    def alert(self, msg):
+        """..."""
+        return self.warning(msg)
+    
     def error(self, msg):
         """..."""
         return self._log_message(Error(msg))
