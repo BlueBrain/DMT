@@ -129,8 +129,8 @@ def method_description(measurement_method):
     return measurement_method.__call__.__doc__
 
 def summary_statistic(measurement_sample,
-                      parameter_columns=None,
-                      measurement_columns=None):
+                      parameter_columns=[],
+                      measurement_columns=[]):
     """Summarize a data-frame.
     Type of the returned data-frame depends on the type of
     'measurement_columns'. Thus this method can accommodate more than one

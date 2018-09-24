@@ -153,17 +153,17 @@ class RandomPosition(CircuitRandomVariate):
         We could """
         return self.brain_region.cell_query(condition, *args, **kwargs)
 
-    def conditioned_values(self, condition, *args, **kwargs):
-        """Generator of positions."""
+    def __call__(self, condition, *args, **kwargs):
+        """..."""
         bounds\
             = self._helper\
                   .geometric_bounds(self.cell_query(condition),
                                     target=self.brain_region.target)
         if bounds is None:
-            return ()
-        while True:
-            yield random_location(Cuboid(bounds.bbox[0] + self.offset,
-                                         bounds.bbox[1] - self.offset))
+            return None
+        return random_location(Cuboid(bounds.bbox[0] + self.offset,
+                                      bounds.bbox[1] - self.offset))
+        
 
     def row(self, condition, value):
         """..."""
@@ -189,22 +189,20 @@ class RandomRegionOfInterest(RandomPosition):
                       offset=sampled_box_shape/2.,
                       *args, **kwargs)
 
-    def conditioned_values(self, condition, *args, **kwargs):
+    def __call__(self, condition, *args, **kwargs):
         """..."""
         half_box = self.sampled_box_shape / 2.
-        positions = super(RandomRegionOfInterest, self)\
-                    .conditioned_values(condition, *args, **kwargs)
-        for position in positions:
-            yield Cuboid(position - half_box, position + half_box)
+        position = super(RandomRegionOfInterest, self)\
+                    .__call__(condition, *args, **kwargs)
+        return Cuboid(position - half_box, position + half_box)
 
     def row(self, condition, value):
         """..."""
         return pd.DataFrame(
             [value],
-            columns=[[self.label]],
+            columns=[self.label],
             index=condition.index
         )
-
 
 
 class RandomBoxCorners(RandomRegionOfInterest):
@@ -220,16 +218,15 @@ class RandomBoxCorners(RandomRegionOfInterest):
                       sampled_box_shape=sampled_box_shape,
                       *args, **kwargs)
 
-    def conditioned_values(self, condition, *args, **kwargs):
+    def __call__(self, condition, *args, **kwargs):
         """"..."""
-        rois = super(RandomBoxCorners, self)\
-               .conditioned_values(condition, *args, **kwargs)
-        for roi in rois:
-            yield roi.bbox
+        roi = super(RandomBoxCorners, self).__call__(condition, *args, **kwargs)
+              
+        return roi.bbox
 
     def row(self, condition, value):
         """..."""
-        index = pd.MultiIndex.from_tuples(
+        columns = pd.MultiIndex.from_tuples(
             [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
              ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
             names=["box_corners", "axis"]
@@ -237,12 +234,9 @@ class RandomBoxCorners(RandomRegionOfInterest):
         return pd.DataFrame(
             [[value[0][0], value[0][1], value[0][2],
               value[1][0], value[1][1], value[1][2]]],
-            columns=index,
+            columns=columns,
             index=condition.index
         )
-
-
-        
 
 
 class Mtype(ConditionedRandomVariate):

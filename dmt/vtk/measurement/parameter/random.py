@@ -110,25 +110,41 @@ class ConditionedRandomVariate(RandomVariate):
                 )
         return self.__with_condition_generator(ConditionGenerator(conditioning_vars))
 
-
-    @abstractmethod
     def conditioned_values(self, condition, *args, **kwargs):
         """Yield random values of this RandomVariate for given conditions.a
         """
+        while True:
+            loc = self(condition)
+            if loc is None:
+                break
+            yield loc
+
+    @abstractmethod
+    def __call__(self, condition, *args, **kwargs):
         pass
 
+    def __iter__(self):
+        """Iterate over me."""
+        while True:
+            for condition in self._conditions:
+                yield Record(condition=condition.value,
+                             value=self(condition))
+        
     @abstractmethod
     def row(self, condition, value):
         """convert a value into a dataframe row.
         Override if you please."""
         pass
 
+    def kwargs(self, condition, *args, **kwargs):
+        """..."""
+        return {self.label: self(condition, *args, **kwargs)}
+
     def sample_one(self, condition, size=20):
         """sample one"""
         values = take(size, self.conditioned_values(condition))
         return pd.concat([self.row(condition, value) for value in values])
                           
-        
     def sample(self, conditions=None, size=20, *args, **kwargs):
         conditions = conditions if conditions else self._conditions
         if conditions is None:
