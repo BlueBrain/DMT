@@ -32,14 +32,18 @@ hipp_circuit = Circuit(hipp_cpath)
 
 logger = Logger(client=None, name="Parameters", level=Logger.level.STUDY)
 
-cl = CorticalLayer()
-nt = NamedTarget()
+cortical_layer = CorticalLayer(values={1,2})
+named_target = NamedTarget()
 
-cg = ConditionGenerator(cl, nt)
+cg = ConditionGenerator(cortical_layer, named_target)
 
-rposes = RandomPosition(sscx_circuit, Cortical(by=("layer",)))\
-         .given(CorticalLayer())
+rposes = RandomPosition(sscx_circuit,
+                        brain_region=Cortical(by=("layer", "$target")))\
+                        .given(CorticalLayer(values=(1,2)),
+                               NamedTarget(values=("mc2_Column"))
 rroies = RandomRegionOfInterest(sscx_circuit, Cortical(by=("layer",)))\
-         .given(CorticalLayer())
+         .given(CorticalLayer(),
+                NamedTarget(values=("mc2_Column")))
 rboxes = RandomBoxCorners(sscx_circuit, Cortical(by=("layer",)))\
-         .given(CorticalLayer())
+         .given(CorticalLayer(),
+                NamedTarget(values=("mc2_Column")))

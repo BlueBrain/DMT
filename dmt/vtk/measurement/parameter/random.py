@@ -110,6 +110,7 @@ class ConditionedRandomVariate(RandomVariate):
                 )
         return self.__with_condition_generator(ConditionGenerator(conditioning_vars))
 
+
     @abstractmethod
     def conditioned_values(self, condition, *args, **kwargs):
         """Yield random values of this RandomVariate for given conditions.a

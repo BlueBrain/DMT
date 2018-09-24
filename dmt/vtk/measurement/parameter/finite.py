@@ -37,14 +37,22 @@ class FiniteValuedParameter(Parameter, WithFCA):
         may not pass this value to this base class' initializer. There will be
         a default implementation."""
     )
-    def __init__(self, *args, **kwargs):
+    def __init__(self, values=None, *args, **kwargs):
         """..."""
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
-
+        self._values_assumed = set(self.value_order.keys())
+        if values:
+            for v in set(values).difference(self._values_assumed):
+                self.logger.warn(
+                    """Parameter {} does not assume a value of {},
+                    and will be skipped""".format(self.__class__.__name__, v)
+                )
+            self._values_assumed = self._values_assumed.intersection(values)
+            
     @property
     def values(self):
         """..."""
-        return set(self.value_order.keys())
+        return self._values_assumed
 
     def is_valid(self, value):
         """..."""

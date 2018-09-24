@@ -215,7 +215,7 @@ class Mtype(ConditionedRandomVariate):
     label = "mtype"
     value_type = str
     grouped_variable = Record(__type__ = int, name="cell_gid")
-                              
+
 
     def __init__(self, circuit, *args, **kwargs):
         """..."""

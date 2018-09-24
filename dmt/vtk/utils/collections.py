@@ -27,16 +27,15 @@ class Record:
                    
     def __repr__(self):
         """Represent self."""
-        msg = "Record\n"
-        if len(self) > 0:
+        msg = "Record[\n"
+        if len(self.__field_names) > 0:
             for field in self.__field_names[:-1]:
+                print("add field {} to Record repr".format(field))
                 msg += "\t{}: {},\n".format(field, getattr(self, field))
-                field = self.__field_names[-1]
-                msg += "\t{}: {}".format(field, getattr(self, field))
-                msg += "\n"
-        else:
-            msg += "()"
-        msg += "\n"
+            field = self.__field_names[-1]
+            msg += "\t{}: {}".format(field, getattr(self, field))
+            msg += "\n"    
+        msg += "]\n"
         return msg
 
     @property

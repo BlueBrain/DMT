@@ -8,10 +8,11 @@ from dmt.vtk.measurement.parameter.group import ParameterGroup
 
 class Condition:
     """Collection of fields that together condition a statistical measurement."""
-    def __init__(self, label_value_pairs):
+    def __init__(self, param_value_pairs):
         """..."""
-        self.__label_value_pairs = label_value_pairs
-        self.__record = Record(**dict(label_value_pairs))
+        self.__param_value_pairs = param_value_pairs
+        self.__record = Record(**{param.label: value
+                                  for param, value in param_value_pairs})
 
     @property
     def value(self):
@@ -20,7 +21,7 @@ class Condition:
 
     def get_value(self, label):
         """..."""
-        return self.value.get(label)
+        return self.__record.get(label)
 
     @property
     def fields(self):
@@ -31,8 +32,8 @@ class Condition:
     def index(self):
         """A Pandas Index object."""
         return pd.MultiIndex.from_tuples(
-            [tuple(value for _, value in self.__label_value_pairs)],
-            names=[label for label, _ in self.__label_value_pairs]
+            [tuple(param.repr(value) for param, value in self.__param_value_pairs)],
+            names=[param.label for param, _ in self.__param_value_pairs]
         )
 
     def is_valid(self, value):
@@ -63,7 +64,7 @@ class ConditionGenerator(ParameterGroup):
 
     def __iter__(self):
         for d in self.kwargs:
-            yield Condition([(label, d[label]) for label in self.labels])
+            yield Condition([(param, d[param.label]) for param in self.parameters])
 
     @property
     def values(self):
