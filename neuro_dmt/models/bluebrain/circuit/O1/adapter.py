@@ -106,29 +106,28 @@ class BlueBrainModelAdapter:
         by :: List[FiniteValuedParameter] #the parameters conditioning
         ~                                 #self.spatial_random_variate
         """
-        by = by if by else [self.spatial_parameter]
-        measurement.data = by.filled(measurement.data)
+        for p in by:
+            measurement.data = p.filled(measurement.data)
         return measurement
 
     def statistical_measurement(self, method, by, *args, **kwargs):
         """..."""
+        random_variate\
+            = self.spatial_random_variate.given(conditioning_variables)
         return self.filled(
             StatisticalMeasurement(
-                random_variate=by,
+                random_variate=random_variate
                 sample_size=self.sample_size
             )(method, *args, **kwargs),
             by=by
         )
-        sm = StatisticalMeasurement(random_variate=by,
-                                    sample_size=self.sample_size)
-        return self.filled_measurement(sm(method), by)
 
-    def spatial_measurement(self, method, circuit, conditioning_variables,
+    def spatial_measurement(self, method, circuit, by,
                             target=None):
         """..."""
         measurement= self.statistical_measurement(
             method,
-            by=self.spatial_random_variate.given(by),
+            by=by,
             target=target, #track this kwarg --- how is it propagate?
             sampled_box_shape=self._sampled_box_shape,
             sample_size=self._sample_size

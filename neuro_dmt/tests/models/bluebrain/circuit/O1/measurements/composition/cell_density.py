@@ -26,3 +26,4 @@ rrois = RandomRegionOfInterest(circuit,
                                .given(CorticalLayer(),
                                       NamedTarget(values = {"mc2_Column"}))
 cds = StatisticalMeasurement(rrois)
+data = cds(cd, size=20)
