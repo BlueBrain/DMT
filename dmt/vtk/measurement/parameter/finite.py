@@ -1,6 +1,7 @@
 """Base class for Parameter that may assume only one of a few values."""
 
 import copy
+import collections
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.collections import Record
@@ -40,9 +41,16 @@ class FiniteValuedParameter(Parameter, WithFCA):
     def __init__(self, values=None, *args, **kwargs):
         """..."""
         super(FiniteValuedParameter, self).__init__(*args, **kwargs)
+
         self._values_assumed = set(self.value_order.keys())
         if values:
-            for v in set(values).difference(self._values_assumed):
+            if not isinstance(values, set):
+                self.logger.alert(
+                    """{} passed as argument 'values' which should be a set.
+                    Will make it a set and proceed""".format(values)
+                )
+                values = set(values)
+            for v in values.difference(self._values_assumed):
                 self.logger.warn(
                     """Parameter {} does not assume a value of {},
                     and will be skipped""".format(self.__class__.__name__, v)

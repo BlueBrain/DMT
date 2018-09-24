@@ -117,6 +117,18 @@ class ConditionedRandomVariate(RandomVariate):
         """
         pass
 
+    @abstractmethod
+    def row(self, condition, value):
+        """convert a value into a dataframe row.
+        Override if you please."""
+        pass
+
+    def sample_one(self, condition, size=20):
+        """sample one"""
+        values = take(size, self.conditioned_values(condition))
+        return pd.concat([self.row(condition, value) for value in values])
+                          
+        
     def sample(self, conditions=None, size=20, *args, **kwargs):
         conditions = conditions if conditions else self._conditions
         if conditions is None:
@@ -133,12 +145,9 @@ class ConditionedRandomVariate(RandomVariate):
             )
             return None
 
-        def __sample(condition):
-            return pd.concat(
-                [pd.DataFrame({self.label: [v]},index=condition.index)
-                 for v in take(size, self.conditioned_values(condition))]
-            )
-        return pd.concat([__sample(condition) for condition in conditions])
+        return pd.concat([self.sample_one(condition, size=size)
+                          for condition in conditions])
+                          
 
     def transform(self,  t):
         """Transform this ConditionedRandomVariate by transforming its value

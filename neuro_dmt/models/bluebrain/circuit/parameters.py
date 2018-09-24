@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 import numpy as np
+import pandas as pd
 from bluepy.v2.enums import Cell
 from bluepy.geometry.roi import ROI
 from dmt.vtk.utils.collections import *
@@ -164,6 +165,14 @@ class RandomPosition(CircuitRandomVariate):
             yield random_location(Cuboid(bounds.bbox[0] + self.offset,
                                          bounds.bbox[1] - self.offset))
 
+    def row(self, condition, value):
+        """..."""
+        return pd.DataFrame(
+            [[value[0], value[1], value[2]]],
+            columns=pd.Index(["X", "Y", "Z"], name="axis"),
+            index=condition.index
+        )
+
 
 class RandomRegionOfInterest(RandomPosition):
     """Random ROIs"""
@@ -188,6 +197,15 @@ class RandomRegionOfInterest(RandomPosition):
         for position in positions:
             yield Cuboid(position - half_box, position + half_box)
 
+    def row(self, condition, value):
+        """..."""
+        return pd.DataFrame(
+            [value],
+            columns=[[self.label]],
+            index=condition.index
+        )
+
+
 
 class RandomBoxCorners(RandomRegionOfInterest):
     """..."""
@@ -208,6 +226,23 @@ class RandomBoxCorners(RandomRegionOfInterest):
                .conditioned_values(condition, *args, **kwargs)
         for roi in rois:
             yield roi.bbox
+
+    def row(self, condition, value):
+        """..."""
+        index = pd.MultiIndex.from_tuples(
+            [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
+             ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
+            names=["box_corners", "axis"]
+        )
+        return pd.DataFrame(
+            [[value[0][0], value[0][1], value[0][2],
+              value[1][0], value[1][1], value[1][2]]],
+            columns=index,
+            index=condition.index
+        )
+
+
+        
 
 
 class Mtype(ConditionedRandomVariate):

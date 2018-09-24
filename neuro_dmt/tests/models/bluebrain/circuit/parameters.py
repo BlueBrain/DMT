@@ -40,10 +40,10 @@ cg = ConditionGenerator(cortical_layer, named_target)
 rposes = RandomPosition(sscx_circuit,
                         brain_region=Cortical(by=("layer", "$target")))\
                         .given(CorticalLayer(values=(1,2)),
-                               NamedTarget(values=("mc2_Column"))
+                               NamedTarget(values={"mc2_Column",}))
 rroies = RandomRegionOfInterest(sscx_circuit, Cortical(by=("layer",)))\
          .given(CorticalLayer(),
-                NamedTarget(values=("mc2_Column")))
+                NamedTarget(values={"mc2_Column"}))
 rboxes = RandomBoxCorners(sscx_circuit, Cortical(by=("layer",)))\
          .given(CorticalLayer(),
-                NamedTarget(values=("mc2_Column")))
+                NamedTarget(values={"mc2_Column"}))
