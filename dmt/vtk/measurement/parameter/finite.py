@@ -180,11 +180,12 @@ class FiniteValuedParameter(Parameter, WithFCA):
         self.logger.debug("missing data frame {}".format(missing_df))
         self.logger.debug("dataframe measured {}".format(dataframe))
         full_df = pd.concat([dataframe, missing_df])
-        #index = pd.Index([self.repr(i) for i in full_df.index],
-        #                 dtype="object", name=self.label)
-        #print("index {}".format(index))
-        #full_df.index = index
-        return self.sorted(full_df, ascending=ascending) if sorted else full_df
+        sdf = self.sorted(full_df, ascending=ascending) if sorted else full_df
+        self.logger.debug("after filled, measurement dataframe {}"\
+                          .format(sdf.index))
+        return(sdf.set_index(pd.Index([self.repr(i) for i in sdf.index],
+                                       name=sdf.index.name))
+               if with_index_renamed else sdf)
 
     def make_aggregator(self, rand_var_gen_func):
         """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.
