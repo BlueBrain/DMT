@@ -46,12 +46,11 @@ def sorted(dataframe, order, level=None, ascending=True):
     Parameters
     ----------------------------------------------------------------------------
     dataframe :: pandas.DataFrame
-    order :: dict #mapping values to integers (their order)
+    order :: lambda function #mapping values to integers (their order)
     """
     index = dataframe.index
     if isinstance(index, pd.MultiIndex):
         assert(level is not None)
-        assert(isinstance(order, dict))
         assert(level in index.names)
         keys = ordered_values(order, level_values(dataframe, level))
         return pd.concat([dataframe.xs(k, level=level) for k in keys],
@@ -59,9 +58,8 @@ def sorted(dataframe, order, level=None, ascending=True):
     
     if isinstance(index, pd.Index):
         assert(not level or index.name == level)
-        assert(dataframe.shape[0] == len(order))
         cols = dataframe.columns
-        dataframe["order"] = [order(v) for i in index]
+        dataframe["order"] = [order(i) for i in index]
         return dataframe.sort_values(by="order")[cols]
 
     logger.warning("""sorted(...) :: DataFrame index {} is neither pandas.Index

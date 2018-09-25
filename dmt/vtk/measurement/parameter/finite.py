@@ -109,8 +109,8 @@ class FiniteValuedParameter(Parameter, WithFCA):
     def sorted(self, dataframe, ascending=True):
         """dataframe sorted by index that is this Parameter"""
         from dmt.vtk.utils.pandas import sorted
-        return sorted(dataframe, order=self.order_dict, level=self.label,
-                      ascending=ascending)
+        return sorted(dataframe, order=lambda v: self.value_order[v],
+                      level=self.label, ascending=ascending)
         
     def with_index_renamed(self, dataframe, ascending=True):
         """Rename the index of a dataframe."""
@@ -155,26 +155,30 @@ class FiniteValuedParameter(Parameter, WithFCA):
         return (self.with_index_renamed(full_df, ascending=ascending)
                 if with_index_renamed else full_df)
 
-    def filled(self, dataframe, sorted=True, ascending=True, with_index_renamed=True):
+    def filled(self, dataframe,
+               sorted=True, ascending=True,
+               with_index_renamed=True):
         """Filled and sorted Dataframe by index,
         which is of the type of this Parameter."""
-        index = dataframe.index
-        if isinstance(index, pd.MultiIndex):
+        self.logger.debug("measurement has an index of type {}"\
+                          .format(type(dataframe.index)))
+        if isinstance(dataframe.index, pd.MultiIndex):
             return self._filled_multi_index(dataframe,
                                             sorted=True,ascending=ascending,
                                             with_index_renamed=with_index_renamed)
-
-        if index.name != self.label:
+        if dataframe.index.name != self.label:
             raise ValueError("index name {} != self.label {}"\
-                             .format(index.name, self.label))
+                             .format(dataframe.index.name, self.label))
                                                   
-        IndexType = type(index)
-        missing = list(self.values - set(index))
-        missing_df = pd.DataFrame({'mean': len(missing) * [0.],
-                                   'std': len(missing) * [0.]})\
-                       .set_index(IndexType(missing,
-                                            dtype=index.dtype,
-                                            name=self.label))
+        IndexType = type(dataframe.index)
+        missing = list(self.values - set(dataframe.index))
+        self.logger.debug("missing values in the index {}".format(missing))
+        missing_df = pd.DataFrame(len(missing) * [[0., 0.]],
+                                  index=IndexType(missing,
+                                                  name=dataframe.index.name),
+                                  columns=dataframe.columns)
+        self.logger.debug("missing data frame {}".format(missing_df))
+        self.logger.debug("dataframe measured {}".format(dataframe))
         full_df = pd.concat([dataframe, missing_df])
         #index = pd.Index([self.repr(i) for i in full_df.index],
         #                 dtype="object", name=self.label)

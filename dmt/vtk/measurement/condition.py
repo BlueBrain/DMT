@@ -32,7 +32,7 @@ class Condition:
     def index(self):
         """A Pandas Index object."""
         return pd.MultiIndex.from_tuples(
-            [tuple(param.repr(value) for param, value in self.__param_value_pairs)],
+            [tuple(value for param, value in self.__param_value_pairs)],
             names=[param.label for param, _ in self.__param_value_pairs]
         )
 
@@ -77,7 +77,7 @@ class ConditionGenerator(ParameterGroup):
             conditions = self
         def __tuple(condition):
             """..."""
-            return size * tuple(variable.repr(condition.value.get(variable.label))
+            return size * tuple(condition.value.get(variable.label)
                                 for variable in self.conditioning_variables)
         return pd.MultiIndex.from_tuples([__tuple(c) for c in conditions],
                                          names=self.labels)

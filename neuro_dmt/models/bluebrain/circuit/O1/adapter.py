@@ -124,7 +124,6 @@ class BlueBrainModelAdapter(WithFCA):
         by :: List[FiniteValuedParameter] #the parameters conditioning
         ~                                 #self.spatial_random_variate
         """
-        return measurement
         for p in by:
             measurement.data = p.filled(measurement.data)
         return measurement

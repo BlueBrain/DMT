@@ -14,6 +14,7 @@ from dmt.vtk.utils.descriptor import ClassAttribute, Field
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random \
     import RandomVariate, ConditionedRandomVariate
+from dmt.vtk.utils.logging import with_logging, Logger
     
 
 class Measurement:
@@ -72,6 +73,7 @@ class Method(ABC):
 
  
 
+@with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
     """Make statistical measurements."""
     random_variate = Field(
@@ -92,8 +94,17 @@ class StatisticalMeasurement:
     def sample(self, method, size=20, *args, **kwargs):
         """..."""
         params = self.random_variate.sample(size=size, *args, **kwargs)
-        measurement = [method(**row[1]) for row in params.iterrows()]
-        return pd.DataFrame({method.label: measurement}, index=params.index)
+        self.logger.debug(
+            "StatisticalMeasurement.sample(...) params index: {}"\
+            .format(params.index)
+        )
+        data = [method(**row[1]) for row in params.iterrows()]
+        measurement = pd.DataFrame({method.label: data}, index=params.index)
+        self.logger.debug(
+            "StatisticalMeasurement.sample(...) measurement.index: {}"\
+            .format(measurement.index)
+        )
+        return measurement
 
     def __call__(self, method, *args, **kwargs):
         """call me"""
