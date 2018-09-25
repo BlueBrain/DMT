@@ -95,11 +95,11 @@ class StatisticalMeasurement:
         measurement = [method(**row[1]) for row in params.iterrows()]
         return pd.DataFrame({method.label: measurement}, index=params.index)
 
-    def __call__(self, method, size=None, *args, **kwargs):
+    def __call__(self, method, *args, **kwargs):
         """call me"""
         data = summary_statistic(self.sample(
             method,
-            size=(size if size else self.sample_size),
+            size=kwargs.get("size", self.sample_size),
             *args, **kwargs
         ))
         levels = data.index.names

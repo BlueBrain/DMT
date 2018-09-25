@@ -180,8 +180,6 @@ class FiniteValuedParameter(Parameter, WithFCA):
         #full_df.index = index
         return self.sorted(full_df, ascending=ascending) if sorted else full_df
 
-
-
     def make_aggregator(self, rand_var_gen_func):
         """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.
         The grouped variable must be of the following form:

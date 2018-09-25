@@ -3,6 +3,7 @@ from abc import ABCMeta
 from dmt.vtk.utils.exceptions import \
     RequiredKeywordArgumentError, RequiredArgumentError
 from dmt.vtk.utils.logging import Logger, with_logging
+from dmt.vtk.utils.logging.message import Validation
 
 logger_level = Logger.level.STUDY
 
@@ -13,7 +14,7 @@ class Field:
     __is_field__ = True
 
     def __init__(self, __name__, __type__,
-                 __is_valid_value__=lambda x, instance: True,
+                 __is_valid_value__=lambda instance, x: True,
                  __doc__ = "A field.",
                  __examples__=[],
                  *args, **kwargs):
@@ -47,27 +48,30 @@ class Field:
         """Minimum requirement on value to pass as a valid instance."""
         return isinstance(value, self.__type__)
 
-    def is_valid(self, value, *args, **kwargs):
-        """is valid value?"""
-        throw = kwargs.get("throw", False)
-        try: 
-            self.__assert_validity(value, *args)
-        except Exception as exception:
-            if throw:
-                raise exception
-            self.logger.warning("Caught {}: {}"\
-                                .format(exception.__class__.__name__, exception))
-            return False
-        return True
-
-    def __assert_validity(self, *args):
+    def is_valid(self, instance, value):
         """..."""
-        l = len(args)
-        if l == 0:
-            RequiredArgumentError(1, "value")
+        return self.validation(instance, value).passed
 
-        value = args[0] 
-        if not self.__is_minimally_valid(value):
+    def validation(self, instance, value):
+        """is valid value?"""
+        try: 
+            self.assert_validity(value, *args)
+        except TypeError as exception:
+            message = """Value {} has incorrect type. Expected {}, received {}"""\
+                      .format(value, self.__type__, type(value))
+            return Validation(message, exception)
+        except ValueError as exception:
+            message = """{} is correct type but has invalid value. Look up
+            this Field's doc""".format(value)
+            return Validation(message, exception)
+        return Validation("{} is a valid value of {} field {}."\
+                         .format(value,
+                                 instance.__class__.__name__,
+                                 self.__name__))
+
+    def assert_validity(self, instance, value):
+        """..."""
+        if not isinstance(value, self.__type__):
             raise TypeError(
                 "Cannot set field {} of type {} to value {} of type {}"\
                 .format(self.__field_name__,
@@ -75,34 +79,25 @@ class Field:
                         value, str(type(value)))
             )
         else:
-            self.logger.info("Value {} is valid".format(value))
+            self.logger.info("Value {} has the correct type {}"\
+                             .format(value, self.__type__.__name__))
+
         error = ValueError(
             "Field '{}' of type {} cannot be set to an invalid value, {}"\
             .format(self.__field_name__,
                     self.__type__.__name__,
                     value)
         )
-        if l > 1:
-            instance = args[1]
-            try:
-                if not self.__is_valid_value(instance, value):
-                    raise error 
-            except Exception as exception:
-                 raise exception
-            return
-
-        assert(l == 1)
-        try:
-            if not self.__is_valid_value(value):
-                raise error
-        except Exception as exception:
-            raise exception
+        if not self.__is_valid_value(instance, value):
+            raise error 
+        else:
+            self.logger.info("Value {} is valid.".format(value))
         return
 
     def __set__(self, instance, value):
         """set the value of the field in an instance
         where a field has been declared."""
-        self.__assert_validity(value, instance)
+        self.assert_validity(instance, value)
         setattr(instance, self.instance_storage_name, value)
 
     def __get__(self, instance, owner):
@@ -127,12 +122,11 @@ class Field:
 
 def field(__name__, #name of the field, 
           __type__, #type of the field value
-          __is_valid_value__ = lambda x: True,
+          __is_valid_value__ = lambda instance, x: True,
           __doc__ = None): #document string
     """A factory function to define a Field.
     It is unfortunate that we have to require a __name__ argument."""
     F = Field(__name__, __type__, __is_valid_value__, __doc__)
-    #F.__doc__ =  __doc__
     return F
 
 def is_field(x):
@@ -221,23 +215,42 @@ class WithFCA:
         attributes.
         So a good mixin will be one that mixes in very specific features.
         """
-        self.logger.inform("hit WithFCA")
-        self.logger.inform("with kwargs: {}".format(kwargs))
         cls = self.__class__
         fields = self.get_fields()
         self.logger.inform("fields: {}".format(fields))
+        self.logger.inform("kwargs keys: {}".format([k for k in kwargs.keys()]))
         for field in fields:
-            self.logger.inform("iterating field {}".format(field))
-            if isinstance(getattr(cls, field), Field):
+            cls_field = getattr(cls, field)
+            self.logger.inform("Resolving field {} of instance of type {}"\
+                               .format(field, cls.__name__))
+            if hasattr(self, field) and not isinstance(getattr(self, field), Field):
+                self_field = getattr(self, field)
+                try:
+                    cls_field.assert_validity(self, self_field)
+                except TypeError as e:
+                    raise TypeError(
+                        "{} instance field {} has inadmissible type: {}"\
+                        .format(cls._name__, field, type(self_field).__name__)
+                    )
+                except ValueError as e:
+                    raise ValueError(
+                        "{} instance field {} has inadmissible value: {}"\
+                        .format(cls._name__, field, self_field)
+                    )
+            else:
+                self.logger.inform("instance {} does not have attribute {}"\
+                                   .format(cls.__name__, field))
+                self.logger.inform("will set it from kwargs")
                 if field in kwargs:
-                    setattr(self, field, kwargs[field])
                     self.logger.inform("Found attribute {}".format(field))
+                    setattr(self, field, kwargs[field])
                 else:
                     raise TypeError(
                         "Can't instantiate abstract class {} "
                         "with undefined Field {}"
                         .format(self.__class__.__name__, field)
                     )
+            self.logger.inform("-----------------------------------------------")
         try:
             super(WithFCA, self).__init__(*args, **kwargs)
         except TypeError as te:
@@ -246,10 +259,6 @@ class WithFCA:
     @classmethod
     def get_fields(cls):
         """..."""
-        #cls.logger.inform("getting fields")
-        #for k in cls.__dict__.keys():
-        #    cls.logger.inform(k)
-        #cls.logger.inform("------------------------------------------")
         return [
             attr for attr in dir(cls) if isinstance(getattr(cls, attr), Field)
         ]

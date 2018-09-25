@@ -20,9 +20,9 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.measurement import StatisticalMeasurement
-from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
-from dmt.vtk.utils.logging import Logger
+from dmt.vtk.utils.logging import Logger, with_logging
 from neuro_dmt.validations.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
@@ -31,12 +31,14 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
+from neuro_dmt.models.bluebrain.circuit.parameters import BrainRegionSpecific
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.parameters import \
     CircuitRandomVariate
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
+
 
 from neuro_dmt.models.bluebrain.circuit.measurements import composition
 
@@ -46,7 +48,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements import composition
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-class BlueBrainModelAdapter:
+class BlueBrainModelAdapter(WithFCA, ABC):
     """Adapt a circuit from the Blue Brain Project (BBP).
     This adapter was developed for the O1.v6a models developed at BBP in 2017-
     2018. The brain (micro-)circuit models are not atlas based, but are
@@ -56,13 +58,25 @@ class BlueBrainModelAdapter:
     author = Author.zero
     label = 'layer'
 
+    brain_region = Field(
+        __name__="brain_region",
+        __type__=BrainRegionSpecific,
+        __doc__="""Provides brain region specific attributes (for BBP circuits.).
+        We should be able to extract this information from the circuit object,
+        or we could wrap circuit into a subclass that contains this information.
+        But the goal is to not touch the circuit model object, and feed it to
+        the measurement getters as it is. We will have to subclass
+        BlueBrainModelAdapter to provide brain region specific Adapters, and the
+        user, who we expect to know the brain region they are studuing,
+        can use the appropriate one."""
+    )
     spatial_random_variate = Field(
-        __name__="spatial_parameter",
-        __type__=CircuitRandomVariate, #define this
+        __name__="spatial_random_variate",
+        __type__=type,
+        __is_valid_value__=lambda instance, t: issubclass(CircuitRandomVariate, t),
         __doc__="""A slot to set this adapter's spatial parameter --- with
         respect to which a circuit's spatial phenomena can be measured. """
     )
-
     sample_size = Field(
         __name__="sample_size",
         __type__=int,
@@ -73,21 +87,22 @@ class BlueBrainModelAdapter:
         __type__=str,
         __doc__="""Label to be used in reporting."""
     )
-
-    #def __init__(self, sampled_box_shape, sample_size,
-    #             *args, **kwargs):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, brain_region,
+                 spatial_random_variate,
+                 model_label="in-silico",
+                 sample_size=20,
+                 sample_box_shape=50.*np.ones(3), 
+                 *args, **kwargs):
                  
         """
         Parameters
         ------------------------------------------------------------------------
-        sampled_box_shape :: np.ndarray[3D]#shape of the regions to sample
         """
-        self._logger = Logger("{}Logger".format(self.__class__.__name__),
-                              level=kwargs.get("logger_level", Logger.level.PROD))
-        #self._sampled_box_shape = sampled_box_shape
-        self.sample_size = kwargs.get("sample_size", 20)
-        self.model_label = kwargs.get('model_label', 'in-silico')
+        self.brain_region = brain_region
+        self.spatial_random_variate = spatial_random_variate
+        self.model_label = model_label
+        self.sample_size = sample_size
+        self._sampled_box_shape = sampled_box_shape
         try:
             super(BlueBrainModelAdapter, self).__init__(*args, **kwargs)
         except:
@@ -110,10 +125,11 @@ class BlueBrainModelAdapter:
             measurement.data = p.filled(measurement.data)
         return measurement
 
-    def statistical_measurement(self, method, by, *args, **kwargs):
+    def statistical_measurement(self, circuit, method, by, *args, **kwargs):
         """..."""
         random_variate\
-            = self.spatial_random_variate.given(conditioning_variables)
+            = self.spatial_random_variate(circuit, self.brain_region)\
+                  .given(by)
         return self.filled(
             StatisticalMeasurement(
                 random_variate=random_variate
@@ -122,23 +138,18 @@ class BlueBrainModelAdapter:
             by=by
         )
 
-    def spatial_measurement(self, method, circuit, by,
-                            target=None):
+    def spatial_measurement(self, method, circuit, by, *args, **kwargs):
         """..."""
-        measurement= self.statistical_measurement(
-            method,
-            by=by,
-            target=target, #track this kwarg --- how is it propagate?
+        return self.statistical_measurement(
+            circuit, method, by,
             sampled_box_shape=self._sampled_box_shape,
-            sample_size=self._sample_size
         )
-        return measurement
 
-    def get_cell_density(self, circuit, spatial_parameter=None,
-                         target="mc2_Column"):
+    def get_cell_density(self, circuit, spatial_parameters):
         method = composition.CellDensity(circuit)
-        return self.spatial_measurement(method, by=spatial_parameter,
-                                        circuit, target=target)
+        return self.spatial_measurement(method=composition.CellDensity(circuit),
+                                        circuit=circuit,
+                                        by=spatial_parameters):
                                         
     def get_cell_ratio(self, circuit):
         """..."""

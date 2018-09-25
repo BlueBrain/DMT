@@ -3,7 +3,7 @@ from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.utils.logging import with_logging, Logger
 
 logger = Logger(client = None,
-                name="FCABase",
+                name="FCA",
                 level=Logger.level.TEST)
 
 class TestFCAX(WithFCA):
@@ -72,6 +72,12 @@ class TestFCAXY2(TestFCAX):
     z = 2
     def __init__(self, x, y):
         super(TestFCAXY2, self).__init__(x=x, y=y)
+
+class TestFCAXYhoho(TestFCAX):
+    """..."""
+    z = "hoho"
+    def __init__(self, x, y):
+        super(TestFCAXYhoho, self).__init__(x=x, y=y)
 
 logger.note("TestFCAXY2(1, 2) will succeed")
 

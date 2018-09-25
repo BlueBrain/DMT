@@ -18,7 +18,8 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
 from neuro_dmt.measurement.parameter import \
     Layer, CorticalLayer, HippocampalLayer
 from neuro_dmt.models.bluebrain.circuit.parameters import \
-    NamedTarget, \
+    NamedTarget
+from neuro_dmt.models.bluebrain.circuit.random_variate import \
     RandomPosition, \
     RandomRegionOfInterest, \
     RandomBoxCorners, \
@@ -71,30 +72,3 @@ def transform(instance, method_name, mapping):
 
     setattr(modified_instance, method_name, modified_method)
     return modified_instance
-
-
-def get_cortical_roi(circuit,
-                     sample_box_shape=50.*np.ones(3),
-                     *args, **kwargs):
-    """..."""
-    position = CorticalRandomPosition(circuit, offset=sample_box_shape,
-                                      *args, **kwargs)
-    half_box = sample_box_shape / 2.0
-    return position.transform(
-        Record(label="roi",
-               function=lambda loc: Cuboid(loc - half_box, loc + half_box))
-    )
-
-def get_hippocampal_roi(circuit,
-                        sample_box_shape=50.*np.ones(3),
-                        *args, **kwargs):
-    """..."""
-    position = HippocampalRandomPosition(circuit, offset=sample_box_shape,
-                                         *args, **kwargs)
-    half_box = sample_box_shape / 2.0
-    return position.transform(
-        Record(label="roi",
-               function=lambda loc: Cuboid(loc - half_box, loc + half_box))
-    )
-
-

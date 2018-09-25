@@ -47,6 +47,11 @@ class Info(Message):
     level = 1
     label = "INFO"
 
+class Explanation(Message):
+    """Explain something"""
+    level = 1
+    label = "EXPLAINATION"
+
 class Note(Message):
     """Note may be used for testing."""
     level = 0
@@ -92,3 +97,40 @@ class Assertion(Message):
     """..."""
     level = 4
     label = "ASSERTION"
+
+
+class Validation:
+    """Explains an exception. What happened?
+    Not to the user, but client code."""
+    def __init__(self, msg, exc=None):
+        """...
+        Parameters
+        ------------------------------------------------------------------------
+        msg :: str
+        exc <: Exception"""
+
+        self.explanation = Explanation(msg)
+        self.exception = exc
+        
+    def explain(self, logger):
+        """"...
+        Parameters
+        ------------------------------------------------------------------------
+        logger <: Logger"""
+        if self.exception:
+            logger.error("{}: {}".format(self.exception.__class__.__name__,
+                                         self.exception))
+        logger.log(self.explanation)
+
+        return self.exception is not None
+
+    @property
+    def passed(self):
+        """did it pass?"""
+        return self.exception is not None
+
+
+
+
+    
+    

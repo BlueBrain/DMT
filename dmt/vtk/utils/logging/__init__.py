@@ -111,6 +111,14 @@ class Logger:
 
         return self.__statistics
 
+    def log(self, msg):
+        """...an alias...
+        Parameters
+        ------------------------------------------------------------------------
+        msg :: Message
+        """
+        return self._log_message(msg)
+
     @property
     def client(self):
         """..."""

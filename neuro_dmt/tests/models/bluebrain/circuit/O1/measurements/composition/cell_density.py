@@ -13,6 +13,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements.composition \
     import CellDensity
 from neuro_dmt.models.bluebrain.circuit.parameters \
     import RandomRegionOfInterest
+from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 from neuro_dmt.models.bluebrain.circuit.O1.parameters import \
     NamedTarget, Cortical
 
@@ -21,7 +22,7 @@ cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig
 circuit = Circuit(cpath)
 cd = CellDensity(circuit)
 
-rrois = RandomRegionOfInterest(circuit,
+rrois = RandomRegionOfInterest(circuit, circuit_build=O1Circuit,
                                brain_region=Cortical(by=("layer", "$target")))\
                                .given(CorticalLayer(),
                                       NamedTarget(values = {"mc2_Column"}))
