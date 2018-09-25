@@ -125,7 +125,7 @@ class BlueBrainModelAdapter(WithFCA):
         ~                                 #self.spatial_random_variate
         """
         for p in by:
-            measurement.data = p.filled(measurement.data)
+            measurement.data = p.repr_index(p.filled(measurement.data))
         return measurement
 
     def statistical_measurement(self, circuit, method, by, *args, **kwargs):

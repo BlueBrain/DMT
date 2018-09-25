@@ -112,9 +112,10 @@ class FiniteValuedParameter(Parameter, WithFCA):
         return sorted(dataframe, order=lambda v: self.value_order[v],
                       level=self.label, ascending=ascending)
         
-    def with_index_renamed(self, dataframe, ascending=True):
+    def repr_index(self, dataframe, ascending=True):
         """Rename the index of a dataframe."""
         if isinstance(dataframe.index, pd.MultiIndex):
+            #not tested yet
             assert(isinstance(dataframe.index, pd.MultiIndex))
             assert(self.label not in dataframe.index.names)
             
@@ -122,13 +123,10 @@ class FiniteValuedParameter(Parameter, WithFCA):
             return flatten([dataframe.xs(k, level=self.label) for k in keys],
                            keys=[self.repr(k) for k in keys], names=[self.label])
 
-        cols = dataframe.columns
-        dataframe["order"] = [self.order(v) for v in dataframe.index]
-        dataframe.index = pd.Index([self.repr(i) for i in dataframe.index],
-                                   dtype="object", name=self.label)
-        return dataframe.sort_values(by="order",
-                                     ascending=ascending)[cols]
-        
+        assert dataframe.index.name != self.label
+        new_index = pd.Index([self.repr(i) for i in dataframe.index],
+                             name=dataframe.index.name)
+        return dataframe.set_index(new_index)
 
     def _filled_multi_index(self, dataframe,
                             sorted=True, ascending=True,
@@ -180,12 +178,7 @@ class FiniteValuedParameter(Parameter, WithFCA):
         self.logger.debug("missing data frame {}".format(missing_df))
         self.logger.debug("dataframe measured {}".format(dataframe))
         full_df = pd.concat([dataframe, missing_df])
-        sdf = self.sorted(full_df, ascending=ascending) if sorted else full_df
-        self.logger.debug("after filled, measurement dataframe {}"\
-                          .format(sdf.index))
-        return(sdf.set_index(pd.Index([self.repr(i) for i in sdf.index],
-                                       name=sdf.index.name))
-               if with_index_renamed else sdf)
+        return self.sorted(full_df, ascending=ascending) if sorted else full_df
 
     def make_aggregator(self, rand_var_gen_func):
         """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.
