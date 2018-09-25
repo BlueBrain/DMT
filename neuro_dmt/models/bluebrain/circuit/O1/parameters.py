@@ -15,14 +15,7 @@ from dmt.vtk.utils.logging import Logger, with_logging
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
-from neuro_dmt.measurement.parameter import \
-    Layer, CorticalLayer, HippocampalLayer
-from neuro_dmt.models.bluebrain.circuit.parameters import \
-    NamedTarget
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
-    RandomPosition, \
-    RandomRegionOfInterest, \
-    RandomBoxCorners, \
     BrainRegionSpecific
 
 

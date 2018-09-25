@@ -164,7 +164,9 @@ class FiniteValuedParameter(Parameter, WithFCA):
                                             sorted=True,ascending=ascending,
                                             with_index_renamed=with_index_renamed)
 
-        assert(index.name != self.label)
+        if index.name != self.label:
+            raise ValueError("index name {} != self.label {}"\
+                             .format(index.name, self.label))
                                                   
         IndexType = type(index)
         missing = list(self.values - set(index))

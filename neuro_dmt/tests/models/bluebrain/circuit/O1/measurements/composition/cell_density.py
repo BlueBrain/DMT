@@ -11,11 +11,11 @@ from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper, geometry
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from neuro_dmt.models.bluebrain.circuit.measurements.composition \
     import CellDensity
-from neuro_dmt.models.bluebrain.circuit.parameters \
+from neuro_dmt.models.bluebrain.circuit.random_variate \
     import RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
-from neuro_dmt.models.bluebrain.circuit.O1.parameters import \
-    NamedTarget, Cortical
+from neuro_dmt.models.bluebrain.circuit.parameters import NamedTarget
+from neuro_dmt.models.bluebrain.circuit.O1.parameters import Cortical
 
 
 cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig"
@@ -27,4 +27,4 @@ rrois = RandomRegionOfInterest(circuit, circuit_build=O1Circuit,
                                .given(CorticalLayer(),
                                       NamedTarget(values = {"mc2_Column"}))
 cds = StatisticalMeasurement(rrois)
-data = cds(cd, size=20)
+data = cds(cd)

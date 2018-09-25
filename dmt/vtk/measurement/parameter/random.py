@@ -91,6 +91,20 @@ class ConditionedRandomVariate(RandomVariate):
 
     def given(self, *conditioning_vars, reset_condition_type=False):
         """..."""
+        if not conditioning_vars:
+            raise TypeError("missing 1 required argument 'conditioning_vars'")
+
+        l = len(conditioning_vars)
+        self.logger.debug("conditioning_vars length {}".format(l))
+        if l == 1:
+            self.logger.debug("conditioning_vars{}".format(conditioning_vars))
+            try:
+                conditioning_vars = tuple(v for v in conditioning_vars[0])
+            except:
+                conditioning_vars = (conditioning_vars[0],)
+
+
+        self.logger.debug("conditioning_vars: {}".format(conditioning_vars))
         cname = self.__class__.__name__
         if reset_condition_type:
             self.condition_type \

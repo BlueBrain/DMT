@@ -67,22 +67,6 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
 
         return self._validation_data
 
-    def _set_measurement_parameters(self, circuit_model):
-        """..."""
-
-        def __parameter_filled(p, dataframe):
-            """set parameter p for a single dataframe"""
-            return p.filled(dataframe)
-
-        data = (self._validation_data.data
-                if isinstance(self._validation_data, Record) else
-                self._validation_data)
-        if isinstance(data, dict):
-            self._validation_data = {k: }
-        if isinstance(data, list):
-            return {d.label: d for d in data}
-        return {data.label: data}
-        
     @property
     def set_parameters(self, dataframe):
         """Set the parameters in the index of dataframe to
@@ -113,7 +97,7 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
         We plan the shift of this responsibility from modeling side to the side 
         of experimenting to be our next big change.
         """
-        
+        raise NotImplementedError()
 
     @property
     def validation_data(self):
