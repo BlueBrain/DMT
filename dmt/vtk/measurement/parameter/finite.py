@@ -123,7 +123,7 @@ class FiniteValuedParameter(Parameter, WithFCA):
             return flatten([dataframe.xs(k, level=self.label) for k in keys],
                            keys=[self.repr(k) for k in keys], names=[self.label])
 
-        assert dataframe.index.name != self.label
+        assert dataframe.index.name == self.label
         new_index = pd.Index([self.repr(i) for i in dataframe.index],
                              name=dataframe.index.name)
         return dataframe.set_index(new_index)
