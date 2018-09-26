@@ -10,9 +10,11 @@ from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
+from neuro_dmt.utils.brain_regions import BrainRegion
+from neuro_dmt.validations.circuit import BrainCircuitAnalysis
 
 @document_fields
-class SpatialCompositionAnalysis(WithFCA):
+class SpatialCompositionAnalysis(BrainCircuitAnalysis):
     """Validates a single composition phenomenon.
     This base-class provides the code common to all composition validations.
     Make your subclasses to implement 'abstractmethods' that depend on factors
@@ -31,56 +33,64 @@ class SpatialCompositionAnalysis(WithFCA):
         __doc__ = """A subclass of {} to be used plot the results of
         this validation.""".format(ComparisonPlot)
     )
-    _spatial_parameter = Field(
-        __name__ = "spatial_parameter",
-        __type__ = type,
+    spatial_parameters = Field(
+        __name__ = "spatial_parameters",
+        __type__ = set,
         __doc__ = """A composition phenomenon must be measured as a function
-        of location in the brain --- spatial_parameter describes a class of this 
-        location. For example, you may want cell density as a function of
+        of location in the brain --- spatial_parameters represent these
+        locations. For example, you may want cell density as a function of
         'CorticalLayer'."""
     )
-    def __init__(self, p_value_threshold=0.05,
-                 output_dir_path=os.path.join(os.getcwd(), "report"),
-                 report_file_name="report.html",
-                 plot_customization={}):
-       """This validation will be made against multiple datasets. Each dataset
-       should provide a 'Record' as specified below.
+    def __init__(self, *args, **kwargs): 
+        """This validation will be made against multiple datasets. Each dataset
+        should provide a 'Record' as specified below.
 
-       Arguments
-       -------------------------------------------------------------------------
-       validation_data :: Either[
-       ~   Record[data :: Dict[String -> MeasurementRecord], primary :: String],
-       ~   Dict[String -> MeasurementRecord]
-       ]
-       where
-       MeasurementRecord = List[Record(measurement_label :: String,
-       ~                               region_label :: String,
-       ~                               data :: DataFrame["mean", "std"])],
-       ~                               citation :: Either[Citation, String],
-       ~                               uri :: String,
-       ~                               what :: String)]
-       -------------------------------------------------------------------------
-
-       Keyword Arguments
-       -------------------------------------------------------------------------
-       p_value_threshold :: Float #optional
-       output_dir_path :: String #optional
-       report_file_name :: String #optional
-       plot_customization :: Dict #optional
-       """
-
-       self.p_value_threshold = p_value_threshold
-       self.output_dir_path = output_dir_path
-       self.report_file_name = report_file_name
-       self.plot_customization = plot_customization
-       super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
+        Arguments
+        -------------------------------------------------------------------------
+        validation_data :: Either[
+        ~   Record[data :: Dict[String -> MeasurementRecord], primary :: String],
+        ~   Dict[String -> MeasurementRecord]
+        ]
+        where
+        MeasurementRecord = List[Record(measurement_label :: String,
+        ~                               region_label :: String,
+        ~                               data :: DataFrame["mean", "std"])],
+        ~                               citation :: Either[Citation, String],
+        ~                               uri :: String,
+        ~                               what :: String)]
+        -------------------------------------------------------------------------
+        
+        Keyword Arguments
+        -------------------------------------------------------------------------
+        p_value_threshold :: Float #optional
+        output_dir_path :: String #optional
+        report_file_name :: String #optional
+        plot_customization :: Dict #optional
+        """
+        self.logger.info("-------------------------------------")
+        self.logger.info("Reporting from SpatialCompositionAnalysis")
+        self.logger.info("initialize {} instance with kwargs:"\
+                         .format(self.__class__.__name__))
+        for k, v in kwargs.items():
+            self.logger.info("{}: {}".format(k, v))
+        self.logger.info("-------------------------------------")
+        self.spatial_parameters = kwargs["spatial_parameters"]
+        self.p_value_threshold = kwargs.get("p_value_threshold", 0.05)
+        self.output_dir_path = kwargs.get("output_dir_path",
+                                          os.path.join(os.getcwd(), "report"))
+        self.report_file_name = kwargs.get("report_file_name", "report.html")
+        self.plotter_type = kwargs["plotter_type"]
+        self.plot_customization = kwargs.get("plot_customization", {})
+        
+        super().__init__(*args, **kwargs)
+        
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""
         name = model_measurement.phenomenon.name
         kwargs['output_dir_path'] = self.output_dir_path
         kwargs['title']  = name
-        kwargs['xlabel'] = model_measurement.parameter_group.label
+        kwargs['xlabel'] = model_measurement.parameter
         kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
                                            model_measurement.units)
         kwargs.update(self.plot_customization)
@@ -88,7 +98,7 @@ class SpatialCompositionAnalysis(WithFCA):
                                            label=model_measurement.label))\
                       .comparing("dataset")\
                       .against(self.validation_data)\
-                      .for_given(self.region_type.label)\
+                      .for_given(list(self.spatial_parameters)[0].label)\
                       .with_customization(**kwargs)
 
         return plotter.plot()

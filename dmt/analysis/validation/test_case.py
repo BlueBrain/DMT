@@ -138,8 +138,7 @@ class SinglePhenomenonValidation(ValidationTestCase):
     )
     def __init__(self, *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
-        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)
         if 'validated_phenomenon' in kwargs:
             self.validated_phenomenon = kwargs['validated_phenomenon']
+        super().__init__(*args, **kwargs)
 
-        super(SinglePhenomenonValidation, self).__init__(*args, **kwargs)

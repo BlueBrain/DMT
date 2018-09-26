@@ -15,6 +15,20 @@ class CellDensityValidation(ByLayerCompositionValidation):
         "cell density",
         "Count of cells in a unit volume."
     )
+    analyzed_phenomenon = validated_phenomenon
+
+    def __init__(self, *args, **kwargs):
+        """..."""
+        self.logger.info("-------------------------------------")
+        self.logger.info("Reporting from CellDensityValidation")
+        self.logger.debug("{} instance init with kwargs".\
+                          format(self.__class__.__name__))
+        for k, v in kwargs.items():
+            self.logger.debug("{}: {}".format(k, v))
+        self.logger.info("-------------------------------------")
+
+        super().__init__(*args, **kwargs)
+
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface.
@@ -28,7 +42,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def get_cell_density(self, circuit_model, spatial_parameter):
+        def get_cell_density(self, circuit_model, spatial_parameters):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -55,6 +69,6 @@ class CellDensityValidation(ByLayerCompositionValidation):
 
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_cell_density(circuit_model, self.spatial_parameter)
+        return self.adapter.get_cell_density(circuit_model, self.spatial_parameters)
                                              
 

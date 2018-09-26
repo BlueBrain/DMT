@@ -1,9 +1,14 @@
 """Logging utilities."""
 import sys
 import os
+import inspect
 import time
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.logging.message import *
+
+
+        
+
 
 class Logger:
     """Log messages.
@@ -85,6 +90,19 @@ class Logger:
         except:
             pass
 
+    def source_info(self):
+        """a string to show where the log was generated."""
+        traceback = inspect.getframeinfo(inspect.stack()[1][0])
+        self.log(SourceCodeInfo(
+            "{classname}:\n\tfilename: \t{filename}\n\tlineno: \t{lineno}\n"
+            "\tcode_context: \t{code_context}\n\tindex: {index}\n"\
+            .format(classname=traceback.__class__.__name__,
+                    filename=traceback.filename,
+                    lineno=traceback.lineno,
+                    code_context=traceback.code_context,
+                    index=traceback.index)
+        ))
+
     def _log_message(self, msg):
         """"Log message with time.
             
@@ -93,21 +111,19 @@ class Logger:
         msg :: Message #to be logged
         """
         if msg.level >= self._level:
-            Logger.err_print("{}@{} {}:: {}"\
-                             .format(self._name,
-                                     Logger.timestamp(time.localtime()),
-                                     msg.label, msg.value))
+            fmsg = msg.formatted(self)
+            Logger.err_print(fmsg)
             if self._in_file:
                 with open(self._in_file, "a")  as f:
-                    f.write("{}\n".format(msg))
-
+                    f.write(fmsg)
+                    f.write("\n")
         else:
             pass
 
         try:
             self.__statistics[msg.label] += 1
         except KeyError:
-            self._log_message(Info("{}: {}".format(msg.label, msg.value)))
+            self.__statistics[msg.label] = 1
 
         return self.__statistics
 

@@ -10,6 +10,7 @@ from dmt.vtk.utils.exceptions import ValueNotSetError
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.validations.circuit.composition import SpatialCompositionAnalysis
+from neuro_dmt.measurement.parameter import CorticalLayer
     
 
 @document_fields
@@ -22,7 +23,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     """
     plotter_type = BarPlotComparison
 
-    def __init__(self, spatial_parameter, validation_data, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
         should provide a 'Record' as specified below.
@@ -44,9 +45,16 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         Keyword Arguments
         ------------------------------------------------------------------------
         """
-        self._spatial_parameter = spatial_parameter
-        super(ByLayerCompositionValidation, self)\
-            .__init__(validation_data, *args, **kwargs)
+        self.logger.info("-------------------------------------")
+        self.logger.info("Reporting from ByLayerCompositionValidation")
+        self.logger.info("initialize {} instance with kwargs:"\
+                         .format(self.__class__.__name__))
+        for k, v in kwargs.items():
+            self.logger.info("{}: {}".format(k, v))
+        self.logger.info("-------------------------------------")
+        kwargs.update({'spatial_parameters': {CorticalLayer()}})
+        super().__init__(*args, **kwargs)
+            
 
     @property
     def primary_dataset(self):
@@ -102,6 +110,8 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     @property
     def validation_data(self):
         """Override"""
+        self.logger.source_info()
+        self.logger.study("Check what kind of validation data was received.")
         if self._validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
@@ -110,16 +120,29 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
                 self._validation_data)
         
         if not isinstance(data, dict):
+            self.logger.source_info()
+            self.logger.devnote("Assume that data is a pandas DataFrame")
             return data
 
         assert(isinstance(data, dict))
         if len(data) == 1:
+            self.logger.source_info()
+            self.logger.devnote(
+                """Only one element in dict.
+                We assume that element is a pandas DataFrame."""
+            )
             return list(data.values())[0]
 
         dataset_names = [k for k in data.keys()]
-                           
-        return flatten({n: data[n].data for n in dataset_names},
-                       names=["dataset"])[["mean", "std"]]
+        self.logger.source_info()
+        self.logger.devnote("Flatten the many datasets' pandas DataFrames")
+
+        fdf = flatten({n: data[n].data for n in dataset_names},
+                      names=["dataset"])[["mean", "std"]]
+
+        self.logger.source_info()
+        self.logger.debug("Flattened DataFrame index:")
+        self.logger.debug("{}".format(fdf.index))
 
     @property
     def validation_datasets(self):

@@ -1,17 +1,19 @@
 """Base class for all brain region circuit validations."""
 from abc import ABC, abstractmethod
 from dmt.vtk.utils.descriptor import Field, WithFCA
+from neuro_dmt.utils.brain_regions import BrainRegion
+
 
 class BrainCircuitAnalysis(WithFCA):
     """Base class for a brain circuit analysis."""
-    def __init__(self, brain_region, *args, **kwargs):
+
+    brain_region = Field(
+        __name__="brain_region",
+        __type__=BrainRegion,
+        __doc__="Provides a model independent tag for the brain region."
+    )
+
+    def __init__(self, *args, **kwargs):
         """..."""
-
-    @property
-    @abstractmethod
-    def brain_region(self):
-        """An object that represents a brain region."""
-        pass
-
-    
-
+        self.brain_region = kwargs["brain_region"]
+        super().__init__(*args, **kwargs)

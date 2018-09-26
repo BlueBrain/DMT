@@ -5,9 +5,7 @@ from dmt.vtk.utils.exceptions import \
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.logging.message import Validation
 
-logger_level = Logger.level.STUDY
-
-@with_logging(logger_level)
+@with_logging(Logger.level.STUDY)
 class Field:
     """Creates a field from a provided class."""
 
@@ -78,10 +76,6 @@ class Field:
                         self.__type__.__name__,
                         value, str(type(value)))
             )
-        else:
-            self.logger.info("Value {} has the correct type {}"\
-                             .format(value, self.__type__.__name__))
-
         error = ValueError(
             "Field '{}' of type {} cannot be set to an invalid value, {}"\
             .format(self.__field_name__,
@@ -90,8 +84,6 @@ class Field:
         )
         if not self.__is_valid_value(instance, value):
             raise error 
-        else:
-            self.logger.info("Value {} is valid.".format(value))
         return
 
     def __set__(self, instance, value):
@@ -217,12 +209,8 @@ class WithFCA:
         """
         cls = self.__class__
         fields = self.get_fields()
-        self.logger.inform("fields: {}".format(fields))
-        self.logger.inform("kwargs keys: {}".format([k for k in kwargs.keys()]))
         for field in fields:
             cls_field = getattr(cls, field)
-            self.logger.inform("Resolving field {} of instance of type {}"\
-                               .format(field, cls.__name__))
             if hasattr(self, field) and not isinstance(getattr(self, field), Field):
                 self_field = getattr(self, field)
                 try:
@@ -238,11 +226,7 @@ class WithFCA:
                         .format(cls._name__, field, self_field)
                     )
             else:
-                self.logger.inform("instance {} does not have attribute {}"\
-                                   .format(cls.__name__, field))
-                self.logger.inform("will set it from kwargs")
                 if field in kwargs:
-                    self.logger.inform("Found attribute {}".format(field))
                     setattr(self, field, kwargs[field])
                 else:
                     raise TypeError(
@@ -250,11 +234,10 @@ class WithFCA:
                         "with undefined Field {}"
                         .format(self.__class__.__name__, field)
                     )
-            self.logger.inform("-----------------------------------------------")
         try:
             super(WithFCA, self).__init__(*args, **kwargs)
         except TypeError as te:
-            self.logger.error("TypeError: {}".format(te))
+            pass
 
     @classmethod
     def get_fields(cls):

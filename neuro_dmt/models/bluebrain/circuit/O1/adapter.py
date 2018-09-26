@@ -35,7 +35,7 @@ from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
-    CircuitRandomVariate
+    CircuitRandomVariate, RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
@@ -61,14 +61,7 @@ class BlueBrainModelAdapter(WithFCA):
     brain_region = Field(
         __name__="brain_region",
         __type__=BrainRegion,
-        __doc__="""Provides brain region specific attributes (for BBP circuits.).
-        We should be able to extract this information from the circuit object,
-        or we could wrap circuit into a subclass that contains this information.
-        But the goal is to not touch the circuit model object, and feed it to
-        the measurement getters as it is. We will have to subclass
-        BlueBrainModelAdapter to provide brain region specific Adapters, and the
-        user, who we expect to know the brain region they are studuing,
-        can use the appropriate one."""
+        __doc__="Provides a model independent tag for the brain region."
     )
     spatial_random_variate = Field(
         __name__="spatial_random_variate",
@@ -89,7 +82,7 @@ class BlueBrainModelAdapter(WithFCA):
     )
     def __init__(self, brain_region,
                  circuit_build,
-                 spatial_random_variate,
+                 spatial_random_variate = None,
                  model_label="in-silico",
                  sample_size=20,
                  sampled_box_shape=50.*np.ones(3), 
@@ -101,7 +94,10 @@ class BlueBrainModelAdapter(WithFCA):
         """
         self.brain_region = brain_region
         self.circuit_build = circuit_build
-        self.spatial_random_variate = spatial_random_variate
+        if spatial_random_variate:
+            self.spatial_random_variate = spatial_random_variate
+        else:
+            self.spatial_random_variate = RandomRegionOfInterest
         self.model_label = model_label
         self.sample_size = sample_size
         self._sampled_box_shape = sampled_box_shape

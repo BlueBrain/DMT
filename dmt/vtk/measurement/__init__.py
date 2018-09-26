@@ -120,7 +120,7 @@ class StatisticalMeasurement:
                           method=method_description(method),
                           data=data,
                           units=method.units,
-                          parameter_group=levels[0])
+                          parameter=levels[0])
 
         return Record(phenomenon=method.phenomenon,
                       label=method.label,

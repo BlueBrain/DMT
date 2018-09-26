@@ -6,9 +6,10 @@ from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
 from dmt.vtk.plotting import golden_figure
 from dmt.vtk.plotting.comparison import ComparisonPlot
-from dmt.vtk.utils.logging import Logger
+from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.collections import Record
 
+@with_logging(Logger.level.STUDY)
 class CrossPlotComparison(ComparisonPlot):
     """Compare two datasets with cross plot.
     A ComparisonPlot will hold data that it will be plot against one or more
@@ -17,7 +18,6 @@ class CrossPlotComparison(ComparisonPlot):
 
     def __init__(self, *args, **kwargs):
         """..."""
-        self._logger = Logger(name="CrossPlotComparison Log")
         super(CrossPlotComparison, self).__init__(*args, **kwargs)
 
     @property
@@ -28,7 +28,7 @@ class CrossPlotComparison(ComparisonPlot):
             data = self.comparison_data.xs(cv.name, level=self.comparison_level)
             return [Record(data=data, label=cv.label)]
         except Exception as e:
-            self._logger.warning("""Could not get comparison data with
+            self.logger.error("""Could not get comparison data with
             name and level. Exception {}""".format(e))
 
 

@@ -5,6 +5,7 @@ from dmt.aii import Callable, AIBase
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.utils.logging import Logger, with_logging
 
 @document_fields
 class AnalysisBaseClass(Callable, WithFCA):
@@ -25,7 +26,7 @@ class AnalysisBaseClass(Callable, WithFCA):
         """..."""
         self.author = kwargs.get("author", Author.anonymous)
 
-        super(AnalysisBaseClass, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @abstractmethod
     def __call__(self, model, *args, **kwargs):
@@ -36,11 +37,26 @@ class AnalysisBaseClass(Callable, WithFCA):
         pass
 
 
+
+@with_logging(Logger.level.STUDY)
 class Analysis(AnalysisBaseClass, AIBase):
     """"Just a class that mixes two.
     AnalysisBaseClass is useful by itself. Mixing in AIBase
      will add adapter interface goodies."""
-    pass
+
+    def __init__(self, *args, **kwargs):
+        """..."""
+        self.logger.info("-------------------------------------")
+        self.logger.info("Reporting from Analysis")
+        self.logger.info("initialize {} instance with kwargs:"\
+                         .format(self.__class__.__name__))
+        for k, v in kwargs.items():
+            self.logger.info("{}: {}".format(k, v))
+        self.logger.info("-------------------------------------")
+
+        super(Analysis, self).__init__(*args, **kwargs)
+
+
 
 
 

@@ -16,9 +16,10 @@ class Message(ABC):
     This will serve as an example of Scala's case class feature,
     Python style."""
 
-    def __init__(self, msg):
+    def __init__(self, msg, *args, **kwargs):
         """Default initialization. Override if you please."""
         self._value = msg
+        super().__init__(*args, **kwargs)
 
     @property
     @abstractmethod
@@ -33,9 +34,23 @@ class Message(ABC):
         pass
 
     @property
+    def labelstamp(self, x=None):
+        """enclose a string in a box"""
+        return "<{}>".format(self.label)
+
+
+    @property
     def value(self):
         """"..."""
         return self._value
+
+    def formatted(self, caller):
+        """..."""
+        return "{}@{} {}  {}\n"\
+            .format(caller._name,
+                    caller.timestamp(time.localtime()),
+                    self.labelstamp, self.value)
+        
 
 class Funda(Message):
     """A single unit of fundamental understanding."""
@@ -60,7 +75,7 @@ class Note(Message):
 class DevNote(Message):
     """Developer may need """
     level = 0
-    label = "DevelopersNote"
+    label = "DEVNOTE"
 
 class Remark(Info):
     """A type of 'Info',
@@ -98,6 +113,19 @@ class Assertion(Message):
     level = 4
     label = "ASSERTION"
 
+class SourceCodeInfo(Message):
+    """..."""
+    label = "SOURCE"
+    def __init__(self, msg, level=0, *args, **kwargs):
+        self._level = level
+        super().__init__(msg, *args, **kwargs)
+
+    @property
+    def level(self):
+        """..."""
+        return self._level
+    
+
 
 class Validation:
     """Explains an exception. What happened?
@@ -132,5 +160,18 @@ class Validation:
 
 
 
+class ContextualMessage(Message):
+    """Message with a context
+    """
+
+    def __init__(self, msg, ctx=None, *args, **kwargs):
+        self._context = ctx
+        super().__init__(msg, *args, **kwargs)
+
+    @property
+    @abstractmethod
+    def get_context(self):
+        """..."""
+        pass
     
     
