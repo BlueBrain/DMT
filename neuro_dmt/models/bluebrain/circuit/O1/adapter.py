@@ -31,8 +31,7 @@ from neuro_dmt.validations.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityValidation
 from neuro_dmt.validations.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
-from neuro_dmt.models.bluebrain.circuit.random_variate \
-    import BrainRegionSpecific
+from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
@@ -61,7 +60,7 @@ class BlueBrainModelAdapter(WithFCA):
 
     brain_region = Field(
         __name__="brain_region",
-        __type__=BrainRegionSpecific,
+        __type__=BrainRegion,
         __doc__="""Provides brain region specific attributes (for BBP circuits.).
         We should be able to extract this information from the circuit object,
         or we could wrap circuit into a subclass that contains this information.

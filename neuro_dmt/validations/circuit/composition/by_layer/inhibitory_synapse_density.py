@@ -3,7 +3,6 @@ from dmt.aii.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
-from neuro_dmt.utils.brain_region import CorticalLayer
 
 class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -15,7 +14,6 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
         "inhibitory synapse density",
         "Count of inhibitory synapses in a unit volume"
     )
-    region_type = CorticalLayer
 
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this

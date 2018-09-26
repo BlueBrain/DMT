@@ -15,39 +15,10 @@ from dmt.vtk.utils.logging import Logger, with_logging
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     BrainRegionSpecific
 
-
-class Cortical(BrainRegionSpecific):
-    """..."""
-    region_label = "cortical"
-
-    def __init__(self, by=tuple(), target="mc2_Column", *args, **kwargs):
-        """..."""
-        cell_group_params = by if by else ("layer", "$target")
-        super(Cortical, self).__init__(cell_group_params, target=target,
-                                       *args, **kwargs)
-
-    def cell_query(self, condition, *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        return {p: condition.get_value(p) for p in self.cell_group_params}
-
-
-class Hippocampal(BrainRegionSpecific):
-    """..."""
-    region_label = "hippocampal"
-
-    def __init__(self, by=None, *args, **kwargs):
-        """..."""
-        cell_group_params = by if by else ("layer",)
-        super(Hippocampal, self).__init__(cell_group_params, *args, **kwargs)
-
-    def cell_query(self, condition, *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        return {p: condition.get_value(p) for p in self.cell_group_params}
 
     
 def transform(instance, method_name, mapping):

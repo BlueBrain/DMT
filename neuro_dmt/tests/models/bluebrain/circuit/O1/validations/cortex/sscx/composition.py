@@ -7,7 +7,8 @@ from neuro_dmt.library.bluebrain.circuit.O1.cortex.sscx import composition
 circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
                                    "O1.v6a", "20171212", "CircuitConfig")
 
-logger = Logger("Test Develop Validation")
+logger = Logger(client="validation_test", level=Logger.level.TEST)
+                
 
 def reference_data_path(validation_name):
     """..."""
@@ -17,6 +18,7 @@ def reference_data_path(validation_name):
                          validation_name)
 
 def get_validation(validation_name):
+    """..."""
     logger.info("Will get validation {}".format(validation_name))
     logger.info("Data will load from {}"\
                 .format(reference_data_path(validation_name)))

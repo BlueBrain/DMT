@@ -3,11 +3,11 @@
 from abc import ABC, abstractmethod
 from dmt.aii import Callable, AIBase
 from dmt.vtk.author import Author
-from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
+from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 
 @document_fields
-class AnalysisBaseClass(Callable):
+class AnalysisBaseClass(Callable, WithFCA):
     """Abstract Base Class for analysis of a model.
 
     Implementation Instructions
@@ -34,6 +34,7 @@ class AnalysisBaseClass(Callable):
         the first argument must be the model to be analyzed,
         and args and kwargs may contain relevant parameters."""
         pass
+
 
 class Analysis(AnalysisBaseClass, AIBase):
     """"Just a class that mixes two.

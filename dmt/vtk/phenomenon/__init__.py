@@ -3,6 +3,7 @@ an observable fact or event. A phenomenon may be described by a system of
 information related to matter, energy, or spacetime"""
 
 import hashlib
+from dmt.vtk.utils.string_utils import make_name
 
 class Phenomenon:
     """Phenomenon is an observable fact or event, that can be measured.
@@ -16,28 +17,8 @@ class Phenomenon:
 
     __registered_instances = {} #phenomena that have been defined
 
-    @staticmethod
-    def make_unique(x):
-        """Make a unique string.
-        This is useful for the purposes of updating a repository of strings (
-        or objects indexed by string.) where we are interested in the meaning
-        of a string and not it's value.
-
-        Implementation Notes
-        --------------------
-        Current implementation is a very simple one.
-        Add some NLP stemming, remove punctuations, ..."""
-
-        x = x.lower()
-        chars_to_remove = [',', ':', '&', '#', '/',
-                           '\\', '$', '?', '^', ';', '.']
-        for c in chars_to_remove:
-            x = x.replace(c, ' ')
-
-        return ' '.join(w for w in x.strip().split(' ') if len(w) > 0)
-
     def __new__(cls, name, description):
-        unique_description = Phenomenon.make_unique(description).encode()
+        unique_description = make_name(description).encode()
         description_hash = hashlib.sha1(unique_description).hexdigest()
         label = Phenomenon.make_label(name)
 

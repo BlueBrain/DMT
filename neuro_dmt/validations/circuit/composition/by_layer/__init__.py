@@ -9,12 +9,11 @@ from dmt.vtk.utils.pandas import flatten
 from dmt.vtk.utils.exceptions import ValueNotSetError
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
-from neuro_dmt.validations.circuit.composition \
-    import SpatialCompositionValidation
-
+from neuro_dmt.validations.circuit.composition import SpatialCompositionAnalysis
+    
 
 @document_fields
-class ByLayerCompositionValidation(SpatialCompositionValidation,
+class ByLayerCompositionValidation(SpatialCompositionAnalysis,
                                    SinglePhenomenonValidation):
     """Validation of a single circuit composition phenomenon.
     Validation is against reference data that provide experimental data
@@ -30,19 +29,20 @@ class ByLayerCompositionValidation(SpatialCompositionValidation,
 
         Arguments
         ------------------------------------------------------------------------
-        validation_data :: List[Record(measurement_label :: String,
-        ~                              region_label :: String,
-        ~                              data :: DataFrame["region", "mean", "std"])],
-        ~                              citation :: Citation,
-        ~                              what :: String)]
+        validation_data :: Either[
+        ~ Record[datasets :: Dict[String -> MeasurementRecord],
+        ~        primary  :: String],#of datasets, which one is primary to compare againsts.
+        ~ Dict[String -> MeasurementRecord], #or a single dataset.
+        ] where
+        MeasurementRecord = List[Record[measurement_label :: String,
+        ~                               region_label :: String,
+        ~                               data :: DataFrame["mean", "std],
+        ~                               citation :: Either[Citation, String],
+        ~                               what :: String]]
         ------------------------------------------------------------------------
 
         Keyword Arguments
         ------------------------------------------------------------------------
-        p_value_threshold :: Float #optional
-        output_dir_path :: String #optional
-        report_file_name :: String #optional
-        plot_customization :: Dict #optional
         """
         self._spatial_parameter = spatial_parameter
         super(ByLayerCompositionValidation, self)\

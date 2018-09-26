@@ -7,24 +7,24 @@ import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
 #from neuro_dmt.utils.brain_region import BrainRegion
 from dmt.vtk.plotting.comparison import ComparisonPlot
-from dmt.vtk.utils.descriptor import ClassAttribute, Field, document_fields
+from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
 
 @document_fields
-class SpatialCompositionValidation:
+class SpatialCompositionAnalysis(WithFCA):
     """Validates a single composition phenomenon.
     This base-class provides the code common to all composition validations.
     Make your subclasses to implement 'abstractmethods' that depend on factors
     such the  region type used for measurements, and the phenomenon validated.
     """
-    validated_phenomenon = ClassAttribute(
-        __name__ = "validated_phenomenon",
+    analyzed_phenomenon = Field(
+        __name__ = "analyzed_phenomenon",
         __type__ = Phenomenon,
-        __doc__ = """Phenomenon validated, that can be used to create a
+        __doc__ = """Phenomenon analyzed, that can be used to create a
         report."""
     )
-    plotter_type = ClassAttribute(
+    plotter_type = Field(
         __name__ = "plotter_type",
         __type__ = type,
         __is_valid_value__ = lambda ptype: issubclass(ptype, ComparisonPlot),
@@ -39,7 +39,10 @@ class SpatialCompositionValidation:
         location. For example, you may want cell density as a function of
         'CorticalLayer'."""
     )
-    def __init__(self, validation_data, *args, **kwargs):
+    def __init__(self, p_value_threshold=0.05,
+                 output_dir_path=os.path.join(os.getcwd(), "report"),
+                 report_file_name="report.html",
+                 plot_customization={}):
        """This validation will be made against multiple datasets. Each dataset
        should provide a 'Record' as specified below.
 
@@ -65,14 +68,12 @@ class SpatialCompositionValidation:
        report_file_name :: String #optional
        plot_customization :: Dict #optional
        """
-       kwargs.update({'validation_data': validation_data})
-       super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
 
-       self.p_value_threshold = kwargs.get('p_value_threshold', 0.05)
-       self.output_dir_path = kwargs.get('output_dir_path',
-                                         os.path.join(os.getcwd(), "report"))
-       self.report_file_name = kwargs.get('report_file_name', 'report.html')
-       self.plot_customization = kwargs.get('plot_customization', {})
+       self.p_value_threshold = p_value_threshold
+       self.output_dir_path = output_dir_path
+       self.report_file_name = report_file_name
+       self.plot_customization = plot_customization
+       super(SpatialCompositionValidation, self).__init__(*args, **kwargs)
 
     def plot(self, model_measurement, *args, **kwargs):
         """Plot the data."""

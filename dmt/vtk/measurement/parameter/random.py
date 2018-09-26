@@ -79,13 +79,13 @@ class ConditionedRandomVariate(RandomVariate):
 
     def __with_condition_generator(self, condition_generator):
         """..."""
-        instance = copy.deepcopy(self)
+        instance = copy.copy(self)
         instance._conditions = condition_generator
         return instance
 
     def __with_condition_type(self, condition_type):
         """..."""
-        instance = copy.deepcopy(self)
+        instance = copy.copy(self)
         instance.condition_type = condition_type
         return instance
 

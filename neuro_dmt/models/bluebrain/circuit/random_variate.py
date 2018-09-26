@@ -10,84 +10,22 @@ from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.descriptor import Field, WithFCA
+
+from neuro_dmt.utils import brain_regions
+from neuro_dmt.utils.brain_regions import BrainRegion
+
+from neuro_dmt.models.bluebrain.circuit.brain_regions import BrainRegionSpecific
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 
 
-#@with_logging(Logger.level.STUDY)
-class BrainRegionSpecific(WithFCA, ABC):
-    """Brain region specific methods.
-    These methods will typcially be abstract in some other code.
-    BrainRegionSpecific classes will not be useful on their known.
-    They simply provide code specialized to particular brain regions."""
-    region_label = Field(
-        __name__="region_label",
-        __type__=str,
-        __doc__="""Name of the brain region that this class specifies.""",
-        __examples__=["cortical", "thalamic"]
-    )
-    cell_group_params = Field(
-        __name__="cell_group_params",
-        __type__=tuple,
-        __doc__="""Tuple of cell query fields that group cells, and whose values
-        measurements will be (jointly) conditioned on. Use this information to
-        create cell queries. You can stick in anything here that a cell
-        query will accept. The entries here must be a subset of condition_type
-        fields.""",
-        __examples__=[("layer", "target"), ("layer", ), ("mtype", "layer",)]
-    )
-    def __init__(self, cell_group_params, target=None, *args, **kwargs):
-        """...
-
-        Parameters
-        ------------------------------------------------------------------------
-        cell_group_params :: tuple #...
-        """
-        self.cell_group_params = cell_group_params
-        self._target = target
-        try:
-            super(BrainRegionSpecific, ABC).__init__(*args, **kwargs)
-        except:
-            pass
-        
-    @property
-    def target(self):
-        """..."""
-        if not self._target:
-            self.logger.alert("No target set for {} instance."\
-                              .format(self.__class__.__name__))
-        return self._target
-
-    @abstractmethod
-    def cell_query(self, condition, *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        pass
-        return {p: condition.get_value(p) for p in self.cell_group_params}
-
-    def with_target(self, query_dict, target_label = "$target"):
-        """Add target to a condition.
-
-        Note
-        ------------------------------------------------------------------------
-        We need to find a more elegant solution to sticking target in queries.
-        """
-        self.logger.devnote(
-            """{}.with_target is a hack. We stick the target in. We should look
-            for a more disciplined and elegant solution."""\
-            .format(self.__class__.__name__)
-        )
-        query_dict[target_label] = self._target
-        return query_dict
-
-
 class CircuitRandomVariate(ConditionedRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
     brain_region = Field(
         __name__="brain_region",
-        __type__=BrainRegionSpecific,
+        __type__=BrainRegion,
         __doc__="Provides brain region specializations of some attributes."
     )
     circuit_build = Field(
@@ -103,7 +41,7 @@ class CircuitRandomVariate(ConditionedRandomVariate):
         Parameters
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
-        brain_region :: BrainRegionSpecific #for brain region specific methods
+        brain_region :: BrainRegion #for brain region specific methods
         """
         self._circuit = circuit
         self.circuit_build = circuit_build(circuit)
