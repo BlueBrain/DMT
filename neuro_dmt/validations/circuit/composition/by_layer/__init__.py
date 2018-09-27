@@ -1,5 +1,6 @@
 """Utilities for circuit composition by layer."""
 from abc import abstractmethod
+import pandas as pd
 from dmt.analysis.validation.test_case import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
@@ -143,11 +144,15 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         self.logger.source_info()
         self.logger.debug("Flattened DataFrame index:")
         self.logger.debug("{}".format(fdf.index))
+        return fdf.set_index(
+            pd.MultiIndex(levels=fdf.index.levels, labels=fdf.index.labels,
+                          names=[n.lower() for n in fdf.index.names])
+        )
 
     @property
     def validation_datasets(self):
         """Return validation data as a dict."""
-        data = (self._validation_data.data
+        data = (self._validation_data.datasets
                 if isinstance(self._validation_data, Record) else
                 self._validation_data)
         if isinstance(data, dict):

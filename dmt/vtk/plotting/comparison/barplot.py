@@ -35,6 +35,13 @@ class BarPlotComparison(ComparisonPlot):
         ~                      
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
+        self.logger.source_info()
+        self.logger.debug("{} instance will compare data:"\
+                          .format(self.__class__.__name__))
+        self.logger.debug("{}".format(self._data))
+        self.logger.debug("against validation data: ")
+        self.logger.debug("{}".format(self._comparison_data))
+
         compdata = self._data
         datasets = self._comparison_data
         compared_values = self.compared_values
@@ -59,7 +66,12 @@ class BarPlotComparison(ComparisonPlot):
                            yerr=df["std"].values,
                            label=label)
         index = 1
-        _plot_index(index, self._data, "in-silico")
+
+        if self._label in self._data:
+            _plot_index(index, self._data[self._label], self._label)
+        else:
+            _plot_index(index, self._data, self._label)
+
         index += 1
         for data_label, data_frame in self.compared_datasets:
             a_plot = _plot_index(index, data_frame, data_label)

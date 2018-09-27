@@ -9,6 +9,7 @@ from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.utils import get_file_name_base
+from dmt.vtk.utils.logging import Logger, with_logging
 
 def golden_figure(width=None, height=None):
     """A figure with golden ration as it's aspect ratio,
@@ -26,6 +27,7 @@ def golden_figure(width=None, height=None):
     return fig
 
 
+@with_logging(Logger.level.STUDY)
 class Plot(ABC):
     """Base class for classes that will plot data.
     All common plotting code will be listed here, as well as

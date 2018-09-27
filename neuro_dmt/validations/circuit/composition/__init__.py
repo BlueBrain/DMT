@@ -131,13 +131,18 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         from scipy.special import erf
         from numpy import abs, sqrt
 
+        if model_measurement.label in model_measurement.data:
+            model_data = model_measurement.data[model_measurement.label]
+        else:
+            model_data = model_measurement.data
+
         real_measurement = self.primary_dataset
         if real_measurement is not None:
             delta_mean = abs(
-                model_measurement.data["mean"] - real_measurement.data["mean"]
+                model_data["mean"] - real_measurement.data["mean"]
             )
             stdev = sqrt(
-                model_measurement.data["std"]**2 + real_measurement.data["std"]**2
+                model_data["std"]**2 + real_measurement.data["std"]**2
             )
             z_score = delta_mean / stdev
             pval = 1. - erf(z_score)
