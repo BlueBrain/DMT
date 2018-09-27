@@ -67,13 +67,6 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         report_file_name :: String #optional
         plot_customization :: Dict #optional
         """
-        self.logger.info("-------------------------------------")
-        self.logger.info("Reporting from SpatialCompositionAnalysis")
-        self.logger.info("initialize {} instance with kwargs:"\
-                         .format(self.__class__.__name__))
-        for k, v in kwargs.items():
-            self.logger.info("{}: {}".format(k, v))
-        self.logger.info("-------------------------------------")
         self.spatial_parameters = kwargs["spatial_parameters"]
         self.p_value_threshold = kwargs.get("p_value_threshold", 0.05)
         self.output_dir_path = kwargs.get("output_dir_path",
@@ -98,7 +91,7 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
                                            label=model_measurement.label))\
                       .comparing("dataset")\
                       .against(self.validation_data)\
-                      .for_given(list(self.spatial_parameters)[0].label)\
+                      .for_given(list(self.spatial_parameters)[0])\
                       .with_customization(**kwargs)
 
         return plotter.plot()

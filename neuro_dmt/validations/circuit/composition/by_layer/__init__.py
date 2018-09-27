@@ -46,13 +46,6 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         Keyword Arguments
         ------------------------------------------------------------------------
         """
-        self.logger.info("-------------------------------------")
-        self.logger.info("Reporting from ByLayerCompositionValidation")
-        self.logger.info("initialize {} instance with kwargs:"\
-                         .format(self.__class__.__name__))
-        for k, v in kwargs.items():
-            self.logger.info("{}: {}".format(k, v))
-        self.logger.info("-------------------------------------")
         kwargs.update({'spatial_parameters': {CorticalLayer()}})
         super().__init__(*args, **kwargs)
             
@@ -111,8 +104,6 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     @property
     def validation_data(self):
         """Override"""
-        self.logger.source_info()
-        self.logger.study("Check what kind of validation data was received.")
         if self._validation_data is None:
             raise Exception("Test case {} does not use validation data"\
                             .format(self.__class__.__name__))
@@ -121,29 +112,26 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
                 self._validation_data)
         
         if not isinstance(data, dict):
-            self.logger.source_info()
-            self.logger.devnote("Assume that data is a pandas DataFrame")
+            self.logger.info(
+                self.logger.get_source_info(),
+                "We assume that data is a pandas DataFrame"
+            )
             return data
 
         assert(isinstance(data, dict))
         if len(data) == 1:
-            self.logger.source_info()
             self.logger.devnote(
-                """Only one element in dict.
-                We assume that element is a pandas DataFrame."""
+                self.logger.get_source_info(),
+                "Only one element in dict.",
+                "We assume that element is a pandas DataFrame."""
             )
             return list(data.values())[0]
 
         dataset_names = [k for k in data.keys()]
-        self.logger.source_info()
-        self.logger.devnote("Flatten the many datasets' pandas DataFrames")
 
         fdf = flatten({n: data[n].data for n in dataset_names},
                       names=["dataset"])[["mean", "std"]]
 
-        self.logger.source_info()
-        self.logger.debug("Flattened DataFrame index:")
-        self.logger.debug("{}".format(fdf.index))
         return fdf.set_index(
             pd.MultiIndex(levels=fdf.index.levels, labels=fdf.index.labels,
                           names=[n.lower() for n in fdf.index.names])

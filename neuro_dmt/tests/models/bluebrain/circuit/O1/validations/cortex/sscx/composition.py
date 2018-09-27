@@ -9,7 +9,7 @@ from neuro_dmt.utils import brain_regions
 circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
                                    "O1.v6a", "20171212", "CircuitConfig")
 
-logger = Logger(client="validation_test", level=Logger.level.TEST)
+logger = Logger(client=__name__, level=Logger.level.TEST)
                 
 
 def reference_data_path(validation_name):
@@ -21,9 +21,11 @@ def reference_data_path(validation_name):
 
 def get_validation(validation_name):
     """..."""
-    logger.info("Will get validation {}".format(validation_name))
-    logger.info("Data will load from {}"\
-                .format(reference_data_path(validation_name)))
+    logger.info(
+        "Will get validation {}".format(validation_name),
+        "Data will load from {}"\
+        .format(reference_data_path(validation_name))
+    )
 
     return composition.validation[validation_name](
         brain_regions.cortex,

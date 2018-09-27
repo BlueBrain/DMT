@@ -43,16 +43,16 @@ class ComparisonPlot(Plot):
             raise Exception("{}'s comparison_data not specified.".\
                             format(self.__class__))
         for g in given:
-            if g not in self._data.index.names:
+            if g.label not in self._data.index.names:
                 raise Exception(
-                    """The 'given' var '{}' is not in {}'s data's index.
+                    """Label of the 'given' var '{}' is not in {}'s data's index.
                     Please choose from {}."""\
-                    .format(g, self, self._data.index.names)
+                    .format(g.label, self, self._data.index.names)
                 )
-            if g not in self._comparison_data.index.names:
+            if g.label not in self._comparison_data.index.names:
                 raise Exception(
-                    """The 'given' var '{}' is not in {}'s comparison_data's index.
-                    Please choose from {}."""\
+                    """Label of the 'given' var '{}' is not in {}'s
+                     comparison_data's index. Please choose from {}."""\
                     .format(g, self, self._comparison_data.index.names)
                 )
 
@@ -89,15 +89,15 @@ class ComparisonPlot(Plot):
         """self._given_vars may be an iterable."""
         try:
             return self._given_vars[0]
+        except TypeError :
+            return self._given_vars
 
-        except:
-            pass
-
-        return self._given_vars
+        return None
 
     @property
-    def given_var_values(self):
+    def given_variable_values(self):
         """Values of the 'given' vars that will be plotted."""
-        g = self.given
-        return self._data.index if not g else self.level_values(g)
+        g = self.given.label
+        return (self._data.index if not g else
+                [self.given.repr(v) for v in self.level_values(g)])
                

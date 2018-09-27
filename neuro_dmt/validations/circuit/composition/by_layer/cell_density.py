@@ -19,14 +19,6 @@ class CellDensityValidation(ByLayerCompositionValidation):
 
     def __init__(self, *args, **kwargs):
         """..."""
-        self.logger.info("-------------------------------------")
-        self.logger.info("Reporting from CellDensityValidation")
-        self.logger.debug("{} instance init with kwargs".\
-                          format(self.__class__.__name__))
-        for k, v in kwargs.items():
-            self.logger.debug("{}: {}".format(k, v))
-        self.logger.info("-------------------------------------")
-
         super().__init__(*args, **kwargs)
 
     class AdapterInterface(Interface):

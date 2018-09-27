@@ -16,10 +16,10 @@ class Message(ABC):
     This will serve as an example of Scala's case class feature,
     Python style."""
 
-    def __init__(self, msg, *args, **kwargs):
+    def __init__(self, *msgs, **kwargs):
         """Default initialization. Override if you please."""
-        self._value = msg
-        super().__init__(*args, **kwargs)
+        self._value = '\n'.join(msgs)
+        super().__init__(**kwargs)
 
     @property
     @abstractmethod
@@ -46,6 +46,7 @@ class Message(ABC):
 
     def formatted(self, caller):
         """..."""
+        return "{}@{} {}"
         return "{}@{} {}  {}\n"\
             .format(caller._name,
                     caller.timestamp(time.localtime()),
@@ -116,9 +117,9 @@ class Assertion(Message):
 class SourceCodeInfo(Message):
     """..."""
     label = "SOURCE"
-    def __init__(self, msg, level=0, *args, **kwargs):
+    def __init__(self, *msgs, level=0, **kwargs):
         self._level = level
-        super().__init__(msg, *args, **kwargs)
+        super().__init__(*msgs, **kwargs)
 
     @property
     def level(self):

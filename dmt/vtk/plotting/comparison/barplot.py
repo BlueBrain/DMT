@@ -35,13 +35,14 @@ class BarPlotComparison(ComparisonPlot):
         ~                      
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
-        self.logger.source_info()
-        self.logger.debug("{} instance will compare data:"\
-                          .format(self.__class__.__name__))
-        self.logger.debug("{}".format(self._data))
-        self.logger.debug("against validation data: ")
-        self.logger.debug("{}".format(self._comparison_data))
-
+        #self.logger.source_info()
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "{} instance will compare data:".format(self.__class__.__name__),
+            "{}".format(self._data),
+            "against validation data: ",
+            "{}".format(self._comparison_data)
+        )
         compdata = self._data
         datasets = self._comparison_data
         compared_values = self.compared_values
@@ -54,7 +55,7 @@ class BarPlotComparison(ComparisonPlot):
         nbar =  1 + len(compared_values)
         width = 1.0 / (1.0 + nbar)
 
-        xs = self.given_var_values
+        xs = self.given_variable_values
         x = np.arange(len(xs))
         x0 = x - (1 + nbar / 2) * width
 

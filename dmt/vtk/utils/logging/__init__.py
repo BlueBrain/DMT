@@ -90,6 +90,17 @@ class Logger:
         except:
             pass
 
+    def get_source_info(self):
+        """..."""
+        traceback = inspect.getframeinfo(inspect.stack()[1][0])
+        return ("{classname}:\n\tfilename: \t{filename}\n\tlineno: \t{lineno}\n"
+                "\tcode_context: \t{code_context}\n\tindex: {index}\n"\
+                .format(classname=traceback.__class__.__name__,
+                        filename=traceback.filename,
+                        lineno=traceback.lineno,
+                        code_context=traceback.code_context,
+                        index=traceback.index))
+
     def source_info(self):
         """a string to show where the log was generated."""
         traceback = inspect.getframeinfo(inspect.stack()[1][0])
@@ -111,12 +122,23 @@ class Logger:
         msg :: Message #to be logged
         """
         if msg.level >= self._level:
-            fmsg = msg.formatted(self)
+            title = "{}@{} {}".format(self._name,
+                                      self.timestamp(time.localtime()),
+                                      msg.labelstamp)
+            fmsg = "{}".format(msg.value)
+
+            Logger.err_print(title)
+            #Logger.err_print(self.get_source_info())
+            Logger.err_print(80*'~')
             Logger.err_print(fmsg)
+            Logger.err_print(80*"-")
+
             if self._in_file:
                 with open(self._in_file, "a")  as f:
+                    f.write(title)
+                    f.write(80*'~')
                     f.write(fmsg)
-                    f.write("\n")
+                    f.write(80*"-")
         else:
             pass
 
@@ -140,60 +162,60 @@ class Logger:
         """..."""
         return self._client
 
-    def info(self, msg):
+    def info(self, *msgs):
         """..."""
-        return self._log_message(Info(msg))
+        return self._log_message(Info(*msgs))
 
-    def note(self, msg):
+    def note(self, *msgs):
         """..."""
-        return self._log_message(Note(msg))
+        return self._log_message(Note(*msgs))
 
-    def devnote(self, msg):
+    def devnote(self, *msgs):
         """..."""
-        return self._log_message(DevNote(msg))
+        return self._log_message(DevNote(*msgs))
 
-    def inform(self, msg):
+    def inform(self, *msgs):
         """..."""
-        return self.info(msg)
+        return self.info(*msgs)
 
-    def study(self, msg):
-        return self._log_message(Funda(msg))
+    def study(self, *msgs):
+        return self._log_message(Funda(*msgs))
 
-    def remark(self, msg):
-        return self._log_message(Remark(msg))
+    def remark(self, *msgs):
+        return self._log_message(Remark(*msgs))
 
-    def debug(self, msg):
-        return self._log_message(DebugInfo(msg))
+    def debug(self, *msgs):
+        return self._log_message(DebugInfo(*msgs))
 
-    def warning(self, msg):
+    def warning(self, *msgs):
         """..."""
-        return self._log_message(Alert(msg))
+        return self._log_message(Alert(*msgs))
 
-    def beware(self, msg):
+    def beware(self, *msgs):
         """..."""
-        return self.warning(msg)
+        return self.warning(*msgs)
 
-    def warn(self, msg):
+    def warn(self, *msgs):
         """..."""
-        return self.warning(msg)
+        return self.warning(*msgs)
 
 
-    def alert(self, msg):
+    def alert(self, *msgs):
         """..."""
-        return self.warning(msg)
+        return self.warning(*msgs)
     
-    def error(self, msg):
+    def error(self, *msgs):
         """..."""
-        return self._log_message(Error(msg))
+        return self._log_message(Error(*msgs))
 
-    def assertion(self, success, msg):
+    def assertion(self, success, *msgs):
         """...
         Parameters
         ------------------------------------------------------------------------
         success :: Boolean
         """
-        x = self._log_message(Assertion(msg))
-        assert success, msg
+        x = self._log_message(Assertion(*msgs))
+        assert success, msgs[0]
         return x
 
 
