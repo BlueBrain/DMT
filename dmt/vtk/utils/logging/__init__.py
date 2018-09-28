@@ -208,6 +208,18 @@ class Logger:
         """..."""
         return self._log_message(Error(*msgs))
 
+    def test(self, *msgs):
+        """..."""
+        return self._log_message(Test(*msgs))
+
+    def success(self, *msgs):
+        """..."""
+        return self._log_message(Success(*msgs))
+
+    def failure(self, *msgs):
+        """..."""
+        return self._log_message(Failure(*msgs))
+
     def assertion(self, success, *msgs):
         """...
         Parameters

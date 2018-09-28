@@ -4,6 +4,7 @@ This is a good playground to understand descriptors and type validations."""
 from abc import ABC, abstractmethod
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.utils.string_utils import make_label, make_name
+from dmt.vtk.utils import typecheck
 
 
 class BrainRegion(WithFCA, ABC):
@@ -36,12 +37,19 @@ class BrainRegion(WithFCA, ABC):
     subregions = Field(
         __name__="subregions",
         __type__=dict,
+        __is_valid_value__=lambda
         __doc__="""You may specify the regions contained within this BrainRegion.
         This enables a brain region hierarchy. Its value will default to an
         empty dict."""
     )
+    spatial_parameters = Field(
+        __name__="spatial_parameters",
+        __type__=dict,
+
+    )
 
     __known_brain_regions = {}
+
 
     """Layer in the cortex."""
     def __new__(cls, name, acronym=None, subregions=[]):

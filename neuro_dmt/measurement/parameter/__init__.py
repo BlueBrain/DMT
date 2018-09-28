@@ -3,13 +3,11 @@ these can be used as base classes by model adapters, and required and coded
 against by validation authors. The author of a model adapter then has to just
 look up the documentation to write an appropriate base class."""
 
-from abc import ABC, abstractmethod
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
-from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
-
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.brain_regions import BrainRegion
+
 
 class BrainCircuitMeasurementParameter(FiniteValuedParameter):
     """..."""
@@ -20,14 +18,23 @@ class BrainCircuitMeasurementParameter(FiniteValuedParameter):
         about the brain region that this BrainCircuitMeasurementParameter
         is for. You can always us brain_regions.whole_brain!"""
     )
-
     def __init__(self, brain_region=brain_regions.whole_brain,
                  *args, **kwargs):
         self.brain_region = brain_region
-        super(BrainCircuitMeasurementParameter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
-class Layer(BrainCircuitMeasurementParameter):
+class BrainCircuitSpatialParameter(BrainCircuitMeasurementParameter):
+    """This class exists to define a type of parameters for measurements
+    of the brain. We will add useful features as we discover common behavior
+    of various spatial parameters that we will implement.
+    """
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(*args, **kwargs)
+
+
+class LayerIndex(BrainCircuitSpatialParameter):
     """An abstract base class to represent a generic layer in any brain region.
     Model Adaptors must implement the interface presented here to use
     validations from our library. We will specialize a Layer's attributes
