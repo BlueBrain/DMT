@@ -17,50 +17,37 @@ class FiniteValuedParameter(Parameter, WithFCA):
     """If the number of all possible values of a parameter is finite,
     we can require certain finite data representations of its attributes,
     and adapt Parameter abstractmethods."""
+    values_assumed = Field(
+        __name__ = "values_assumed",
+        __type__ = set,
+        __is_valid__= Field.typecheck.collection("value_type"),
+        __doc__="Values assumed by this FiniteValuedParameter."
+    )
     value_order = Field(
         __name__ = "value_order",
-        __type__ = dict, 
-        __is_valid_value__ = lambda self, value_order_dict: all(
-            (isinstance(value, self.value_type) and
-             isinstance(order, int) and order >= 0)
-            for value, order in value_order_dict.items()
-        ),
+        __type__ = dict,
+        __is_valid__=Field.typecheck.mapping("value_type", int),
         __doc__="""A dict mapping values to their order.""" 
     )
     value_repr = Field(
         __name__ = "value_repr",
         __type__ = dict,
-        __is_valid_value__ = lambda self, vrdict: all(
-            isinstance(value, self.value_type) and isinstance(rep, str)
-            for value, rep in vrdict.items()
-        ),
+        __is_valid__=Field.typecheck.mapping("value_type", str),
         __doc__="""A dict mapping values to their string representation. You
         may not pass this value to this base class' initializer. There will be
         a default implementation."""
     )
-    def __init__(self, values=None, *args, **kwargs):
+    def __init__(self, values=set(), *args, **kwargs):
         """..."""
-        super(FiniteValuedParameter, self).__init__(*args, **kwargs)
+        #all_possible_values = set(self.value_order.keys())
+        super().__init__(values_assumed=values, *args, **kwargs)
 
-        self._values_assumed = set(self.value_order.keys())
-        if values:
-            if not isinstance(values, set):
-                self.logger.alert(
-                    """{} passed as argument 'values' which should be a set.
-                    Will make it a set and proceed""".format(values)
-                )
-                values = set(values)
-            for v in values.difference(self._values_assumed):
-                self.logger.warn(
-                    """Parameter {} does not assume a value of {},
-                    and will be skipped""".format(self.__class__.__name__, v)
-                )
-            self._values_assumed = self._values_assumed.intersection(values)
-            
     @property
     def values(self):
         """..."""
-        return self._values_assumed
+        if not self.values_assumed:
+            self.values_assumed = set(self.value_order.keys())
+        return self.values_assumed.intersection(self.value_order.keys())
 
     def is_valid(self, value):
         """..."""
@@ -79,7 +66,6 @@ class FiniteValuedParameter(Parameter, WithFCA):
         """..."""
         assert(self.is_valid(value))
         return self.value_repr.get(value, "{}".format(value))
-
 
     @property
     def ordered_values(self):

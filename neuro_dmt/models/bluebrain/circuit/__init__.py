@@ -9,10 +9,12 @@ from bluepy.v2.enums import Cell, Synapse, Segment, Section
 from bluepy.geometry.roi import ROI
 import neurom as nm
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+from dmt.vtk.utils.logging import Logger, with_logging
 from neuro_dmt.models.bluebrain.circuit import geometry, cell_collection
 
 
 
+@with_logging(Logger.level.STUDY)
 class BlueBrainModelHelper:
     """Brain circuit models developed at the Blue Brain Project (BBP) can be 
     studied with the bluepy API, also developed at the BBP. This class extends
@@ -28,6 +30,11 @@ class BlueBrainModelHelper:
         ------------------------------------------------------------------------
         Provide one of circuit or circuit_config
         """
+        self.logger.info(
+            self.logger.get_source_info(),
+            "initialize {} instance with kwargs:".format(self.__class__),
+            *["key: {}, arg: {}\n".format(k, v) for k, v in kwargs.items()]
+        )
         self._circuit = kwargs.get('circuit', None)
 
         if self._circuit is None:

@@ -1,5 +1,6 @@
 """Test develop cell density validation."""
 import os
+from bluepy.v2.circuit import Circuit
 from dmt.vtk.plotting.comparison.crossplot import CrossPlotComparison
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from dmt.vtk.utils.logging import Logger
@@ -19,28 +20,24 @@ def reference_data_path(validation_name):
                          "examples/datasets/cortex/sscx/rat",
                          validation_name)
 
-def get_validation(validation_name):
+def get_validation(validation_name, plotter=BarPlotComparison):
     """..."""
     logger.info(
         "Will get validation {}".format(validation_name),
         "Data will load from {}"\
         .format(reference_data_path(validation_name))
     )
-
     return composition.validation[validation_name](
-        brain_regions.cortex,
-        with_plotter=BarPlotComparison
-    ).get_validation(reference_data_path(validation_name))
+        plotter_type=plotter
+    )#.get_validation(reference_data_path(validation_name))
 
-def run(validation_name):
+def run(validation_name, plotter=BarPlotComparison):
     """..."""
     logger.info("Will run validation {}".format(validation_name))
-    logger.info("Data will load from {}"\
-                .format(reference_data_path(validation_name)))
-
-    validation = composition.validation[validation_name](
-        brain_regions.cortex,
-        with_plotter=BarPlotComparison
+    validation = get_validation(validation_name, plotter=plotter)
+    logger.info(
+        logger.get_source_info(),
+        "validation type {}".format(validation.__class__)
     )
     return validation(reference_data_path(validation_name),
                       circuit_config_path)

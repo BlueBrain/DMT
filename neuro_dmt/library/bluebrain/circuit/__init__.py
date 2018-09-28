@@ -37,6 +37,7 @@ class BlueBrainValidation(WithFCA, ABC):
         pass
 
     def __init__(self, brain_region, circuit_build,
+                 plotter_type=None,
                  model_name="Blue Brain O1 Circuit for SSCx",
                  sampled_box_shape=np.array([50., 50., 50.]),
                  sample_size=20,
@@ -52,6 +53,7 @@ class BlueBrainValidation(WithFCA, ABC):
         sampled_box_shape :: RegionOfInterest # to be sampled for measurements
         sample_size :: int #number of boxes to be measured for each layer
         """
+        self._plotter_type = plotter_type
         self.brain_region = brain_region
         self._adapter \
             = self.ModelAdapter(brain_region=brain_region,
@@ -67,21 +69,28 @@ class BlueBrainValidation(WithFCA, ABC):
         """..."""
         pass
 
-    def __call__(self, reference_data_path, circuit_config_path,
-                 plotter_type=None):
+    def __call__(self, reference_data_path, circuit_config_path):
         """...Call Me..."""
-        print("{} called".format(self))
+        self.logger.info(
+            self.logger.get_source_info(),
+            "{} Caller called.".format(self)
+        )
         circuit = Circuit(circuit_config_path)
 
         validation = self.get_validation(reference_data_path)
-        print("""Blue Brain validation for {},
-        with plotter_type {}""".format(validation.validated_phenomenon.name,
-                                       validation.plotter_type.__name__))
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Blue Brain validation for {}, with plotter_type {}"\
+            .format(validation.validated_phenomenon.name,
+                    validation.plotter_type)
+        )
 
         report = validation(circuit)
 
-        print(report)
-
+        self.logger.info(
+            self.logger.get_source_info(),
+            "report: \n{}".format(repr(report))
+        )
         report.save(self._output_report_path)
 
         return report

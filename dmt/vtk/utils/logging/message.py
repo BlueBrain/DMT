@@ -114,6 +114,21 @@ class Assertion(Message):
     level = 4
     label = "ASSERTION"
 
+class Test(Message):
+    """..."""
+    level = 2
+    label="TEST"
+
+class Success(Message):
+    """..."""
+    level = 2
+    label = "SUCCESS"
+
+class Failure(Message):
+    """..."""
+    level = 3
+    label = "FAILURE"
+
 class SourceCodeInfo(Message):
     """..."""
     label = "SOURCE"

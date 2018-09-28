@@ -3,13 +3,11 @@ these can be used as base classes by model adapters, and required and coded
 against by validation authors. The author of a model adapter then has to just
 look up the documentation to write an appropriate base class."""
 
-from abc import ABC, abstractmethod
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
-from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
-
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.brain_regions import BrainRegion
+
 
 class BrainCircuitMeasurementParameter(FiniteValuedParameter):
     """..."""
@@ -20,14 +18,23 @@ class BrainCircuitMeasurementParameter(FiniteValuedParameter):
         about the brain region that this BrainCircuitMeasurementParameter
         is for. You can always us brain_regions.whole_brain!"""
     )
-
     def __init__(self, brain_region=brain_regions.whole_brain,
                  *args, **kwargs):
         self.brain_region = brain_region
-        super(BrainCircuitMeasurementParameter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
-class Layer(BrainCircuitMeasurementParameter):
+class BrainCircuitSpatialParameter(BrainCircuitMeasurementParameter):
+    """This class exists to define a type of parameters for measurements
+    of the brain. We will add useful features as we discover common behavior
+    of various spatial parameters that we will implement.
+    """
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(*args, **kwargs)
+
+
+class LayerIndex(BrainCircuitSpatialParameter):
     """An abstract base class to represent a generic layer in any brain region.
     Model Adaptors must implement the interface presented here to use
     validations from our library. We will specialize a Layer's attributes
@@ -42,14 +49,14 @@ class Layer(BrainCircuitMeasurementParameter):
     label = "layer"
 
 
-class CorticalLayer(Layer):
+class CorticalLayer(LayerIndex):
     """A layer in the cortex."""
     value_type = int
 
     def __init__(self, *args, **kwargs):
         """Default cortical layer will have int values 1, 2, 3, 4, 5, and 6.
         The user may override this initializer."""
-        super(CorticalLayer, self).__init__(
+        super().__init__(
             brain_region=brain_regions.cortex,
             value_order={1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5},
             value_repr={1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"},
@@ -57,7 +64,7 @@ class CorticalLayer(Layer):
         )
 
 
-class CorticalLayer23Fused(Layer):
+class CorticalLayer23Fused(LayerIndex):
     """Represents cortical layers, when layers 2 and 3 are fused into one."""
     value_type = int
 
@@ -71,7 +78,7 @@ class CorticalLayer23Fused(Layer):
         )
 
 
-class CorticalLayer5abSplit(Layer):
+class CorticalLayer5abSplit(LayerIndex):
     """Represents cortical layers when layer 5 is split into 5a, and 5b."""
     value_type = str
 
@@ -87,7 +94,7 @@ class CorticalLayer5abSplit(Layer):
         )
 
 
-class HippocampalLayer(Layer):
+class HippocampalLayer(LayerIndex):
     """Layer in the hippocampus."""
     value_type = str
 

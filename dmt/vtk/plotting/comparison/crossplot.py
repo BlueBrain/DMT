@@ -53,20 +53,21 @@ class CrossPlotComparison(ComparisonPlot):
         given_values = self.level_values(given) if given else self._data.index
         def __get_row(data_frame, given_val):
             """..."""
-            print("get row {} of dataframe {}".format(given_val, data_frame))
+            self.logger.info(
+                self.logger.get_source_info(),
+                "get row {} of dataframe {}".format(given_val, data_frame)
+            )
             if given and isinstance(data_frame.index, pd.MultiIndex):
                 return data_frame.xs(given_val, level=given)
 
             return data_frame.loc[given_val]
 
-        print("xdata: ")
-        print(xdata)
-        print("ydata:")
-        print(ydata)
-            
-        for v in given_values:
-            print("for given {} xdata: {} ydata {}"\
-                  .format(v, __get_row(xdata, v), __get_row(ydata, v)))
+        self.logger.info(
+            self.logger.get_source_info(),
+            **["for given {}\n xdata: {} \n ydata: {}"\
+               .format(v, __get_row(xdata, v), __get_row(ydata, v))
+               for v in self.given_variable_values]
+        )
 
         ys = ydata["mean"].values
         yerr = ydata["std"].values

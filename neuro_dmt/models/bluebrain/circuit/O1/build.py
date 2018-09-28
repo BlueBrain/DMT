@@ -45,6 +45,7 @@ class O1Circuit(CircuitBuild):
         brain_regions.hippocampus: Hippocampal(by=("layer",))
     }
 
+
     def __init__(self, *args, **kwargs):
         super(O1Circuit, self).__init__(*args, **kwargs)
 
