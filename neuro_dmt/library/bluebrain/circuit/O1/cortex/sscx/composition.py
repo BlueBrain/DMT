@@ -22,7 +22,7 @@ class BlueBrainCellDensityValidation(BlueBrainValidation):
                  *args,  **kwargs):
         """..."""
         super().__init__(brain_regions.cortex, O1Circuit,
-                         plotter_type=plotter_type
+                         plotter_type=plotter_type,
                          *args, **kwargs)
 
     def get_validation(self, reference_data_path):
@@ -31,7 +31,7 @@ class BlueBrainCellDensityValidation(BlueBrainValidation):
             import CellDensityValidation
         validation_data = reference_datasets.cell_density(reference_data_path)
         cdv = CellDensityValidation(validation_data=validation_data,
-                                    brain_region=brain_regions.cortex
+                                    brain_region=brain_regions.cortex,
                                     spatial_parameters={CorticalLayer()},
                                     plotter_type=self._plotter_type,
                                     adapter=self._adapter)

@@ -82,7 +82,7 @@ class BlueBrainValidation(WithFCA, ABC):
             self.logger.get_source_info(),
             "Blue Brain validation for {}, with plotter_type {}"\
             .format(validation.validated_phenomenon.name,
-                    validation.plotter_type.__name__)
+                    validation.plotter_type)
         )
 
         report = validation(circuit)

@@ -4,7 +4,7 @@ This is a good playground to understand descriptors and type validations."""
 from abc import ABC, abstractmethod
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.utils.string_utils import make_label, make_name
-from dmt.vtk.utils import typecheck
+from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 
 
 class BrainRegion(WithFCA, ABC):
@@ -37,7 +37,7 @@ class BrainRegion(WithFCA, ABC):
     subregions = Field(
         __name__="subregions",
         __type__=dict,
-        __is_valid_value__=lambda
+        __is_valid_value__=Field.typecheck.mapping(str, "__class__"),
         __doc__="""You may specify the regions contained within this BrainRegion.
         This enables a brain region hierarchy. Its value will default to an
         empty dict."""
@@ -45,7 +45,8 @@ class BrainRegion(WithFCA, ABC):
     spatial_parameters = Field(
         __name__="spatial_parameters",
         __type__=dict,
-
+        __is_valid__=Field.typecheck.mapping(str, FiniteValuedParameter),
+        __doc__="""Spatial parameters."""
     )
 
     __known_brain_regions = {}
@@ -67,6 +68,7 @@ class BrainRegion(WithFCA, ABC):
             self.name = make_name(name)
             self.acronyms = [] if not acronym else [acronym]
             self.subregions = {r.label: r for r in subregions}
+            self.spatial_parameters = {}
             BrainRegion.__known_brain_regions[label] = self
         else:
             self.name = make_name(name)
@@ -74,9 +76,17 @@ class BrainRegion(WithFCA, ABC):
                 self.acronyms.append(acronym)
             self.subregions.update({r.label: r for r in subregions})
 
-    def add(self, subregion):
+    def add(self, something):
         """Add a subtype."""
-        self.subregions[subregion.label] = subregion
+        if isinstance(something, BrainRegion):
+            self.subregions[something.label] = something
+        elif isinstance(something, BrainCircuitSpatialParameter):
+            self.spatial_parameters[something.label] = something
+        else:
+            self.logger.warn(
+                self.logger.get_source_info(),
+                "Unknown type '{}'.".format(something.__class__.__type__)
+            )
 
     def __str__(self):
         """..."""

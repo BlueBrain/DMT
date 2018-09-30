@@ -21,46 +21,33 @@ class FiniteValuedParameter(Parameter, WithFCA):
     values_assumed = Field(
         __name__ = "values_assumed",
         __type__ = set,
-        __is_valid__=lambda self,_: Field.typecheck.collection(self.value_type)
+        __is_valid__= Field.typecheck.collection("value_type"),
         __doc__="Values assumed by this FiniteValuedParameter."
     )
     value_order = Field(
         __name__ = "value_order",
         __type__ = dict,
-        __is_valid__=lambda self,_:Field.typecheck.mapping(self.value_type, int),
+        __is_valid__=Field.typecheck.mapping("value_type", int),
         __doc__="""A dict mapping values to their order.""" 
     )
     value_repr = Field(
         __name__ = "value_repr",
         __type__ = dict,
-        __is_valid__=lambda self,_: Field.typecheck.mapping(self.value_type, str)
+        __is_valid__=Field.typecheck.mapping("value_type", str),
         __doc__="""A dict mapping values to their string representation. You
         may not pass this value to this base class' initializer. There will be
         a default implementation."""
     )
     def __init__(self, values=set(), *args, **kwargs):
         """..."""
-        super(FiniteValuedParameter, self).__init__(*args, **kwargs)
+        super().__init__(values_assumed=values, *args, **kwargs)
 
-        if values:
-            if not isinstance(values, set):
-                self.logger.alert(
-                    """{} passed as argument 'values' which should be a set.
-                    Will make it a set and proceed""".format(values)
-                )
-                values = set(values)
-            all_possible_values = set(self.value_order.keys())
-            for v in values.difference(all_possible_values):
-                self.logger.warn(
-                    """Request value {} is not a possible value of {}.
-                    It will be skiped.""".format(v, self.__class__.__name__)
-                )
-            self._values_assumed = values.intersection(all_possible_values)
-            
     @property
     def values(self):
         """..."""
-        return self._values_assumed
+        if not self.values_assumed:
+            self.values_assumed = set(self.value_order.keys())
+        return self.values_assumed.intersection(self.value_order.keys())
 
     def is_valid(self, value):
         """..."""
@@ -79,7 +66,6 @@ class FiniteValuedParameter(Parameter, WithFCA):
         """..."""
         assert(self.is_valid(value))
         return self.value_repr.get(value, "{}".format(value))
-
 
     @property
     def ordered_values(self):

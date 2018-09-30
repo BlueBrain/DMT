@@ -28,9 +28,8 @@ def get_validation(validation_name, plotter=BarPlotComparison):
         .format(reference_data_path(validation_name))
     )
     return composition.validation[validation_name](
-        brain_regions.cortex,
-        with_plotter=plotter
-    )#.get_validation(reference_data_path(validation_name))
+        plotter_type=plotter
+    )
 
 def run(validation_name, plotter=BarPlotComparison):
     """..."""

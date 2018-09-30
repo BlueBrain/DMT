@@ -49,14 +49,14 @@ class LayerIndex(BrainCircuitSpatialParameter):
     label = "layer"
 
 
-class CorticalLayer(Layer):
+class CorticalLayer(LayerIndex):
     """A layer in the cortex."""
     value_type = int
 
     def __init__(self, *args, **kwargs):
         """Default cortical layer will have int values 1, 2, 3, 4, 5, and 6.
         The user may override this initializer."""
-        super(CorticalLayer, self).__init__(
+        super().__init__(
             brain_region=brain_regions.cortex,
             value_order={1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5},
             value_repr={1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"},
@@ -64,7 +64,7 @@ class CorticalLayer(Layer):
         )
 
 
-class CorticalLayer23Fused(Layer):
+class CorticalLayer23Fused(LayerIndex):
     """Represents cortical layers, when layers 2 and 3 are fused into one."""
     value_type = int
 
@@ -78,7 +78,7 @@ class CorticalLayer23Fused(Layer):
         )
 
 
-class CorticalLayer5abSplit(Layer):
+class CorticalLayer5abSplit(LayerIndex):
     """Represents cortical layers when layer 5 is split into 5a, and 5b."""
     value_type = str
 
@@ -94,7 +94,7 @@ class CorticalLayer5abSplit(Layer):
         )
 
 
-class HippocampalLayer(Layer):
+class HippocampalLayer(LayerIndex):
     """Layer in the hippocampus."""
     value_type = str
 
