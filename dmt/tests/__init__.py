@@ -32,12 +32,30 @@ class ExceptionalTest:
     def run(self, *args, **kwargs):
         """..."""
         try:
-            self._test(*args, **kwargs)
+            t = self._test(*args, **kwargs)
         except Exception as e:
             self.logger.failure(self._test_info, self._source_info,
                                 "Exception {}: \n".format(e.__class__.__name__),
                                 "\t{}".format(e))
             if self._throw:
                 raise e
-        self.logger.success(self._test_info)
+        self.logger.success(self._test_info, t.message)
+
+
+    class Success:
+        """..."""
+        def __init__(self, msg, *args, **kwargs):
+            """..."""
+            self._message = msg
+
+        @property
+        def message(self):
+            return "Success({})".format(self._message)
+
+
+    class Failure(Exception):
+        """..."""
+        def __init__(self, msg, *args):
+            self.message = msg
+            super().__init__(msg, *args)
 
