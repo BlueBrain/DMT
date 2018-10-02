@@ -64,7 +64,6 @@ class CorticalLayer(LayerIndex):
             *args, **kwargs
         )
 
-
 class CorticalLayer23Fused(LayerIndex):
     """Represents cortical layers, when layers 2 and 3 are fused into one."""
     value_type = int

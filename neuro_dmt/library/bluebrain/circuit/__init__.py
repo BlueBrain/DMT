@@ -7,6 +7,7 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.brain_regions import BrainRegion
+from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
 from neuro_dmt.validations.circuit.composition.by_layer import \
     CellDensityValidation, \
     CellRatioValidation, \
@@ -30,6 +31,11 @@ class BlueBrainValidation(WithFCA, ABC):
         __doc__="""A utility class object that contains some generic information
         about the brain region that this Validation is for."""
     )
+    circuit_build = Field(
+        __name__="circuit_build",
+        __type__=CircuitBuild,
+        __doc__="Build for this circuit. Is it atlas based? Is it an O1 microcircuit?"
+    )
 
     @property
     @abstractmethod
@@ -37,8 +43,7 @@ class BlueBrainValidation(WithFCA, ABC):
         """Get validation..."""
         pass
 
-    def __init__(self, brain_region, circuit_build,
-                 plotter_type=None,
+    def __init__(self, 
                  model_name="Blue Brain O1 Circuit for SSCx",
                  sampled_box_shape=np.array([50., 50., 50.]),
                  sample_size=20,
@@ -54,11 +59,9 @@ class BlueBrainValidation(WithFCA, ABC):
         sampled_box_shape :: RegionOfInterest # to be sampled for measurements
         sample_size :: int #number of boxes to be measured for each layer
         """
-        self._plotter_type = plotter_type
-        self.brain_region = brain_region
         self._adapter \
-            = self.ModelAdapter(brain_region=brain_region,
-                                circuit_build=circuit_build,
+            = self.ModelAdapter(brain_region=self.brain_region,
+                                circuit_build=self.circuit_build,
                                 model_label=model_name,
                                 sample_size=sample_size,
                                 sampled_box_shape=sampled_box_shape,
@@ -66,9 +69,19 @@ class BlueBrainValidation(WithFCA, ABC):
         self._output_report_path = output_report_path
 
     @abstractmethod
-    def get_validation(self, reference_data_path):
+    def get_reference_data(self, reference_data_path):
         """..."""
         pass
+
+    def get_validation(self, reference_data_path):
+        """..."""
+        validation_data = self.get_reference_data(reference_data_path)
+        return self.Validation(data=validation_data,
+                               brain_region=self.brain_region,
+                               spatial_parameters=self.spatial_parameters,
+                               plotter_type=self.plotter_type,
+                               adapter=self._adapter)
+
 
     def __call__(self, reference_data_path, circuit_config_path):
         """...Call Me..."""

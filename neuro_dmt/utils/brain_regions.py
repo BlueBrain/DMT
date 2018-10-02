@@ -88,6 +88,10 @@ class BrainRegion(WithFCA, ABC):
         """..."""
         self.spatial_parameters[param.label]\
             = self.spatial_parameters.get(param.label, set()).union({param})
+        for subregion_set in self.subregions.values():
+            for subregion in subregion_set:
+                subregion.add_spatial_parameter(param)
+        return
 
     def add(self, something):
         """Add a subtype."""
@@ -100,6 +104,7 @@ class BrainRegion(WithFCA, ABC):
                 self.logger.get_source_info(),
                 "Unknown type '{}'.".format(something.__class__.__type__)
             )
+        return
 
     def __str__(self):
         """..."""
