@@ -7,7 +7,7 @@ validation knows the format of the data that she is going to validate a model
 against. The initializer of a validation class will accept a data object.
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dmt.aii import Callable, AIBase
 from dmt.analysis import Analysis
 from dmt.vtk.author import Author

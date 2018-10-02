@@ -7,6 +7,7 @@ from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
 
+
 @document_fields
 class AnalysisBaseClass(Callable, WithFCA):
     """Abstract Base Class for analysis of a model.

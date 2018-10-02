@@ -5,10 +5,22 @@ class RequiredKeywordArgumentError(TypeError):
         super(RequiredKeywordArgumentError, self).__init__(key, *args)
 
 
+class MissingRequiredKeywordArgument(TypeError):
+    def __init__(self, key, *args):
+        self.message = key
+        super().__init__(key, *args)
+
+
 class RequiredArgumentError(TypeError):
     def __init__(self, pos, argname, *args):
         self.message = argname + " at pos " + str(pos)
         super(RequiredArgumentError, self).__init__(self.message, *args)
+
+
+class MissingRequiredArgument(TypeError):
+    def __init__(self, key, *args):
+        self.message = key
+        super().__init__(key, *args)
 
 
 class InvalidArgumentError(Exception):

@@ -129,16 +129,16 @@ class Logger:
 
             Logger.err_print(title)
             #Logger.err_print(self.get_source_info())
-            Logger.err_print(80*'~')
+            Logger.err_print(80*'-')
             Logger.err_print(fmsg)
-            Logger.err_print(80*"-")
+            Logger.err_print(80*"=")
 
             if self._in_file:
                 with open(self._in_file, "a")  as f:
                     f.write(title)
-                    f.write(80*'~')
+                    f.write(80*'-')
                     f.write(fmsg)
-                    f.write(80*"-")
+                    f.write(80*"=")
         else:
             pass
 
