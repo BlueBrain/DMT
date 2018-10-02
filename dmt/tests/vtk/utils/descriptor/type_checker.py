@@ -47,6 +47,14 @@ class TestFieldType(WithFCA):
         __doc__ = "To test a field is set to its default value.",
         __default__=1
     )
+    any_field = Field.Optional(
+        __name__="any_field",
+        __typecheck__ = Field.typecheck.any(
+            int, str, float,
+            Field.typecheck.mapping(int, str)
+        ),
+        __doc__="To test that Field type may be one of many"
+    )
     def __init__(self, f1=[], f2=set([1,2]), f3={}, f4={}, **kwargs):
         """..."""
         self.field_one = f1
@@ -64,6 +72,7 @@ def test1():
     assert t.field_two == set([1,2])
     assert t.field_three == {}
     assert t.field_four == {}
+    return ExceptionalTest.Success(test1.__doc__)
 
 ExceptionalTest(test1, source_info=logger.get_source_info()).run()
 
@@ -74,6 +83,7 @@ def test2():
     assert t.field_two == set([1,2])
     assert t.field_three == {}
     assert t.field_four == {}
+    return ExceptionalTest.Success(test2.__doc__)
 
 ExceptionalTest(test2, source_info=logger.get_source_info()).run()
 
@@ -84,6 +94,7 @@ def test3():
     assert t.field_two == set([1,2,3])
     assert t.field_three == {}
     assert t.field_four == {}
+    return ExceptionalTest.Success(test3.__doc__)
 
 ExceptionalTest(test3, source_info=logger.get_source_info()).run()
 
@@ -92,7 +103,10 @@ def test4():
     try:
         TestFieldType(f3={1: "one", "two": 2})
     except TypeError as e:
-        pass
+        return ExceptionalTest.Success(test4.__doc__)
+    raise ExceptionalTest.Failure(
+        "class construction should have thrown an exception."
+    )
 
 ExceptionalTest(test4, source_info=logger.get_source_info()).run()
 
@@ -104,6 +118,7 @@ def test5():
     assert t.field_two == set([1,2])
     assert t.field_three == {}
     assert t.field_four == f4
+    return ExceptionalTest.Success(test5.__doc__)
 
 ExceptionalTest(test5, source_info=logger.get_source_info()).run()
 
@@ -113,13 +128,58 @@ def test_default():
     assert tyes.default_field == 1
     tno  = TestFieldType(default_field=2)
     assert tno.default_field == 2, "default_field is {}".format(tno.default_field)
+    return ExceptionalTest.Success(test_default.__doc__)
 
 ExceptionalTest(test_default, source_info=logger.get_source_info()).run()
 
 def test_optional():
     """We do not have to set an optional field."""
-    t = TestFieldType()
-    assert not hasattr(t, "optional_field")
+    tno = TestFieldType()
+    assert not hasattr(tno, "optional_field")
+    try:
+        tyes = TestFieldType(optional_field=1)
+    except TypeError as e:
+        pass
+    else:
+        raise ExceptionalTest.Failure(
+            """class construction should have failed."""
+        )
+    tyes = TestFieldType(optional_field={})
+    return ExceptionalTest.Success(test_optional.__doc__)
 
 ExceptionalTest(test_optional, source_info=logger.get_source_info()).run()
 
+def test_any():
+    """We can set value of a Field to one of multiple allowed values."""
+    t1 = TestFieldType(any_field=1)
+    assert hasattr(t1, "any_field")
+    assert t1.any_field == 1
+
+    t2 = TestFieldType(any_field=2.0)
+    assert hasattr(t2, "any_field")
+    assert t2.any_field == 2.0
+
+    t3 = TestFieldType(any_field="one")
+    assert hasattr(t3, "any_field")
+    assert t3.any_field == "one"
+
+    try:
+        t4 = TestFieldType(any_field=[])
+    except TypeError as e:
+        logger.test(
+            logger.get_source_info(),
+            "Class construction failed with exception.",
+            "{}".format(e)
+        )
+    else:
+        raise ExceptionalTest.Failure(
+            "Class construction t4 should have failed."
+        )
+
+    t5 = TestFieldType(any_field = {1: "one"})
+    assert hasattr(t5, "any_field")
+    assert t5.any_field[1] == "one"
+    
+    return ExceptionalTest.Success(test_any.__doc__)
+
+ExceptionalTest(test_any, source_info=logger.get_source_info()).run()
