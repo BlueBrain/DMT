@@ -85,7 +85,7 @@ class ReferenceData(WithFCA):
             else:
                 data = data_and_primary
         else:
-            data = self._load_from_location(data_value)
+            data = self._load_from_location(data_and_primary)
 
         primary = kwarg_dict.get("primary", None)
         return (data, primary)

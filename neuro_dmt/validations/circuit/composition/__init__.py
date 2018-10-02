@@ -5,13 +5,14 @@ import os
 import numpy as np
 import pandas as pd
 from dmt.vtk.phenomenon import Phenomenon
-#from neuro_dmt.utils.brain_region import BrainRegion
 from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.validations.circuit import BrainCircuitAnalysis
+from neuro_dmt.measurement.parameter import BrainCircuitSpatialParameter
+
 
 @document_fields
 class SpatialCompositionAnalysis(BrainCircuitAnalysis):
@@ -27,15 +28,15 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         report."""
     )
     plotter_type = Field(
-        __name__ = "plotter_type",
-        __type__ = type,
-        __is_valid_value__ = lambda ptype: issubclass(ptype, ComparisonPlot),
-        __doc__ = """A subclass of {} to be used plot the results of
+        __name__="plotter_type",
+        __typecheck__=Field.typecheck.subtype(ComparisonPlot),
+        __doc__="""A subclass of {} to be used plot the results of
         this validation.""".format(ComparisonPlot)
     )
     spatial_parameters = Field(
         __name__ = "spatial_parameters",
-        __type__ = set,
+        __type__=set,
+        __typecheck__ = Field.typecheck.collection(BrainCircuitSpatialParameter),
         __doc__ = """A composition phenomenon must be measured as a function
         of location in the brain --- spatial_parameters represent these
         locations. For example, you may want cell density as a function of

@@ -30,6 +30,7 @@ class BlueBrainValidation(WithFCA, ABC):
         __doc__="""A utility class object that contains some generic information
         about the brain region that this Validation is for."""
     )
+
     @property
     @abstractmethod
     def get_validation(self):
@@ -84,7 +85,6 @@ class BlueBrainValidation(WithFCA, ABC):
             .format(validation.validated_phenomenon.name,
                     validation.plotter_type)
         )
-
         report = validation(circuit)
 
         self.logger.info(

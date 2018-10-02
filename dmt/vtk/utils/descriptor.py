@@ -167,14 +167,14 @@ class Field:
         """
         @staticmethod
         def get_type(instance, type_arg):
-            if isinstance(type_arg, type):
-                return type_arg
-            try:
-                return getattr(instance, type_arg)
-            except TypeError as e:
-                raise TypeError(
-                    "{}.\nIf not a type, 'type_arg' must be a string".format(e)
-                )
+            """..."""
+            if isinstance(type_arg, str):
+                try:
+                    return getattr(instance, type_arg)
+                except AttributeError as e:
+                    raise e
+
+            return type_arg
 
         @staticmethod
         def collection(elem_type_arg):
@@ -239,11 +239,11 @@ class Field:
             return check
 
         @staticmethod
-        def any(head_type, *tail_types):
+        def any(head_type_arg, *tail_types):
             """Check that a value is any of many"""
             def check(instance, candidate_attr_value):
                 """..."""
-
+                head_type = Field.typecheck.get_type(instance, head_type_arg)
                 if isinstance(head_type, type):
                     if isinstance(candidate_attr_value, head_type):
                         return True
@@ -278,6 +278,14 @@ class Field:
             """Check that a value is either of left_type or of right_type."""
             return Field.typecheck.any(left_type, right_type)
 
+        @staticmethod
+        def subtype(type_arg):
+            """..."""
+            def check(instance, candidate_attr_value):
+                """..."""
+                t = Field.typecheck.get_type(instance, type_arg)
+                return issubclass(candidate_attr_value, type_arg)
+            return check
 
 
 

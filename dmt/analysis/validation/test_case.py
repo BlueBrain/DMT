@@ -24,12 +24,6 @@ class ValidationTestCase(Analysis):
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
-    author = Field(
-        __name__="author",
-        __type__=Author,
-        __default__=Author.anonymous,
-        __doc__="""Author of the validation code."""
-    )
     reference_data = Field.Optional(
         __name__="reference_data",
         __type__=ReferenceData,
@@ -68,5 +62,6 @@ class SinglePhenomenonValidation(ValidationTestCase):
         """Validated phenomenon must be set by the deriving class."""
         if 'validated_phenomenon' in kwargs:
             self.validated_phenomenon = kwargs['validated_phenomenon']
+        self.phenomena = {self.validated_phenomenon}
         super().__init__(*args, **kwargs)
 
