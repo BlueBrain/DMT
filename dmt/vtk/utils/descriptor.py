@@ -1,8 +1,7 @@
 """An attempt at creating Fields out of a class."""
 from abc import ABCMeta, ABC, abstractmethod
 import collections
-from dmt.vtk.utils.exceptions import \
-    RequiredKeywordArgumentError, RequiredArgumentError
+from dmt.vtk.utils.exceptions import MissingRequiredKeywordArgument
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.logging.message import Validation
 
@@ -12,11 +11,15 @@ class Field:
 
     __is_field__ = True
 
-    def __init__(self, __name__, __type__,
+    def __init__(self, __name__,
+                 __type__=object,
+                 __typecheck__ = lambda instance, x: True,
                  __is_valid_value__=None,
                  __is_valid__=lambda instance, x: True,
                  __doc__ = "A field.",
                  __examples__=[],
+                 __default__=None,
+                 __optional__=False,
                  *args, **kwargs):
         """"
         Parameters
@@ -26,6 +29,7 @@ class Field:
         """
         self.__field_name__ = __name__
         self.__type__ = __type__
+        self.__typecheck__ = __typecheck__
 
         if __is_valid_value__ is not None:
             self.__is_valid_value = __is_valid_value__
@@ -42,7 +46,16 @@ class Field:
         self.instance_storage_name\
             = "${}_{}".format(__type__.__name__, __name__)
 
+        self.__default__ = __default__
+        self.__optional__ = __optional__
         super(Field, self).__init__(*args, **kwargs)
+
+    @classmethod
+    def Optional(cls, *args, **kwargs):
+        """An alternative constructor.
+        We set kwarg '__optional__' to True here.
+        Other arguments as required by 'Field.__init__'."""
+        return cls(__optional__=True, *args, **kwargs)
 
     @property
     def examples(self):
@@ -74,6 +87,11 @@ class Field:
                                  instance.__class__.__name__,
                                  self.__name__))
 
+    def checktype(self, instance, value):
+        """..."""
+        return self.__typecheck__(instance, value)
+
+
     def assert_validity(self, instance, value):
         """..."""
         if not isinstance(value, self.__type__):
@@ -82,6 +100,11 @@ class Field:
                 .format(self.__field_name__,
                         self.__type__.__name__,
                         value, str(type(value)))
+            )
+        if not self.checktype(instance, value):
+            raise TypeError(
+                "value {} for field {} does not type-check"\
+                .format(value, self.__field_name__)
             )
         error = ValueError(
             "Field '{}' of type '{}' cannot be set to an invalid value, '{}'"\
@@ -118,20 +141,40 @@ class Field:
         """represent this field as a string."""
         return "Field {}".format(str(self.__type__))
 
+    @property
+    def has_default(self):
+        """..."""
+        return hasattr(self, "__default__")
+
+    @property
+    def default_value(self):
+        """..."""
+        return getattr(self, "__default__", None)
+
+    @property
+    def optional(self):
+        """..."""
+        return getattr(self, "__optional__", False)
+
+    @property
+    def required(self):
+        """..."""
+        return not getattr(self, "__optional__", False)
+
     class typecheck:
         """Typecheck attributes of an instance containing a Field.
         This has only 'staticmethod' --- so acts as a module under 'Field'.
         """
         @staticmethod
         def get_type(instance, type_arg):
-            if isinstance(type_arg, type):
-                return type_arg
-            try:
-                return getattr(instance, type_arg)
-            except TypeError as e:
-                raise TypeError(
-                    "{}.\nIf not a type, 'type_arg' must be a string".format(e)
-                )
+            """..."""
+            if isinstance(type_arg, str):
+                try:
+                    return getattr(instance, type_arg)
+                except AttributeError as e:
+                    raise e
+
+            return type_arg
 
         @staticmethod
         def collection(elem_type_arg):
@@ -170,6 +213,9 @@ class Field:
             """
             def check(instance, candidate_attr_value):
                 """..."""
+                if not isinstance(candidate_attr_value, dict):
+                    raise TypeError("Cannot typecheck {} for mapping"\
+                                    .format(candidate_attr_value))
                 key_type = Field.typecheck.get_type(instance, key_type_arg)
                 val_type = Field.typecheck.get_type(instance, val_type_arg)
                 for key, val in candidate_attr_value.items():
@@ -190,6 +236,55 @@ class Field:
                                     val_type.__name__)
                         )
                 return True
+            return check
+
+        @staticmethod
+        def any(head_type_arg, *tail_types):
+            """Check that a value is any of many"""
+            def check(instance, candidate_attr_value):
+                """..."""
+                head_type = Field.typecheck.get_type(instance, head_type_arg)
+                if isinstance(head_type, type):
+                    if isinstance(candidate_attr_value, head_type):
+                        return True
+                    else:
+                        Field.logger.info(
+                            Field.logger.get_source_info(),
+                            "{} did not type-check {}"\
+                            .format(candidate_attr_value, head_type.__name__)
+                        )
+
+                try:
+                    if head_type(instance, candidate_attr_value):
+                        return True
+                except Exception as e:
+                    Field.logger.info(
+                        Field.logger.get_source_info(),
+                        "object {} to type-check against could not be called to type check."\
+                        .format(head_type),
+                        "\t{}: {}".format(type(e).__name__, e)
+                    )
+
+                if len(tail_types) == 0:
+                    return False
+
+                check_tail = Field.typecheck.any(tail_types[0], *tail_types[1:])
+                return check_tail(instance, candidate_attr_value)
+
+            return check
+
+        @staticmethod
+        def either(left_type, right_type):
+            """Check that a value is either of left_type or of right_type."""
+            return Field.typecheck.any(left_type, right_type)
+
+        @staticmethod
+        def subtype(type_arg):
+            """..."""
+            def check(instance, candidate_attr_value):
+                """..."""
+                t = Field.typecheck.get_type(instance, type_arg)
+                return issubclass(candidate_attr_value, type_arg)
             return check
 
 
@@ -225,7 +320,7 @@ def initialize_fields(cls):
             try:
                 value = kwargs[attr]
             except:
-                raise RequiredKeywordArgumentError(attr)
+                raise MissingRequiredKeywordArgument(attr)
             setattr(self, attr, value)
     cls.__init__ = field_init
             
@@ -291,32 +386,86 @@ class WithFCA:
         So a good mixin will be one that mixes in very specific features.
         """
         cls = self.__class__
-        fields = self.get_fields()
-        for field in fields:
-            cls_field = getattr(cls, field)
-            if hasattr(self, field) and not isinstance(getattr(self, field), Field):
+        def __get_value(field):
+            """..."""
+            if not hasattr(cls, field):
+                raise TypeError(
+                    "{} is not a field of this class {}"\
+                    .format(field, cls.__name__)
+                )
+            cls_field = getattr(cls, field, None)
+            if hasattr(self, field):
                 self_field = getattr(self, field)
-                try:
-                    cls_field.assert_validity(self, self_field)
-                except TypeError as e:
-                    raise TypeError(
-                        "{} instance field {} has inadmissible type: {}"\
-                        .format(cls._name__, field, type(self_field).__name__)
+                if not isinstance(self_field, Field):
+                    self.logger.debug(
+                        self.logger.get_source_info(),
+                        """Field {} of type {} has been assigned to {} instance,
+                        with value {}"""\
+                        .format(field, cls_field.__type__.__name__,
+                                cls.__name__, self_field)
                     )
-                except ValueError as e:
-                    raise ValueError(
-                        "{} instance field {} has inadmissible value: {}"\
-                        .format(cls._name__, field, self_field)
+                    try:
+                        cls_field.assert_validity(self, self_field)
+                    except TypeError as e:
+                        raise TypeError(
+                            "{} \n\t{} instance field {} has inadmissible type {}"\
+                            .format(e, cls.__name__, field, type(self_field))
+                        )
+                    except ValueError as e:
+                        raise ValueError(
+                            "{} \n\t{} instance field {} has inadmissible value {}"\
+                            .format(e, cls.__name__, field, self_field)
+                        )
+                    return self_field
+                else:
+                    self.logger.info(
+                        self.logger.get_source_info(),
+                        "{} instance has attribute {} which is a Field!!!"\
+                        .format(cls.__name__, field)
                     )
             else:
-                if field in kwargs:
-                    setattr(self, field, kwargs[field])
-                else:
-                    raise TypeError(
-                        "Can't instantiate abstract class {} "
-                        "with undefined Field {}"
-                        .format(self.__class__.__name__, field)
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "Field {} for {} instance not assigned"\
+                    .format(field, cls.__name__),
+                    "Will look in kwargs for its value",
+                    "failing which will return its default value"
+                )
+
+            if field in kwargs:
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "Found Field label {} in kwargs".format(field)
+                )
+                return kwargs[field]
+            else:
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "Did not find Field label {} in kwargs".format(field)
+                )
+
+
+            return cls_field.default_value
+
+        for field in self.get_fields():
+            cls_field = getattr(cls, field, None)
+            value = __get_value(field)
+            if cls_field.required:
+                if value is None:
+                    raise MissingRequiredKeywordArgument(
+                        "{} is required Field of class {}"\
+                        .format(field, cls.__name__)
                     )
+                setattr(self, field, value)
+            elif value is None:
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "No value to assign for optional field {}".format(field),
+                    "WILL NOT set attribute {}".format(field)
+                )
+            else:
+                setattr(self, field, value)
+
         try:
             super(WithFCA, self).__init__(*args, **kwargs)
         except TypeError as te:

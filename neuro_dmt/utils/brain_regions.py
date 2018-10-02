@@ -67,7 +67,9 @@ class BrainRegion(WithFCA, ABC):
             self.label = label
             self.name = make_name(name)
             self.acronyms = [] if not acronym else [acronym]
-            self.subregions = {r.label: r for r in subregions}
+            self.subregions = {}
+            for r in subregions:
+                self.subregions = self.add_subregion(r)
             self.spatial_parameters = {}
             BrainRegion.__known_brain_regions[label] = self
         else:
@@ -76,21 +78,37 @@ class BrainRegion(WithFCA, ABC):
                 self.acronyms.append(acronym)
             self.subregions.update({r.label: r for r in subregions})
 
+    def add_subregion(self, subregion):
+        """..."""
+        self.subregions[subregion.label]\
+            = self.subregions.get(subregion.label, set()).union({subregion})
+        return self.subregions
+
+    def add_spatial_parameter(self, param):
+        """..."""
+        self.spatial_parameters[param.label]\
+            = self.spatial_parameters.get(param.label, set()).union({param})
+        for subregion_set in self.subregions.values():
+            for subregion in subregion_set:
+                subregion.add_spatial_parameter(param)
+        return
+
     def add(self, something):
         """Add a subtype."""
         if isinstance(something, BrainRegion):
-            self.subregions[something.label] = something
-        elif isinstance(something, BrainCircuitSpatialParameter):
-            self.spatial_parameters[something.label] = something
+            self.add_subregion(something)
+        elif isinstance(something, FiniteValuedParameter):
+            self.add_spatial_parameter(something)
         else:
             self.logger.warn(
                 self.logger.get_source_info(),
                 "Unknown type '{}'.".format(something.__class__.__type__)
             )
+        return
 
     def __str__(self):
         """..."""
-        return self.label
+        return self.name
 
     def __repr__(self):
         """represent this BrainRegion"""
@@ -102,14 +120,17 @@ class BrainRegion(WithFCA, ABC):
         return [v for v in self.__known_brain_regions.values()]
 
 
-whole_brain = BrainRegion("whole_brain", acronym=["WB"])
+whole_brain = BrainRegion("Whole Brain", acronym=["WB"])
 
-cerebrum = BrainRegion("cerebrum", acronym=["CH"])
+cerebrum = BrainRegion("Cerebrum", acronym=["CH"])
 whole_brain.add(cerebrum)
 
-cortex = BrainRegion("cortex", acronym=["CTX"])
+cortex = BrainRegion("Cortex", acronym=["CTX"])
 cerebrum.add(cortex)
 
-hippocampus = BrainRegion("hippocampus", acronym=["HIP"])
+sscx = BrainRegion("Somatosensory Cortex", acronym=["SSCX"])
+cortex.add(sscx)
+
+hippocampus = BrainRegion("Hippocampus", acronym=["HIP"])
 cerebrum.add(hippocampus)
 

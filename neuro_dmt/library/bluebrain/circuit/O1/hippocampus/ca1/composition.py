@@ -13,25 +13,16 @@ from neuro_dmt.models.bluebrain.circuit.O1.parameters import HippocampalLayer
 
 class BlueBrainCellDensityValidation(BlueBrainValidation):
     """..."""
+    circuit_build = O1Circuit
+    brain_region = brain_regions.hippocampus
+    spatial_parameters = {HippocampalLayer()}
+    plotter_type = BarPlotComparison
     ModelAdapter = BlueBrainModelAdapter
-    def __init__(self, plotter_type=None,
-                 *args,  **kwargs):
+    Validation = CellDensityValidation
+
+    @staticmethod
+    def get_reference_data(reference_data_path):
         """..."""
-        super().__init__(brain_regions.hippocampus, O1Circuit,
-                         plotter_type=plotter_type
-                         *args, **kwargs)
-            
-    def get_validation(self, reference_data_path):
-        """..."""
-        from neuro_dmt.validations.circuit.composition.by_layer \
-            import CellDensityValidation
-        validation_data = reference_datasets.cell_density(reference_data_path)
-        cdv = CellDensityValidation(validation_data=validation_data,
-                                    brain_region=brain_regions.cortex
-                                    spatial_parameters={HippocampalLayer()},
-                                    plotter_type=self._plotter_type,
-                                    adapter=self._adapter)
-        return cdv
-                                     
+        return reference_datasets.cell_density(reference_data_path)
                                        
 validation = dict(cell_density=BlueBrainCellDensityValidation)

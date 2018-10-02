@@ -21,25 +21,16 @@ def reference_data_path(validation_name):
                         "examples/datasets/hippocampus/ca1/mouse",
                         validation_name)
 
-def get_validation(validation_name, plotter=BarPlotComparison):
-    """..."""
-    logger.info(
-        "Will get validation {}".format(validation_name),
-        "Data will load from {}"\
-        .format(reference_data_path(validation_name))
-    )
-    return composition.validation[validation_name](
-        brain_regions.hippocampus,
-        with_plotter=plotter
-    )#.get_validation(reference_data_path(validation_name))
-
 def run(validation_name, plotter=BarPlotComparison):
     """..."""
     logger.info("Will run validation {}".format(validation_name))
-    validation = get_validation(validation_name, plotter=plotter)
+    logger.info(
+        "Will get validation {}".format(validation_name),
+        "Data will load from {}"\
+    validation = composition.validation[validation_name]()
     logger.info(
         logger.get_source_info(),
         "validation type {}".format(validation.__class__)
     )
-    return validation(reference_data_path(validation_name),
-                      circuit_config_path)
+    return validation(reference_data_path(validation_name), circuit_config_path)
+                      

@@ -53,6 +53,12 @@ class Record:
         """Make Record a function!"""
         return self.get(key, default)
 
+
+class POD:
+    """Plain Old Data"""
+    def __init__(self, *args, **kwargs):
+        raise TypeError("Attempt to initialize a POD class.")
+
 class FrozenDict(collections.Mapping):
     """A dictionary that cannot be changed."""
 

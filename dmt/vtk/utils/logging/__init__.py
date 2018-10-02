@@ -3,12 +3,8 @@ import sys
 import os
 import inspect
 import time
-from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.collections import Record, POD
 from dmt.vtk.utils.logging.message import *
-
-
-        
-
 
 class Logger:
     """Log messages.
@@ -30,6 +26,20 @@ class Logger:
                            warn=Alert,
                            error=Error,
                            assertion=Assertion)
+
+
+    class Color(POD):
+        HEADER = '\033[95m'
+        OKBLUE = '\033[94m'
+        OKGREEN = '\033[92m'
+        WARNING = '\033[93m'
+        FAIL = '\033[91m'
+        ENDC = '\033[0m'
+        BOLD = '\033[1m'
+        UNDERLINE = '\033[4m'
+
+    def with_color(color, msg):
+        return color + msg + Logger.Color.ENDC if color else msg
 
     @staticmethod
     def timestamp(now=None, *args, **kwargs):
@@ -114,7 +124,7 @@ class Logger:
                     index=traceback.index)
         ))
 
-    def _log_message(self, msg):
+    def _log_message(self, msg, color=None):
         """"Log message with time.
             
         Parameters
@@ -122,23 +132,22 @@ class Logger:
         msg :: Message #to be logged
         """
         if msg.level >= self._level:
-            title = "{}@{} {}".format(self._name,
-                                      self.timestamp(time.localtime()),
-                                      msg.labelstamp)
+            title = "{}@{} {}"\
+                    .format(self._name,
+                            self.timestamp(time.localtime()),
+                            msg.labelstamp)
+
             fmsg = "{}".format(msg.value)
 
-            Logger.err_print(title)
-            #Logger.err_print(self.get_source_info())
-            Logger.err_print(80*'~')
-            Logger.err_print(fmsg)
-            Logger.err_print(80*"-")
+            Logger.err_print(Logger.with_color(Logger.Color.UNDERLINE, title))
+            Logger.err_print(Logger.with_color(color, fmsg))
+            Logger.err_print(80*"=")
 
             if self._in_file:
                 with open(self._in_file, "a")  as f:
                     f.write(title)
-                    f.write(80*'~')
-                    f.write(fmsg)
-                    f.write(80*"-")
+                    f.write(Logger.with_color(Logger.Color.OKGREEN, fmsg))
+                    f.write(80*"=")
         else:
             pass
 
@@ -214,11 +223,11 @@ class Logger:
 
     def success(self, *msgs):
         """..."""
-        return self._log_message(Success(*msgs))
+        return self._log_message(Success(*msgs), color=Logger.Color.OKGREEN)
 
     def failure(self, *msgs):
         """..."""
-        return self._log_message(Failure(*msgs))
+        return self._log_message(Failure(*msgs), color=Logger.Color.FAIL)
 
     def assertion(self, success, *msgs):
         """...
