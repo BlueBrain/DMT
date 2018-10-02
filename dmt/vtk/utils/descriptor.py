@@ -257,11 +257,12 @@ class Field:
                 try:
                     if head_type(instance, candidate_attr_value):
                         return True
-                except TypeError as e:
+                except Exception as e:
                     Field.logger.info(
                         Field.logger.get_source_info(),
                         "object {} to type-check against could not be called to type check."\
-                        .format(head_type)
+                        .format(head_type),
+                        "\t{}: {}".format(type(e).__name__, e)
                     )
 
                 if len(tail_types) == 0:
@@ -271,6 +272,11 @@ class Field:
                 return check_tail(instance, candidate_attr_value)
 
             return check
+
+        @staticmethod
+        def either(left_type, right_type):
+            """Check that a value is either of left_type or of right_type."""
+            return Field.typecheck.any(left_type, right_type)
 
 
 

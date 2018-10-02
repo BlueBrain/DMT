@@ -48,26 +48,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         """
         kwargs.update({'spatial_parameters': {CorticalLayer()}})
         super().__init__(*args, **kwargs)
-            
 
-    @property
-    def primary_dataset(self):
-        """Override"""
-        if isinstance(self._validation_data, Record):
-            return self._validation_data.datasets[self._validation_data.primary]
-
-        if isinstance(self._validation_data, dict):
-            if len(self._validation_data) == 1:
-                return list(self._validation_data.values())[0]
-            if self._primary_dataset:
-                return self._validation_data[self._primary_dataset]
-            else:
-                raise ValueNotSetError("_primary_dataset", self)
-
-        if isinstance(self._validation_data, list):
-            return self._validation_data[0]
-
-        return self._validation_data
 
     @property
     def set_parameters(self, dataframe):
@@ -104,12 +85,12 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     @property
     def validation_data(self):
         """Override"""
-        if self._validation_data is None:
-            raise Exception("Test case {} does not use validation data"\
+        if not hasattr(self, "reference_data"):
+            raise Exception("Validation test case {} does not use reference data"\
                             .format(self.__class__.__name__))
-        data = (self._validation_data.datasets
-                if isinstance(self._validation_data, Record) else
-                self._validation_data)
+        data = (self.reference_data.data
+                if isinstance(self.reference_data.data, Record) else
+                self.reference_data.data)
         
         if not isinstance(data, dict):
             self.logger.info(
@@ -140,9 +121,9 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     @property
     def validation_datasets(self):
         """Return validation data as a dict."""
-        data = (self._validation_data.datasets
-                if isinstance(self._validation_data, Record) else
-                self._validation_data)
+        data = (self.reference_data.data
+                if isinstance(self.reference_data.data, Record) else
+                self.reference_data.data)
         if isinstance(data, dict):
             return data
         if isinstance(data, list):
@@ -151,7 +132,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         
     def data_description(self):
         """Describe the experimental data used for validation."""
-        return self.primary_dataset.what
+        return self.reference_data.primary_dataset.what
      
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""
@@ -175,6 +156,11 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
             is_fail = verdict == Verdict.FAIL,
             pvalue = pval
         )
+
+    @property
+    def primary_dataset(self):
+        """..."""
+        return self.reference_data.primary_dataset
 
 
 from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
