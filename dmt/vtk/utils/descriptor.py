@@ -248,7 +248,7 @@ class Field:
                     if isinstance(candidate_attr_value, head_type):
                         return True
                     else:
-                        Field.logger.info(
+                        Field.logger.ignore(
                             Field.logger.get_source_info(),
                             "{} did not type-check {}"\
                             .format(candidate_attr_value, head_type.__name__)
@@ -258,7 +258,7 @@ class Field:
                     if head_type(instance, candidate_attr_value):
                         return True
                 except Exception as e:
-                    Field.logger.info(
+                    Field.logger.ignore(
                         Field.logger.get_source_info(),
                         "object {} to type-check against could not be called to type check."\
                         .format(head_type),
@@ -397,7 +397,7 @@ class WithFCA:
             if hasattr(self, field):
                 self_field = getattr(self, field)
                 if not isinstance(self_field, Field):
-                    self.logger.debug(
+                    self.logger.ignore(
                         self.logger.get_source_info(),
                         """Field {} of type {} has been assigned to {} instance,
                         with value {}"""\
@@ -418,13 +418,13 @@ class WithFCA:
                         )
                     return self_field
                 else:
-                    self.logger.info(
+                    self.logger.ignore(
                         self.logger.get_source_info(),
                         "{} instance has attribute {} which is a Field!!!"\
                         .format(cls.__name__, field)
                     )
             else:
-                self.logger.info(
+                self.logger.ignore(
                     self.logger.get_source_info(),
                     "Field {} for {} instance not assigned"\
                     .format(field, cls.__name__),
@@ -433,13 +433,13 @@ class WithFCA:
                 )
 
             if field in kwargs:
-                self.logger.info(
+                self.logger.ignore(
                     self.logger.get_source_info(),
                     "Found Field label {} in kwargs".format(field)
                 )
                 return kwargs[field]
             else:
-                self.logger.info(
+                self.logger.ignore(
                     self.logger.get_source_info(),
                     "Did not find Field label {} in kwargs".format(field)
                 )
