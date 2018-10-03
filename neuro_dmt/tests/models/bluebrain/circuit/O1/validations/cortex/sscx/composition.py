@@ -17,13 +17,10 @@ def run(validation_name):
     logger.info("Will run validation {}".format(validation_name))
     validation = composition.validation[validation_name]()
     logger.info(
-        "Will get validation {}".format(validation_name),
-        "Data will load from {}"\
-        .format(validation.reference_data_path)
-    )
-    logger.info(
         logger.get_source_info(),
         "validation type {}".format(validation.__class__)
     )
-    return validation(circuit_config_path)
+    r =  validation(Circuit(circuit_config_path))
+    r.save()
+    return r
                       

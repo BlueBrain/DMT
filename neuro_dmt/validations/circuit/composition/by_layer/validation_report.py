@@ -8,7 +8,9 @@ from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.utils.utils import get_file_name_base
+from dmt.vtk.utils.logging import Logger, with_logging
 
+@with_logging(Logger.level.STUDY)
 class ValidationReport(Report):
     """A class to be used to report all of our composition validations.
     The html produced by the Cheetah Template used here will display a plot for
@@ -111,7 +113,9 @@ class ValidationReport(Report):
             os.makedirs(output_dir_path)
         report_file_path = os.path.join(output_dir_path, file_name)
 
-        print("Saving report to {} ".format(report_file_path))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "Saving report to {} ".format(report_file_path))
 
         try:
             #the following is ugly
@@ -137,8 +141,11 @@ class ValidationReport(Report):
             return report_file_path
 
         except Exception as ex: #convert the following to a warning
-            print("""WARNING!!!
-            While loading the template {}.
-            Will proceed to save a text report""".format(ex))
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """WARNING!!!
+                While loading the template {}.
+                Will proceed to save a text report""".format(ex))
+
             return self._save_default(output_dir_path, file_name_base)
 

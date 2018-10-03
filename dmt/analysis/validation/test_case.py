@@ -24,43 +24,15 @@ class ValidationTestCase(Analysis):
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
-    ReferenceDataType = Field(
-        __name__="ReferenceDataType",
-        __typecheck__=Field.typecheck.subtype(ReferenceData),
-        __doc__="If not provided, assume validation does not use ReferenceData"
+    reference_data = Field.Optional(
+        __name__="reference_data",
+        __type__=ReferenceData,
+        __doc__="If not provided, assume validation does not use reference data"
     )
     def __init__(self, *args, **kwargs):
         """..."""
-        #if "validation_data" in kwargs:
-        #    kwargs.update({"data": kwargs["validation_data"]})
-        self._data_arg\
-            = kwargs.get("validation_data",
-                         kwargs.get("data",
-                                    kwargs.get("reference_data", None)))
-        if "ReferenceDataType" in kwargs:
-            self.ReferenceDataType = kwargs["ReferenceDataType"]
         super().__init__(*args, **kwargs)
 
-    @property
-    def reference_data(self):
-        """..."""
-        try:
-            return self._reference_data
-        except AttributeError:
-            try:
-                self._reference_data\
-                    = self.ReferenceDataType(data=self._data_arg)
-            except AttributeError as e:
-                self.logger.alert(
-                    self.logger.get_source_info(),
-                    "No ReferenceDataType set for {} instance"\
-                    .format(self.__class__.__name__)
-                )
-                raise e
-        return self._reference_data
-
-
-    @property
     def get_validation_data(self):
         """..."""
         return self.reference_data.data if self.reference_data else None
