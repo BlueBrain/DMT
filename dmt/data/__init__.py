@@ -41,6 +41,7 @@ class ReferenceData(WithFCA):
         """
         return isinstance(data_value, str)
 
+
     def _load_from_location(self, data_location):
         """Load data from a location
         We provide a default implementation that makes a trivial check.

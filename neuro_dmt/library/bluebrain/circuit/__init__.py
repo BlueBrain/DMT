@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import os
 import numpy as np
 from bluepy.v2.circuit import Circuit
+from dmt.data import ReferenceData
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.analysis.validation.test_case import ValidationTestCase
@@ -17,8 +18,13 @@ from neuro_dmt.measurement.parameter import LayerIndex
 
 class BlueBrainValidation(WithFCA, ABC):
     """..."""
+    ReferenceDataType = Field.Optional(
+        __name__="ReferenceDataType",
+        __typecheck__=Field.typecheck.subtype(ReferenceData),
+        __doc__="If not provided, assume validation does not use ReferenceData"
+    )
     ModelAdapter = Field(
-        __name__ = "model_adapter",
+        __name__ = "ModelAdapter",
         __type__ = type,
         __doc__  = """The model adapter to be used with this Blue Brain Project
         Validation."""
@@ -80,7 +86,8 @@ class BlueBrainValidation(WithFCA, ABC):
 
     def get_validation(self):
         """Construct Validation with Data, and ModelAdapter"""
-        return self.Validation(data=self.reference_data,
+        return self.Validation(ReferenceDataType=self.ReferenceDataType,
+                               data=self.reference_data_path,
                                brain_region=self.brain_region,
                                spatial_parameters=self.spatial_parameters,
                                plotter_type=self.plotter_type,
@@ -98,7 +105,8 @@ class BlueBrainValidation(WithFCA, ABC):
         self.logger.info(
             self.logger.get_source_info(),
             "Blue Brain validation for {}, with plotter_type {}"\
-            .format(validation.phenomenon.name, validation.plotter_type)
+            .format(validation.phenomenon.name, validation.plotter_type),
+            "With data {}".format(validation.reference_data)
         )
         report = validation(circuit)
 

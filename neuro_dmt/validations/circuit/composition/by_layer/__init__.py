@@ -25,7 +25,6 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     as a function of layer. This base class may be used for validation
     composition of any brain region that is composed of layers.
     """
-    ReferenceDataType = MultiReferenceData
     spatial_parameters = Field(
         __name__ = "spatial_parameters",
         __type__=set,

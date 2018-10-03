@@ -18,12 +18,35 @@ from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 
 
+class BlueBrainCellDensityData(MultiReferenceData):
+    """..."""
+    def _load_from_location(self, data_location):
+        """Load data from a location
+        We provide a default implementation that makes a trivial check.
+        The concrete implementation needs to complete this implementation only
+        if data will be loaded from a location.
+        """
+        if not self._is_location(data_location):
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Cannot load data from argument 'data_location' {}"
+                .format(data_location)
+            )
+            return None
+
+        self.logger.alert(
+            self.logger.get_source_info(),
+            "Load data from location {}.".format(data_location)
+        )
+        return reference_datasets.cell_density(data_location)
+
+
 class BlueBrainCellDensityValidation(BlueBrainCompositionValidation):
     """..."""
     circuit_build = O1Circuit
     plotter_type = BarPlotComparison
     ModelAdapter = BlueBrainModelAdapter
-
+    ReferenceDataType = BlueBrainCellDensityData
     brain_region = brain_regions.cortex
     spatial_parameters = {CorticalLayer()}
     Validation = CellDensityValidation
