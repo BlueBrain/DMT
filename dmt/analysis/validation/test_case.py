@@ -53,15 +53,10 @@ class SinglePhenomenonValidation(ValidationTestCase):
     A single phenomenon will be measured for a model, and compared against
     validation data. P-value will be used as a validation criterion.
     """
-    validated_phenomenon = Field(
-        __name__ = "validated_phenomenon",
-        __type__ = Phenomenon,
-        __doc__  = "The phenomenon that is measured for this validation."
-    )
     def __init__(self, *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
         if 'validated_phenomenon' in kwargs:
-            self.validated_phenomenon = kwargs['validated_phenomenon']
-        self.phenomena = {self.validated_phenomenon}
+            kwargs["phenomena"] = {kwargs['validated_phenomenon']}
+        if 'phenomenon' in kwargs:
+            kwargs["phenomena"] = {kwargs['phenomenon']}
         super().__init__(*args, **kwargs)
-

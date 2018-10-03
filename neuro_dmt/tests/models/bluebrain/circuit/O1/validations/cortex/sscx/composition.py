@@ -12,25 +12,19 @@ circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
 
 logger = Logger(client=__name__, level=Logger.level.TEST)
                 
-def reference_data_path(validation_name):
-    """..."""
-    return  os.path.join("/gpfs/bbp.cscs.ch/home/sood",
-                         "work/validations/dmt",
-                         "examples/datasets/cortex/sscx/rat",
-                         validation_name)
 
 def run(validation_name):
     """..."""
     logger.info("Will run validation {}".format(validation_name))
+    validation = composition.validation[validation_name]()
     logger.info(
         "Will get validation {}".format(validation_name),
         "Data will load from {}"\
-        .format(reference_data_path(validation_name))
+        .format(validation.reference_data_path)
     )
-    validation = composition.validation[validation_name]()
     logger.info(
         logger.get_source_info(),
         "validation type {}".format(validation.__class__)
     )
-    return validation(reference_data_path(validation_name), circuit_config_path)
+    return validation(circuit_config_path)
                       

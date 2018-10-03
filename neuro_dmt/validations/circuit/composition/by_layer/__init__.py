@@ -12,6 +12,7 @@ from dmt.vtk.utils.exceptions import ValueNotSetError
 from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.validations.circuit.composition import SpatialCompositionAnalysis
+from dmt.vtk.measurement.parameter.group import ParameterGroup
 from neuro_dmt.measurement.parameter import LayerIndex, CorticalLayer
     
 
@@ -33,6 +34,9 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         locations. For example, you may want cell density as a function of
         'CorticalLayer'."""
     )
+
+    implementations = {}
+
     def __init__(self, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
@@ -65,7 +69,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
 
         Notes
         ------------------------------------------------------------------------
-        What should decide how the plots, report, etc. look like? Customization
+        Who should decide how the plots, report, etc. look like? Customization
         of reports, things like what symbols to represent 'Layer' with, Roman
         or Hindu numerals? Should the customization be model side or
         experimental side? 
@@ -154,7 +158,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         pval = self.pvalue(model_measurement)
         verdict = self.get_verdict(pval)
         return ValidationReport(
-            validated_phenomenon = self.validated_phenomenon,
+            validated_phenomenon = self.phenomenon,
             validation_image_dir = ".", #keep image dir relative
             validation_image_name = plot_name,
             author = self.author,
@@ -169,6 +173,11 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     def primary_dataset(self):
         """..."""
         return self.reference_data.primary_dataset
+
+    @property
+    def spatial_parameter_group(self):
+        """..."""
+        return ParameterGroup(tuple(self.spatial_parameters))
 
 
 from neuro_dmt.validations.circuit.composition.by_layer.cell_density \

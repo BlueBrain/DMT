@@ -21,7 +21,7 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
     Make your subclasses to implement 'abstractmethods' that depend on factors
     such the  region type used for measurements, and the phenomenon validated.
     """
-    analyzed_phenomenon = Field(
+    phenomenon = Field(
         __name__ = "analyzed_phenomenon",
         __type__ = Phenomenon,
         __doc__ = """Phenomenon analyzed, that can be used to create a
@@ -42,6 +42,28 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         locations. For example, you may want cell density as a function of
         'CorticalLayer'."""
     )
+
+
+    _validations = {}
+
+    @classmethod
+    def add_validation(cls, v):
+        """add validation"""
+        f = v.phenomenon.label 
+        if f not in cls._validations:
+            cls._validations[f] = {}
+
+        p = v.spatial_parameter_group.label
+        if p not in cls._validations[f]:
+            cls._validations[f][p] = v
+
+        return cls._validations
+
+    @classmethod
+    def get_validation(cls, phenomenon, parameter):
+        """..."""
+        return cls._validations.get(phenomenon.label, {}).get(parameter.label, None)
+        
     def __init__(self, *args, **kwargs): 
         """This validation will be made against multiple datasets. Each dataset
         should provide a 'Record' as specified below.
@@ -76,6 +98,7 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         self.plotter_type = kwargs["plotter_type"]
         self.plot_customization = kwargs.get("plot_customization", {})
         
+        self.add_validation(self)
         super().__init__(*args, **kwargs)
         
 
