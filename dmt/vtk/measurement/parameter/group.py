@@ -32,7 +32,12 @@ class ParameterGroup:
     @property
     def labels(self):
         """Parameter labels"""
-        return [p.label for p in self.__parameters]
+        return sorted([p.label for p in self.__parameters])
+
+    @property
+    def label(self):
+        """..."""
+        return '_'.join(self.labels)
 
     @property
     def kwargs(self):

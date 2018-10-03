@@ -11,7 +11,6 @@ from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random import ConditionedRandomVariate
 from dmt.vtk.measurement.condition import ConditionGenerator
 from dmt.vtk.utils.logging import Logger, with_logging
-from dmt.vtk.utils import typecheck
 
 @with_logging(Logger.level.STUDY)
 class FiniteValuedParameter(Parameter, WithFCA):
