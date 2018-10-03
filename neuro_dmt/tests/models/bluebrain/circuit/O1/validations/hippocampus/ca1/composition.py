@@ -13,14 +13,6 @@ circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj42/circuits",
 
 logger = Logger(client=__name__, level=Logger.level.TEST)
                 
-
-def reference_data_path(validation_name):
-    """..."""
-    return os.path.join("/gpfs/bbp.cscs.ch/home/sood",
-                        "work/validations/dmt",
-                        "examples/datasets/hippocampus/ca1/mouse",
-                        validation_name)
-
 def run(validation_name, plotter=BarPlotComparison):
     """..."""
     logger.info("Will run validation {}".format(validation_name))

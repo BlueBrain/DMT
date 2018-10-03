@@ -12,7 +12,6 @@ circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
 
 logger = Logger(client=__name__, level=Logger.level.TEST)
                 
-
 def run(validation_name):
     """..."""
     logger.info("Will run validation {}".format(validation_name))

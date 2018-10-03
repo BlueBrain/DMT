@@ -3,6 +3,7 @@ circuit composition validations, and runs them."""
 import os
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
+from dmt.data.reference import MultiReferenceData
 from neuro_dmt.validations.circuit.composition.by_layer import \
     CellDensityValidation, \
     CellRatioValidation, \
@@ -35,5 +36,6 @@ class BlueBrainCellDensityValidation(BlueBrainCompositionValidation):
     def reference_data(self):
         """..."""
         return reference_datasets.cell_density(self.reference_data_path)
+
                                        
 validation = dict(cell_density=BlueBrainCellDensityValidation)

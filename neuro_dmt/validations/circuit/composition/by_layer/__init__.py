@@ -1,6 +1,7 @@
 """Utilities for circuit composition by layer."""
 from abc import abstractmethod
 import pandas as pd
+from dmt.data.reference import MultiReferenceData
 from dmt.vtk.utils.descriptor import Field
 from dmt.analysis.validation.test_case import SinglePhenomenonValidation
 from dmt.vtk.judgment.verdict import Verdict
@@ -24,7 +25,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
     as a function of layer. This base class may be used for validation
     composition of any brain region that is composed of layers.
     """
-    #plotter_type = BarPlotComparison
+    ReferenceDataType = MultiReferenceData
     spatial_parameters = Field(
         __name__ = "spatial_parameters",
         __type__=set,
@@ -61,7 +62,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         """
         super().__init__(*args, **kwargs)
 
-
+    
     @property
     def set_parameters(self, dataframe):
         """Set the parameters in the index of dataframe to
@@ -141,11 +142,11 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         if isinstance(data, list):
             return {d.label: d for d in data}
         return {data.label: data}
-        
+
     def data_description(self):
         """Describe the experimental data used for validation."""
-        return self.reference_data.primary_dataset.what
-     
+        return self.reference_data.description
+
     def get_label(self, circuit_model):
         """Get a label for the circuit model. Will be useful in reporting."""
         return self.adapter.get_label(circuit_model)
