@@ -9,12 +9,6 @@ from dmt.vtk.utils.collections import Record
 @document_fields
 class ReferenceData(WithFCA):
     """Data from experiments, to be used as reference data in a validation."""
-    description = Field(
-        __name__="description",
-        __type__=str,
-        __default__="Not Available",
-        __doc__="You may provide a description for your ReferenceData."
-    )
     data = Field(
         __name__="data",
         __type__=object,
@@ -31,6 +25,12 @@ class ReferenceData(WithFCA):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
+
+    @property
+    def description(self):
+        """Describe this data. A default behavior is provided.
+        Please override and provide a good description of your data."""
+        return "Not Available"
 
     def _is_location(self, data_value):
         """...

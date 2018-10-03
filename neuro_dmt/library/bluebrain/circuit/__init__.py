@@ -3,8 +3,10 @@
 from abc import ABC, abstractmethod
 import os
 import numpy as np
+import pandas as pd
 from bluepy.v2.circuit import Circuit
 from dmt.data import ReferenceData
+from dmt.data.reference import MultiReferenceData
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.analysis.validation.test_case import ValidationTestCase
@@ -14,6 +16,42 @@ from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
 from neuro_dmt.data.circuit.composition.cortex.sscx.by_layer \
     import reference_datasets
 from neuro_dmt.measurement.parameter import LayerIndex
+
+class BlueBrainCompositionData(MultiReferenceData):
+    """..."""
+    spatial_parameter = Field(
+        __name__ = "spatial_parameters",
+        __type__=LayerIndex,
+        __doc__ = """A composition phenomenon must be measured as a function
+        of location in the brain --- spatial_parameters represent these
+        locations. For example, you may want cell density as a function of
+        'CorticalLayer'.""")
+
+    @abstractmethod
+    def get_reference_datasets(self, data_location):
+        pass
+
+    def _load_from_location(self, data_location):
+        """Load data from a location
+        We provide a default implementation that makes a trivial check.
+        The concrete implementation needs to complete this implementation only
+        if data will be loaded from a location.
+        """
+        if not self._is_location(data_location):
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Cannot load data from argument 'data_location' {}"
+                .format(data_location)
+            )
+            return None
+
+        self.logger.alert(
+            self.logger.get_source_info(),
+            "Load data from location {}.".format(data_location)
+        )
+        return self.get_reference_datasets(data_location)
+
+
 
 
 class BlueBrainValidation(WithFCA, ABC):

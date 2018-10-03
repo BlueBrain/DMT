@@ -100,15 +100,14 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         if not hasattr(self, "reference_data"):
             raise Exception("Validation test case {} does not use reference data"\
                             .format(self.__class__.__name__))
-        data = (self.reference_data.data
-                if isinstance(self.reference_data.data, Record) else
-                self.reference_data.data)
-        
+        data = self.reference_data.data
+
         if not isinstance(data, dict):
-            self.logger.info(
-                self.logger.get_source_info(),
-                "We assume that data is a pandas DataFrame"
-            )
+            if not isinstance(data, pd.DataFrame):
+                raise AttributeError(
+                    "Reference data is not a pandas DataFrame, but {}\n{}"\
+                    .format(type(data).__name__, data)
+                )
             return data
 
         assert(isinstance(data, dict))

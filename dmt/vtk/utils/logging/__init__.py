@@ -171,6 +171,10 @@ class Logger:
         """..."""
         return self._client
 
+    def ignore(self, *msgs):
+        """..."""
+        pass
+
     def info(self, *msgs):
         """..."""
         return self._log_message(Info(*msgs))
