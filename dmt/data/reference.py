@@ -1,5 +1,6 @@
 """..."""
 
+from abc import abstractmethod
 import pandas as pd
 from dmt.data import ReferenceData
 from dmt.vtk.utils.descriptor import Field
@@ -33,7 +34,7 @@ class MultiReferenceData(ReferenceData):
             "initialize {} instance with kwargs".format(self.__class__.__name__),
             *["\t{}: {}".format(k, v) for k, v in kwargs.items()]
         )
-        (data, primary) = self._get_data(*args, **kwargs)
+        (data, primary) = self.load(*args, **kwargs)
         self.data = data
         if primary:
             self.primary = primary
@@ -41,6 +42,37 @@ class MultiReferenceData(ReferenceData):
             self._description = kwargs["description"]
 
         super().__init__(*args, **kwargs)
+
+    @abstractmethod
+    def _load_from_object(self, data):
+        """Load data from an object that contains data."""
+        pass
+
+    @abstractmethod
+    def _load_from_location(self, data):
+        """..."""
+        pass
+
+    def load(self, data, *args, **kwargs):
+        """Default method that assumes that loading from location
+        results in a data-object that can be loaded as reference data.
+        """
+        if not self._is_location(data):
+            try:
+                return self._load_from_object(data)
+            except TypeError as e:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    "{}: {}".format(type(e)),
+                    "\t{} object data is probably not the required type",
+                    "\t{}".format(e)
+                )
+        else:
+            return self._load_from_object(self._load_from_location(data))
+
+        primary = kwargs.get("primary", None)
+        return (data, primary)
+        
 
     def get_dataset(self, dataset_name):
         """..."""

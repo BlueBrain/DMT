@@ -22,35 +22,44 @@ class BrainRegion(WithFCA, ABC):
         __type__=str,
         __doc__="""A name that will be used to point to this BrainRegion.
         Make sure that you enter as unique name as you can imagine. Some
-        level disambiguation will be used to make name unique."""
-    )
+        level disambiguation will be used to make name unique.""")
+    
     label = Field(
         __name__="label",
         __type__=str,
-        __doc__="Specify how to call this BrainRegion in reports and plots."
-    )
+        __doc__="Specify how to call this BrainRegion in reports and plots.")
+    
     acronyms = Field(
         __name__="acronyms",
         __type__=list,
-        __doc__="""A list of acronyms that may be used for this brain-region."""
-    )
+        __doc__="""A list of acronyms that may be used for this brain-region.""")
+    
     subregions = Field(
         __name__="subregions",
         __type__=dict,
         __is_valid_value__=Field.typecheck.mapping(str, "__class__"),
         __doc__="""You may specify the regions contained within this BrainRegion.
         This enables a brain region hierarchy. Its value will default to an
-        empty dict."""
-    )
+        empty dict.""")
+    
     spatial_parameters = Field(
         __name__="spatial_parameters",
         __type__=dict,
         __is_valid__=Field.typecheck.mapping(str, FiniteValuedParameter),
-        __doc__="""Spatial parameters."""
-    )
+        __doc__="""Spatial parameters.""")
+    
+    hierarchy_path = Field.Optional(
+        __name__="hierarchy_path",
+        __type__=tuple,
+        __is_valid__=Field.typecheck.collection(tuple),
+        __doc__="""Hierarchical path to this BrainRegion, starting from
+        the root in a Brain Atlas. We make this Field optional, as a concept
+        that might become useful in the future. The inner tuples should be
+        type (str, int), with the first element an abbreviation, the second
+        an integer.""",
+        __examples__=[(('Br', 65535), ('SSCtx', 1100), ('S1', 721), ('S1HL', 726))])
 
     __known_brain_regions = {}
-
 
     """Layer in the cortex."""
     def __new__(cls, name, acronym=None, subregions=[]):
@@ -73,7 +82,7 @@ class BrainRegion(WithFCA, ABC):
             self.spatial_parameters = {}
             BrainRegion.__known_brain_regions[label] = self
         else:
-            self.name = make_name(name)
+            self.name = make_name(namej)
             if acronym and acronym not in self.acronyms:
                 self.acronyms.append(acronym)
             self.subregions.update({r.label: r for r in subregions})
@@ -113,7 +122,6 @@ class BrainRegion(WithFCA, ABC):
     def __repr__(self):
         """represent this BrainRegion"""
         return "{}({})".format(self.__class__.__name__, self.__str__())
-
 
     @classmethod
     def known_regions(self):

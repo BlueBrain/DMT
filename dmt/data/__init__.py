@@ -42,27 +42,9 @@ class ReferenceData(WithFCA):
         return isinstance(data_value, str)
 
 
-    def _load_from_location(self, data_location):
-        """Load data from a location
-        We provide a default implementation that makes a trivial check.
-        The concrete implementation needs to complete this implementation only
-        if data will be loaded from a location.
-        """
-        if not self._is_location(data_location):
-            self.logger.alert(
-                self.logger.get_source(),
-                "Cannot load data from argument 'data_location' {}"
-                .format(data_location)
-            )
-            return None
-        raise NotImplementedError(
-            "Complete this implementation to load data from a location."
-        )
-
-
     @abstractmethod
-    def _get_data(self, kwarg_dict):
-        """get data from kwargs."""
+    def load(self, *args, **kwargs):
+        """get data."""
         pass
 
     @abstractmethod
