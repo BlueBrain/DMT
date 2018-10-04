@@ -1,6 +1,6 @@
 """Test class AIMeta"""
 
-from dmt.aii import AIMeta, AIBase, adaptermethod
+from dmt.model import AIMeta, AIBase, adaptermethod
 
 def test(description):
     print("""TEST:

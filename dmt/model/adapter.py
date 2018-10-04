@@ -10,7 +10,7 @@ An Interface implementation may be a stand-alone class, while an implementation
 that 'adapts' another class to the Interface is an Adapter.
 """
 
-from dmt.aii.interface import Interface
+from dmt.model.interface import Interface
 from dmt.vtk.utils.descriptor \
     import Field, document_fields, ClassAttribute, ClassAttributeMeta
 

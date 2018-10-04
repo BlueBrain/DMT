@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.aii import interface, adapter
-from dmt.aii import adaptermethod
+from dmt.model import interface, adapter
+from dmt.model import adaptermethod
 from dmt.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 

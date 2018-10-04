@@ -1,4 +1,4 @@
-"""aii is Adapter, Interface, and (their) Implementations.
+"""Model Adapter, Interface, and (their) Implementations.
 A validation should employ a language of the problem domain, and not be
 specialized for a particular problem domain. So the validation code in a
 ValidationTestCase must interface with a model through an adapter. The author
@@ -9,9 +9,9 @@ model, the user must provide an adapter implementation."""
 from types import FunctionType
 from abc import ABC, ABCMeta, abstractmethod
 from dmt.vtk.utils.descriptor import ClassAttributeMeta
-from dmt.aii.interface import \
+from dmt.model.interface import \
     get_interface, interfacemethod, interfaceattribute, get_implementations
-from dmt.aii.adapter import get_types_adapted
+from dmt.model.adapter import get_types_adapted
 from dmt.vtk.author import Author
 
 class Callable(ABC):

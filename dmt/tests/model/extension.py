@@ -1,4 +1,4 @@
-"""We do not like the current way of specifying adapter methods.
+ """We do not like the current way of specifying adapter methods.
 We give an example of a partial class version of the Adapter pattern,
 and one of a full class version.
 The Adapter pattern is a scheme you can follow to provide a glue between two
@@ -25,7 +25,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 from dmt.validation.test_case import ValidationTestCaseBase
 from dmt.vtk.author import Author
-from dmt.aii import modelmethod, modelextension 
+from dmt.model import modelmethod, modelextension 
 
 class IntegerMathTest(ValidationTestCaseBase):
     """An example to show how a validation may be written."""

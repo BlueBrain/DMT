@@ -1,7 +1,7 @@
 """Base classes for analyses."""
 
 from abc import ABC, abstractmethod
-from dmt.aii import Callable, AIBase
+from dmt.model import Callable, AIBase
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon

@@ -10,7 +10,7 @@ The Circuit type has changed drastically over past years, however if we
 use 'bluepy.v2.circuit.Circuit' as a type for all of them, we will rely on 
 manual book-keeping to organize all the different adapters.
 """
-from dmt.aii import interface, adapter
+from dmt.model import interface, adapter
 import numpy as np
 import pandas as pd
 from bluepy.v2.circuit import Circuit

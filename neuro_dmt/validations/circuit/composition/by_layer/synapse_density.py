@@ -1,5 +1,5 @@
 """Validation of synapse density by layer."""
-from dmt.aii.interface import Interface
+from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation

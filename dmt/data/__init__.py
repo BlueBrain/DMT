@@ -2,7 +2,7 @@
 
 from abc import abstractmethod
 import pandas as pd
-from dmt.aii import Callable, AIBase
+from dmt.model import Callable, AIBase
 from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 

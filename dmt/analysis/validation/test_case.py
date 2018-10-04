@@ -8,7 +8,7 @@ against. The initializer of a validation class will accept a data object.
 """
 
 from abc import abstractmethod
-from dmt.aii import Callable, AIBase
+from dmt.model import Callable, AIBase
 from dmt.data import ReferenceData
 from dmt.analysis import Analysis
 from dmt.vtk.author import Author
