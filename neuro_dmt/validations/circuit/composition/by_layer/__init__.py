@@ -18,8 +18,9 @@ from neuro_dmt.measurement.parameter import LayerIndex, CorticalLayer
     
 
 @document_fields
-class ByLayerCompositionValidation(SpatialCompositionAnalysis,
-                                   SinglePhenomenonValidation):
+class ByLayerCompositionValidation(
+        SpatialCompositionAnalysis,
+        SinglePhenomenonValidation):
     """Validation of a single circuit composition phenomenon.
     Validation is against reference data that provide experimental data
     as a function of layer. This base class may be used for validation
@@ -32,8 +33,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
         __doc__ = """A composition phenomenon must be measured as a function
         of location in the brain --- spatial_parameters represent these
         locations. For example, you may want cell density as a function of
-        'CorticalLayer'."""
-    )
+        'CorticalLayer'.""")
 
     implementations = {}
 
@@ -165,8 +165,7 @@ class ByLayerCompositionValidation(SpatialCompositionAnalysis,
             validation_datasets = self.validation_datasets,
             is_pass = verdict == Verdict.PASS,
             is_fail = verdict == Verdict.FAIL,
-            pvalue = pval
-        )
+            pvalue = pval)
 
     @property
     def primary_dataset(self):
