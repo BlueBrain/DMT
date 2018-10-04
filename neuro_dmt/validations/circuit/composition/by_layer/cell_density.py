@@ -18,7 +18,6 @@ class CellDensityValidation(ByLayerCompositionValidation):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
-        
 
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this

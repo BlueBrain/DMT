@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import os
 from dmt.model import Callable, AIBase
 from dmt.vtk.author import Author
+from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
@@ -19,20 +20,33 @@ class Analysis(WithFCA, AIBase):
         __name__="phenomenon",
         __typecheck__=Field.typecheck.collection(Phenomenon),
         __doc__="Phenomena analyzed.")
-    
+
     author = Field(
         __name__="author",
         __type__=Author,
         __default__=Author.anonymous,
         __doc__="""Author of this analysis.""")
     
+    plotter_type = Field.Optional(
+        __name__="plotter_type",
+        __typecheck__=Field.typecheck.subtype(Plot),
+        __doc__="""A subclass of {} to be used plot the results of
+        this validation.""".format(Plot))
+
+    plot_customization = Field.Optional(
+        __name__="plot_customizaion",
+        __type__=dict,
+        __doc__="A dict containing customization of the plot.")
+
+    output_dir_path = Field.Optional(
+        __name__="output_dir_path",
+        __type__=str,
+        __doc__="Where the report will be saved to.")
+
     report_file_name = Field.Optional(
         __name__="report_file_name",
         __type__=str,
-        __default__="report.html",
-        __doc__="We assume that by default all reports will be saved as htmls")
-
-    outou
+        __doc__="By default, we assume that the report should be saved as an html.")
 
     def __init__(self, *args, **kwargs):
         """..."""

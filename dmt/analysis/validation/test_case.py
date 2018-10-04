@@ -8,16 +8,21 @@ against. The initializer of a validation class will accept a data object.
 """
 
 from abc import abstractmethod
+import numpy as np
+import pandas as pd
 from dmt.model import Callable, AIBase
 from dmt.data import ReferenceData
-from dmt.analysis import Analysis
+from dmt.vtk.utils.collections import Record
+#from dmt.analysis import Analysis
+from dmt.vtk.utils.pandas import flatten
+from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.author import Author
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 
 @document_fields
-class ValidationTestCase(Analysis):
+class ValidationTestCase:
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
@@ -35,12 +40,92 @@ class ValidationTestCase(Analysis):
         __type__=float,
         __is_valid__=lambda instance, value: value > 0,
         __default__=0.05,
-        __doc__="p-value threshold to determine if a validation passed or not."
-    )
+        __doc__="p-value threshold to determine if a validation passed or not.")
+
+    plotter_type = Field.Optional(
+        __name__="plotter_type",
+        __typecheck__=Field.typecheck.subtype(ComparisonPlot),
+        __doc__="""A subclass of {} to be used plot the results of
+        this validation.""".format(ComparisonPlot))
+
+    plot_customization = Field.Optional(
+        __name__="plot_customizaion",
+        __type__=dict,
+        __doc__="A dict containing customization of the plot.")
+
+    _validations = {}
+
+    @classmethod
+    def add_validation(cls, v):
+        """add validation"""
+        f = v.phenomenon.label 
+        if f not in cls._validations:
+            cls._validations[f] = {}
+
+        p = v.spatial_parameter_group.label
+        if p not in cls._validations[f]:
+            cls._validations[f][p] = v
+
+        return cls._validations
+
+    @classmethod
+    def get_validation(cls, phenomenon, parameter):
+        """..."""
+        return cls._validations.get(phenomenon.label, {})\
+                               .get(parameter.label, None)
+ 
 
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
+        self.add_validation(self)
+
+    @property
+    def validation_data(self):
+        """Override"""
+        if not hasattr(self, "reference_data"):
+            raise Exception("Validation test case {} does not use reference data"\
+                            .format(self.__class__.__name__))
+        data = self.reference_data.data
+
+        if not isinstance(data, dict):
+            if not isinstance(data, pd.DataFrame):
+                raise AttributeError(
+                    "Reference data is not a pandas DataFrame, but {}\n{}"\
+                    .format(type(data).__name__, data))
+            return data
+
+        assert(isinstance(data, dict))
+        if len(data) == 1:
+            self.logger.devnote(
+                self.logger.get_source_info(),
+                "Only one element in dict.",
+                "We assume that element is a pandas DataFrame.""")
+            return list(data.values())[0]
+
+        dataset_names = [k for k in data.keys()]
+
+        fdf = flatten({n: data[n].data for n in dataset_names},
+                      names=["dataset"])[["mean", "std"]]
+
+        return fdf.set_index(
+            pd.MultiIndex(levels=fdf.index.levels, labels=fdf.index.labels,
+                          names=[n.lower() for n in fdf.index.names]))
+
+    @property
+    def validation_datasets(self):
+        """Return validation data as a dict."""
+        data = self.reference_data.data
+        if isinstance(data, dict):
+            return data
+        if isinstance(data, list):
+            return {d.label: d for d in data}
+        return {data.label: data}
+
+    def data_description(self):
+        """Describe the experimental data used for validation."""
+        return self.reference_data.description
+
 
     def get_validation_data(self):
         """..."""
@@ -50,8 +135,8 @@ class ValidationTestCase(Analysis):
             self.logger.alert(
                 self.logger.get_source_data(),
                 "Could not get data from reference data.",
-                "\t AttributeError: {}".format(e)
-            )
+                "\t AttributeError: {}".format(e))
+
         return None
 
     def get_verdict(self, p):
@@ -91,20 +176,21 @@ class ValidationTestCase(Analysis):
 
         real_measurement = self.primary_dataset
         if real_measurement is not None:
-            delta_mean = abs(
-                model_data["mean"] - real_measurement.data["mean"]
-            )
-            stdev = sqrt(
-                model_data["std"]**2 + real_measurement.data["std"]**2
-            )
+            delta_mean\
+                = abs(model_data["mean"] - real_measurement.data["mean"])
+            stdev\
+                = sqrt(model_data["std"]**2 + real_measurement.data["std"]**2)
             z_score = delta_mean / stdev
             pval = 1. - erf(z_score)
             return pd.DataFrame(dict(
                 delta_mean = delta_mean,
                 std = stdev,
                 z_score = z_score,
-                pvalue = pval
-            ))
+                pvalue = pval))
+        else:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "no primary dataset set")
         return pd.DataFrame()
 
     def pvalue(self, model_measurement):
@@ -116,17 +202,51 @@ class ValidationTestCase(Analysis):
         N = model_measurement.data.shape[0]
         pvt = self.pvalue_table(model_measurement)
 
-        if N == 1:
-            return float(pvt.pvalue)
-        else:
-           return FischersPooler.eval(pvt.pvalue)
-
+        if pvt.shape[0] > 0:
+            if N == 1:
+                return float(pvt.pvalue)
+            else:
+                return FischersPooler.eval(pvt.pvalue)
+        return np.nan
 
     @property
     @abstractmethod
+    def plotting_parameter(self):
+        """which parameter to plot against?"""
+        pass
+
+    def plot(self, model_measurement,
+             comparison_label="dataset",
+             *args, **kwargs):
+        """Plot the data."""
+        name = model_measurement.phenomenon.name
+        try:
+            kwargs['output_dir_path'] = self.output_dir_path
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Could not find an attribute",
+                "\tAttributeError: {}".format(e))
+
+        kwargs['title']  = name
+        kwargs['xlabel'] = model_measurement.parameter
+        kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
+                                           model_measurement.units)
+        kwargs.update(self.plot_customization)
+        plotter = self.plotter_type(Record(data=model_measurement.data,
+                                           label=model_measurement.label))\
+                      .comparing(comparison_label)\
+                      .against(self.validation_data)\
+                      .for_given(self.plotting_parameter)\
+                      .with_customization(**kwargs)
+                      #.for_given(list(self.spatial_parameters)[0])\
+
+        return plotter.plot()
+
+    @property
     def primary_dataset(self):
         """..."""
-        pass
+        return self.reference_data.primary_dataset
 
 @document_fields
 class SinglePhenomenonValidation(ValidationTestCase):
@@ -141,25 +261,6 @@ class SinglePhenomenonValidation(ValidationTestCase):
         if 'phenomenon' in kwargs:
             kwargs["phenomena"] = {kwargs['phenomenon']}
         super().__init__(*args, **kwargs)
-
-    def plot(self, model_measurement, *args, **kwargs):
-        """Plot the data."""
-        name = model_measurement.phenomenon.name
-        kwargs['output_dir_path'] = self.output_dir_path
-        kwargs['title']  = name
-        kwargs['xlabel'] = model_measurement.parameter
-        kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
-                                           model_measurement.units)
-        kwargs.update(self.plot_customization)
-        plotter = self.plotter_type(Record(data=model_measurement.data,
-                                           label=model_measurement.label))\
-                      .comparing("dataset")\
-                      .against(self.validation_data)\
-                      .for_given(list(self.spatial_parameters)[0])\
-                      .with_customization(**kwargs)
-
-        return plotter.plot()
-
 
     @classmethod
     def get_caption(cls, model_measurement):
