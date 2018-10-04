@@ -20,7 +20,7 @@ class SomatosensoryCortexCellDensityValidation(CellDensityValidation):
         super().__init__(
             reference_data=SomatosensoryCortexCellDensityData(),
             brain_region=brain_regions.cortex,
-            spatial_parameters={CorticalLayer()},
+            spatial_parameter=CorticalLayer(),
             plotter_type=BarPlotComparison,
             adapter=BlueBrainModelAdapter(
                 brain_region=brain_regions.cortex,

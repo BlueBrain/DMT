@@ -13,7 +13,8 @@ from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
     import ValidationReport
 from neuro_dmt.validations.circuit.composition import SpatialCompositionAnalysis
 from dmt.vtk.measurement.parameter.group import ParameterGroup
-from neuro_dmt.measurement.parameter import LayerIndex, CorticalLayer
+from neuro_dmt.measurement.parameter\
+    import LayerIndex, CorticalLayer, HippocampalLayer
     
 
 @document_fields
@@ -30,6 +31,12 @@ class ByLayerCompositionValidation(
         __type__=MultiReferenceData,
         __doc__="If not provided, assume validation does not use reference data")
 
+    spatial_parameter = Field(
+        __name__="spatial_parameter",
+        __type__=LayerIndex,
+        __doc__="This is a single spatial parameter validation.",
+        __examples__=[CorticalLayer, HippocampalLayer])
+
     spatial_parameters = Field(
         __name__ = "spatial_parameters",
         __type__=set,
@@ -41,10 +48,12 @@ class ByLayerCompositionValidation(
 
     implementations = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, spatial_parameter, *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
         should provide a 'Record' as specified below."""
+        self.spatial_parameter = spatial_parameter
+        self.spatial_parameters = {spatial_parameter}
         super().__init__(*args, **kwargs)
 
     def get_label(self, model):
@@ -77,7 +86,7 @@ class ByLayerCompositionValidation(
     @property
     def plotting_parameter(self):
         """This is a hack."""
-        return list(self.spatial_parameters)[0]
+        return self.spatial_parameter
 
 from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
     import CellDensityValidation
