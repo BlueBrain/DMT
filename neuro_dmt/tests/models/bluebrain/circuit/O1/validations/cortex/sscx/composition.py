@@ -8,20 +8,28 @@ from neuro_dmt.library.bluebrain.circuit.cortex.sscx import composition
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 
-circuit_config_path = os.path.join("/gpfs/bbp.cscs.ch/project/proj64/circuits",
-                                   "O1.v6a", "20171212", "CircuitConfig")
+circuit_config_path\
+    = os.path.join(
+        "/gpfs/bbp.cscs.ch/project/proj64/circuits",
+        "O1.v6a", "20171212", "CircuitConfig")
 
 logger = Logger(client=__name__, level=Logger.level.TEST)
                 
-def run(validation_name):
+def run(validation_name, output_dir_path=os.getcwd()):
     """..."""
-    logger.info("Will run validation {}".format(validation_name))
-    v = composition.validation(validation_name, circuit_build=O1Circuit)
+    logger.info(
+        "Will run validation {}".format(validation_name))
+    validation\
+        = composition.validation(
+            validation_name,
+            circuit_build=O1Circuit,
+            output_dir_path=output_dir_path)
     logger.info(
         logger.get_source_info(),
-        "validation type {}".format(v.__class__)
-    )
-    r = v(Circuit(circuit_config_path))
-    r.save()
-    return r
+        "validation type {}".format(validation.__class__))
+    report\
+        = validation(
+            Circuit(circuit_config_path),
+            save_report=True)
+    return report
                       

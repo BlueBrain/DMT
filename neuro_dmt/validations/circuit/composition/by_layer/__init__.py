@@ -62,21 +62,18 @@ class ByLayerCompositionValidation(
 
     def get_report(self, model_measurement):
         """Create a report."""
-        plot_dir, plot_name = self.plot(model_measurement,
-                                        output_dir_path = self.output_dir_path,
-                                        file_name = 'report.png')
+        figure = self.plot(model_measurement)
         pval = self.pvalue(model_measurement)
         verdict = self.get_verdict(pval)
         return ValidationReport(
-            validated_phenomenon = self.phenomenon,
-            validation_image_dir = ".", #keep image dir relative
-            validation_image_name = plot_name,
-            author = self.author,
-            caption = self.get_caption(model_measurement),
-            validation_datasets = self.validation_datasets,
-            is_pass = verdict == Verdict.PASS,
-            is_fail = verdict == Verdict.FAIL,
-            pvalue = pval)
+            validated_phenomenon=self.phenomenon,
+            author=self.author,
+            caption=self.get_caption(model_measurement),
+            validation_datasets=self.validation_datasets,
+            is_pass=verdict == Verdict.PASS,
+            is_fail=verdict == Verdict.FAIL,
+            pvalue=pval,
+            figure=figure)
 
     @property
     def spatial_parameter_group(self):

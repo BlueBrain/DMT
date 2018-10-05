@@ -36,9 +36,14 @@ class SpatialCompositionAnalysis(
 #       self.spatial_parameters = kwargs["spatial_parameters"]
         #self.p_value_threshold = kwargs.get("p_value_threshold", 0.05)
         #self.plotter_type = kwargs["plotter_type"]
-        self.output_dir_path = kwargs.get("output_dir_path",
-                                          os.path.join(os.getcwd(), "report"))
-        self.report_file_name = kwargs.get("report_file_name", "report.html")
-        self.plot_customization = kwargs.get("plot_customization", {})
-        
+        self.output_dir_path\
+            = kwargs.get(
+                "output_dir_path",
+                os.path.join(os.getcwd(), "report"))
+        self.report_file_name\
+            = kwargs.get(
+                "report_file_name",
+                "report.html")
+        self.plot_customization\
+            = kwargs.get("plot_customization", {})
         super().__init__(*args, **kwargs)

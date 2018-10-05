@@ -7,8 +7,7 @@ from dmt.vtk.utils.utils import get_file_name_base
 class Report:
     """Report base class.
     A report may have fields (dmt.vtk.utils.descriptor.Field)"""
-
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Add attributes from kwargs to this report instance.
         The value of each report attribute in 'kwargs' must be a string."""
         #self.__dict__.update(kwargs)

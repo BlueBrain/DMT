@@ -10,10 +10,15 @@ class CellRatioValidation(ByLayerCompositionValidation):
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
 
-    validated_phenomenon = Phenomenon(
-        "cell ratio",
-        "Ratio of inhibitory to excitatory cells in a region."
-    )
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(
+            phenomenon=Phenomenon(
+                "cell_ratio",
+                "Ratio of inhibitory to excitatory cells in a region.",
+                group="composition"),
+            *args, **kwargs)
+
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
@@ -24,8 +29,9 @@ class CellRatioValidation(ByLayerCompositionValidation):
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
             """
+            pass
 
-        def get_cell_ratio(self, circuit_model):
+        def get_cell_ratio(self, circuit_model, spatial_parameters):
             """Get cell ratio for a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -44,8 +50,7 @@ class CellRatioValidation(ByLayerCompositionValidation):
             """
             pass
 
-
-     
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_cell_ratio(circuit_model)
+        return self.adapter.get_cell_ratio(
+            circuit_model, self.spatial_parameters)

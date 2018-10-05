@@ -60,20 +60,27 @@ class Plot(ABC):
         """Make the plot"""
         pass
 
-    def save(self, fig):
-        opd = self.output_dir_path
-        fname  = self.file_name
-        if opd:
-            if not os.path.exists(opd):
-                os.makedirs(opd)
-            fname_base = get_file_name_base(fname if fname is not None
-                                            else "report_plot")
-            fname = "{}.png".format(fname_base)
-            output_file_path = os.path.join(opd, fname)
-            print("Generating {}".format(output_file_path))
-            fig.savefig(output_file_path, dpi=100)
+    def save(self,
+        figure,
+        output_dir_path=None,
+        file_name="report.png"):
+        """..."""
+        output_dir_path\
+            = os.path.join(
+                output_dir_path if output_dir_path else os.getcwd(), "report")
+        file_name\
+            = file_name if file_name else self.file_name
+        if not os.path.exists(output_dir_path):
+            os.makedirs(output_dir_path)
+        fname_base\
+            = get_file_name_base(
+                file_name if file_name is not None else "report_plot")
+        fname = "{}.png".format(fname_base)
+        output_file_path = os.path.join(output_dir_path, fname)
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Generating {}".format(output_file_path))
 
-            return (opd, fname)
-        else:
-            print("WARNING! No output directory provided. Not saving.")
-            return fig
+        figure.savefig(output_file_path, dpi=100)
+        
+        return (output_file_path, fname)

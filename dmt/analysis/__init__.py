@@ -8,6 +8,7 @@ from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
+from dmt.vtk.utils import utils
 
 @with_logging(Logger.level.STUDY)
 @document_fields
@@ -15,6 +16,11 @@ class Analysis(WithFCA, AIBase):
     """"Just a class that mixes two.
     AnalysisBaseClass is useful by itself. Mixing in AIBase
      will add adapter interface goodies."""
+
+    analysis_type = Field(
+        __name__="analysis_type",
+        __type__=str,
+        __doc__="To be used to save reports and figures.")
 
     phenomena = Field(
         __name__="phenomena",
@@ -38,7 +44,7 @@ class Analysis(WithFCA, AIBase):
         __type__=dict,
         __doc__="A dict containing customization of the plot.")
 
-    output_dir_path = Field.Optional(
+    output_dir_path = Field(
         __name__="output_dir_path",
         __type__=str,
         __doc__="Where the report will be saved to.")
@@ -52,6 +58,22 @@ class Analysis(WithFCA, AIBase):
         """..."""
         super().__init__(*args, **kwargs)
 
+    def _get_output_dir(self):
+        """..."""
+        try:
+            odp = self.output_dir_path
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "No 'output_dir_path'",
+                "\tAttributeError: {}".format(e))
+            odp = None
+
+        return os.path.join(
+            odp if odp else os.getcwd(),
+            self.analysis_type,
+            utils.get_label(self.phenomena))
+
     @abstractmethod
     def get_report(self, *args, **kwargs):
         """..."""
@@ -61,7 +83,6 @@ class Analysis(WithFCA, AIBase):
     def get_measurement(self, circuit_model):
         """Get the measurement to be validated."""
         pass
-
 
     @abstractmethod
     def get_label(self, model):
@@ -82,19 +103,7 @@ class Analysis(WithFCA, AIBase):
         model_measurement = self.get_measurement(model)
         report = self.get_report(model_measurement)
 
-        save = kwargs.get('save', False) #Or should we save by default?
-        if save:
-            try:
-                odp = self.output_dir_path
-            except AttributeError as e:
-                self.logger.alert(
-                    self.logger.get_source_info(),
-                    """Did not find attibute 'output_dir_path' in {} instance"""\
-                    .format(self.__class__.__name__),
-                    "\t AttributeError: {}".format(e)
-                )
-                odp = os.getcwd()
-
+        if kwargs.get('save_report', False):
             try:
                 fname = self.report_file_name
             except AttributeError as e:
@@ -102,12 +111,11 @@ class Analysis(WithFCA, AIBase):
                     self.logger.get_source_info(),
                     """Did not find attibute 'report_file_name' in {} instance"""\
                     .format(self.__class__.__name__),
-                    "\t AttributeError: {}".format(e)
-                )
+                    "\t AttributeError: {}".format(e))
                 fname = "report.html"
-                
+
             report.save(
-                output_dir_path=os.path.join(odp, "report"),
-                report_file_name=fname
-            )
+                output_dir_path=self._get_output_dir(),
+                report_file_name=fname)
+
         return report

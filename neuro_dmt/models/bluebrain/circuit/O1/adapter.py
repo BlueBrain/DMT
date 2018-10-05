@@ -150,10 +150,11 @@ class BlueBrainModelAdapter(WithFCA):
                                         circuit=circuit,
                                         by=by)
                                         
-    def get_cell_ratio(self, circuit):
+    def get_cell_ratio(self, circuit, by):
         """..."""
-        method = composition.CellRatio(circuit)
-        return self.spatial_measurement(method , circuit, target=target)
+        return self.spatial_measurement(method=composition.CellRatio(circuit),
+                                        circuit=circuit,
+                                        by=by)
 
     def get_inhibitory_synapse_density(self, circuit, target="mc2_Column"):
         """Implement this!"""

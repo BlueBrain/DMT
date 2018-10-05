@@ -17,7 +17,7 @@ class Phenomenon:
 
     __registered_instances = {} #phenomena that have been defined
 
-    def __new__(cls, name, description):
+    def __new__(cls, name, description, *args, **kwargs):
         unique_description = make_name(description).encode()
         description_hash = hashlib.sha1(unique_description).hexdigest()
         label = Phenomenon.make_label(name)
@@ -30,9 +30,10 @@ class Phenomenon:
             }
         return cls.__registered_instances[label][description_hash]
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, group=None):
         self.name = name
         self.description = description
+        self.group = group if group else self.label
         self.__model_registry = [] #models known to measure this phenomenon.
         self.__data_object_registry = [] #data providing a measurement of this phenomenon.
 

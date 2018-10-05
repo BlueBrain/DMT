@@ -21,7 +21,7 @@ class BarPlotComparison(ComparisonPlot):
             data = self.comparison_data.xs(cv.name, level=self.comparison_level)
             yield (label, data)
 
-    def plot(self, with_customiztion=None, save=True):
+    def plot(self, with_customiztion=None):
         """
         Compare this ComparisonPlot's data against those in datasets.
 
@@ -86,8 +86,5 @@ class BarPlotComparison(ComparisonPlot):
         fontP = FontProperties()
         fontP.set_size('small')
         plt.legend(prop=fontP, loc=self.legend_loc)
-
-        if save:
-            return self.save(fig)
 
         return fig

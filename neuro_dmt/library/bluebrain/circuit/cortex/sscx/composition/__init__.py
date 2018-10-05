@@ -10,13 +10,20 @@ from neuro_dmt.validations.circuit.composition.by_layer.cell_density\
     import CellDensityValidation
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition.cell_density\
     import SomatosensoryCortexCellDensityData
+from neuro_dmt.validations.circuit.composition.by_layer.cell_ratio\
+    import CellRatioValidation
+from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition.cell_ratio\
+    import SomatosensoryCortexCellRatioData
 
-
-class SomatosensoryCortexCellDensityValidation(CellDensityValidation):
+class SomatosensoryCortexCellDensityValidation(
+        CellDensityValidation):
     """..."""
-    def __init__(self, circuit_build, sample_size=20,
-                 sampled_box_shape=50.*np.ones(3),
-                 *args, **kwargs):
+    def __init__(self,
+            circuit_build,
+            sample_size=20,
+            sampled_box_shape=50.*np.ones(3),
+            *args, **kwargs):
+        """..."""
         super().__init__(
             reference_data=SomatosensoryCortexCellDensityData(),
             brain_region=brain_regions.cortex,
@@ -28,12 +35,49 @@ class SomatosensoryCortexCellDensityValidation(CellDensityValidation):
                 model_label="Blue Brain O1 Circuit for SSCx",
                 sample_size=sample_size,
                 sampled_box_shape=sampled_box_shape,
-                *args, **kwargs))
+                *args, **kwargs),
+            *args, **kwargs)
 
 
-def validation(validation_name, circuit_build):
+class SomatosensoryCortexCellRatioValidation(
+        CellRatioValidation):
     """..."""
-    if validation_name == "cell_density":
-        return SomatosensoryCortexCellDensityValidation(
-            circuit_build=circuit_build)
-    raise NotImplementedError("validation named {}".format(validation_name))
+    def __init__(self,
+            circuit_build,
+            sample_size=20,
+            sampled_box_shape=50.*np.ones(3),
+            *args, **kwargs):
+        super().__init__(
+            reference_data=SomatosensoryCortexCellRatioData(),
+            brain_region=brain_regions.cortex,
+            spatial_parameter=CorticalLayer(),
+            plotter_type=BarPlotComparison,
+            adapter=BlueBrainModelAdapter(
+                brain_region=brain_regions.cortex,
+                circuit_build=circuit_build,
+                model_label="Blue Brain O1 Circuit for SSCx",
+                sample_size=sample_size,
+                sampled_box_shape=sampled_box_shape,
+                *args, **kwargs),
+            *args, **kwargs)
+
+
+def validation(
+        validation_name,
+        circuit_build,
+        output_dir_path=os.getcwd()):
+    """..."""
+    available_validations = dict(
+        cell_density=SomatosensoryCortexCellDensityValidation,
+        cell_ratio=SomatosensoryCortexCellRatioValidation)
+    try:
+        return available_validations[validation_name](
+            circuit_build=circuit_build,
+            output_dir_path=output_dir_path)
+    except KeyError as e:
+        raise NotImplementedError(
+            "Validation named {}.\n \tKeyError: {}.\n Available validations: \n {}"\
+            .format(
+                validation_name, e,
+                '\n'.join(
+                    "\t{}".format(v) for v in available_validations.keys())) )

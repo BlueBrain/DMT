@@ -3,8 +3,6 @@ from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
-#from neuro_dmt.utils.brain_region import CorticalLayer
-from neuro_dmt.measurement.parameter import CorticalLayer
 
 class CellDensityValidation(ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
@@ -12,12 +10,14 @@ class CellDensityValidation(ByLayerCompositionValidation):
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
 
-    phenomenon = Phenomenon("cell density", "Count of cells in a unit volume.")
-    phenomena = {phenomenon}
-                             
     def __init__(self, *args, **kwargs):
         """..."""
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            phenomenon=Phenomenon(
+                "cell_density",
+                "Count of cells in a unit volume",
+                group="composition"),
+            *args, **kwargs)
 
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
@@ -56,9 +56,9 @@ class CellDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_cell_density(circuit_model, self.spatial_parameters)
+        return self.adapter.get_cell_density(
+            circuit_model, self.spatial_parameters)
                                              
 

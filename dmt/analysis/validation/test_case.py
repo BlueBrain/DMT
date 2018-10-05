@@ -8,6 +8,7 @@ against. The initializer of a validation class will accept a data object.
 """
 
 from abc import abstractmethod
+import os
 import numpy as np
 import pandas as pd
 from dmt.model import Callable, AIBase
@@ -30,11 +31,6 @@ class ValidationTestCase:
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
-    label = Field(
-        __name__="label",
-        __type__=str,
-        __doc__="Label for this validation."
-    )
     reference_data = Field.Optional(
         __name__="reference_data",
         __type__=ReferenceData,
@@ -63,7 +59,7 @@ class ValidationTestCase:
     @classmethod
     def add_validation(cls, v):
         """add validation"""
-        f = v.label 
+        f = v.phenomenon.label 
         if f not in cls._validations:
             cls._validations[f] = {}
 
@@ -238,15 +234,19 @@ class ValidationTestCase:
         kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
                                            model_measurement.units)
         kwargs.update(self.plot_customization)
-        plotter = self.plotter_type(Record(data=model_measurement.data,
-                                           label=model_measurement.label))\
-                      .comparing(comparison_label)\
-                      .against(self.validation_data)\
-                      .for_given(self.plotting_parameter)\
-                      .with_customization(**kwargs)
-                      #.for_given(list(self.spatial_parameters)[0])\
+        data_record\
+            = Record(
+                data=model_measurement.data,
+                label=model_measurement.label)
+        plotter\
+            = self.plotter_type(data_record)\
+                  .comparing(comparison_label)\
+                  .against(self.validation_data)\
+                  .for_given(self.plotting_parameter)\
+                  .with_customization(**kwargs)
 
         return plotter.plot()
+            
 
     @property
     def primary_dataset(self):
@@ -266,12 +266,37 @@ class SinglePhenomenonValidation(
         __doc__="""A SinglePhenomenonValidation can have only one Phenomenon
         that is measured, validated, and reported.""")
 
-    def __init__(self, phenomenon, *args, **kwargs):
+    def __init__(self,
+            phenomenon,
+            *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
-        self.phenomenon = phenomenon
-        self.phenomena = {phenomenon}
-        self.label = phenomenon.label
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            phenomenon=phenomenon,
+            phenomena={phenomenon},
+            analysis_type="validation",
+            *args, **kwargs)
+
+    def _get_output_dir(self):
+        """..."""
+        try:
+            odp = self.output_dir_path
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "No 'output_dir_path'",
+                "\tAttributeError: {}".format(e))
+            odp = None
+            
+        if self.phenomenon.group == self.phenomenon.label:
+            return os.path.join(
+                odp if odp else os.getcwd(),
+                "validation",
+                self.phenomenon.label)
+        return os.path.join(
+            odp if odp else os.getcwd(),
+            "validation",
+            self.phenomenon.group,
+            self.phenomenon.label)
 
     @classmethod
     def get_caption(cls, model_measurement):
