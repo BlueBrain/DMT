@@ -14,7 +14,8 @@ from neuro_dmt.measurement.parameter import BrainCircuitSpatialParameter
 
 
 @document_fields
-class SpatialCompositionAnalysis(BrainCircuitAnalysis):
+class SpatialCompositionAnalysis(
+        BrainCircuitAnalysis):
     """Validates a single composition phenomenon.
     This base-class provides the code common to all composition validations.
     Make your subclasses to implement 'abstractmethods' that depend on factors
@@ -28,7 +29,6 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         of location in the brain --- spatial_parameters represent these
         locations. For example, you may want cell density as a function of
         'CorticalLayer'.""")
-
        
     def __init__(self, *args, **kwargs): 
         """This validation will be made against multiple datasets. Each dataset
@@ -42,5 +42,3 @@ class SpatialCompositionAnalysis(BrainCircuitAnalysis):
         self.plot_customization = kwargs.get("plot_customization", {})
         
         super().__init__(*args, **kwargs)
-        
-

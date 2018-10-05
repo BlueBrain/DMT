@@ -30,6 +30,11 @@ class ValidationTestCase:
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
+    label = Field(
+        __name__="label",
+        __type__=str,
+        __doc__="Label for this validation."
+    )
     reference_data = Field.Optional(
         __name__="reference_data",
         __type__=ReferenceData,
@@ -58,7 +63,7 @@ class ValidationTestCase:
     @classmethod
     def add_validation(cls, v):
         """add validation"""
-        f = v.phenomenon.label 
+        f = v.label 
         if f not in cls._validations:
             cls._validations[f] = {}
 
@@ -249,17 +254,23 @@ class ValidationTestCase:
         return self.reference_data.primary_dataset
 
 @document_fields
-class SinglePhenomenonValidation(ValidationTestCase):
+class SinglePhenomenonValidation(
+        ValidationTestCase):
     """Validation of a single phenomenon.
     A single phenomenon will be measured for a model, and compared against
-    validation data. P-value will be used as a validation criterion.
-    """
-    def __init__(self, *args, **kwargs):
+    validation data. P-value will be used as a validation criterion."""
+
+    phenomenon = Field(
+        __name__="phenomenon",
+        __type__=Phenomenon,
+        __doc__="""A SinglePhenomenonValidation can have only one Phenomenon
+        that is measured, validated, and reported.""")
+
+    def __init__(self, phenomenon, *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
-        if 'validated_phenomenon' in kwargs:
-            kwargs["phenomena"] = {kwargs['validated_phenomenon']}
-        if 'phenomenon' in kwargs:
-            kwargs["phenomena"] = {kwargs['phenomenon']}
+        self.phenomenon = phenomenon
+        self.phenomena = {phenomenon}
+        self.label = phenomenon.label
         super().__init__(*args, **kwargs)
 
     @classmethod

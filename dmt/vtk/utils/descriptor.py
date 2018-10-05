@@ -391,8 +391,7 @@ class WithFCA:
             if not hasattr(cls, field):
                 raise TypeError(
                     "{} is not a field of this class {}"\
-                    .format(field, cls.__name__)
-                )
+                    .format(field, cls.__name__) )
             cls_field = getattr(cls, field, None)
             if hasattr(self, field):
                 self_field = getattr(self, field)
@@ -402,48 +401,45 @@ class WithFCA:
                         """Field {} of type {} has been assigned to {} instance,
                         with value {}"""\
                         .format(field, cls_field.__type__.__name__,
-                                cls.__name__, self_field)
-                    )
+                                cls.__name__, self_field) )
                     try:
                         cls_field.assert_validity(self, self_field)
                     except TypeError as e:
                         raise TypeError(
-                            "{} \n\t{} instance field {} has inadmissible type {}"\
-                            .format(e, cls.__name__, field, type(self_field))
-                        )
+                            """{} \n\t{} instance field {} has inadmissible type {},
+                            while expected type is {}."""\
+                            .format(
+                                e, cls.__name__, field,
+                                type(self_field),
+                                cls_field.__type__) )
                     except ValueError as e:
                         raise ValueError(
                             "{} \n\t{} instance field {} has inadmissible value {}"\
-                            .format(e, cls.__name__, field, self_field)
-                        )
+                            .format(e, cls.__name__, field, self_field) )
                     return self_field
                 else:
                     self.logger.ignore(
                         self.logger.get_source_info(),
                         "{} instance has attribute {} which is a Field!!!"\
-                        .format(cls.__name__, field)
-                    )
+                        .format(
+                            cls.__name__, field) )
             else:
                 self.logger.ignore(
                     self.logger.get_source_info(),
                     "Field {} for {} instance not assigned"\
                     .format(field, cls.__name__),
                     "Will look in kwargs for its value",
-                    "failing which will return its default value"
-                )
+                    "failing which will return its default value")
 
             if field in kwargs:
                 self.logger.ignore(
                     self.logger.get_source_info(),
-                    "Found Field label {} in kwargs".format(field)
-                )
+                    "Found Field label {} in kwargs".format(field) )
                 return kwargs[field]
             else:
                 self.logger.ignore(
                     self.logger.get_source_info(),
-                    "Did not find Field label {} in kwargs".format(field)
-                )
-
+                    "Did not find Field label {} in kwargs".format(field) )
 
             return cls_field.default_value
 
@@ -454,18 +450,15 @@ class WithFCA:
                 if value is None:
                     raise MissingRequiredKeywordArgument(
                         "{} is required Field of class {}"\
-                        .format(field, cls.__name__)
-                    )
+                        .format(field, cls.__name__) )
                 setattr(self, field, value)
             elif value is None:
                 self.logger.info(
                     self.logger.get_source_info(),
                     "No value to assign for optional field {}".format(field),
-                    "WILL NOT set attribute {}".format(field)
-                )
+                    "WILL NOT set attribute {}".format(field) )
             else:
                 setattr(self, field, value)
-
         try:
             super(WithFCA, self).__init__(*args, **kwargs)
         except TypeError as te:
@@ -475,14 +468,15 @@ class WithFCA:
     def get_fields(cls):
         """..."""
         return [
-            attr for attr in dir(cls) if isinstance(getattr(cls, attr), Field)
-        ]
+            attr for attr in dir(cls)
+            if isinstance(getattr(cls, attr), Field) ]
 
     @classmethod
     def get_class_attributes(cls):
         """..."""
-        return [attribute for attribute, value in dir(cls)
-                if isinstance(value, ClassAttribute)]
+        return [
+            attribute for attribute, value in dir(cls)
+            if isinstance(value, ClassAttribute)]
 
 def document_fields(cls):
     """Document any Fields that may appear in class cls.
@@ -490,8 +484,8 @@ def document_fields(cls):
     doc_included = {}
     field_docs = ""
     for mcls in cls.__mro__:
-        field_attrs = [a for a, v in mcls.__dict__.items()
-                       if isinstance(v, Field)]
+        field_attrs\
+            = [a for a, v in mcls.__dict__.items() if isinstance(v, Field)]
         if len(field_attrs) == 0:
             continue
         if mcls != cls:

@@ -17,7 +17,7 @@ class Analysis(WithFCA, AIBase):
      will add adapter interface goodies."""
 
     phenomena = Field(
-        __name__="phenomenon",
+        __name__="phenomena",
         __typecheck__=Field.typecheck.collection(Phenomenon),
         __doc__="Phenomena analyzed.")
 
