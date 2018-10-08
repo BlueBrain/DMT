@@ -63,7 +63,7 @@ class MultiReferenceData(ReferenceData):
             except TypeError as e:
                 self.logger.alert(
                     self.logger.get_source_info(),
-                    "{}: {}".format(type(e)),
+                    "{}: {}".format(type(e), e),
                     "\t{} object data is probably not the required type",
                     "\t{}".format(e)
                 )

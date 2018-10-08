@@ -4,22 +4,23 @@ at the Blue Brain Project."""
 import os
 import numpy as np
 import dmt.vtk.datasets as datasets
+from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
-from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
-    import SomatosensoryCortexCompositionData
+from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
+    import RatSomatosensoryCortexCompositionData
 
-class SomatosensoryCortexCellRatioData(
-        SomatosensoryCortexCompositionData):
+class RatSomatosensoryCortexCellRatioData(
+        RatSomatosensoryCortexCompositionData):
     """..."""
 
-    def __init__(self,
-                 data=os.path.join("/gpfs/bbp.cscs.ch/home/sood",
-                                   "work/validations/dmt",
-                                   "examples/datasets/cortex/sscx/rat",
-                                   "cell_ratio"),
-                 *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """..."""
-        super().__init__(data, *args, **kwargs)
+        super().__init__(
+            phenomenon=Phenomenon(
+                "Cell Ratio",
+                "Ratio of inhibitory to excitatory cells in a region.",
+                group="composition"),
+            *args, **kwargs)
 
     @classmethod
     def get_reference_datasets(cls, reference_data_dir):

@@ -103,7 +103,7 @@ class Field:
             )
         if not self.checktype(instance, value):
             raise TypeError(
-                "value {} for field {} does not type-check"\
+                "value '{}' for field '{}' does not type-check"\
                 .format(value, self.__field_name__)
             )
         error = ValueError(

@@ -10,11 +10,15 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
 
-    validated_phenomenon = Phenomenon(
-        "inhibitory synapse density",
-        "Count of inhibitory synapses in a unit volume"
-    )
 
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(
+            phenomenon=Phenomenon(
+                "Inhibitory Synapse Density",
+                "Count of inhibitory synapses in a unit volume",
+                group="composition"),
+            *args, **kwargs)
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""

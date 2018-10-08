@@ -14,8 +14,8 @@ class CellRatioValidation(ByLayerCompositionValidation):
         """..."""
         super().__init__(
             phenomenon=Phenomenon(
-                "cell_ratio",
-                "Ratio of inhibitory to excitatory cells in a region.",
+                "Cell Ratio",
+                "Ratio of inhibitory to excitatory cells in a region",
                 group="composition"),
             *args, **kwargs)
 

@@ -3,22 +3,24 @@ at the Blue Brain Project."""
 
 import os
 import numpy as np
+from dmt.vtk.phenomenon import Phenomenon
 import dmt.vtk.datasets as datasets
 from dmt.vtk.utils.collections import Record
-from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
-    import SomatosensoryCortexCompositionData
+from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
+    import RatSomatosensoryCortexCompositionData
 
-class SomatosensoryCortexCellDensityData(SomatosensoryCortexCompositionData):
-    """..."""
+class RatSomatosensoryCortexCellDensityData(
+        RatSomatosensoryCortexCompositionData):
+    """Somatosensory cortex cell density data for the Rat."""
 
-    def __init__(self,
-                 data=os.path.join("/gpfs/bbp.cscs.ch/home/sood",
-                                   "work/validations/dmt",
-                                   "examples/datasets/cortex/sscx/rat",
-                                   "cell_density"),
-                 *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """..."""
-        super().__init__(data, *args, **kwargs)
+        super().__init__(
+            phenomenon=Phenomenon(
+                "Cell Density",
+                "Count of cells in a unit volume",
+                group="composition"),
+            *args, **kwargs)
 
     @classmethod
     def get_reference_datasets(cls, reference_data_dir):

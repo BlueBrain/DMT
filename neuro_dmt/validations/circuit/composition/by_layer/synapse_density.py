@@ -9,10 +9,16 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
-    validated_phenomenon = Phenomenon(
-        "synapse density",
-        "Count of synapses in a unit volume."
-    )
+
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(
+            phenomenon=Phenomenon(
+                "Synapse Density",
+                "Count of synapses in a unit volume",
+                group="composition"),
+            *args, **kwargs)
+
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""

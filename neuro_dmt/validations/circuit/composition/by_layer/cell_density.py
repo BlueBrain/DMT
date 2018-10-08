@@ -14,7 +14,7 @@ class CellDensityValidation(ByLayerCompositionValidation):
         """..."""
         super().__init__(
             phenomenon=Phenomenon(
-                "cell_density",
+                "Cell Density",
                 "Count of cells in a unit volume",
                 group="composition"),
             *args, **kwargs)
