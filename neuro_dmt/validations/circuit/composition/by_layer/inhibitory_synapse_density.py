@@ -14,7 +14,7 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
-            phenomenon=Phenomenon(
+            Phenomenon(
                 "Inhibitory Synapse Density",
                 "Count of inhibitory synapses in a unit volume",
                 group="composition"),

@@ -211,44 +211,6 @@ class ValidationTestCase:
         return np.nan
 
     @property
-    @abstractmethod
-    def plotting_parameter(self):
-        """which parameter to plot against?"""
-        pass
-
-    def plot(self, model_measurement,
-             comparison_label="dataset",
-             *args, **kwargs):
-        """Plot the data."""
-        name = model_measurement.phenomenon.name
-        try:
-            kwargs['output_dir_path'] = self.output_dir_path
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "Could not find an attribute",
-                "\tAttributeError: {}".format(e))
-
-        kwargs['title']  = name
-        kwargs['xlabel'] = model_measurement.parameter
-        kwargs['ylabel'] = "{} / [{}]".format("mean {}".format(name.lower()),
-                                           model_measurement.units)
-        kwargs.update(self.plot_customization)
-        data_record\
-            = Record(
-                data=model_measurement.data,
-                label=model_measurement.label)
-        plotter\
-            = self.plotter_type(data_record)\
-                  .comparing(comparison_label)\
-                  .against(self.validation_data)\
-                  .for_given(self.plotting_parameter)\
-                  .with_customization(**kwargs)
-
-        return plotter.plot()
-            
-
-    @property
     def primary_dataset(self):
         """..."""
         return self.reference_data.primary_dataset

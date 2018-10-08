@@ -4,7 +4,8 @@ from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.validations.circuit.composition.by_layer \
     import ByLayerCompositionValidation
 
-class CellDensityValidation(ByLayerCompositionValidation):
+class CellDensityValidation(
+        ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
@@ -12,8 +13,13 @@ class CellDensityValidation(ByLayerCompositionValidation):
 
     def __init__(self, *args, **kwargs):
         """..."""
+        #kwargs["phenomenon"]\
+        #    = Phenomenon(
+        #        "Cell Density",
+        #        "Count of cells in a unit volume",
+        #        group="composition")
         super().__init__(
-            phenomenon=Phenomenon(
+            Phenomenon(
                 "Cell Density",
                 "Count of cells in a unit volume",
                 group="composition"),
@@ -60,5 +66,4 @@ class CellDensityValidation(ByLayerCompositionValidation):
         """Get measurement of the phenomenon validated."""
         return self.adapter.get_cell_density(
             circuit_model, self.spatial_parameters)
-                                             
 

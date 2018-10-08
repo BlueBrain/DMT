@@ -1,10 +1,8 @@
 """Test develop cell density validation."""
 import os
 from bluepy.v2.circuit import Circuit
-from dmt.vtk.plotting.comparison.crossplot import CrossPlotComparison
-from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from dmt.vtk.utils.logging import Logger
-from neuro_dmt.library.bluebrain.circuit.cortex.sscx import composition
+from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx import composition
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 

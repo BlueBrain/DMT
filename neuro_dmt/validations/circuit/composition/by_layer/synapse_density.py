@@ -13,7 +13,7 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
-            phenomenon=Phenomenon(
+            Phenomenon(
                 "Synapse Density",
                 "Count of synapses in a unit volume",
                 group="composition"),

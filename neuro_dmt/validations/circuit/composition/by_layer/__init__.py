@@ -31,34 +31,73 @@ class ByLayerCompositionValidation(
         __type__=MultiReferenceData,
         __doc__="If not provided, assume validation does not use reference data")
 
-    spatial_parameter = Field(
-        __name__="spatial_parameter",
-        __type__=LayerIndex,
-        __doc__="This is a single spatial parameter validation.",
-        __examples__=[CorticalLayer, HippocampalLayer])
-
-    spatial_parameters = Field(
-        __name__ = "spatial_parameters",
-        __type__=set,
-        __typecheck__ = Field.typecheck.collection(LayerIndex),
-        __doc__ = """A composition phenomenon must be measured as a function
-        of location in the brain --- spatial_parameters represent these
-        locations. For example, you may want cell density as a function of
-        'CorticalLayer'.""")
-
     implementations = {}
 
-    def __init__(self, spatial_parameter, *args, **kwargs):
+    def __init__(self,
+            phenomenon,
+            *args, **kwargs):
         """
         This validation will be made against multiple datasets. Each dataset
         should provide a 'Record' as specified below."""
-        self.spatial_parameter = spatial_parameter
-        self.spatial_parameters = {spatial_parameter}
-        super().__init__(*args, **kwargs)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "initialize ByLayerCompositionValidation with kwargs",
+            *["\t{}: {}".format(k, v) for k, v in kwargs.items()])
+        super().__init__(
+            phenomenon,
+            *args, **kwargs)
 
     def get_label(self, model):
         """Get a label for the circuit model. Will be useful in reporting."""
         return self.adapter.get_label(model)
+
+    @property
+    @abstractmethod
+    def plotting_parameter(self):
+        """which parameter to plot against?"""
+        pass
+
+    def plot(self,
+        model_measurement,
+        comparison_label="dataset",
+        *args, **kwargs):
+        """Plot the data.
+        This a default method --- a subclass may have special needs to plot.
+        In that case this method can be overridden."""
+        name\
+            = model_measurement.phenomenon.name
+        try:
+            kwargs['output_dir_path']\
+                = self.output_dir_path
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Could not find an attribute",
+                "\tAttributeError: {}".format(e))
+
+        kwargs['title']\
+            = name
+        kwargs['xlabel']\
+            = model_measurement.parameter
+        kwargs['ylabel']\
+            = "{} / [{}]".format(
+                "mean {}".format(name.lower()),
+                model_measurement.units)
+        kwargs.update(self.plot_customization)
+        data_record\
+            = Record(
+                data=model_measurement.data,
+                label=model_measurement.label)
+        plotter\
+            = self.plotter_type(data_record)\
+                  .comparing(comparison_label)\
+                  .against(self.validation_data)\
+                  .for_given(self.plotting_parameter)\
+                  .with_customization(**kwargs)
+
+        return plotter.plot()
+            
+
 
     def get_report(self, model_measurement):
         """Create a report."""
@@ -80,10 +119,6 @@ class ByLayerCompositionValidation(
         """..."""
         return ParameterGroup(tuple(self.spatial_parameters))
 
-    @property
-    def plotting_parameter(self):
-        """This is a hack."""
-        return self.spatial_parameter
 
 from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
     import CellDensityValidation
