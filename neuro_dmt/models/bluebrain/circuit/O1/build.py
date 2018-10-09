@@ -47,6 +47,7 @@ class O1Circuit(CircuitBuild):
 
 
     def __init__(self, *args, **kwargs):
+        self.label = "O1"
         super(O1Circuit, self).__init__(*args, **kwargs)
 
     def random_position(self, brain_region, condition, offset = 50.,

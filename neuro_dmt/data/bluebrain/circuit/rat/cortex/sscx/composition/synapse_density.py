@@ -26,8 +26,8 @@ class RatSomatosensoryCortexSynapseDensityData(
 
     @classmethod
     def get_reference_datasets(cls, reference_data_dir):
-        defelipe2011  = datasets.load(reference_data_dir, "DeFelipe2011")
-        defelipe2002  = datasets.load(reference_data_dir, "DeFelipe2002")
+        defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
+        defelipe2002 = datasets.load(reference_data_dir, "DeFelipe2002")
         anton2014 = datasets.load(reference_data_dir, "AntonSanchez2014")
         
         return Record(
@@ -35,13 +35,16 @@ class RatSomatosensoryCortexSynapseDensityData(
             datasets={
                 defelipe2011.short_name: cls.with_metadata(
                     defelipe2011,
-                    cls.summarized(defelipe2011.density_means,
-                                   defelipe2011.density_stds)),
+                    cls.summarized(
+                        defelipe2011.density_means,
+                        defelipe2011.density_stds)),
                 defelipe2002.short_name: cls.with_metadata(
                     defelipe2002,
-                    cls.summarized(defelipe2002.density_means,
-                                   defelipe2002.density_stds)),
+                    cls.summarized(
+                        defelipe2002.density_means,
+                        defelipe2002.density_stds)),
                 anton2014.short_name: cls.with_metadata(
                     anton2014,
-                    cls.summarized(anton2014.density_means,
-                                   anton2014.density_stds))})
+                    cls.summarized(
+                        anton2014.density_means,
+                        anton2014.density_stds))})

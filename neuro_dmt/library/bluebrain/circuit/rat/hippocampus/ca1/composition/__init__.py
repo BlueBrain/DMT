@@ -1,11 +1,11 @@
-"""Somatosensory cortex validations."""
+"""Hippocampus CA1 composition validations."""
 import numpy as np
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.measurement.parameter import CorticalLayer
+from neuro_dmt.measurement.parameter import HippocampalLayer
 from neuro_dmt.models.bluebrain.circuit.adapter import BlueBrainModelAdapter
 
-class SomatosensoryCortexCompositionValidation:
+class HippocampusCA1CompositionValidation:
     """Mixin class that provides common attributes for
     somatosensory cortex composition validations."""
 
@@ -17,13 +17,14 @@ class SomatosensoryCortexCompositionValidation:
             *args, **kwargs):
         """..."""
         model_label\
-            = "Blue Brain {} Circuit for SSCx".format(circuit_build.label)
+            = "Blue Brain {} Circuit for Hippocampus CA1"\
+            .format(circuit_build.label)
         super().__init__(
             reference_data=reference_data,
-            brain_region=brain_regions.sscx,
+            brain_region=brain_regions.ca1,
             plotter_type=BarPlotComparison,
             adapter=BlueBrainModelAdapter(
-                brain_region=brain_regions.cortex, #consider removing this
+                brain_region=brain_regions.hippocampus, #consider removing this
                 circuit_build=circuit_build,
                 model_label=model_label,
                 sample_size=sample_size,

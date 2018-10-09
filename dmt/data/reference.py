@@ -15,8 +15,8 @@ class MultiReferenceData(ReferenceData):
         __doc__="""If this ReferenceData holds more than one dataset, then
         you may choose a primary dataset out of your multiple datasets.
         If this field is set to a string, then its value must be the label
-        of one of the datasets in this ReferenceData."""
-    )
+        of one of the datasets in this ReferenceData.""")
+    
     data = Field(
         __name__ = "data",
         __typecheck__=Field.typecheck.either(
@@ -24,8 +24,7 @@ class MultiReferenceData(ReferenceData):
             Field.typecheck.mapping(str, dict)
         ),
         __doc__="""A dict that maps labels to datasets that are represented
-        as a Record."""
-    )
+        as a Record.""")
 
     def __init__(self, *args, **kwargs):
         """..."""

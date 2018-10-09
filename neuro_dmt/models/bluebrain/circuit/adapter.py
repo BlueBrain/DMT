@@ -135,33 +135,38 @@ class BlueBrainModelAdapter(WithFCA):
                 random_variate=random_variate,
                 sample_size=self.sample_size
             )(method, *args, **kwargs),
-            by=by
-        )
+            by=by)
 
     def spatial_measurement(self, method, circuit, by, *args, **kwargs):
         """..."""
         return self.statistical_measurement(
             circuit, method, by,
             sampled_box_shape=self._sampled_box_shape,
-        )
+            *args, **kwargs)
 
     def get_cell_density(self, circuit, by):
-        return self.spatial_measurement(method=composition.CellDensity(circuit),
-                                        circuit=circuit,
-                                        by=by)
+        return self.spatial_measurement(
+            method=composition.CellDensity(circuit),
+            circuit=circuit,
+            by=by)
                                         
     def get_cell_ratio(self, circuit, by):
         """..."""
-        return self.spatial_measurement(method=composition.CellRatio(circuit),
-                                        circuit=circuit,
-                                        by=by)
+        return self.spatial_measurement(
+            method=composition.CellRatio(circuit),
+            circuit=circuit,
+            by=by)
 
-    def get_inhibitory_synapse_density(self, circuit, target="mc2_Column"):
+    def get_inhibitory_synapse_density(self, circuit, by):
         """Implement this!"""
-        method = composition.InhibitorySynapseDensity(circuit),
-        return self.spatial_measurement(method, circuit, target=target)
+        return self.spatial_measurement(
+            method=composition.InhibitorySynapseDensity(circuit),
+            circuit=circuit,
+            by=by)
 
-    def get_synapse_density(self, circuit, target="mc2_Column"):
+    def get_synapse_density(self, circuit, by):
         """Implement this!"""
-        method = composition.ExtrinsicIntrinsicSynapseDensity(circuit),
-        return self.spatial_measurement(method, circuit, target=target)
+        return self.spatial_measurement(
+            method=composition.ExtrinsicIntrinsicSynapseDensity(circuit),
+            circuit=circuit,
+            by=by)

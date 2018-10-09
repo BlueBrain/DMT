@@ -2,7 +2,8 @@
 import os
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.logging import Logger
-from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx import composition
+from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
+    import validations
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 
@@ -18,7 +19,7 @@ def run(validation_name, output_dir_path=os.getcwd()):
     logger.info(
         "Will run validation {}".format(validation_name))
     validation\
-        = composition.validation(
+        = validations.get(
             validation_name,
             circuit_build=O1Circuit,
             output_dir_path=output_dir_path)

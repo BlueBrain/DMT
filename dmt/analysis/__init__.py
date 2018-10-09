@@ -80,7 +80,7 @@ class Analysis(WithFCA, AIBase):
         pass
 
     @abstractmethod
-    def get_measurement(self, circuit_model):
+    def get_measurement(self, model, *args, **kwargs):
         """Get the measurement to be validated."""
         pass
 
@@ -100,7 +100,7 @@ class Analysis(WithFCA, AIBase):
         get_measurement and get_report.
         Or override.
         """
-        model_measurement = self.get_measurement(model)
+        model_measurement = self.get_measurement(model, *args, **kwargs)
         report = self.get_report(model_measurement)
 
         if kwargs.get('save_report', False):

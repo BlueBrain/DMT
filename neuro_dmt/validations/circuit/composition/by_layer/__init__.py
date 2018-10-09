@@ -97,8 +97,6 @@ class ByLayerCompositionValidation(
 
         return plotter.plot()
             
-
-
     def get_report(self, model_measurement):
         """Create a report."""
         figure = self.plot(model_measurement)

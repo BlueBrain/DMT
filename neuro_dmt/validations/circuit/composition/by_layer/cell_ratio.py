@@ -50,7 +50,7 @@ class CellRatioValidation(ByLayerCompositionValidation):
             """
             pass
 
-    def get_measurement(self, circuit_model):
+    def get_measurement(self, circuit_model, *args, **kwargs):
         """Get measurement of the phenomenon validated."""
         return self.adapter.get_cell_ratio(
             circuit_model, self.spatial_parameters)

@@ -23,17 +23,17 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
 
 class CircuitRandomVariate(ConditionedRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
-    brain_region = Field(
+    brain_region = Field.Optional(
         __name__="brain_region",
         __type__=BrainRegion,
-        __doc__="Provides brain region specializations of some attributes."
-    )
+        __doc__="Provides brain region specializations of some attributes.")
+    
     circuit_build = Field(
         __name__="circuit_build",
         __type__=CircuitBuild,
         __doc__="""Provides circuit build specific attribute specializations.
-        Ideally we should be able to get this information from  'circuit'."""
-    )
+        Ideally we should be able to get this information from  'circuit'.""")
+    
     def __init__(self, circuit, circuit_build, brain_region,
                  condition_type=Record(),
                  *args, **kwargs):
@@ -93,8 +93,10 @@ class RandomPosition(CircuitRandomVariate):
 
     def __call__(self, condition, *args, **kwargs):
         """..."""
-        return self.circuit_build.random_position(self.brain_region, condition,
-                                                  *args, **kwargs)
+        return self.circuit_build.random_position(
+            self.brain_region,
+            condition,
+            *args, **kwargs)
                                                   
 
     def row(self, condition, value):
@@ -116,10 +118,12 @@ class RandomRegionOfInterest(RandomPosition):
                  *args, **kwargs):
         """..."""
         self.sampled_box_shape = sampled_box_shape
-        super(RandomRegionOfInterest, self)\
-            .__init__(circuit, circuit_build, brain_region,
-                      offset=sampled_box_shape/2.,
-                      *args, **kwargs)
+        super().__init__(
+            circuit,
+            circuit_build,
+            brain_region,
+            offset=sampled_box_shape/2.,
+            *args, **kwargs)
 
     def __call__(self, condition, *args, **kwargs):
         """..."""

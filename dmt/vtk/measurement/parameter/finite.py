@@ -17,26 +17,27 @@ class FiniteValuedParameter(Parameter, WithFCA):
     """If the number of all possible values of a parameter is finite,
     we can require certain finite data representations of its attributes,
     and adapt Parameter abstractmethods."""
+
     values_assumed = Field(
         __name__ = "values_assumed",
         __type__ = set,
         __is_valid__= Field.typecheck.collection("value_type"),
-        __doc__="Values assumed by this FiniteValuedParameter."
-    )
+        __doc__="Values assumed by this FiniteValuedParameter.")
+    
     value_order = Field(
         __name__ = "value_order",
         __type__ = dict,
         __is_valid__=Field.typecheck.mapping("value_type", int),
-        __doc__="""A dict mapping values to their order.""" 
-    )
+        __doc__="""A dict mapping values to their order.""")
+    
     value_repr = Field(
         __name__ = "value_repr",
         __type__ = dict,
         __is_valid__=Field.typecheck.mapping("value_type", str),
         __doc__="""A dict mapping values to their string representation. You
         may not pass this value to this base class' initializer. There will be
-        a default implementation."""
-    )
+        a default implementation.""")
+    
     def __init__(self, values=set(), *args, **kwargs):
         """..."""
         super().__init__(values_assumed=values, *args, **kwargs)

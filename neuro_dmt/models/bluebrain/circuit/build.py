@@ -9,6 +9,12 @@ class CircuitBuild(WithFCA, ABC):
     """Build of a circuit! Dump all circuit build dependent method
     definitions here."""
 
+    label = Field(
+        __name__="label",
+        __type__=str,
+        __doc__="A label for the circuit build.",
+        __examples__=["O1", "O1.v6a", "Atlas-based", "S1", "S1.v6a"])
+
     specializations = Field(
         __name__="specializations",
         __type__=dict,

@@ -47,7 +47,14 @@ class ReferenceData(WithFCA):
         """get data."""
         pass
 
+    @property
     @abstractmethod
     def primary_dataset(self):
         """..."""
         pass
+
+    @property
+    def representative_dataset(self):
+        """..."""
+        return self.primary_dataset
+    

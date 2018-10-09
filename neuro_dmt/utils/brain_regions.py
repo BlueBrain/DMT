@@ -46,7 +46,13 @@ class BrainRegion(WithFCA, ABC):
         __name__="spatial_parameters",
         __type__=dict,
         __is_valid__=Field.typecheck.mapping(str, FiniteValuedParameter),
+
         __doc__="""Spatial parameters.""")
+
+    reference_atlas = Field.Optional(
+        __name__="reference_atlas",
+        __type__=object,
+        __doc__="The atlas in which this BrainRegion is defined.")
     
     hierarchy_path = Field.Optional(
         __name__="hierarchy_path",
@@ -142,3 +148,4 @@ cortex.add(sscx)
 hippocampus = BrainRegion("Hippocampus", acronym=["HIP"])
 cerebrum.add(hippocampus)
 
+ca1 = BrainRegion("Cornus Ammonis 1", acronym=["CA1"])

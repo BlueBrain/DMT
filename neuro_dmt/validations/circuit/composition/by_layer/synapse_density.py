@@ -19,6 +19,7 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
                 group="composition"),
             *args, **kwargs)
 
+
     class AdapterInterface(Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
@@ -31,7 +32,7 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def get_synapse_density(self, circuit_model):
+        def get_synapse_density(self, circuit_model, spatial_parameters):
             """Get volume density of synapses in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -51,6 +52,7 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
             pass
 
      
-    def get_measurement(self, circuit_model):
+    def get_measurement(self, circuit_model, *args, **kwargs):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_synapse_density(circuit_model)
+        return self.adapter.get_synapse_density(
+            circuit_model, self.spatial_parameters)

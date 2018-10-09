@@ -75,11 +75,21 @@ class ValidationTestCase:
         return cls._validations.get(phenomenon.label, {})\
                                .get(parameter.label, None)
  
-
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
         self.add_validation(self)
+
+    @property
+    def _reference_data(self):
+        """..."""
+        try:
+            return self.reference_data.data
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Caught Attribute Error: \n\t{}".format(e))
+            return None
 
     @property
     def validation_data(self):
@@ -87,7 +97,9 @@ class ValidationTestCase:
         if not hasattr(self, "reference_data"):
             raise Exception("Validation test case {} does not use reference data"\
                             .format(self.__class__.__name__))
-        data = self.reference_data.data
+        data = self._reference_data
+        if not data:
+            return data
 
         if not isinstance(data, dict):
             if not isinstance(data, pd.DataFrame):
@@ -97,12 +109,6 @@ class ValidationTestCase:
             return data
 
         assert(isinstance(data, dict))
-        if len(data) == 1:
-            self.logger.devnote(
-                self.logger.get_source_info(),
-                "Only one element in dict.",
-                "We assume that element is a pandas DataFrame.""")
-            return list(data.values())[0]
 
         dataset_names = [k for k in data.keys()]
 
@@ -116,7 +122,9 @@ class ValidationTestCase:
     @property
     def reference_datasets(self):
         """Return validation data as a dict."""
-        data = self.reference_data.data
+        data = self._reference_data
+        if not data:
+            return None
         if isinstance(data, dict):
             return data
         if isinstance(data, list):
@@ -180,7 +188,7 @@ class ValidationTestCase:
         else:
             model_data = model_measurement.data
 
-        real_measurement = self.primary_dataset
+        real_measurement = self.pvalue_dataset
         if real_measurement is not None:
             delta_mean\
                 = abs(model_data["mean"] - real_measurement.data["mean"])
@@ -220,6 +228,11 @@ class ValidationTestCase:
         """..."""
         return self.reference_data.primary_dataset
 
+    @property
+    def pvalue_dataset(self):
+        """..."""
+        return self.reference_data.primary_dataset
+
 @document_fields
 class SinglePhenomenonValidation(
         ValidationTestCase):
@@ -253,19 +266,30 @@ class SinglePhenomenonValidation(
                 "No 'output_dir_path'",
                 "\tAttributeError: {}".format(e))
             odp = None
-        if not self.phenomenon.group:
-            return os.path.join(
-                odp if odp else os.getcwd(),
-                "validation",
-                self.phenomenon.label)
-        return os.path.join(
+
+        animal_region_path = os.path.join(
             odp if odp else os.getcwd(),
             "validation",
+            self.animal,
+            self.brain_region.label)
+
+        if not self.phenomenon.group:
+            return os.path.join(
+                animal_region_path,
+                self.phenomenon.label)
+        return os.path.join(
+            animal_region_path,
             self.phenomenon.group,
             self.phenomenon.label)
 
-    @classmethod
-    def get_caption(cls, model_measurement):
+    def plot(self, *args, **kwargs):
+        """Not implemented by default,
+        but not abstractmethod,
+        either so that you can actually create an instance without
+        overriding."""
+        raise NotImplementedError()
+
+    def get_caption(self, model_measurement):
         """Caption that will be shown below the validation plot.
 
         Implementation Notes
@@ -285,7 +309,7 @@ class SinglePhenomenonValidation(
         ~                           method :: String #how measurement was made.])
         """
         return "{} is plotted. {}\n Method: {}"\
-            .format(model_measurement.phenomenon.title,
-                    model_measurement.phenomenon.description,
+            .format(self.phenomenon.title,
+                    self.phenomenon.description,
                     model_measurement.method)
 

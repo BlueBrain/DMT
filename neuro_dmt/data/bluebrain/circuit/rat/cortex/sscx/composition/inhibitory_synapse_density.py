@@ -25,7 +25,7 @@ class RatSomatosensoryCortexInhibitorySynapseDensityData(
 
     @classmethod
     def get_reference_datasets(cls, reference_data_dir):
-        defelipe2011  = datasets.load(reference_data_dir, "DeFelipe2011")
+        defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
         return Record(
             primary=defelipe2011.short_name,
             datasets={
