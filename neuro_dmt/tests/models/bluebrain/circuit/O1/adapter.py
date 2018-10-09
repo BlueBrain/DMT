@@ -4,7 +4,7 @@ import numpy as np
 from bluepy.v2.circuit import Circuit
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import CorticalLayer
-from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
+from neuro_dmt.models.bluebrain.circuit.adapter import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit

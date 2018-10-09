@@ -13,7 +13,7 @@ from neuro_dmt.data.circuit.composition.cortex.sscx.by_layer \
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import HippocampalLayer
 from neuro_dmt.library.bluebrain.circuit import BlueBrainValidation
-from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
+from neuro_dmt.models.bluebrain.circuit.adapter import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
 
 

@@ -1,11 +1,9 @@
 """Somatosensory cortex validations."""
-from abc import abstractmethod
-import os
 import numpy as np
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import CorticalLayer
-from neuro_dmt.models.bluebrain.circuit.O1.adapter import BlueBrainModelAdapter
+from neuro_dmt.models.bluebrain.circuit.adapter import BlueBrainModelAdapter
 
 class SomatosensoryCortexCompositionValidation:
     """Mixin class that provides common attributes for
