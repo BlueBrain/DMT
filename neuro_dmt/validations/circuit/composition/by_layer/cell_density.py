@@ -13,11 +13,6 @@ class CellDensityValidation(
 
     def __init__(self, *args, **kwargs):
         """..."""
-        #kwargs["phenomenon"]\
-        #    = Phenomenon(
-        #        "Cell Density",
-        #        "Count of cells in a unit volume",
-        #        group="composition")
         super().__init__(
             Phenomenon(
                 "Cell Density",

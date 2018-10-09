@@ -28,10 +28,10 @@ class ValidationReport(Report):
         __doc__  = """Author of this validation. If a group has authored,
         please create a group user as author.""")
     
-    validated_phenomenon = Field(
-        __name__ = "validated_phenomenon",
+    phenomenon = Field(
+        __name__ = "phenomenon",
         __type__ = Phenomenon,
-        __doc__  = """Phenomenon that was validated.""")
+        __doc__  = """Phenomenon that was validated / analyzed.""")
     
     figure = Field.Optional(
         __name__="plot",
@@ -43,8 +43,8 @@ class ValidationReport(Report):
         __type__ = str,
         __doc__ = "Caption to go with the plot.")
     
-    validation_datasets = Field(
-        __name__ = "validation_datasets",
+    reference_datasets = Field(
+        __name__ = "reference_datasets",
         __type__ = dict,
         __doc__ = """List of metadata, one element for each dataset used by the
         validation. Please take a look at documentation of the validation.""")
@@ -52,8 +52,8 @@ class ValidationReport(Report):
     is_pass = Field(
         __name__ = "is_pass",
         __type__ = bool,
-        __doc__  = """Are the model's predictions for the validated phenomenon
-        valid when compared against the experimental measurements.""")
+        __doc__  = """Are the model's predictions for the analyzed / validated 
+        phenomenon valid when compared against the experimental measurements.""")
     
     is_fail = Field(
         __name__ = "is_fail",
@@ -86,7 +86,9 @@ class ValidationReport(Report):
                          
         super().__init__(*args, **kwargs)
 
-    def save(self, output_dir_path=None, report_file_name="report.html"):
+    def save(self,
+            output_dir_path=None,
+            report_file_name="report.html"):
         """Save report to disc, as an html.
 
         Parameters
@@ -99,16 +101,26 @@ class ValidationReport(Report):
         Try to create a (html) string using its class' template and save that
         tothe disc. If this fails, call 'Report._save_default'.
         """
-        file_name_base = get_file_name_base(report_file_name)
-        report_file_name = file_name_base + ".html"
-        plot_file_name = file_name_base + ".png"
         output_dir_path\
+            = self.get_output_location(
+                output_dir_path=output_dir_path)
+        file_name_base\
+            = get_file_name_base(
+                report_file_name)
+        report_file_name\
+            = file_name_base + ".html"
+        plot_file_name\
+            = file_name_base + ".png"
+
+
+        report_file_path\
             = os.path.join(
-                output_dir_path if output_dir_path else os.getcwd(), "report")
-        if not os.path.exists(output_dir_path):
-            os.makedirs(output_dir_path)
-        report_file_path = os.path.join(output_dir_path, report_file_name)
-        plot_file_path = os.path.join(output_dir_path, plot_file_name)
+                output_dir_path,
+                report_file_name)
+        plot_file_path\
+            = os.path.join(
+                output_dir_path,
+                plot_file_name)
 
         self.logger.debug(
             self.logger.get_source_info(),
@@ -118,21 +130,18 @@ class ValidationReport(Report):
             self.logger.get_source_info(),
             "Generating {}".format(plot_file_path))
 
-        self.figure.savefig(plot_file_path, dpi=100)
+        self.figure.savefig(
+            plot_file_path, dpi=100)
         
         try:
             #the following is ugly
             #Cheetah template are not exactly the same attributes as this report
             template_dict = self.__report_dict__
-            template_dict["validation_image_name"]\
-                = plot_file_name
-            template_dict['validated_phenomenon']\
-                = self.validated_phenomenon.name
-            template_dict['author_name']\
-                = self.author.name
-            template_dict['author_affiliation']\
-                = self.author.affiliation
-
+            template_dict.update(dict(
+                image_name=plot_file_name,
+                phenomenon=self.phenomenon.name,
+                author_name=self.author.name,
+                author_affiliation=self.author.affiliation))
             report_template\
                 = Template(
                     self.template,
@@ -140,11 +149,12 @@ class ValidationReport(Report):
             try:
                 report_html = str(report_template)
             except Exception as ex_html:
-                raise Exception("""WARNING!!!
-                While generating html: {}.\n""".format(ex_html))
+                raise Exception(
+                    """WARNING!!! While generating html: {}.\n"""\
+                    .format(ex_html))
                 
             with open(report_file_path, 'w') as f:
-                f.write(str(report_template))
+                f.write(report_html)
 
             return report_file_path
 
@@ -155,5 +165,7 @@ class ValidationReport(Report):
                 While loading the template {}.
                 Will proceed to save a text report""".format(ex))
 
-            return self._save_default(output_dir_path, file_name_base)
+            return self._save_default(
+                output_dir_path,
+                file_name_base)
 

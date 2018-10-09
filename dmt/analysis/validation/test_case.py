@@ -114,7 +114,7 @@ class ValidationTestCase:
                           names=[n.lower() for n in fdf.index.names]))
 
     @property
-    def validation_datasets(self):
+    def reference_datasets(self):
         """Return validation data as a dict."""
         data = self.reference_data.data
         if isinstance(data, dict):
@@ -122,6 +122,11 @@ class ValidationTestCase:
         if isinstance(data, list):
             return {d.label: d for d in data}
         return {data.label: data}
+
+    @property
+    def validation_datasets(self):
+        """another name for reference_datasets"""
+        return self.reference_datasets
 
     def data_description(self):
         """Describe the experimental data used for validation."""
@@ -248,8 +253,7 @@ class SinglePhenomenonValidation(
                 "No 'output_dir_path'",
                 "\tAttributeError: {}".format(e))
             odp = None
-            
-        if self.phenomenon.group == self.phenomenon.label:
+        if not self.phenomenon.group:
             return os.path.join(
                 odp if odp else os.getcwd(),
                 "validation",

@@ -105,10 +105,10 @@ class ByLayerCompositionValidation(
         pval = self.pvalue(model_measurement)
         verdict = self.get_verdict(pval)
         return ValidationReport(
-            validated_phenomenon=self.phenomenon,
+            phenomenon=self.phenomenon,
             author=self.author,
             caption=self.get_caption(model_measurement),
-            validation_datasets=self.validation_datasets,
+            reference_datasets=self.reference_datasets,
             is_pass=verdict == Verdict.PASS,
             is_fail=verdict == Verdict.FAIL,
             pvalue=pval,

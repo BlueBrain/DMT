@@ -1,19 +1,19 @@
 <html>
   <body>
 
-    <h1>$validated_phenomenon Validation</h1>
+    <h1>$phenomenon Validation</h1>
     <h2> Author <h2>
     <h3> $author_name</h3>
     <h3> Affiliation:  $author_affiliation</h3>
     <br>
-    <img src="./$validation_image_name" alt="apologies.png"/>
+    <img src="./$image_name" alt="apologies.png"/>
     <br>
     <p>$caption</p>
 
     <h1>Datasets</h1>
 
     <ul>
-      #for $k, $d in $validation_datasets.items()
+      #for $k, $d in $reference_datasets.items()
       <li><a href="$d.uri">[$d.label]</a> -$d.citation<br>
         <p><i>$d.what</i></p>
       </li>

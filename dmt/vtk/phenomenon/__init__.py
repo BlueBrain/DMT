@@ -3,7 +3,7 @@ an observable fact or event. A phenomenon may be described by a system of
 information related to matter, energy, or spacetime"""
 
 import hashlib
-from dmt.vtk.utils.string_utils import make_name
+from dmt.vtk.utils.string_utils import make_name, make_label
 
 class Phenomenon:
     """Phenomenon is an observable fact or event, that can be measured.
@@ -20,7 +20,7 @@ class Phenomenon:
     def __new__(cls, name, description, *args, **kwargs):
         unique_description = make_name(description).encode()
         description_hash = hashlib.sha1(unique_description).hexdigest()
-        label = Phenomenon.make_label(name)
+        label = make_label(name)
 
         if label not in Phenomenon.__registered_instances:
             cls.__registered_instances[label] = {}
@@ -33,7 +33,7 @@ class Phenomenon:
     def __init__(self, name, description, group=None):
         self.name = name
         self.description = description
-        self.group = group if group else self.label
+        self.group = group if group else None
         self.__model_registry = [] #models known to measure this phenomenon.
         self.__data_object_registry = [] #data providing a measurement of this phenomenon.
 
@@ -55,15 +55,11 @@ class Phenomenon:
         """Another (read-only) word for 'name'."""
         return self.name
 
-    @staticmethod
-    def make_label(name):
-        return  '_'.join(name.lower().split())
-
     @property
     def label(self):
         """label that can be used as a header entry
         (column name in a data-frame)"""
-        return Phenomenon.make_label(self.name)
+        return make_label(self.name)
     
     @property
     def description(self):
@@ -80,10 +76,10 @@ class Phenomenon:
         self.__description = value
 
     def __repr__(self):
-        return ("Phenomenon{\n"  +
-                "\tname: {}\n\tdescription: {}".format(self.name,
-                                                   self.description) +
-                "\n}")
+        """Show me"""
+        r = "Phenomenon\n\tname: {}\n\t description: {}\n"\
+            .format(self.name, self.description)
+        return "{}\tgroup: {}\n".format(r, self.group) if self.group else r
 
     def register(self, measurable_system):
         """Register the measurable system.
@@ -118,7 +114,7 @@ class Phenomenon:
             return [p for dps in Phenomenon.__registered_instances.values()
                     for p in dps.values()]
 
-        label = Phenomenon.make_label(name)
+        label = make_label(name)
 
         return cls.__registered_instances[label].values()
 

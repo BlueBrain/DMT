@@ -2,7 +2,8 @@
 import os
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.descriptor import is_field
-from dmt.vtk.utils.utils import get_file_name_base
+from dmt.vtk.utils.utils import get_file_name_base, timestamp
+from dmt.vtk.utils.logging import Logger
 
 class Report:
     """Report base class.
@@ -40,7 +41,9 @@ class Report:
         return field_attrs
 
 
-    def _save_default(self, output_dir_path, file_name_base):
+    def _save_default(self,
+            output_dir_path,
+            file_name_base):
         """A method to save the report,
         in case 'save' that uses a template fails
         This method will save each attribute of the report as a string.
@@ -55,10 +58,27 @@ class Report:
 
         return report_file_path
 
-    def save(self, output_dir_path, report_file_name=None):
+    def save(self,
+            output_dir_path,
+            report_file_name=None):
         """Save the results --- this uses the default method.
         Please over-ride it where you want to define your own custom save.
         """
         file_name_base = get_file_name_base(report_file_name)
         return self._save_default(output_dir_path, file_name_base)
                                   
+    @classmethod
+    def get_output_location(cls,
+            output_dir_path=None,
+            with_timestamp=True):
+        """Determine the location where to save the report."""
+        odp = output_dir_path if output_dir_path else os.getcwd()
+        if with_timestamp:
+            odp = os.path.join(odp, timestamp())
+
+        odp = os.path.join(odp)
+        
+        if not os.path.exists(odp):
+            os.makedirs(odp)
+
+        return odp

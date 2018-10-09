@@ -72,7 +72,7 @@ class Analysis(WithFCA, AIBase):
         return os.path.join(
             odp if odp else os.getcwd(),
             self.analysis_type,
-            utils.get_label(self.phenomena))
+            utils.grouped_label(self.phenomena))
 
     @abstractmethod
     def get_report(self, *args, **kwargs):
