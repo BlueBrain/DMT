@@ -33,6 +33,7 @@ class FiniteValuedParameter(Parameter, WithFCA):
     value_repr = Field(
         __name__ = "value_repr",
         __type__ = dict,
+        __default__={},
         __is_valid__=Field.typecheck.mapping("value_type", str),
         __doc__="""A dict mapping values to their string representation. You
         may not pass this value to this base class' initializer. There will be

@@ -1,4 +1,5 @@
-"""Data for the circuit composition of Rat Somatosensory cortex."""
+"""Reference data for somatosensory cortex composition validations
+ of the mouse."""
 import os
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from neuro_dmt.measurement.parameter import CorticalLayer
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
     import SomatosensoryCortexCompositionData
 
-class RatSomatosensoryCortexCompositionData(
+class MouseSomatosensoryCortexCompositionData(
         SomatosensoryCortexCompositionData):
     """..."""
 
@@ -18,7 +19,7 @@ class RatSomatosensoryCortexCompositionData(
                 data_location = os.path.join(
                     "/gpfs/bbp.cscs.ch/home/sood",
                     "work/validations/dmt",
-                    "examples/datasets/cortex/sscx/rat"),
+                    "examples/datasets/cortex/sscx/mouse"),
                 *args, **kwargs):
         """
         Parameters
@@ -32,11 +33,11 @@ class RatSomatosensoryCortexCompositionData(
         change this by a relative path using a global variable pointing to this
         project directory."""
         super().__init__(
-            animal="rat",
+            animal="mouse",
             phenomenon=phenomenon,
             data_location=data_location,
             *args, **kwargs)
-                           
+
     @classmethod
     def get_available_data(cls, *args, **kwargs):
         """Get reference data by phenomenon.
@@ -45,30 +46,30 @@ class RatSomatosensoryCortexCompositionData(
         --------------------------------------------------------------------
         phenomenon :: Either[str, Phenomenon]"""
 
-        from neuro_dmt.data.bluebrain.circuit.rat.\
+        from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.cell_density\
-            import RatSomatosensoryCortexCellDensityData
-        from neuro_dmt.data.bluebrain.circuit.rat.\
+            import MouseSomatosensoryCortexCellDensityData
+        from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.cell_ratio\
-            import RatSomatosensoryCortexCellRatioData
-        from neuro_dmt.data.bluebrain.circuit.rat.\
+            import MouseSomatosensoryCortexCellRatioData
+        from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.inhibitory_synapse_density\
-            import  RatSomatosensoryCortexInhibitorySynapseDensityData
-        from neuro_dmt.data.bluebrain.circuit.rat.\
+            import  MouseSomatosensoryCortexInhibitorySynapseDensityData
+        from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.synapse_density\
-            import RatSomatosensoryCortexSynapseDensityData
-        
+            import MouseSomatosensoryCortexSynapseDensityData
+
         cell_density\
-            = RatSomatosensoryCortexCellDensityData(
+            = MouseSomatosensoryCortexCellDensityData(
                 *args, **kwargs)
         cell_ratio\
-                = RatSomatosensoryCortexCellRatioData(
-                    *args, **kwargs)
+            = MouseSomatosensoryCortexCellRatioData(
+                *args, **kwargs)
         inhibitory_synapse_density\
-            = RatSomatosensoryCortexInhibitorySynapseDensityData(
+            = MouseSomatosensoryCortexInhibitorySynapseDensityData(
                 *args, **kwargs)
         synapse_density\
-            = RatSomatosensoryCortexSynapseDensityData(
+            = MouseSomatosensoryCortexSynapseDensityData(
                 *args, **kwargs)
         return dict(
             cell_density=cell_density,

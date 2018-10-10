@@ -100,7 +100,19 @@ class HippocampalLayer(LayerIndex):
     def __init__(self, *args, **kwargs):
         """Default hippocampal layer will have int values 'SLM', 'SR', 'SP',
         and 'SO'. The user may override this initializer."""
-        super(HippocampalLayer, self).__init__(
+        super().__init__(
             value_order={"SLM": 0, "SR": 1, "SP": 2, "SO": 3},
             value_repr={"SLM": "SLM", "SR": "SR", "SP": "SP", "SO": "SO"},
             *args, **kwargs)
+
+class HippocampalLayerSLM_SR_Fused(LayerIndex):
+    """..."""
+    value_type = str
+    brain_region = brain_regions.hippocampus
+
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(
+            value_order={"SLM-SR": 0, "SP": 1, "SO": 3},
+            *args, **kwargs)
+

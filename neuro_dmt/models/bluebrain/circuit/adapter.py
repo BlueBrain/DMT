@@ -56,30 +56,31 @@ class BlueBrainModelAdapter(WithFCA):
     observed in real brain circuits.
     """
     author = Author.zero
+
     label = 'layer'
 
     brain_region = Field(
         __name__="brain_region",
         __type__=BrainRegion,
-        __doc__="Provides a model independent tag for the brain region."
-    )
+        __doc__="Provides a model independent tag for the brain region.")
+
     spatial_random_variate = Field(
         __name__="spatial_random_variate",
         __type__=type,
         __is_valid_value__=lambda instance, t: issubclass(t, CircuitRandomVariate),
         __doc__="""A slot to set this adapter's spatial parameter --- with
-        respect to which a circuit's spatial phenomena can be measured. """
-    )
+        respect to which a circuit's spatial phenomena can be measured. """)
+    
     sample_size = Field(
         __name__="sample_size",
         __type__=int,
-        __doc__="""Number of samples to be drawn for each statistical measurement."""
-    )
+        __doc__="""Number of samples to be drawn for each statistical measurement.""")
+    
     model_label = Field(
         __name__="model_label",
         __type__=str,
-        __doc__="""Label to be used in reporting."""
-    )
+        __doc__="""Label to be used in reporting.""")
+    
     def __init__(self, brain_region,
                  circuit_build,
                  spatial_random_variate = None,
@@ -126,15 +127,16 @@ class BlueBrainModelAdapter(WithFCA):
     def statistical_measurement(self, circuit, method, by, *args, **kwargs):
         """..."""
         random_variate\
-            = self.spatial_random_variate(circuit,
-                                          self.circuit_build,
-                                          self.brain_region)\
+            = self.spatial_random_variate(
+                circuit,
+                self.circuit_build,
+                self.brain_region)\
                   .given(by)
-        return self.filled(
-            StatisticalMeasurement(
+        sm = StatisticalMeasurement(
                 random_variate=random_variate,
-                sample_size=self.sample_size
-            )(method, *args, **kwargs),
+                sample_size=self.sample_size)
+        return self.filled(
+            sm(method, *args, **kwargs),
             by=by)
 
     def spatial_measurement(self, method, circuit, by, *args, **kwargs):

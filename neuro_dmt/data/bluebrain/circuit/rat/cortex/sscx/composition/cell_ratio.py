@@ -22,8 +22,7 @@ class RatSomatosensoryCortexCellRatioData(
                 group="composition"),
             *args, **kwargs)
 
-    @classmethod
-    def get_reference_datasets(cls, reference_data_dir):
+    def get_reference_datasets(self, reference_data_dir):
         ghobril2012  = datasets.load(reference_data_dir, 'Ghobril2012')
         lefort2009   = datasets.load(reference_data_dir, 'Lefort2009')
         beaulieu1992 = datasets.load(reference_data_dir, 'Beaulieu1992')
@@ -38,18 +37,18 @@ class RatSomatosensoryCortexCellRatioData(
         return Record(
             primary=lefort2009.short_name,
             datasets={
-                ghobril2012.short_name: cls.with_metadata(
+                ghobril2012.short_name: self.with_metadata(
                     ghobril2012,
-                    cls.summarized(
+                    self.summarized(
                         ghobril2012.ratio_means,
                         ghobril2012.ratio_stds) ),
-                lefort2009.short_name: cls.with_metadata(
+                lefort2009.short_name: self.with_metadata(
                     lefort2009,
-                    cls.summarized(
+                    self.summarized(
                         lefort2009.ratio_means,
                         lefort2009.ratio_stds) ),
-                beaulieu1992.short_name: cls.with_metadata(
+                beaulieu1992.short_name: self.with_metadata(
                     beaulieu1992,
-                    cls.summarized(
+                    self.summarized(
                         beaulieu1992.ratio_means,
                         beaulieu1992.ratio_stds) ) } )
