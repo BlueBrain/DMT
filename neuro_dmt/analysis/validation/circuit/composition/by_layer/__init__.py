@@ -10,11 +10,12 @@ from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import  document_fields
 from dmt.vtk.measurement.parameter.group import ParameterGroup
-from neuro_dmt.analysis.validation.circuit.composition.by_layer.validation_report \
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.report \
     import ValidationReport
 from neuro_dmt.analysis.circuit.composition import SpatialCompositionAnalysis
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
+
 
 @document_fields
 class ByLayerCompositionValidation(
@@ -41,16 +42,6 @@ class ByLayerCompositionValidation(
         super().__init__(
             phenomenon,
             *args, **kwargs)
-
-    def get_label(self, model):
-        """Get a label for the circuit model. Will be useful in reporting."""
-        return self.adapter.get_label(model)
-
-    @property
-    @abstractmethod
-    def plotting_parameter(self):
-        """which parameter to plot against?"""
-        pass
 
     def plot(self,
         model_measurement,
@@ -106,11 +97,6 @@ class ByLayerCompositionValidation(
             is_fail=verdict == Verdict.FAIL,
             pvalue=pval,
             figure=figure)
-
-    @property
-    def spatial_parameter_group(self):
-        """..."""
-        return ParameterGroup(tuple(self.spatial_parameters))
 
 
 from neuro_dmt.analysis.validation.circuit.composition.by_layer.\

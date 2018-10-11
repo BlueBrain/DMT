@@ -80,7 +80,7 @@ class ValidationReport(Report):
                     os.path.join(
                         os.path.dirname(__file__),
                         "templates",
-                        "validation_with_plot.cheetah") )
+                        "report.cheetah") )
             with open(template_loc, 'r') as f:
                 self.template = f.read()
                          

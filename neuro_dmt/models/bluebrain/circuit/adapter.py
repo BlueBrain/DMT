@@ -146,12 +146,18 @@ class BlueBrainModelAdapter(WithFCA):
             sampled_box_shape=self._sampled_box_shape,
             *args, **kwargs)
 
-    def get_cell_density(self, circuit, by):
+    def get_cell_density(self,
+            circuit,
+            spatial_parameters,
+            given={}):
+        """..."""
         return self.spatial_measurement(
             method=composition.CellDensity(circuit),
             circuit=circuit,
-            by=by)
-                                        
+            by=spatial_parameters,
+            given=given)
+        
+        
     def get_cell_ratio(self, circuit, by):
         """..."""
         return self.spatial_measurement(
