@@ -14,14 +14,11 @@ class ComparisonPlot(Plot):
         data :: Either[ DataFrame[mean :: Double, std  :: Double],
         ~               DataFrame[mean :: Double] ]
         """
-        self._data_record = data
-        self._data = data.data
-        self._label = data.label
         self._comparison_level = kwargs.get("level", None)
         self._comparison_data = kwargs.get("comparison_data", None)
         self._given_vars = kwargs.get("given", None)
         self._compared_values = kwargs.get("compared_values", None)
-        super(ComparisonPlot, self).__init__(*args, **kwargs)
+        super().__init__(data, *args, **kwargs)
 
     def against(self, datasets, given=()):
         """Compare data against..."""

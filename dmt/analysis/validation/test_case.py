@@ -11,6 +11,7 @@ from abc import abstractmethod
 import os
 import numpy as np
 import pandas as pd
+from dmt.analysis import OfSinglePhenomenon
 from dmt.model import Callable, AIBase
 from dmt.data import ReferenceData
 from dmt.vtk.utils.collections import Record
@@ -56,6 +57,7 @@ class ValidationTestCase:
 
     def __init__(self, *args, **kwargs):
         """..."""
+        self.analysis_type = "validation"
         super().__init__(*args, **kwargs)
 
 
@@ -214,52 +216,20 @@ class ValidationTestCase:
 
 @document_fields
 class SinglePhenomenonValidation(
+        OfSinglePhenomenon,
         ValidationTestCase):
     """Validation of a single phenomenon.
     A single phenomenon will be measured for a model, and compared against
     validation data. P-value will be used as a validation criterion."""
-
-    phenomenon = Field(
-        __name__="phenomenon",
-        __type__=Phenomenon,
-        __doc__="""A SinglePhenomenonValidation can have only one Phenomenon
-        that is measured, validated, and reported.""")
 
     def __init__(self,
             phenomenon,
             *args, **kwargs):
         """Validated phenomenon must be set by the deriving class."""
         super().__init__(
-            phenomenon=phenomenon,
-            phenomena={phenomenon},
+            phenomenon,
             analysis_type="validation",
             *args, **kwargs)
-
-    def _get_output_dir(self):
-        """..."""
-        try:
-            odp = self.output_dir_path
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "No 'output_dir_path'",
-                "\tAttributeError: {}".format(e))
-            odp = None
-
-        animal_region_path = os.path.join(
-            odp if odp else os.getcwd(),
-            "validation",
-            self.animal,
-            self.brain_region.label)
-
-        if not self.phenomenon.group:
-            return os.path.join(
-                animal_region_path,
-                self.phenomenon.label)
-        return os.path.join(
-            animal_region_path,
-            self.phenomenon.group,
-            self.phenomenon.label)
 
     def plot(self, *args, **kwargs):
         """Not implemented by default,
@@ -267,28 +237,4 @@ class SinglePhenomenonValidation(
         either so that you can actually create an instance without
         overriding."""
         raise NotImplementedError()
-
-    def get_caption(self, model_measurement):
-        """Caption that will be shown below the validation plot.
-
-        Implementation Notes
-        ------------------------------------------------------------------------
-        Measurement method must be known to produce an informative caption.
-        However this information is available only to the model adapter, and
-        not to the class representing the validation itself. The author of the
-        concrete implementation of SinglePhenomenonValidation will have to
-        determine where to get the information required to produce a caption.
-
-        Parameters
-        ------------------------------------------------------------------------
-        model_measurement :: Record(phenomenon :: Phenomenon#that was measured,
-        ~                           label :: String,#used to label the measureemnt
-        ~                           region_label :: String,#for regions measured
-        ~                           data :: DataFrame["region", "mean", "std"],
-        ~                           method :: String #how measurement was made.])
-        """
-        return "{} is plotted. {}\n Method: {}"\
-            .format(self.phenomenon.title,
-                    self.phenomenon.description,
-                    model_measurement.method)
 

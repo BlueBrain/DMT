@@ -1,6 +1,7 @@
 """General utilities."""
 import collections
 import time
+from dmt.vtk.utils.collections import Record
 
 def isabstract(cls):
     """is the class cls abstract?"""
@@ -28,17 +29,20 @@ def grouped_label(*args):
 
 get_label = grouped_label #an alias
 
-def timestamp(now=None):
+def timestamp(now=None, sep=None):
     """stamp for saving..."""
     def two_char(s):
         """Make string 's' at least two characters long."""
         s = str(s)
         return s if len(s) >= 2 else ("0{}".format(s) if len(s) == 1 else "00")
     now = now if now else time.localtime()
-    return "{}{}{}-{}{}{}".format(
-        two_char(now.tm_year),
-        two_char(now.tm_mon),
-        two_char(now.tm_mday),
-        two_char(now.tm_hour),
-        two_char(now.tm_min),
-        two_char(now.tm_sec))
+    ts = Record(
+        day="{}{}{}".format(
+            two_char(now.tm_year),
+            two_char(now.tm_mon),
+            two_char(now.tm_mday)),
+        time="{}{}{}".format(
+            two_char(now.tm_hour),
+            two_char(now.tm_min),
+            two_char(now.tm_sec)) )
+    return "{}{}{}".format(ts.day, sep, ts.time) if sep else ts

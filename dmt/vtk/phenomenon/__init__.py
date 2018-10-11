@@ -2,6 +2,7 @@
 an observable fact or event. A phenomenon may be described by a system of
 information related to matter, energy, or spacetime"""
 
+import os
 from dmt.vtk.utils.string_utils import make_name, make_label
 from dmt.vtk.utils.logging import Logger, with_logging
 
@@ -130,3 +131,25 @@ class Phenomenon:
 
         return cls.__registered_instances[label].values()
 
+    @classmethod
+    def group_label(cls, phenomenon, *phenomenons):
+        """Group label for a set of Phenomenons"""
+        group = phenomenon.group if phenomenon.group else "ungrouped"
+        label = phenomenon.label
+        if not phenomenons:
+            return (group, label) 
+
+        tail_group, tail_label = cls.group_label(*phenomenons)
+        return ('_'.join((group, *tail_group)),
+                '_'.join((label, *tail_label)))
+
+    @staticmethod
+    def sorted(phenomenons):
+        """..."""
+        return sorted(phenomenons, key=lambda p: p.label)
+
+    @staticmethod
+    def make_description(phenomenons):
+        """..."""
+        return '\n'.join([
+            phenomenons.description for phenomenon in phenomenons])

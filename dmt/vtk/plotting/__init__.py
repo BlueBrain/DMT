@@ -33,10 +33,13 @@ class Plot(ABC):
     All common plotting code will be listed here, as well as
     the interface explosed by all concrete implementations of Plot."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, *args, **kwargs):
         """Initialize attributes that are common to all
         Plot concrete implementations.
         """
+        self._data_record = data
+        self._data = data.data
+        self._label = data.label
         print("initialize plotter {} with kwargs {}".format(self, kwargs))
         self.title = kwargs.get('title', self.__class__.__name__)
         self.xlabel = kwargs.get('xlabel', 'X')
