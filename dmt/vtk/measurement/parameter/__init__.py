@@ -9,13 +9,15 @@ from abc import ABC, abstractmethod
 import collections
 import numpy as np
 import pandas as pd
-from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.utils.collections import Record, take
 from dmt.vtk.utils.pandas import flatten, level_values
 from dmt.vtk.utils.logging import with_logging, Logger
 
 @with_logging(Logger.level.STUDY)
-class Parameter(ABC):
+class Parameter(
+        WithFCA,
+        ABC):
     """Base class to define a measurement parameter.
     While a Parameter can be defined theoretically, we will be
     interested Parameters in the context of a particular model.
@@ -23,13 +25,13 @@ class Parameter(ABC):
     label = Field(
         __name__ = "label",
         __type__ = str,
-        __doc__  = """A short name for this Parameter -- no spaces."""
-    )
+        __doc__  = """A short name for this Parameter -- no spaces.""")
+    
     value_type = Field(
         __name__ = "value_type",
         __type__ = type,
-        __doc__  = """Type of the values assumed by this Parameter."""
-    )
+        __doc__  = """Type of the values assumed by this Parameter.""")
+    
     @abstractmethod
     def values(self, *args, **kwargs):
         """Values assumed by the model.

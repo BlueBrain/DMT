@@ -1,5 +1,7 @@
 """..."""
-from neuro_dmt.measurement.parameter import CorticalLayer, HippocampalLayer
+from dmt.vtk.utils.descriptor import Field, WithFCA
+from neuro_dmt.measurement.parameter\
+    import LayerIndex, CorticalLayer, HippocampalLayer
 
 class MeasureByCorticalLayer:
     """Mixin for validations of phenomena that are measured

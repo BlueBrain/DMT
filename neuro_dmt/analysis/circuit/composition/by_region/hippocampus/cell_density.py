@@ -1,42 +1,40 @@
-"""Validation of cell density by layer."""
+"""By layer analysis of the cell density of a Hippocampus circuit."""
+
 from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.analysis.validation.circuit.composition.by_layer \
-    import ByLayerCompositionValidation
+from neuro_dmt.analysis.circuit.composition.by_layer\
+    import ByLayerCompositionAnalysis
+from neuro_dmt.utils.enums import Cell
 
-
-class CellDensityValidation(
-        ByLayerCompositionValidation):
-    """Cell density validation is a 'unit' test case for a circuit model.
-    Cell density is a spatial composition phenomenon.
-    We assume that all measurements are made by region in the brain,
-    and require that from measurements made on the circuit model."""
+class CellCompositionAnalysis(
+        ByLayerCompositionAnalysis):
+    """Analysis of a circuit's cell composition."""
 
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
             Phenomenon(
-                "Cell Density",
-                "Count of cells in a unit volume",
+                "Cell Compsition",
+                "Cell counts in a unit volume.",
                 group="composition"),
             *args, **kwargs)
 
     class AdapterInterface(Interface):
-        """All methods listed here must be implemented by an adapter for this
-        interface.
-        """
+        """Methods here will be used to define this Analysis'
+        measurement. All methods listed in this 'class AdapterInterface' 
+        must be implemented by the analyzed model's adapter."""
         def get_label(self, circuit_model):
-            """Get a label for the circuit model.
-
+            """Get a label for the cirucit model.
+            
             Parameters
             --------------------------------------------------------------------
-            circuit_model :: ModelCircuit
-            """
+            circuit_model :: ModelCircuit """
             pass
 
         def get_cell_density(self,
-                            circuit_model,
-                            spatial_parameters):
+                circuit_model,
+                spatial_parameters,
+                given={}):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -45,7 +43,7 @@ class CellDensityValidation(
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
             spatial_parameter :: SpatialParameter #that cell density be measured for
-            
+            given :: dict# providing conditions on cell properties
             Returns
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
@@ -63,6 +61,16 @@ class CellDensityValidation(
 
     def get_measurement(self, circuit_model, *args, **kwargs):
         """Get measurement of the phenomenon validated."""
+        ca1_density\
+            = self.adapter.get_cell_density(
+                circuit_model)
+        pc_density\
+            = self.adapter.get_cell_density(
+                circuit_model,
+                self.spatial_parameters,
+                morph_class="PC")
         return self.adapter.get_cell_density(
             circuit_model, self.spatial_parameters)
+
+
 

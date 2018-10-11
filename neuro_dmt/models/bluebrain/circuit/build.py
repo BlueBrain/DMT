@@ -19,8 +19,9 @@ class CircuitBuild(WithFCA, ABC):
         __name__="specializations",
         __type__=dict,
         __is_valid_value__=Field.typecheck.mapping(BrainRegion, BrainRegionSpecific),
-        __doc__="""Maps brain region to a code specialization for that brain region."""
-    )
+        __doc__="""Maps brain region to a code specialization
+        for that brain region.""")
+    
     def __init__(self, circuit, *args, **kwargs):
         """..."""
         self._circuit = circuit

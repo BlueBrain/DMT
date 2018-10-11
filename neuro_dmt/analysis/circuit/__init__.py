@@ -30,23 +30,13 @@ class BrainCircuitAnalysis(Analysis):
 
     def _get_output_dir(self):
         """..."""
-        try:
-            odp = self.output_dir_path
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "No 'output_dir_path'",
-                "\tAttributeError: {}".format(e))
-            odp = None
-
         animal_region_path\
             = os.path.join(
-                odp if odp else os.getcwd(),
-                "validation",
                 self.animal,
                 self.brain_region.label)
 
         return os.path.join(
-            animal_region_path,
-            super()._get_output_dir() )
+            super()._get_output_dir(),
+            animal_region_path)
+            
 

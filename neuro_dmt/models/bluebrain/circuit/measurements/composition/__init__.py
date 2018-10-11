@@ -1,5 +1,5 @@
 """Circuit composition measurements for Blue Brain circuits."""
-
+import numpy as np
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
@@ -15,10 +15,14 @@ class CellDensity(measurement.Method):
     def __init__(self, circuit):
         """..."""
         self.__circuit = circuit
+        self.__helper = BlueBrainModelHelper(circuit=circuit)
 
-    def __call__(self, roi):
+    def __call__(self, roi, **given):
         """Number of cells in a unit volume, [1000/mm^3]"""
-        return 1.e-3 * self.__circuit.stats.cell_density(roi)
+        cell_counts\
+            =  self.__helper.cell_counts(
+                roi, **given)
+        return 1.e6 * cell_counts / roi.volume
 
 
 class CellRatio(measurement.Method):

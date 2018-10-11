@@ -7,6 +7,8 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import  Field, document_fields
 from dmt.vtk.measurement.parameter.group import ParameterGroup
 from neuro_dmt.analysis.circuit.composition import SpatialCompositionAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.report\
+    import AnalysisReport
 
 
 @document_fields
@@ -25,7 +27,6 @@ class ByLayerCompositionAnalysis(
     def get_label(self, model):
         """Get a label for the circuit model. Will be useful in reporting"""
         return self.adapter.get_label(model)
-
 
     @property
     def plotting_parameter(self):

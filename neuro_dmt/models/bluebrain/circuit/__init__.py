@@ -188,39 +188,80 @@ class BlueBrainModelHelper:
         mtypes = self.cell_mtypes(target=target)
         return np.array(mtypes.index[mtypes[Cell.MTYPE] == mtype].values)
 
+    def cells_in_region(self, roi, properties=[]):
+        """..."""
+        p0, p1 = roi.bbox
+        query = {
+            Cell.X: (p0[0], p1[0]),
+            Cell.Y: (p0[1], p1[1]),
+            Cell.Z: (p0[2], p1[2])}
+        props = [Cell.X, Cell.Y, Cell.Z] + properties
+        return self._cells.get(query, props)
+
+    @staticmethod
+    def __xyz(df):
+        """..."""
+        return df[[Cell.X, Cell.Y, Cell.Z]].values
+
+    def cell_counts(self, roi, for_property=None, **given):
+        """..."""
+        if for_property:
+            return self.__cell_counts_for_property(
+                roi, for_property)
+        if not given:
+            return self.__cell_counts_for_property(
+                roi, _property=None)
+        properties = list(given.keys())
+        cells\
+            = self.cells_in_region(
+                roi, properties=properties)
+        for _property, value in given.items():
+            cells = cells[cells[_property] == value]
+        return np.count_nonzero(
+            roi.contains(
+                self.__xyz(
+                    cells)))
+
+    def __cell_counts_for_property(self, roi, _property):
+        """..."""
+        cells\
+            = self.cells_in_region(
+                roi,
+                properties=[] if not _property else [_property])
+        if not _property:
+            return np.count_nonzero(
+                roi.contains(
+                    self.__xyz(
+                        cells)))
+        property_values = cells[_property].unique()
+        data_series\
+            = pd.Series({
+                prop: np.count_nonzero(
+                    roi.contains(
+                        self.__xyz(
+                            cells[
+                                cells[_property] == prop])))
+                for prop in property_values})
+        data_series["TOT"] = data_series.sum()
+        return data_series
+
     def cell_counts_by_cell_type(self, roi):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
-        p0, p1 = roi.bbox
-        query = {Cell.X: (p0[0], p1[0]),
-                 Cell.Y: (p0[1], p1[1]),
-                 Cell.Z: (p0[2], p1[2])}
-        props = [Cell.X, Cell.Y, Cell.Z, Cell.SYNAPSE_CLASS]
-        cells = self._cells.get(query, props)
-        cells_inh = cells[cells.synapse_class == "INH"]
-        cells_exc = cells[cells.synapse_class == "EXC"]
+        return self.cell_counts(roi, _property=Cell.SYNAPSE_CLASS)
 
-        inh_in_roi = roi.contains(cells_inh[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_inh_count = np.count_nonzero(inh_in_roi)
+    def cell_counts_by_synapse_class(self, roi):
+        """alias..."""
+        return self.cell_counts(roi, _property=Cell.SYNAPSE_CLASS)
 
-        exc_in_roi = roi.contains(cells_exc[[Cell.X, Cell.Y, Cell.Z]].values)
-        roi_exc_count = np.count_nonzero(exc_in_roi)
-
-        return pd.Series({"INH": roi_inh_count,
-                          "EXC": roi_exc_count,
-                          "TOT": roi_exc_count + roi_inh_count})
-
-    def cell_counts(self, roi):
-        """Alias, for compatibility. Remember to remove..."""
-        return self.cell_counts_by_cell_type(roi)
+    def cell_counts_by_morph_class(self, roi):
+        """Counts of inhibitory and excitatory cells, in a region of interest,
+        as a pandas Series."""
+        return self.cell_counts(roi, _property=Cell.MORPH_CLASS)
 
     def cell_counts_by_mtype(self, roi):
-        p0, p1 = roi.bbox
-        q = {Cell.X: (p0[0], p1[0]),
-             Cell.Y: (p0[1], p1[1]),
-             Cell.Z: (p0[2], p1[2])}
-        cells = self._cells.get(q, properties=[Cell.MTYPE])
-        return cells.mtype.value_counts()
+        """..."""
+        return self.cell_counts(roi, _property=Cell.MTYPE)
 
     def cell_counts_by_morphology(self, roi):
         mtcounts = self.cell_counts_by_mtype(roi)
