@@ -1,4 +1,7 @@
-"""Utilities for circuit composition by layer."""
+"""Utilities for circuit composition by layer.
+Validations defined here, (module 'by_layer') apply to any brain region
+that has layers."""
+
 from abc import abstractmethod
 import os
 import pandas as pd
@@ -9,9 +12,10 @@ from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import  document_fields
 from dmt.vtk.utils.exceptions import ValueNotSetError
-from neuro_dmt.validations.circuit.composition.by_layer.validation_report \
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.validation_report \
     import ValidationReport
-from neuro_dmt.validations.circuit.composition import SpatialCompositionAnalysis
+from neuro_dmt.analysis.validation.circuit.composition\
+    import SpatialCompositionAnalysis
 from dmt.vtk.measurement.parameter.group import ParameterGroup
 from neuro_dmt.measurement.parameter\
     import LayerIndex, CorticalLayer, HippocampalLayer
@@ -118,13 +122,13 @@ class ByLayerCompositionValidation(
         return ParameterGroup(tuple(self.spatial_parameters))
 
 
-from neuro_dmt.validations.circuit.composition.by_layer.cell_density \
-    import CellDensityValidation
-from neuro_dmt.validations.circuit.composition.by_layer.cell_ratio \
-    import CellRatioValidation
-from neuro_dmt.validations.circuit.composition.by_layer.inhibitory_synapse_density \
-    import InhibitorySynapseDensityValidation
-from neuro_dmt.validations.circuit.composition.by_layer.synapse_density \
-    import SynapseDensityValidation
-from neuro_dmt.validations.circuit.composition.by_layer.soma_volume_fraction \
-    import SomaVolumeFractionValidation
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+    cell_density import CellDensityValidation
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+    cell_ratio import CellRatioValidation
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+    inhibitory_synapse_density import InhibitorySynapseDensityValidation
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+    synapse_density import SynapseDensityValidation
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+    soma_volume_fraction import SomaVolumeFractionValidation

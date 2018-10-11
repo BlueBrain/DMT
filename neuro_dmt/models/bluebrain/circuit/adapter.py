@@ -23,13 +23,13 @@ from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
 from dmt.vtk.utils.logging import Logger, with_logging
-from neuro_dmt.validations.circuit.composition.by_layer.\
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
-from neuro_dmt.validations.circuit.composition.by_layer.\
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
     cell_ratio import CellRatioValidation
-from neuro_dmt.validations.circuit.composition.by_layer.\
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityValidation
-from neuro_dmt.validations.circuit.composition.by_layer.\
+from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
     synapse_density import SynapseDensityValidation
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit \

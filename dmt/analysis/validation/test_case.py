@@ -54,31 +54,10 @@ class ValidationTestCase:
         __type__=dict,
         __doc__="A dict containing customization of the plot.")
 
-    _validations = {}
-
-    @classmethod
-    def add_validation(cls, v):
-        """add validation"""
-        f = v.phenomenon.label 
-        if f not in cls._validations:
-            cls._validations[f] = {}
-
-        p = v.spatial_parameter_group.label
-        if p not in cls._validations[f]:
-            cls._validations[f][p] = v
-
-        return cls._validations
-
-    @classmethod
-    def get_validation(cls, phenomenon, parameter):
-        """..."""
-        return cls._validations.get(phenomenon.label, {})\
-                               .get(parameter.label, None)
- 
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
-        self.add_validation(self)
+
 
     @property
     def _reference_data(self):

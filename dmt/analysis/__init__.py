@@ -10,6 +10,32 @@ from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils import utils
 
+class Registry:
+    """Store your subclass instances"""
+    def __init__(self, cls, *args, **kwargs):
+        """..."""
+        self.register_type = cls
+        self.__known_instances = []
+        super().__init__(*args, **kwargs)
+
+    def insert(self, instance):
+        """Insert an subclass instance"""
+        if not isinstance(instance, self.register_type):
+            return None
+        self.__known_instances.append(instance)
+        
+    def find(self, **kwargs):
+        """..."""
+        def __satisfies(instance):
+            """..."""
+            return all(
+                hasattr(instance, attr) and getattr(instance, attr) == value
+                for attr, value in kwargs.items() )
+        return [
+            instance for instance in self.__known_instances
+            if __satisfies(instance)]
+
+
 @with_logging(Logger.level.STUDY)
 @document_fields
 class Analysis(WithFCA, AIBase):
@@ -57,6 +83,8 @@ class Analysis(WithFCA, AIBase):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
+        self.registry = Registry(Analysis)
+        self.registry.insert(self)
 
     def _get_output_dir(self):
         """..."""

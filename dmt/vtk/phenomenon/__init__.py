@@ -2,9 +2,10 @@
 an observable fact or event. A phenomenon may be described by a system of
 information related to matter, energy, or spacetime"""
 
-import hashlib
 from dmt.vtk.utils.string_utils import make_name, make_label
+from dmt.vtk.utils.logging import Logger, with_logging
 
+@with_logging(Logger.level.STUDY)
 class Phenomenon:
     """Phenomenon is an observable fact or event, that can be measured.
 
@@ -19,28 +20,30 @@ class Phenomenon:
 
     def __new__(cls, name, description, *args, **kwargs):
         unique_description = make_name(description).encode()
-        description_hash = hashlib.sha1(unique_description).hexdigest()
+        description_hash = hash(unique_description)
         label = make_label(name)
 
         if label not in Phenomenon.__registered_instances:
             cls.__registered_instances[label] = {}
         if description_hash not in cls.__registered_instances[label]:
             cls.__registered_instances[label] = {
-                description_hash: super(Phenomenon, cls).__new__(cls)
-            }
+                description_hash: super(Phenomenon, cls).__new__(cls) }
         return cls.__registered_instances[label][description_hash]
 
-    def __init__(self, name, description, group=None):
+    def __init__(self, name, description, group=None, *args, **kwargs):
         self.name = name
         self.description = description
-        self.group = group if group else None
+        if group:
+            self._group = group
         self.__model_registry = [] #models known to measure this phenomenon.
-        self.__data_object_registry = [] #data providing a measurement of this phenomenon.
+        self.__reference_data_registry = [] #data providing a measurement of this phenomenon.
+
+        super().__init__(*args, **kwargs)
 
     @property
     def name(self):
         """name of this phenomenon."""
-        return self.__name
+        return make_name(self.__name)
 
     @name.setter
     def name(self, value):
@@ -51,6 +54,21 @@ class Phenomenon:
         self.__name = value
             
     @property
+    def group(self):
+        """..."""
+        try:
+            return self._group
+        except AttributeError as e:
+            self.logger.alert(
+                "No 'group' set for {} instance.".format(
+                    self.__class__.__name__),
+                "Setting it to its label {}".format(
+                    self.label) )
+            self._group = self.label
+
+        return self.group
+
+    @property
     def title(self):
         """Another (read-only) word for 'name'."""
         return self.name
@@ -60,6 +78,16 @@ class Phenomenon:
         """label that can be used as a header entry
         (column name in a data-frame)"""
         return make_label(self.name)
+
+    def __hash__(self):
+        """All Phenomenon with the same label are equivalent"""
+        return hash("{} {}".format(
+            self.label, self.description))
+
+    def __eq__(self, other):
+        """..."""
+        return (self.label == other.label
+                and make_name(self.description) == make_name(other.description))
     
     @property
     def description(self):
@@ -81,31 +109,15 @@ class Phenomenon:
             .format(self.name, self.description)
         return "{}\tgroup: {}\n".format(r, self.group) if self.group else r
 
-    def register(self, measurable_system):
-        """Register the measurable system.
+    def register_model(self, model):
+        """..."""
+        self.__model_registry.append(model)
+        return self.__model_registry
 
-        Parameters
-        ----------
-        @measureable_system :: MeasurableSystem
-
-        a measurable system is either a Model or a DataObject that provides a
-        measurement of this phenomenon.
-
-        Status
-        ------
-        A prototype (20180709) for now.
-        A working implementation will depend on how  and where models/data
-        are stored."""
-
-        uri = measurable_system.uri
-        if isinstance(measurable_system, Model):
-            self.__model_registry.append(uri)
-            return len(self.__model_registry)
-        elif isinstance(measurable_system, DataObject):
-            self.__data_object_registry.append(uri)
-            return len(self.__data_object_registry)
-        else:
-            return -1
+    def register_data(self, data):
+        """..."""
+        self.__reference_data_registry.append(data)
+        return self.__reference_data_registry
 
     @classmethod
     def get_known_phenomena(cls, name=None):
