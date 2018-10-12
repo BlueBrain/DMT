@@ -2,7 +2,6 @@
 import numpy as np
 from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.measurement.parameter import CorticalLayer
 from neuro_dmt.models.bluebrain.circuit.adapter import BlueBrainModelAdapter
 
 class SomatosensoryCortexCompositionValidation:
@@ -17,7 +16,8 @@ class SomatosensoryCortexCompositionValidation:
             *args, **kwargs):
         """..."""
         model_label\
-            = "Blue Brain {} Circuit for SSCx".format(circuit_build.label)
+            = "Blue Brain {} Circuit for SSCx".format(
+                circuit_build.label)
         super().__init__(
             reference_data=reference_data,
             brain_region=brain_regions.sscx,

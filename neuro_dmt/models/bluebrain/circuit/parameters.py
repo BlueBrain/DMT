@@ -14,19 +14,25 @@ from dmt.vtk.utils.descriptor import Field, WithFCA
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
+from neuro_dmt.measurement.parameter import HyperColumn
 
 
 class NamedTarget(FiniteValuedParameter):
     """..."""
     value_type = str
     label = "$target"
-    def __init__(self, *args, **kwargs):
-        self.__values = ["mc{}_Column".format(n) for n in range(1, 7)]
+    def __init__(self,
+            *args, **kwargs):
+        self.__values=[
+            "mc{}_Column".format(n) for n in range(1, 7)]
         super(NamedTarget, self).__init__(
-            value_order = dict(zip(self.__values, range(len(self.__values)))),
-            value_repr = dict(zip(self.__values, self.__values)),
-            *args, **kwargs
-        )
+            value_order=dict(zip(
+                self.__values,
+                range(len(self.__values)))),
+            value_repr=dict(zip(
+                self.__values,
+                self.__values)),
+            *args, **kwargs)
 
 
 class Mtype(ConditionedRandomVariate):

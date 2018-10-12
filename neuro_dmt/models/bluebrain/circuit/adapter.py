@@ -139,7 +139,11 @@ class BlueBrainModelAdapter(WithFCA):
             sm(method, *args, **kwargs),
             by=by)
 
-    def spatial_measurement(self, method, circuit, by, *args, **kwargs):
+    def spatial_measurement(self,
+            method,
+            circuit,
+            by,
+            *args, **kwargs):
         """..."""
         return self.statistical_measurement(
             circuit, method, by,
@@ -157,22 +161,27 @@ class BlueBrainModelAdapter(WithFCA):
             by=spatial_parameters,
             given=given)
         
-        
-    def get_cell_ratio(self, circuit, by):
+    def get_cell_ratio(self,
+            circuit,
+            by):
         """..."""
         return self.spatial_measurement(
             method=composition.CellRatio(circuit),
             circuit=circuit,
             by=by)
 
-    def get_inhibitory_synapse_density(self, circuit, by):
+    def get_inhibitory_synapse_density(self,
+            circuit,
+            by):
         """Implement this!"""
         return self.spatial_measurement(
             method=composition.InhibitorySynapseDensity(circuit),
             circuit=circuit,
             by=by)
 
-    def get_synapse_density(self, circuit, by):
+    def get_synapse_density(self,
+            circuit,
+            by):
         """Implement this!"""
         return self.spatial_measurement(
             method=composition.ExtrinsicIntrinsicSynapseDensity(circuit),

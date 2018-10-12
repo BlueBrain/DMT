@@ -32,9 +32,9 @@ class CellCompositionAnalysis(
             pass
 
         def get_cell_density(self,
-                             circuit_model,
-                             spatial_parameters,
-                             given={}):
+                circuit_model,
+                spatial_parameters,
+                given={}):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -61,6 +61,9 @@ class CellCompositionAnalysis(
 
     def get_measurement(self, circuit_model, *args, **kwargs):
         """Get measurement of the phenomenon validated."""
+        ca1_density\
+            = self.adapter.get_cell_density(
+                circuit_model)
         pc_density\
             = self.adapter.get_cell_density(
                 circuit_model,

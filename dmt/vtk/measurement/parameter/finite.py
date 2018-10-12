@@ -13,22 +13,17 @@ from dmt.vtk.measurement.condition import ConditionGenerator
 from dmt.vtk.utils.logging import Logger, with_logging
 
 @with_logging(Logger.level.STUDY)
-class FiniteValuedParameter(Parameter, WithFCA):
+class FiniteValuedParameter(
+        Parameter):
     """If the number of all possible values of a parameter is finite,
     we can require certain finite data representations of its attributes,
     and adapt Parameter abstractmethods."""
 
-    values_assumed = Field(
-        __name__ = "values_assumed",
-        __type__ = set,
+    values = Field(
+        __name__ = "values",
+        __type__ = list,
         __is_valid__= Field.typecheck.collection("value_type"),
-        __doc__="Values assumed by this FiniteValuedParameter.")
-    
-    value_order = Field(
-        __name__ = "value_order",
-        __type__ = dict,
-        __is_valid__=Field.typecheck.mapping("value_type", int),
-        __doc__="""A dict mapping values to their order.""")
+        __doc__="Sorted values assumed by this FiniteValuedParameter.")
     
     value_repr = Field(
         __name__ = "value_repr",
@@ -39,16 +34,25 @@ class FiniteValuedParameter(Parameter, WithFCA):
         may not pass this value to this base class' initializer. There will be
         a default implementation.""")
     
-    def __init__(self, values=set(), *args, **kwargs):
-        """..."""
-        super().__init__(values_assumed=values, *args, **kwargs)
+    def __init__(self, value_type, *args, **kwargs):
+        """You need to pass a value_type here, and assign it as an attribute.
+        This is necessary (as opposed to other fields) because typecheck of
+        Field 'values' requires the instance to have this Field assigned.""" 
+        self.value_type\
+            = value_type
+        self._value_order = None
+        super().__init__(
+            *args, **kwargs)
+
 
     @property
-    def values(self):
+    def value_order(self):
         """..."""
-        if not self.values_assumed:
-            self.values_assumed = set(self.value_order.keys())
-        return self.values_assumed.intersection(self.value_order.keys())
+        if self._value_order is None:
+            self._value_order\
+                = dict(zip(
+                    self.values, range(len(self.values))))
+        return self._value_order
 
     def is_valid(self, value):
         """..."""
@@ -156,7 +160,7 @@ class FiniteValuedParameter(Parameter, WithFCA):
                              .format(dataframe.index.name, self.label))
                                                   
         IndexType = type(dataframe.index)
-        missing = list(self.values - set(dataframe.index))
+        missing = list(set(self.values) - set(dataframe.index))
         self.logger.debug("missing values in the index {}".format(missing))
         missing_df = pd.DataFrame(len(missing) * [[0., 0.]],
                                   index=IndexType(missing,

@@ -41,8 +41,8 @@ class BarPlotComparison(ComparisonPlot):
             "{} instance will compare data:".format(self.__class__.__name__),
             "{}".format(self._data),
             "against validation data: ",
-            "{}".format(self._comparison_data)
-        )
+            "{}".format(self._comparison_data))
+        
         compdata = self._data
         datasets = self._comparison_data
         compared_values = self.compared_values
@@ -60,6 +60,7 @@ class BarPlotComparison(ComparisonPlot):
         x0 = x - (1 + nbar / 2) * width
 
         def _plot_index(i, df, label):
+            """..."""
             return plt.bar(x0 + index * width,
                            df["mean"].values,
                            width,
