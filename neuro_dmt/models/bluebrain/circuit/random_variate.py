@@ -21,7 +21,9 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 
 
-class CircuitRandomVariate(ConditionedRandomVariate):
+@with_logging(Logger.level.STUDY)
+class CircuitRandomVariate(
+        ConditionedRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
     brain_region = Field.Optional(
         __name__="brain_region",
@@ -34,27 +36,42 @@ class CircuitRandomVariate(ConditionedRandomVariate):
         __doc__="""Provides circuit build specific attribute specializations.
         Ideally we should be able to get this information from  'circuit'.""")
     
-    def __init__(self, circuit, circuit_build, brain_region,
-                 condition_type=Record(),
-                 *args, **kwargs):
+    def __init__(self,
+            circuit,
+            circuit_build,
+            brain_region,
+            condition_type=Record(),
+            *args, **kwargs):
         """...
         Parameters
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
         brain_region :: BrainRegion #for brain region specific methods
         """
-        self._circuit = circuit
-        self.circuit_build = circuit_build(circuit)
-        self.brain_region = brain_region
-        self._helper = BlueBrainModelHelper(circuit=circuit)
-        super(CircuitRandomVariate, self)\
-            .__init__(condition_type=condition_type,
-                      *args, **kwargs)
+        self._circuit\
+            = circuit
+        self.circuit_build\
+            = circuit_build(
+                circuit)
+        self.brain_region\
+            = brain_region
+        self._helper\
+            = BlueBrainModelHelper(
+                circuit=circuit)
+        super().__init__(
+            condition_type=condition_type,
+            *args, **kwargs)
 
-    def given(self, *conditioning_vars):
+    def given(self,
+            *conditioning_vars):
         """Set the condition type."""
-        return super(CircuitRandomVariate, self)\
-            .given(*conditioning_vars, reset_condition_type=True)
+        self.__class__.logger.debug(
+            self.__class__.logger.get_source_info(),
+            """CircuitRandomVariate with conditioning vars {}"""\
+            .format(conditioning_vars))
+        return ConditionedRandomVariate.given(self,
+            *conditioning_vars,
+            reset_condition_type=True)
 
     @property
     def circuit(self):
@@ -66,14 +83,32 @@ class CircuitRandomVariate(ConditionedRandomVariate):
         """..."""
         return self._helper
 
+    def cell_query(self,
+            condition,
+            *args, **kwargs):
+        """...redirect to brain region.
+        This allows us to not have to subclass from RandomPosition and 
+        BrainRegionSpecific mixins. We can redirect to 'self.brain_region'.
+        We could """
+        return self.brain_region\
+                   .cell_query(
+                       condition,
+                       *args, **kwargs)
 
-class RandomPosition(CircuitRandomVariate):
+
+
+class RandomPosition(
+        CircuitRandomVariate):
     """Generate random positions in the circuit region."""
     label = "position"
     value_type = np.ndarray #dimension 3
 
-    def __init__(self, circuit, circuit_build, brain_region,
-                 offset=50., *args, **kwargs):
+    def __init__(self,
+            circuit,
+            circuit_build,
+            brain_region,
+            offset=50.,
+            *args, **kwargs):
         """...
         Parameters
         ------------------------------------------------------------------------
@@ -81,99 +116,193 @@ class RandomPosition(CircuitRandomVariate):
         circuit_build :: type #<: CircuitBuild
         """
         self.offset = offset
-        super(RandomPosition, self)\
-            .__init__(circuit, circuit_build, brain_region, *args, **kwargs)
-
-    def cell_query(self, condition, *args, **kwargs):
-        """...redirect to brain region.
-        This allows us to not have to subclass from RandomPosition and 
-        BrainRegionSpecific mixins. We can redirect to 'self.brain_region'.
-        We could """
-        return self.brain_region.cell_query(condition, *args, **kwargs)
-
-    def __call__(self, condition, *args, **kwargs):
-        """..."""
-        return self.circuit_build.random_position(
-            self.brain_region,
-            condition,
-            *args, **kwargs)
-                                                  
-
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [[value[0], value[1], value[2]]],
-            columns=pd.Index(["X", "Y", "Z"], name="axis"),
-            index=condition.index
-        )
-
-
-class RandomRegionOfInterest(RandomPosition):
-    """Random ROIs"""
-    value_type = ROI
-    label = "roi"
-
-    def __init__(self, circuit, circuit_build, brain_region,
-                 sampled_box_shape=100.*np.ones(3),
-                 *args, **kwargs):
-        """..."""
-        self.sampled_box_shape = sampled_box_shape
         super().__init__(
             circuit,
             circuit_build,
             brain_region,
-            offset=sampled_box_shape/2.,
             *args, **kwargs)
 
-    def __call__(self, condition, *args, **kwargs):
+    def __call__(self,
+            condition,
+            *args, **kwargs):
         """..."""
-        half_box = self.sampled_box_shape / 2.
-        position = super(RandomRegionOfInterest, self)\
-                    .__call__(condition, *args, **kwargs)
-        return Cuboid(position - half_box, position + half_box)
-
+        return self.circuit_build\
+                   .random_position(
+                       self.brain_region,
+                       condition,
+                       *args, **kwargs)
+                                                  
     def row(self, condition, value):
+        """..."""
+        return pd.DataFrame(
+            [[value[0], value[1], value[2]]],
+            columns=pd.Index(
+                ["X", "Y", "Z"],
+                name="axis"),
+            index=condition.index)
+
+
+class RandomCrossection(
+        RandomPosition):
+    """..."""
+    def __init__(self,
+            cicuit,
+            circuit_build,
+            brain_region,
+            offset=50.,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            circuit,
+            circuit_build,
+            brain_region,
+            offset=offset,
+            *args, **kwargs)
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """..."""
+        return self.circuit_build\
+                   .midplane_projection(
+                       super().__call__(
+                           condition,
+                           *args, **kwargs) )
+
+
+class RandomRegionOfInterest(
+        CircuitRandomVariate):
+    """Random ROIs"""
+    value_type = ROI
+    label = "roi"
+
+    def __init__(self,
+            circuit,
+            circuit_build,
+            brain_region,
+            sampled_box_shape=100.*np.ones(3),
+            *args, **kwargs):
+        """..."""
+        self.sampled_box_shape = sampled_box_shape
+        self.random_position\
+            = RandomPosition(
+                circuit,
+                circuit_build,
+                brain_region,
+                offset=sampled_box_shape/2.,
+                *args, **kwargs)
+        super().__init__(
+            circuit,
+            circuit_build,
+            brain_region,
+            *args, **kwargs)
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """..."""
+        half_box\
+            = self.sampled_box_shape / 2.
+        position\
+            = self.random_position(
+                condition,
+                *args, **kwargs)
+        return Cuboid(
+            position - half_box,
+            position + half_box)
+
+    def row(self,
+            condition,
+            value):
         """..."""
         return pd.DataFrame(
             [value],
             columns=[self.label],
-            index=condition.index
-        )
+            index=condition.index)
 
 
-class RandomBoxCorners(RandomRegionOfInterest):
+class RandomColumnOfInterest(
+        RandomRegionOfInterest):
+    """A random column of interest is a random region of interest
+    that spans the entire columnar dimension of the circuit.
+    While well defined for O1 micro-circuits, we will have to be creative
+    to define an equivalent definition for atlas based circuits."""
+
+    def __init__(self,
+            circuit,
+            circuit_build,
+            brain_region,
+            crossection = 100.,
+            *args, **kwargs):
+        """..."""
+        self.crossection\
+            = crossection
+        self.random_position\
+            = RandomCrossection(
+                circuit,
+                circuit_build,
+                brain_region,
+                offset=crossection/2.,
+                *args, **kwargs)
+        super().__init__(
+            circuit,
+            circuit_build,
+            brain_region,
+            sampled_box_shape=np.array([
+                crossection,
+                circuit_build.thickness,
+                crossection]),
+            *args, **kwargs)
+
+
+class RandomBoxCorners(
+        CircuitRandomVariate):
     """..."""
     value_type = tuple #length 2
     label = "box_corners"
-    def __init__(self, circuit, circuit_build, brain_region,
-                 sampled_box_shape=50.*np.ones(3),
-                 *args, **kwargs):
+    def __init__(self,
+            circuit,
+            circuit_build,
+            brain_region,
+            sampled_box_shape=50.*np.ones(3),
+            *args, **kwargs):
         """..."""
-        super(RandomBoxCorners, self)\
-            .__init__(circuit, circuit_build, brain_region,
-                      sampled_box_shape=sampled_box_shape,
-                      *args, **kwargs)
+        self.random_roi\
+            = RandomRegionOfInterest(
+                circuit,
+                circuit_build,
+                brain_region,
+                sampled_box_shape=sampled_box_shape,
+                *args, **kwargs)
+        super().__init__(
+            circuit,
+            circuit_build,
+            brain_region,
+            sampled_box_shape=sampled_box_shape,
+            *args, **kwargs)
 
-    def __call__(self, condition, *args, **kwargs):
+    def __call__(self,
+            condition,
+            *args, **kwargs):
         """"..."""
-        roi = super(RandomBoxCorners, self)\
-              .__call__(condition, *args, **kwargs)
-              
-        return roi.bbox
+        return self.random_roi(
+            condition,
+            *args, **kwargs).bbox
 
-    def row(self, condition, value):
+    def row(self,
+            condition,
+            value):
         """..."""
-        columns = pd.MultiIndex.from_tuples(
-            [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
-             ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
-            names=["box_corners", "axis"]
-        )
+        columns\
+            = pd.MultiIndex.from_tuples(
+                [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
+                 ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
+                names=["box_corners", "axis"])
         return pd.DataFrame(
             [[value[0][0], value[0][1], value[0][2],
               value[1][0], value[1][1], value[1][2]]],
             columns=columns,
-            index=condition.index
-        )
+            index=condition.index)
 
 
 

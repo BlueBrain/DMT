@@ -60,7 +60,6 @@ class LayerIndex(
     If we want the two ends of a validation to work independently, then
     Parameter should be a mechanism of communication. Parameter can be used to
     set the protocol."""
-    
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -81,7 +80,6 @@ class CorticalLayer(
             *args, **kwargs):
         """Default cortical layer will have int values 1, 2, 3, 4, 5, and 6.
         The user may override this initializer."""
-
         super().__init__(
             brain_region=brain_regions.cortex,
             value_type=int,
@@ -149,14 +147,18 @@ class HippocampalLayerSLM_SR_Fused(
             *args, **kwargs)
 
 
-class HyperColumn(
+class Column(
         BrainCircuitSpatialParameter):
-    """A hyper column covers the entire region,
+    """A column covers the entire region,
     orthogonally to the layers --- as much as possible."""
 
     def __init__(self,
             *args, **kwargs):
         """..."""
-        super().__init__(
-            label="column",
-            *args, **kwargs)
+        if "label" not in kwargs:
+            super().__init__(
+                label="column",
+                *args, **kwargs)
+        else:
+            super().__init__(
+                *args, **kwargs)

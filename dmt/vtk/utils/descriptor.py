@@ -128,8 +128,10 @@ class Field:
         if not instance is None:
             return getattr(instance, self.instance_storage_name)
         if not self.__field_name__ in dir(owner):
-            self.logger.info("{} is not a Field member of {}"\
-                             .format(self.__field_name__, owner.__name__))
+            self.logger.info(
+                self.logger.get_source_info(),
+                "{} is not a Field member of {}"\
+                .format(self.__field_name__, owner.__name__))
             return None
         for mo in owner.__mro__:
             if self.__field_name__ in mo.__dict__.keys():

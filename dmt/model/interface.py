@@ -186,9 +186,7 @@ def implementation(an_interface):
         if not isinstance(impl_cls, type):
             raise Exception(
                 "'implementation' is a class decorator. {} is not a class!"\
-            .format(impl_cls)
-            )
-        """Effective class"""
+            .format(impl_cls))
         if not hasattr(impl_cls, 'author'):
             print("WARNING!!! {} implmentation {} should attribute its author"\
                   .format(an_interface.__name__, impl_cls.__name__))
@@ -197,9 +195,9 @@ def implementation(an_interface):
         an_interface.register_implementation(impl_cls)
         impl_cls.__isinterfaceimplementation__ = True
         iname = an_interface.__name__
-        if hasattr(impl_cls, '__implemented_interfaces__'):
+        try:
             impl_cls.__implemented_interfaces__[iname] = an_interface
-        else:
+        except AttributeError:
             impl_cls.__implemented_interfaces__ = {iname: an_interface}
         return impl_cls
 

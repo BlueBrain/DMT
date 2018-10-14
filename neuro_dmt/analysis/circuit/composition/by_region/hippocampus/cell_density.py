@@ -33,7 +33,7 @@ class CellCompositionAnalysis(
 
         def get_cell_density(self,
                 circuit_model,
-                spatial_parameters,
+                spatial_parameters=None,
                 given={}):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
@@ -51,6 +51,10 @@ class CellCompositionAnalysis(
             ~      data :: DataFrame["region", "mean", "std"],
             ~      method :: String)
 
+            Note
+            --------------------------------------------------------------------
+            If 'spatial_parameters' are 'None', get cell density for the whole
+            circuit.
             Example
             --------------------------------------------------------------------
             If 'spatial_parameter' is 'CorticalLayer', the adapter should return
@@ -59,18 +63,24 @@ class CellCompositionAnalysis(
             pass
 
 
-    def get_measurement(self, circuit_model, *args, **kwargs):
+    def get_measurement(self,
+            circuit_model,
+            *args, **kwargs):
         """Get measurement of the phenomenon validated."""
         ca1_density\
-            = self.adapter.get_cell_density(
-                circuit_model)
+            = self.adapter\
+                  .get_cell_density(
+                      circuit_model)
         pc_density\
-            = self.adapter.get_cell_density(
-                circuit_model,
-                self.spatial_parameters,
-                morph_class="PC")
-        return self.adapter.get_cell_density(
-            circuit_model, self.spatial_parameters)
+            = self.adapter\
+                  .get_cell_density(
+                      circuit_model,
+                      self.spatial_parameters,
+                      morph_class="PC")
+        return self.adapter\
+                   .get_cell_density(
+                       circuit_model,
+                       self.spatial_parameters)
 
 
 

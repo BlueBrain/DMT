@@ -110,4 +110,9 @@ def drop(n, xs):
 
 def step(n, xs):
     return islice(xs, None, None, n)
-    
+
+def check(xs):
+    """Check xs is a collection."""
+    return(
+        isinstance(xs, collections.Iterable) and
+        not isinstance(xs, (str, bytes)) )

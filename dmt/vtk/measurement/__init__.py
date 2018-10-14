@@ -79,55 +79,77 @@ class StatisticalMeasurement:
     random_variate = Field(
         __name__ = "random_variate",
         __type__ = RandomVariate,
-        __doc__  = """A random variate can be sampled."""
-    )
+        __doc__  = """A random variate can be sampled.""")
+    
     sample_size = Field(
         __name__="sample_size",
         __type__=int,
-        __doc__="""Number of samples to be drawn for each statistical measurement."""
-    )
-    def __init__(self, random_variate, sample_size=20):
+        __doc__="""Number of samples to be drawn
+        for each statistical measurement.""")
+    
+    def __init__(self,
+            random_variate,
+            sample_size=20):
         """..."""
-        self.random_variate = random_variate
-        self.sample_size = sample_size
+        self.random_variate\
+            = random_variate
+        self.sample_size\
+            = sample_size
 
-    def sample(self, method, size=20, *args, **kwargs):
+    def sample(self,
+            method,
+            size=20,
+            *args, **kwargs):
         """..."""
-        params = self.random_variate.sample(size=size, *args, **kwargs)
+        params\
+            = self.random_variate.sample(
+                size=size,
+                *args, **kwargs)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) params index: {}"\
-            .format(params.index)
-        )
-        data = [method(**row[1]) for row in params.iterrows()]
-        measurement = pd.DataFrame({method.label: data}, index=params.index)
+            .format(params.index))
+        data\
+            = [method(**row[1])
+               for row in params.iterrows()]
+        measurement\
+            = pd.DataFrame(
+                {method.label: data},
+                index=params.index)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) measurement.index: {}"\
-            .format(measurement.index)
-        )
+            .format(
+                measurement.index))
         return measurement
 
-    def __call__(self, method, *args, **kwargs):
-        """call me"""
-        data = summary_statistic(self.sample(
+    def __call__(self,
             method,
-            size=kwargs.get("size", self.sample_size),
-            *args, **kwargs
-        ))
-        levels = data.index.names
+            *args, **kwargs):
+        """call me"""
+        data\
+            = summary_statistic(
+                self.sample(
+                    method,
+                    size=kwargs.get(
+                        "size",
+                        self.sample_size),
+                    *args, **kwargs))
+        levels\
+            = data.index.names
         if len(levels) == 1:
-            return Record(phenomenon=method.phenomenon,
-                          label=method.label,
-                          method=method_description(method),
-                          data=data,
-                          units=method.units,
-                          parameter=levels[0])
-
-        return Record(phenomenon=method.phenomenon,
-                      label=method.label,
-                      method=method_description(method),
-                      data=data,
-                      units=method.units,
-                      parameter_groups=levels)
+            return Record(
+                phenomenon=method.phenomenon,
+                label=method.label,
+                method=method_description(method),
+                data=data,
+                units=method.units,
+                parameter=levels[0])
+        return Record(
+            phenomenon=method.phenomenon,
+            label=method.label,
+            method=method_description(method),
+            data=data,
+            units=method.units,
+            parameter_groups=levels)
 
 
 def method_description(measurement_method):

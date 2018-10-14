@@ -18,9 +18,21 @@ from neuro_dmt.models.bluebrain.circuit.geometry import \
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     BrainRegionSpecific
+from neuro_dmt.measurement.parameter import Column
 
+class HyperColumn(
+        Column):
+    """..."""
+    def __init__(self,
+            values = list(range(7)),
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            value_type=str,
+            values=["mc{}_Column".format(n) for n in values],
+            label="$target",
+            *args, **kwargs)
 
-    
 def transform(instance, method_name, mapping):
     """..."""
     modified_instance = copy.deepcopy(instance)

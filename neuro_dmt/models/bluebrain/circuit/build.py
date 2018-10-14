@@ -18,7 +18,9 @@ class CircuitBuild(WithFCA, ABC):
     specializations = Field(
         __name__="specializations",
         __type__=dict,
-        __is_valid_value__=Field.typecheck.mapping(BrainRegion, BrainRegionSpecific),
+        __is_valid_value__=Field.typecheck.mapping(
+            BrainRegion,
+            BrainRegionSpecific),
         __doc__="""Maps brain region to a code specialization
         for that brain region.""")
     
@@ -31,4 +33,17 @@ class CircuitBuild(WithFCA, ABC):
     @abstractmethod
     def random_position(self, condition):
         """..."""
+        pass
+
+    @abstractmethod
+    def random_column(self, crosssection):
+        """..."""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def column_parameter(self, *args, **kwargs):
+        """Spatial parameter representing a column that spans all the layers
+        (or another sub-region) of a brain region. Unlike sub-region (layer),
+        this spatial parameter Column depends on the (geometric) build of the
+        circuit."""
         pass

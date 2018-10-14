@@ -10,13 +10,11 @@ An Interface implementation may be a stand-alone class, while an implementation
 that 'adapts' another class to the Interface is an Adapter.
 """
 
+from abc import ABC
 from dmt.model.interface import Interface
-from dmt.vtk.utils.descriptor \
-    import Field, document_fields, ClassAttribute, ClassAttributeMeta
-
-                  
-@document_fields
-class Adapter(metaclass=ClassAttributeMeta):
+from dmt.vtk.utils.descriptor import ClassAttribute
+    
+class Adapter(ABC):
     """"Base for a class that adapts another class to an Interface.
 
     Implementation Notes
@@ -26,21 +24,23 @@ class Adapter(metaclass=ClassAttributeMeta):
     """
 
     __adapted_types__ = ClassAttribute(
-        __name__ = "__adapted_entity__",
+        __name__ = "__adapted_types__",
         __type__ = dict,
         __doc__ = """A dict mapping a name to the class that this Adapter
-        adapts to an Interface. An Adapter can adapt more than classes."""
-    )
+        adapts to an Interface. An Adapter can adapt more than classes.""")
+    
     __implemented_interfaces__ = ClassAttribute(
-        __name__ = "__implemented_interface__",
+        __name__ = "__implemented_interfaces__",
         __type__ = dict,
-        __doc__  = "Interface implemented by this Adapter class."
-    )
+        __doc__  = "Interface implemented by this Adapter class.")
 
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(*args, **kwargs)
+    
 
 def adapter(adapted_cls):
     """A class decorator to declare that a class adapts class 'adapted_cls'."""
-
     def effective(cls):
         """The effective decorator method.
 
@@ -48,13 +48,16 @@ def adapter(adapted_cls):
         ------------------------------------------------------------------------
         cls :: type #that is the adapter of class 'adapted_cls'"""
         aname = adapted_cls.__name__
-        if hasattr(cls, '__adapted_types__'):
+        try:
             cls.__adapted_types__[aname] = adapted_cls
-        else:
+        except AttributeError:
             cls.__adapted_types__ = {aname: adapted_cls}
 
-        return  ClassAttributeMeta(cls.__name__, (Adapter,),
-                                   {a: getattr(cls, a) for a in dir(cls)})
+        if not hasattr(cls, "__implemented_interfaces__"):
+            cls.__implemented_interfaces__ = {}
+        Adapter.register(cls)
+
+        return cls
 
     return effective
 

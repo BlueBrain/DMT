@@ -63,8 +63,9 @@ class FiniteValuedParameter(
         You can call this method with both value_type value and string value
         returned by the repr method."""
         if not self.is_valid(value):
-            raise ValueError("Received value {} of type {}. Expecting type"\
-                             .format(value, type(value), self.value_type))
+            raise ValueError(
+                "Received value {} of type {}. Expecting type"\
+                .format(value, type(value), self.value_type))
         return self.value_order[value]
 
     def repr(self, value):
@@ -82,9 +83,13 @@ class FiniteValuedParameter(
         """
         if vs is None:
             return self.ordered(list(self.values))
-        df = pd.DataFrame(values=values, order=[self.order(v) for v in values])\
-               .sort(by="order")
-        return list(df["values"])
+        dataframe\
+            = pd.DataFrame(
+                values=values,
+                order=[self.order(v) for v in values])\
+                .sort(by="order")
+        return list(
+            dataframe["values"])
 
     def random_value(self, n=None):
         """Get n random values.
