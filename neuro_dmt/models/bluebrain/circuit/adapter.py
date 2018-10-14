@@ -126,12 +126,17 @@ class BlueBrainModelAdapter(
             method,
             parameters=None,
             random_variate_type=None,
+            given_cell_type={},
             *args, **kwargs):
         """..."""
         self.logger.debug(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with parameters {}"""\
             .format(parameters))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """get statitistical measurement from adapter with given_cell_type {}"""\
+            .format(given_cell_type))
         if not random_variate_type:
             random_variate_type = self.spatial_random_variate
         random_variate\
@@ -139,6 +144,7 @@ class BlueBrainModelAdapter(
                 circuit,
                 self.circuit_build,
                 self.brain_region,
+                given_cell_type=given_cell_type,
                 *args, **kwargs)
         if parameters:
             random_variate\
@@ -159,6 +165,7 @@ class BlueBrainModelAdapter(
             circuit,
             parameters=None,
             random_variate=None,
+            given_cell_type={},
             *args, **kwargs):
         """..."""
         return self.statistical_measurement(
@@ -166,13 +173,14 @@ class BlueBrainModelAdapter(
             method,
             parameters=parameters,
             random_variate=random_variate,
+            given_cell_type=given_cell_type,
             sampled_box_shape=self._sampled_box_shape,
             *args, **kwargs)
 
     def get_cell_density(self,
             circuit,
             spatial_parameters=None,
-            given={},
+            given_cell_type={},
             *args, **kwargs):
         """...Get cell density from the circuit,
         as a function of parameters in 'spatial_parameters'.
@@ -192,11 +200,11 @@ class BlueBrainModelAdapter(
             = (spatial_parameters if spatial_parameters
                else {self.circuit_build.column_parameter()})
         return self.spatial_measurement(
-            method=composition.CellDensity(circuit),
+            method=composition.CellDensity(circuit, **given_cell_type),
             circuit=circuit,
             parameters=spatial_parameters,
             random_variate=RandomRegionOfInterest,
-            given=given)
+            given_cell_type=given_cell_type)
         
     def get_cell_ratio(self,
             circuit,

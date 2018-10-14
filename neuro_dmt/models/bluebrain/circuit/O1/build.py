@@ -23,7 +23,10 @@ class Cortical(
             *args, **kwargs):
         """..."""
         cell_group_params\
-            = by if by else ("layer", "$target")
+            = by if by else ("layer",
+                             "$target",
+                             Cell.SYNAPSE_CLASS,
+                             Cell.MORPH_CLASS)
         super().__init__(
             cell_group_params,
             target=target,
@@ -42,7 +45,6 @@ class Cortical(
             for param, value in param_values.items()
             if value}
             
-
 
 class Hippocampal(
         BrainRegionSpecific):
@@ -74,8 +76,8 @@ class O1Circuit(
     """Specializations of methods for the O1.v6a circuits."""
 
     specializations = {
-        brain_regions.cortex: Cortical(by=("layer", "$target")),
-        brain_regions.hippocampus: Hippocampal(by=("layer",)) }
+        brain_regions.cortex: Cortical(),
+        brain_regions.hippocampus: Hippocampal() }
 
     geometry = Field(
         __name__="geometry",
@@ -162,6 +164,10 @@ class O1Circuit(
         self.logger.debug(
             self.logger.get_source_info(),
             "with target {}".format(target))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """brain region specific cell group params {}"""\
+            .format(brain_region_spec.cell_group_params))
         query\
             = brain_region_spec.cell_query(
                 condition,

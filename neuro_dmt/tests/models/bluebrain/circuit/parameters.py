@@ -91,6 +91,6 @@ get_measurement\
     = StatisticalMeasurement(
         random_variate=hc_roies,
         sample_size=20)
-cell_density\
-    = get_measurement(
-        CellDensity(sscx_circuit))
+#cell_density\
+#    = get_measurement(
+ #       CellDensity(sscx_circuit))

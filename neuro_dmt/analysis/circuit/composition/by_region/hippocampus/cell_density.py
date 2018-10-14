@@ -76,7 +76,8 @@ class CellCompositionAnalysis(
                   .get_cell_density(
                       circuit_model,
                       self.spatial_parameters,
-                      morph_class="PC")
+                      given=dict(
+                          morph_class="PC"))
         return self.adapter\
                    .get_cell_density(
                        circuit_model,

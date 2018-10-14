@@ -12,16 +12,17 @@ class CellDensity(measurement.Method):
     phenomenon = Phenomenon("Cell Density", "Number of cells in a unit volume")
     units = "1000/mm^3"
 
-    def __init__(self, circuit):
+    def __init__(self, circuit, **given):
         """..."""
+        self.__given_cell_properties = given
         self.__circuit = circuit
         self.__helper = BlueBrainModelHelper(circuit=circuit)
 
-    def __call__(self, roi, **given):
+    def __call__(self, roi):
         """Number of cells in a unit volume, [1000/mm^3]"""
         cell_counts\
             =  self.__helper.cell_counts(
-                roi, **given)
+                roi, **self.__given_cell_properties)
         return 1.e6 * cell_counts / roi.volume
 
 

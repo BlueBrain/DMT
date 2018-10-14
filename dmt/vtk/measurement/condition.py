@@ -13,12 +13,22 @@ class Condition:
             *args, **kwargs):
         """..."""
         self.__param_value_pairs\
-            = param_value_pairs
+            = [(self.__get_label(param), value)
+               for param, value in param_value_pairs]
+
         self.__record\
             = Record(
-                **{param.label: value
-                   for param, value in param_value_pairs})
+                **{param: value
+                   for param, value in self.__param_value_pairs})
         super().__init__(*args, **kwargs)
+
+    @classmethod
+    def __get_label(cls, param):
+        """..."""
+        try:
+            return param.label
+        except AttributeError:
+            return param
 
     @property
     def value(self):
@@ -39,7 +49,7 @@ class Condition:
         """A Pandas Index object."""
         return pd.MultiIndex.from_tuples([
             tuple(value for _, value in self.__param_value_pairs)],
-            names=[param.label for param, _ in self.__param_value_pairs])
+            names=[param for param, _ in self.__param_value_pairs])
 
     def is_valid(self, value):
         """..."""
@@ -47,6 +57,12 @@ class Condition:
             hasattr(value, field)
             for field in self.fields)
 
+    def plus(self, param_value_pairs):
+        """..."""
+        return Condition(
+            self.__param_value_pairs +
+            [(self.__get_label(param), value)
+             for param, value in param_value_pairs])
 
 class ConditionGenerator(
         ParameterGroup):

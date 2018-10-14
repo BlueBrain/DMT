@@ -18,7 +18,7 @@ bbma = BlueBrainModelAdapter(brain_region=brain_regions.cortex,
                              spatial_random_variate=RandomRegionOfInterest,
                              model_label="in-silico")
 
-cd = bbma.get_cell_density(circuit, {CorticalLayer()})
+#cd = bbma.get_cell_density(circuit, {CorticalLayer()})
 
 
 

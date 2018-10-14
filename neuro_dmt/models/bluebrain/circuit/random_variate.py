@@ -40,6 +40,7 @@ class CircuitRandomVariate(
             circuit,
             circuit_build,
             brain_region,
+            given_cell_type={}, #i.e. any
             condition_type=Record(),
             *args, **kwargs):
         """...
@@ -55,6 +56,8 @@ class CircuitRandomVariate(
                 circuit)
         self.brain_region\
             = brain_region
+        self.given_cell_type\
+            = given_cell_type
         self._helper\
             = BlueBrainModelHelper(
                 circuit=circuit)
@@ -69,7 +72,7 @@ class CircuitRandomVariate(
             self.__class__.logger.get_source_info(),
             """CircuitRandomVariate with conditioning vars {}"""\
             .format(conditioning_vars))
-        return ConditionedRandomVariate.given(self,
+        return super().given(
             *conditioning_vars,
             reset_condition_type=True)
 
@@ -90,11 +93,13 @@ class CircuitRandomVariate(
         This allows us to not have to subclass from RandomPosition and 
         BrainRegionSpecific mixins. We can redirect to 'self.brain_region'.
         We could """
-        return self.brain_region\
-                   .cell_query(
-                       condition,
-                       *args, **kwargs)
-
+        query\
+            = dict(**self.given_cell_type)
+        query.update(
+            self.brain_region.cell_query(
+                condition,
+                *args, **kwargs))
+        return query
 
 
 class RandomPosition(
@@ -126,10 +131,19 @@ class RandomPosition(
             condition,
             *args, **kwargs):
         """..."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """given cell types {}""".format(self.given_cell_type))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """generate RandomPosition with condition {}"""\
+            .format(condition.value))
+
         return self.circuit_build\
                    .random_position(
                        self.brain_region,
-                       condition,
+                       condition.plus(
+                           [(k, v) for k, v in self.given_cell_type.items()]),
                        *args, **kwargs)
                                                   
     def row(self, condition, value):
