@@ -23,7 +23,8 @@ class BrainCircuitAnalysis(Analysis):
         __doc__="""Animal for which the circuit was built. This will help
         organize reporting.""")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
         #self.brain_region = kwargs["brain_region"]
         super().__init__(*args, **kwargs)
@@ -38,5 +39,3 @@ class BrainCircuitAnalysis(Analysis):
         return os.path.join(
             super()._get_output_dir(),
             animal_region_path)
-            
-

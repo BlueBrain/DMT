@@ -188,6 +188,10 @@ class RandomRegionOfInterest(
             sampled_box_shape=100.*np.ones(3),
             *args, **kwargs):
         """..."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Init RandomRegionOfInterest for brain region {}"""\
+            .format(brain_region.label))
         self.sampled_box_shape = sampled_box_shape
         self.random_position\
             = RandomPosition(

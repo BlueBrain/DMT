@@ -15,11 +15,11 @@ XYZ = [Cell.X, Cell.Y, Cell.Z]
 class Cortical(
         BrainRegionSpecific):
     """..."""
-    brain_region = brain_regions.cortex
 
     def __init__(self,
             by=tuple(),
             target="mc2_Column",
+
             *args, **kwargs):
         """..."""
         cell_group_params\
@@ -29,46 +29,25 @@ class Cortical(
                              Cell.MORPH_CLASS)
         super().__init__(
             cell_group_params,
+            brain_region=brain_regions.cortex,
             target=target,
             *args, **kwargs)
 
-    def cell_query(self,
-            condition,
-            *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        param_values = {
-            param: condition.get_value(param)
-            for param in self.cell_group_params}
-        return {
-            param: value
-            for param, value in param_values.items()
-            if value}
-            
 
 class Hippocampal(
         BrainRegionSpecific):
     """..."""
-    brain_region = brain_regions.hippocampus
 
     def __init__(self,
             by=None,
             *args, **kwargs):
         """..."""
         cell_group_params\
-            = by if by else ("layer",)
+            = by if by else ("region",)
         super().__init__(
             cell_group_params,
+            brain_region=brain_regions.hippocampus,
             *args, **kwargs)
-
-    def cell_query(self,
-            condition,
-            *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        return {
-            p: condition.get_value(p)
-            for p in self.cell_group_params}
 
 
 class O1Circuit(
@@ -78,11 +57,6 @@ class O1Circuit(
     specializations = {
         brain_regions.cortex: Cortical(),
         brain_regions.hippocampus: Hippocampal() }
-
-    geometry = Field(
-        __name__="geometry",
-        __type__=Record,
-        __doc__="Contains information about O1 geometry")
 
     def __init__(self, *args, **kwargs):
         self.label = "O1"
@@ -148,7 +122,8 @@ class O1Circuit(
         a point at the center of the columns"""
         self.logger.debug(
             self.logger.get_source_info(),
-            "find random position with condition {}".format(condition.value))
+            "find random position with condition {}".format(condition.value),
+            "for brain region {}".format(brain_region.label))
         try:
             brain_region_spec\
                 = self.specializations[

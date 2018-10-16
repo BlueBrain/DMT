@@ -1,5 +1,6 @@
 """Build of a circuit."""
 from abc import ABC, abstractmethod
+from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
@@ -14,6 +15,11 @@ class CircuitBuild(WithFCA, ABC):
         __type__=str,
         __doc__="A label for the circuit build.",
         __examples__=["O1", "O1.v6a", "Atlas-based", "S1", "S1.v6a"])
+
+    geometry = Field(
+        __name__="geometry",
+        __type__=Record,
+        __doc__="Contains information about O1 geometry")
 
     specializations = Field(
         __name__="specializations",
@@ -47,3 +53,14 @@ class CircuitBuild(WithFCA, ABC):
         this spatial parameter Column depends on the (geometric) build of the
         circuit."""
         pass
+
+    def brain_region_spec(self,
+            brain_region):
+        """..."""
+        try:
+            return self.specializations[
+                brain_region]
+        except KeyError as e:
+            raise NotImplementedError(
+                "Brain region specialization for {}"\
+            .format(brain_region))

@@ -6,6 +6,8 @@ from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 from neuro_dmt.utils.enums import Cell
+from neuro_dmt.measurement.parameter\
+    import HippocampalLayerSLM_SR_Fused
 
 class CellCompositionAnalysis(
         ByLayerCompositionAnalysis):
@@ -73,26 +75,40 @@ class CellCompositionAnalysis(
             = self.adapter\
                   .get_cell_density(
                       circuit_model)
-        pc_density\
+        ca1_data.index\
+            = pd.Index(
+                ["CA1"],
+                dtype="object",
+                name="cell_type")
+        sp_pc_density\
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
-                      self.spatial_parameters,
+                      layer="SP",
                       morph_class="PC")
+        sp_pc_density.data.index\
+            = pd.Index(
+                ["SP_PC"],
+                dtype="object",
+                name="cell_type")
+        hippocampal_layer\
+            = HippocampalLayerSLM_SR_Fused()
         layer_density\
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
-                      self.spatial_parameters)
+                      {hippocampal_layer})
+        layer_density.data.index\
+            = pd.Index(
+                [hippocampal_layer.repr(i)
+                 for i in layer_density.data.index],
+                dtype=object,
+                name="cell_type"])
         measurement\
             = layer_density
         measurement.data\
             = pd.concat([
-                ca1_density,
-                pc_density,
-                layer_density])
-
-        return measurement.data
-
-
-
+                ca1_density.data,
+                sp_pc_density.data,
+                layer_density.data])
+        return measurement

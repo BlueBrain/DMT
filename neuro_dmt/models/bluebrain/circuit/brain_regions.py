@@ -78,13 +78,6 @@ class BrainRegionSpecific(
                 .format(self.__class__.__name__))
         return self._target
 
-    @abstractmethod
-    def cell_query(self,
-            condition,
-            *args, **kwargs):
-        """A dict that can be passed to circuit.cells.get(...).
-        Concrete implementation may override """
-        pass
 
     def with_target(self,
             query_dict,
@@ -103,3 +96,17 @@ class BrainRegionSpecific(
         query_dict[target_label]\
             = self._target
         return query_dict
+
+    def cell_query(self,
+            condition,
+            *args, **kwargs):
+        """A dict that can be passed to circuit.cells.get(...).
+        Concrete implementation may override """
+        param_values = {
+            param: condition.get_value(param)
+            for param in self.cell_group_params}
+        return {
+            param: value
+            for param, value in param_values.items()
+            if value}
+ 

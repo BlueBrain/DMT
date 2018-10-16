@@ -173,6 +173,7 @@ class BlueBrainModelAdapter(
             circuit,
             spatial_parameters=None,
             by_cell_property=None, #implies all cells.  none or one property supported, multiple properties is non-trivial
+            layer=None,
             synapse_class=None,
             morph_class=None,
             *args, **kwargs):
@@ -197,6 +198,9 @@ class BlueBrainModelAdapter(
         if morph_class:
             given_cell_type["morph_class"]\
                 = morph_class
+        if layer:
+            given_cell_type["layer"]\
+                = layer
         method\
             = composition.CellDensity(
                 circuit,
