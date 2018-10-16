@@ -1,5 +1,6 @@
 """By layer analysis of the cell density of a Hippocampus circuit."""
 
+import pandas as pd
 from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.analysis.circuit.composition.by_layer\
@@ -42,8 +43,9 @@ class CellCompositionAnalysis(
             Parameters
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
-            spatial_parameter :: SpatialParameter #that cell density be measured for
+            spatial_parameters :: set{SpatialParameter} #that cell density be measured against
             given :: dict# providing conditions on cell properties
+
             Returns
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
@@ -76,12 +78,21 @@ class CellCompositionAnalysis(
                   .get_cell_density(
                       circuit_model,
                       self.spatial_parameters,
-                      given=dict(
-                          morph_class="PC"))
-        return self.adapter\
-                   .get_cell_density(
-                       circuit_model,
-                       self.spatial_parameters)
+                      morph_class="PC")
+        layer_density\
+            = self.adapter\
+                  .get_cell_density(
+                      circuit_model,
+                      self.spatial_parameters)
+        measurement\
+            = layer_density
+        measurement.data\
+            = pd.concat([
+                ca1_density,
+                pc_density,
+                layer_density])
+
+        return measurement.data
 
 
 

@@ -53,8 +53,17 @@ class Method(ABC):
         """The measured phenomenon."""
         pass
 
+    @property
+    def return_type(self):
+        """..."""
+        try:
+            return self.__return_type
+        except AttributeError:
+            return float
+
     @abstractmethod
-    def __call__(self, **measurement_parameters):
+    def __call__(self,
+            **measurement_parameters):
         """Perform a single measurement.
 
         Implementation Guidelines
@@ -66,10 +75,12 @@ class Method(ABC):
         """
         pass
 
-    def get(self, **measurement_parameters):
+    def get(self,
+            **measurement_parameters):
         """Perform a single measurement for the given parameters.
         This is an alias..."""
-        return self.__call__(**measurement_parameters)
+        return self.__call__(
+            **measurement_parameters)
 
  
 
@@ -111,10 +122,16 @@ class StatisticalMeasurement:
         data\
             = [method(**row[1])
                for row in params.iterrows()]
-        measurement\
-            = pd.DataFrame(
-                {method.label: data},
-                index=params.index)
+        if issubclass(method.return_type, float):
+            measurement\
+                = pd.DataFrame(
+                    {method.label: data},
+                    index=params.index)
+        else:
+            measurement\
+                = pd.DataFrame(
+                    data,
+                    index=params.index)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) measurement.index: {}"\
             .format(

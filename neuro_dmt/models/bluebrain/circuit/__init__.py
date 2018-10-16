@@ -190,39 +190,56 @@ class BlueBrainModelHelper:
 
     def cells_in_region(self, roi, properties=[]):
         """..."""
-        p0, p1 = roi.bbox
-        query = {
-            Cell.X: (p0[0], p1[0]),
-            Cell.Y: (p0[1], p1[1]),
-            Cell.Z: (p0[2], p1[2])}
-        props = [Cell.X, Cell.Y, Cell.Z] + properties
-        return self._cells.get(query, props)
+        corner0, corner1\
+            = roi.bbox
+        query\
+            = {Cell.X: (corner0[0], corner1[0]),
+               Cell.Y: (corner0[1], corner1[1]),
+               Cell.Z: (corner0[2], corner1[2])}
+        props\
+            = [Cell.X, Cell.Y, Cell.Z] + properties
+        cells = self._cells.get(query, props)
+        return cells[
+            roi.contains(
+                self.__xyz(
+                    cells))]
 
     @staticmethod
     def __xyz(df):
         """..."""
         return df[[Cell.X, Cell.Y, Cell.Z]].values
 
-    def cell_counts(self, roi, for_property=None, **given):
+    def cell_counts(self,
+            roi,
+            by_cell_property=None,#none will count all cells as the same
+            for_given_cell_type={},#empty dict will count all cells, not a subset
+            *args, **kwargs):
         """..."""
-        if for_property:
-            return self.__cell_counts_for_property(
-                roi, for_property)
-        if not given:
-            return self.__cell_counts_for_property(
-                roi, _property=None)
-        properties = list(given.keys())
+        if by_cell_property in for_given_cell_type:
+            raise TypeError(
+                """Property to count cells by also given a required value!
+                \n\t'by_cell_property' {} appears in 'for_given_cell_type'"""\
+                .format(by_cell_property))
+        properties\
+            = list(
+                for_given_cell_type.keys())
+        if by_cell_property:
+            properties.append(by_cell_property)
         cells\
             = self.cells_in_region(
-                roi, properties=properties)
-        for _property, value in given.items():
-            cells = cells[cells[_property] == value]
-        return np.count_nonzero(
-            roi.contains(
-                self.__xyz(
-                    cells)))
-
-    def __cell_counts_for_property(self, roi, _property):
+                roi,
+                properties=properties)
+        for _property, value in for_given_cell_type.items():
+            cells\
+                = cells[
+                    cells[_property] == value]
+        if not by_cell_property:
+            return cells.shape[0]
+        return cells[
+            by_cell_property]\
+            .value_counts()
+        
+    def __cell_counts_by_property(self, roi, _property):
         """..."""
         cells\
             = self.cells_in_region(

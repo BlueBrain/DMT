@@ -1,28 +1,38 @@
 """Circuit composition measurements for Blue Brain circuits."""
 import numpy as np
+import pandas as pd
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
-class CellDensity(measurement.Method):
+class CellDensity(
+        measurement.Method):
     """..."""
 
     label = "in-silico"
     phenomenon = Phenomenon("Cell Density", "Number of cells in a unit volume")
     units = "1000/mm^3"
 
-    def __init__(self, circuit, **given):
+    def __init__(self,
+                 circuit,
+                 for_given={},
+                 by_property=None,
+                 *args, **kwargs):
         """..."""
-        self.__given_cell_properties = given
+        self.__by_property = by_property
+        self.__for_given = for_given
         self.__circuit = circuit
         self.__helper = BlueBrainModelHelper(circuit=circuit)
+        self.__return_type = float if not by_property else pd.Series
 
     def __call__(self, roi):
         """Number of cells in a unit volume, [1000/mm^3]"""
         cell_counts\
             =  self.__helper.cell_counts(
-                roi, **self.__given_cell_properties)
+                roi,
+                by_cell_property=self.__by_property,
+                for_given_cell_type=self.__for_given)
         return 1.e6 * cell_counts / roi.volume
 
 
