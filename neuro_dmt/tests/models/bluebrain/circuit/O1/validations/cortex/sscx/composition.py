@@ -7,7 +7,8 @@ from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
 from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
     import validations as mouse_validations
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
+from neuro_dmt.models.bluebrain.circuit.O1.build\
+    import O1CircuitGeometry
 
 validations\
     = dict(
@@ -35,7 +36,7 @@ def run(animal, validation_name, output_dir_path=os.getcwd()):
     validation\
         = animal_validations.get(
             validation_name,
-            circuit_build=O1Circuit,
+            circuit_geometry=O1CircuitGeometry,
             output_dir_path=output_dir_path)
     logger.info(
         logger.get_source_info(),

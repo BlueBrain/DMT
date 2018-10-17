@@ -16,7 +16,7 @@ from neuro_dmt.utils.brain_regions import BrainRegion
 
 from neuro_dmt.models.bluebrain.circuit.brain_regions import BrainRegionSpecific
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
+from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 
@@ -30,15 +30,15 @@ class CircuitRandomVariate(
         __type__=BrainRegion,
         __doc__="Provides brain region specializations of some attributes.")
     
-    circuit_build = Field(
-        __name__="circuit_build",
-        __type__=CircuitBuild,
-        __doc__="""Provides circuit build specific attribute specializations.
+    circuit_geometry = Field(
+        __name__="circuit_geometry",
+        __type__=CircuitGeometry,
+        __doc__="""Provides circuit build geometry specific attribute specializations.
         Ideally we should be able to get this information from  'circuit'.""")
     
     def __init__(self,
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             condition_type=Record(),
             *args, **kwargs):
@@ -50,8 +50,8 @@ class CircuitRandomVariate(
         """
         self._circuit\
             = circuit
-        self.circuit_build\
-            = circuit_build(
+        self.circuit_geometry\
+            = circuit_geometry(
                 circuit)
         self.brain_region\
             = brain_region
@@ -105,7 +105,7 @@ class RandomPosition(
 
     def __init__(self,
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             offset=50.,
             *args, **kwargs):
@@ -113,12 +113,12 @@ class RandomPosition(
         Parameters
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
-        circuit_build :: type #<: CircuitBuild
+        circuit_geometry :: type #<: CircuitGeometry
         """
         self.offset = offset
         super().__init__(
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             *args, **kwargs)
 
@@ -131,7 +131,7 @@ class RandomPosition(
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
 
-        return self.circuit_build\
+        return self.circuit_geometry\
                    .random_position(
                        self.brain_region,
                        condition,
@@ -152,14 +152,14 @@ class RandomCrossection(
     """..."""
     def __init__(self,
             cicuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             offset=50.,
             *args, **kwargs):
         """..."""
         super().__init__(
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             offset=offset,
             *args, **kwargs)
@@ -168,7 +168,7 @@ class RandomCrossection(
             condition,
             *args, **kwargs):
         """..."""
-        return self.circuit_build\
+        return self.circuit_geometry\
                    .midplane_projection(
                        super().__call__(
                            condition,
@@ -183,7 +183,7 @@ class RandomRegionOfInterest(
 
     def __init__(self,
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             sampled_box_shape=100.*np.ones(3),
             *args, **kwargs):
@@ -196,13 +196,13 @@ class RandomRegionOfInterest(
         self.random_position\
             = RandomPosition(
                 circuit,
-                circuit_build,
+                circuit_geometry,
                 brain_region,
                 offset=sampled_box_shape/2.,
                 *args, **kwargs)
         super().__init__(
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             *args, **kwargs)
 
@@ -239,7 +239,7 @@ class RandomColumnOfInterest(
 
     def __init__(self,
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             crossection = 100.,
             *args, **kwargs):
@@ -249,17 +249,17 @@ class RandomColumnOfInterest(
         self.random_position\
             = RandomCrossection(
                 circuit,
-                circuit_build,
+                circuit_geometry,
                 brain_region,
                 offset=crossection/2.,
                 *args, **kwargs)
         super().__init__(
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             sampled_box_shape=np.array([
                 crossection,
-                circuit_build.thickness,
+                circuit_geometry.thickness,
                 crossection]),
             *args, **kwargs)
 
@@ -271,7 +271,7 @@ class RandomBoxCorners(
     label = "box_corners"
     def __init__(self,
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             sampled_box_shape=50.*np.ones(3),
             *args, **kwargs):
@@ -279,13 +279,13 @@ class RandomBoxCorners(
         self.random_roi\
             = RandomRegionOfInterest(
                 circuit,
-                circuit_build,
+                circuit_geometry,
                 brain_region,
                 sampled_box_shape=sampled_box_shape,
                 *args, **kwargs)
         super().__init__(
             circuit,
-            circuit_build,
+            circuit_geometry,
             brain_region,
             sampled_box_shape=sampled_box_shape,
             *args, **kwargs)

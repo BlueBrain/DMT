@@ -24,7 +24,8 @@ from neuro_dmt.models.bluebrain.circuit.random_variate import \
     RandomPosition,\
     RandomRegionOfInterest,\
     RandomBoxCorners
-from neuro_dmt.models.bluebrain.circuit.O1.build import O1Circuit
+from neuro_dmt.models.bluebrain.circuit.O1.build\
+    import O1CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.measurements.composition\
     import CellDensity
 
@@ -55,7 +56,7 @@ cond_gen\
 rposes\
     = RandomPosition(
         sscx_circuit,
-        circuit_build=O1Circuit,
+        circuit_geometry=O1CircuitGeometry,
         brain_region=brain_regions.cortex)\
         .given(
             CorticalLayer(),
@@ -64,7 +65,7 @@ rposes\
 rroies\
     = RandomRegionOfInterest(
         sscx_circuit,
-        circuit_build=O1Circuit,
+        circuit_geometry=O1CircuitGeometry,
         brain_region=brain_regions.cortex)\
         .given(
             CorticalLayer(),
@@ -72,7 +73,7 @@ rroies\
 rboxes\
     = RandomBoxCorners(
         sscx_circuit,
-        circuit_build=O1Circuit,
+        circuit_geometry=O1CircuitGeometry,
         brain_region=brain_regions.cortex)\
         .given(
             CorticalLayer(),
@@ -83,7 +84,7 @@ rboxes\
 hc_roies\
     = RandomRegionOfInterest(
         sscx_circuit,
-        circuit_build=O1Circuit,
+        circuit_geometry=O1CircuitGeometry,
         brain_region=brain_regions.cortex)\
         .given(
             {HyperColumn()})

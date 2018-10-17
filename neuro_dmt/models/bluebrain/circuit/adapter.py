@@ -34,7 +34,7 @@ from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit \
     import geometry, cell_collection, utils, BlueBrainModelHelper
-from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
+from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     CircuitRandomVariate,\
     RandomRegionOfInterest,\
@@ -68,9 +68,9 @@ class BlueBrainModelAdapter(
         __type__=BrainRegion,
         __doc__="Provides a model independent tag for the brain region.")
 
-    circuit_build = Field(
-        __name__="circuit_build",
-        __typecheck__=Field.typecheck.subtype(CircuitBuild),
+    circuit_geometry = Field(
+        __name__="circuit_geometry",
+        __typecheck__=Field.typecheck.subtype(CircuitGeometry),
         __doc__="""The build of the circuit, O1 or atlas based...""")
 
     spatial_random_variate = Field(
@@ -137,7 +137,7 @@ class BlueBrainModelAdapter(
         random_variate\
             = random_variate_type(
                 circuit,
-                self.circuit_build,
+                self.circuit_geometry,
                 self.brain_region,
                 *args, **kwargs)
         if parameters:
@@ -228,7 +228,7 @@ class BlueBrainModelAdapter(
             circuit=circuit,
             parameters=(
                 spatial_parameters if spatial_parameters
-                else {self.circuit_build.column_parameter()}),
+                else {self.circuit_geometry.column_parameter()}),
             random_variate=(
                 RandomRegionOfInterest if spatial_parameters
                 else RandomColumnOfInterest),

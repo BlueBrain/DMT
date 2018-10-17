@@ -1,4 +1,4 @@
-"""Build of a circuit."""
+"""Build Geometry of a circuit."""
 from abc import ABC, abstractmethod
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
@@ -6,20 +6,15 @@ from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.brain_regions import BrainRegionSpecific
 
-class CircuitBuild(WithFCA, ABC):
-    """Build of a circuit! Dump all circuit build dependent method
-    definitions here."""
+class CircuitGeometry(WithFCA, ABC):
+    """Geometry of a circuit! Dump all circuit build geometry 
+    dependent method definitions here."""
 
     label = Field(
         __name__="label",
         __type__=str,
-        __doc__="A label for the circuit build.",
+        __doc__="A label for the circuit build geometry.",
         __examples__=["O1", "O1.v6a", "Atlas-based", "S1", "S1.v6a"])
-
-    geometry = Field(
-        __name__="geometry",
-        __type__=Record,
-        __doc__="Contains information about O1 geometry")
 
     specializations = Field(
         __name__="specializations",
@@ -34,7 +29,7 @@ class CircuitBuild(WithFCA, ABC):
         """..."""
         self._circuit = circuit
         self._helper = BlueBrainModelHelper(circuit=circuit)
-        super(CircuitBuild, self).__init__(*args, **kwargs)
+        super(CircuitGeometry, self).__init__(*args, **kwargs)
 
     @abstractmethod
     def random_position(self, condition):
@@ -54,7 +49,7 @@ class CircuitBuild(WithFCA, ABC):
         circuit."""
         pass
 
-    def brain_region_spec(self,
+    def get_brain_region_spec(self,
             brain_region):
         """..."""
         try:

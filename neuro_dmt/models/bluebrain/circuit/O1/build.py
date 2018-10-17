@@ -1,11 +1,12 @@
-"""O1 circuit build"""
+"""O1 circuit build geometry"""
 import numpy as np
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.models.bluebrain.circuit.brain_regions import BrainRegionSpecific
-from neuro_dmt.models.bluebrain.circuit.build import CircuitBuild
+from neuro_dmt.models.bluebrain.circuit.brain_regions\
+    import BrainRegionSpecific
+from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
 from neuro_dmt.models.bluebrain.circuit.O1.parameters import HyperColumn
@@ -50,8 +51,8 @@ class Hippocampal(
             *args, **kwargs)
 
 
-class O1Circuit(
-        CircuitBuild):
+class O1CircuitGeometry(
+        CircuitGeometry):
     """Specializations of methods for the O1.v6a circuits."""
 
     specializations = {
@@ -60,21 +61,25 @@ class O1Circuit(
 
     def __init__(self, *args, **kwargs):
         self.label = "O1"
-        self.geometry\
+        self.layer_thickness\
             = kwargs.get(
-                "geometry",
-                Record(
-                    layer_thickness=np.array(
-                        [164.94915873,
+                "layer_thickness",
+                np.array([
+                        164.94915873,
                          148.87602025,
                          352.92508322,
                          189.57183895,
                          525.05585701,
-                         700.37845971]),
-                    lattice_vector=Record(
-                        a1=np.array([0.0, 0.0, 230.92]),
-                        a2=np.array([199.98, 0.0, -115.46])),
-                    min_cortical_depth=10))
+                         700.37845971]))
+        self.lattice_vector\
+            = kwargs.get(
+                "lattice_vector",
+                Record(a1=np.array([0.0, 0.0, 230.92]),
+                       a2=np.array([199.98, 0.0, -115.46])))
+        self.layer_start\
+            = kwargs.get(
+                "layer_start",
+                10.)
         self.__midplane = None
         super().__init__(
             *args, **kwargs)
@@ -82,7 +87,7 @@ class O1Circuit(
     @property
     def thickness(self):
         """..."""
-        return np.sum(self.geometry.layer_thicknesss)
+        return np.sum(self.layer_thicknesss)
 
     @property
     def midplane(self):
@@ -122,16 +127,12 @@ class O1Circuit(
         a point at the center of the columns"""
         self.logger.debug(
             self.logger.get_source_info(),
-            "find random position with condition {}".format(condition.value),
+            "find random position with condition {}"\
+            .format(condition.value),
             "for brain region {}".format(brain_region.label))
-        try:
-            brain_region_spec\
-                = self.specializations[
-                    brain_region]
-        except KeyError as e:
-            raise NotImplementedError(
-                "Brain region specialization for {}"\
-                .format(brain_region))
+        brain_region_spec\
+            = self.get_brain_region_spec(
+                brain_region)
         target\
             = kwargs.get(
                 "target",
@@ -169,7 +170,7 @@ class O1Circuit(
     def central_column(self,
             column_index = 2,
             crossection=50.):
-        """...Current implementation does not use a brain_region."""
+        """..."""
         mean_position\
             = self._center(
                 {"$target": "mc{}_Column".format(column_index)})\
@@ -179,7 +180,7 @@ class O1Circuit(
         point_0\
             = np.array(mean_position - square)
         point_0[1]\
-            = self.geometry.min_cortical_depth
+            = self.layer_start
 
         point_1\
             = np.array(mean_position + square)
@@ -204,7 +205,7 @@ class O1Circuit(
     @property
     def column_start(self):
         """..."""
-        return self.geometry.min_cortical_depth
+        return self.layer_start
 
     def random_column(self,
             crossection=50.):
