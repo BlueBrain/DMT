@@ -84,8 +84,9 @@ class CellCompositionAnalysis(
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
-                      layer="SP",
-                      morph_class="PC")
+                      given_cell_type=CellType(
+                          layer="SP",
+                          morph_class="PC"))
         sp_pc_density.data.index\
             = pd.Index(
                 ["SP_PC"],
@@ -97,7 +98,7 @@ class CellCompositionAnalysis(
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
-                      {hippocampal_layer})
+                      spatial_parameters={hippocampal_layer})
         layer_density.data.index\
             = pd.Index(
                 [hippocampal_layer.repr(i)

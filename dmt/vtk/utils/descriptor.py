@@ -1,5 +1,5 @@
 """An attempt at creating Fields out of a class."""
-from abc import ABCMeta, ABC, abstractmethod
+from abc import ABC, abstractmethod
 import collections
 from dmt.vtk.utils.exceptions import MissingRequiredKeywordArgument
 from dmt.vtk.utils.logging import Logger, with_logging
@@ -11,16 +11,17 @@ class Field:
 
     __is_field__ = True
 
-    def __init__(self, __name__,
-                 __type__=object,
-                 __typecheck__ = lambda instance, x: True,
-                 __is_valid_value__=None,
-                 __is_valid__=lambda instance, x: True,
-                 __doc__ = "A field.",
-                 __examples__=[],
-                 __default__=None,
-                 __optional__=False,
-                 *args, **kwargs):
+    def __init__(self,
+            __name__,
+            __type__=object,
+            __typecheck__=lambda instance, x: True,
+            __is_valid_value__=None,
+            __is_valid__=lambda instance, x: True,
+            __doc__="A field.",
+            __examples__=[],
+            __default__=None,
+            __optional__=False,
+            *args, **kwargs):
         """"
         Parameters
         -----------------------------------------------------------------------
@@ -30,12 +31,10 @@ class Field:
         self.__field_name__ = __name__
         self.__type__ = __type__
         self.__typecheck__ = __typecheck__
-
         if __is_valid_value__ is not None:
             self.__is_valid_value = __is_valid_value__
         else:
             self.__is_valid_value = __is_valid__
-
         __doc__ = __doc__.strip()
         self.__doc__ = __doc__
         if __examples__:
@@ -45,10 +44,9 @@ class Field:
         self.__examples__=__examples__
         self.instance_storage_name\
             = "${}_{}".format(__type__.__name__, __name__)
-
         self.__default__ = __default__
         self.__optional__ = __optional__
-        super(Field, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def Optional(cls, *args, **kwargs):
@@ -75,44 +73,67 @@ class Field:
         try: 
             self.assert_validity(value, *args)
         except TypeError as exception:
-            message = """Value {} has incorrect type. Expected {}, received {}"""\
-                      .format(value, self.__type__, type(value))
-            return Validation(message, exception)
+            message\
+                = """Value {} has incorrect type. Expected {}, received {}"""\
+                .format(
+                    value,
+                    self.__type__,
+                    type(value))
+            return\
+                Validation(
+                    message,
+                    exception)
         except ValueError as exception:
-            message = """{} is correct type but has invalid value. Look up
-            this Field's doc""".format(value)
-            return Validation(message, exception)
-        return Validation("{} is a valid value of {} field {}."\
-                         .format(value,
-                                 instance.__class__.__name__,
-                                 self.__name__))
-
-    def checktype(self, instance, value):
+            message\
+                = """{} is correct type but has invalid value. Look up
+                this Field's doc"""\
+                    .format(
+                        value)
+            return\
+                Validation(
+                    message,
+                    exception)
+        return\
+            Validation(
+                "{} is a valid value of {} field {}."\
+                .format(value,
+                        instance.__class__.__name__,
+                        self.__name__))
+    
+    def checktype(self,
+            instance,
+            value):
         """..."""
-        return self.__typecheck__(instance, value)
+        return\
+            self.__typecheck__(
+                instance,
+                value)
 
 
-    def assert_validity(self, instance, value):
+    def assert_validity(self,
+            instance,
+            value):
         """..."""
         if not isinstance(value, self.__type__):
             raise TypeError(
                 "Cannot set field '{}' of type '{}' to value '{}' of type '{}'"\
-                .format(self.__field_name__,
-                        self.__type__.__name__,
-                        value, str(type(value)))
-            )
+                .format(
+                    self.__field_name__,
+                    self.__type__.__name__,
+                    value,
+                    str(type(value))))
         if not self.checktype(instance, value):
             raise TypeError(
                 "value '{}' for field '{}' does not type-check"\
-                .format(value, self.__field_name__)
-            )
-        error = ValueError(
-            "Field '{}' of type '{}' cannot be set to an invalid value, '{}'"\
-            .format(self.__field_name__,
-                    self.__type__.__name__,
-                    value)
-        )
+                .format(
+                    value,
+                    self.__field_name__))
         if not self.__is_valid_value(instance, value):
+            raise  ValueError(
+                "Field '{}' of type '{}' cannot be an invalid value, '{}'"\
+                .format(self.__field_name__,
+                        self.__type__.__name__,
+                        value))
             raise error
         return
 
@@ -175,7 +196,6 @@ class Field:
                     return getattr(instance, type_arg)
                 except AttributeError as e:
                     raise e
-
             return type_arg
 
         @staticmethod

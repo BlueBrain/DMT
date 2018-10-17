@@ -10,8 +10,9 @@ class Namespace:
 
 class Record:
     """A record, like a C-struct"""
-    def __init__(self, **kwargs):
-        self.__field_names = [k for k in kwargs.keys()]
+    def __init__(self, *args, **kwargs):
+        """..."""
+        self.__field_names = tuple(kwargs.keys())
         self.__dict__.update(kwargs)
 
     @property
