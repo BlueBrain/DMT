@@ -48,6 +48,11 @@ class Field:
         self.__optional__ = __optional__
         super().__init__(*args, **kwargs)
 
+    @property
+    def name(self):
+        """..."""
+        return self.__field_name__
+    
     @classmethod
     def Optional(cls, *args, **kwargs):
         """An alternative constructor.
@@ -456,7 +461,7 @@ class WithFCA:
             if field in kwargs:
                 self.logger.ignore(
                     self.logger.get_source_info(),
-                    "Found Field label {} in kwargs".format(field) )
+                    "Found Fif leneld label {} in kwargs".format(field) )
                 return kwargs[field]
             else:
                 self.logger.ignore(

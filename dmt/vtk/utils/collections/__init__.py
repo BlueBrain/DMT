@@ -3,6 +3,7 @@
 import collections
 from itertools import *
 
+
 class Namespace:
     """A namespace!"""
     def __init__(self, **kwargs):
