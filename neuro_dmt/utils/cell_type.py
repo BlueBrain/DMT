@@ -2,6 +2,7 @@
 for given cell type"""
 
 from abc import ABC, abstractmethod
+from functools import reduce
 from dmt.vtk.utils import collections
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.collections.emuset import emuset
@@ -32,13 +33,14 @@ class CellProperty(
                     isinstance(v, __type__)
                     for v in value)
             return isinstance(value, __type__)
-        
+
+        self.property_type = __type__
         if __value_set__:
             self.__value_set__\
                 = emuset(*__value_set__)
         super().__init__(
             __is_valid__=__is_valid,
-            *args, **kwargs)
+        *args, **kwargs)
 
     def __set__(self, instance, value):
         """set value to value if set else make a set"""
@@ -47,7 +49,7 @@ class CellProperty(
             setattr(
                 instance,
                 self.instance_storage_name,
-                emuset(*value) if value else emuset(self.__type__)) 
+                emuset(*value) if value else emuset(self.property_type)) 
             return
         setattr(
             instance,
@@ -63,7 +65,6 @@ class CellProperty(
         except AttributeError:
             return {}
 
-       
 
 class CellType(
         WithFCA):
@@ -97,7 +98,7 @@ class CellType(
             __name__="morphology",
             __type__=str,
             __doc__="""One of many morphologies.""")
-        
+
     def __init__(self, *args, **kwargs):
         """..."""
         fields_with_value\
@@ -110,17 +111,17 @@ class CellType(
                 = getattr(
                     self.__class__,
                     field_name)
-            values\
+            value_set\
                 = getattr(
                     field,
                     "value_set")
-            if values:
+            if value_set:
                 kwargs[field_name]\
-                    = emuset(*values)
+                    = emuset(*value_set)
             else:
                 kwargs[field_name]\
                     = emuset(
-                        field.__type__) #to be interpreted as Any
+                        field.property_type) #to be interpreted as Any
         super().__init__(*args, **kwargs)
 
     @property
@@ -139,3 +140,37 @@ class CellType(
     def issupertype(this, that):
         """Is this CellType a supertype of that CellType"""
         return that.issubtype(this)
+
+    def __repr__(self):
+        """show me"""
+        def __repr_field(field_name):
+            """..."""
+            self_field_value\
+                = getattr(self, field_name)
+            if self_field_value:
+                return(
+                    "{" +
+                    reduce(
+                        lambda acc, elem: acc + ", {}".format(elem),
+                        list(self_field_value))
+                    + "}")
+            return "{" + "any {}".format(
+                self_field_value.elem_type.__name__) + "}"
+
+        return reduce(
+            lambda accumulator, field_name: "{}\n{}".format(
+                accumulator,
+                "\t{}: {}".format(
+                    field_name,
+                    __repr_field(field_name))),
+            self.get_fields(),
+            "CellType:")
+
+    def __str__(self):
+        """Another way to show me?"""
+        return self.__repr__()
+            
+#cannot do this inside class definition:
+CellType.Any = CellType()
+
+

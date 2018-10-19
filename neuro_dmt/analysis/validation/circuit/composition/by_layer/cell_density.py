@@ -61,9 +61,12 @@ class CellDensityValidation(
             pass
 
 
-    def get_measurement(self, circuit_model, *args, **kwargs):
-        """Get measurement of the phenomenon validated."""
-        return self.adapter.get_cell_density(
+    def get_measurement(self,
             circuit_model,
-            spatial_parameters=self.spatial_parameters)
+            *args, **kwargs):
+        """Get measurement of the phenomenon validated."""
+        return self.adapter\
+                   .get_cell_density(
+                       circuit_model,
+                       spatial_parameters=self.spatial_parameters)
 

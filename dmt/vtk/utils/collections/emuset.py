@@ -6,10 +6,12 @@ class emuset(set):
     """EMpty is Universal Set (hence EMUSET)
     Behaves like a set that cannot be empty.
     Instead empty set is treated like the universal set."""
+
     elem_type = Field(
         __name__="elem_type",
         __type__=type,
         __doc__="""Type of set elements.""")
+
     def __init__(self,
             arg0,
             *args,

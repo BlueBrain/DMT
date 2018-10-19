@@ -23,6 +23,7 @@ from dmt.vtk.measurement import StatisticalMeasurement
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.measurement.parameter.random import get_conditioned_random_variate
 from dmt.vtk.utils.logging import Logger, with_logging
+from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
     cell_density import CellDensityValidation
 from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
@@ -169,6 +170,17 @@ class BlueBrainModelAdapter(
             sampled_box_shape=self._sampled_box_shape,
             *args, **kwargs)
 
+    def get_cell_density(self,
+                         circuit,
+                         spatial_parameters=None,
+                         by_cell_property=None,
+                         for_cell_type=CellType(),
+                         *args, **kwargs):
+        """..."""
+        method\
+            = composition.CellDensity(
+                circuit,
+                by_cell_property=)
     def get_cell_density(self,
             circuit,
             spatial_parameters=None,

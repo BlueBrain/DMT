@@ -360,8 +360,12 @@ class BlueBrainModelHelper:
             .values
 
     def cell_counts(self,
+                    region_of_interest,
+                    by_property=None,#if None count all cells
+                    for_given_type=)
+    def cell_counts(self,
             region_of_interest,
-            by_cell_property=None,#none will count all cells as the same
+            by_cell_property=None,#if None count all cells
             for_given_cell_type={},#empty dict will count all cells, not a subset
             *args, **kwargs):
         """..."""

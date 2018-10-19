@@ -84,8 +84,8 @@ class CellCompositionAnalysis(
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
+                      layer="SP",
                       given_cell_type=CellType(
-                          layer="SP",
                           morph_class="PC"))
         sp_pc_density.data.index\
             = pd.Index(
