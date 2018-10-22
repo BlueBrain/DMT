@@ -165,7 +165,9 @@ class BlueBrainModelAdapter(
         return self.statistical_measurement(
             circuit,
             method,
-            parameters=parameters,
+            parameters=(
+                parameters if parameters
+                else {self.circuit_geometry.column_parameters()}),
             random_variate=random_variate,
             sampled_box_shape=self._sampled_box_shape,
             *args, **kwargs)
@@ -173,15 +175,24 @@ class BlueBrainModelAdapter(
     def get_cell_density(self,
                          circuit,
                          spatial_parameters=None,
-                         by_cell_property=None,
-                         for_cell_type=CellType(),
+                         by_property=None,
+                         for_cell_type=CellType.Any,
                          *args, **kwargs):
         """..."""
-        method\
-            = composition.CellDensity(
+        return self.spatial_measurement(
+            method=composition.CellDensity(
                 circuit,
-                by_cell_property=)
-    def get_cell_density(self,
+                by_property=by_property,
+                for_cell_type=for_cell_type,
+                *args, **kwargs),
+            circuit=circuit,
+            parameters=spatial_parameters,
+            random_variate=(
+                RandomRegionOfInterest if spatial_parameters
+                else RandomColumnOfInterest))
+
+
+    def get_cell_density0(self,
             circuit,
             spatial_parameters=None,
             by_cell_property=None, #implies all cells.  none or one property supported, multiple properties is non-trivial

@@ -6,10 +6,11 @@ import pandas as pd
 import bluepy
 from bluepy.v2.circuit import Circuit
 from bluepy.v2.enums import Cell, Synapse, Segment, Section
-from bluepy.geometry.roi import ROI
+from bluepy.geometry.roi import ROI as RegionOfInterest
 import neurom as nm
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.logging import Logger, with_logging
+from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.models.bluebrain.circuit import geometry, cell_collection
 
 
@@ -97,7 +98,7 @@ class BlueBrainModelHelper:
         return None
 
     def get_segments(self,
-            roi):
+            region_of_interest):
         """Get segments in a region."""
         segidx\
             = self._circuit.morph.spatial_index
@@ -105,22 +106,24 @@ class BlueBrainModelHelper:
             raise ValueError(
                 "No spatial index for this circuit!")
         corner0, corner1\
-            = roi.bbox if isinstance(roi, ROI) else roi
+            =(region_of_interest.bbox
+              if isinstance(region_of_interest, RegionOfInterest) else
+              region_of_interest)
         return segidx.q_window_oncenter(
             corner0,
             corner1)
 
     def region_dendrite_length(self,
-            roi):
+            region_of_interest):
         """Total dendrite length in a region of interest.
 
         Parameters
         ------------------------------------------------------------------------
-        roi :: bluepy.geometry.ROI or tuple(np.ndrray, np.ndarray)
+        region_of_interest :: bluepy.geometry.ROI or tuple(np.ndrray, np.ndarray)
         """
         segdf\
             = self.get_segments(
-                roi)
+                region_of_interest)
 
         dendf\
             = segdf[
@@ -333,7 +336,7 @@ class BlueBrainModelHelper:
 
     def cells_in_region(self,
             region_of_interest,
-            properties=[]):
+            with_properties=[]):
         """..."""
         corner0, corner1\
             = region_of_interest.bbox
@@ -344,7 +347,7 @@ class BlueBrainModelHelper:
         cells\
             = self._cells.get(
                 query,
-                [Cell.X, Cell.Y, Cell.Z] + properties)
+                [Cell.X, Cell.Y, Cell.Z] + with_properties)
         return cells[
             region_of_interest.contains(
                 self.__xyz(
@@ -359,41 +362,28 @@ class BlueBrainModelHelper:
             Cell.Z]]\
             .values
 
-    def cell_counts(self,
-                    region_of_interest,
-                    by_property=None,#if None count all cells
-                    for_given_type=)
-    def cell_counts(self,
+    def get_cell_counts(self,
             region_of_interest,
             by_cell_property=None,#if None count all cells
-            for_given_cell_type={},#empty dict will count all cells, not a subset
+            for_given_cell_type=CellType.Any,
             *args, **kwargs):
         """..."""
-        if by_cell_property in for_given_cell_type:
-            raise TypeError(
-                """Property to count cells by also given a required value!
-                \n\t'by_cell_property' {} appears in 'for_given_cell_type'"""\
-                .format(by_cell_property))
-        properties\
-            = list(
-                for_given_cell_type.keys())
+        query_properties\
+            = for_given_cell_type.property_names
         if by_cell_property:
-            properties.append(by_cell_property)
+            query_properties.append(by_cell_property)
         cells\
-            = self.cells_in_region(
-                region_of_interest,
-                properties=properties)
-        for _property, value in for_given_cell_type.items():
-            cells\
-                = cells[
-                    cells[_property] == value]
+            = for_given_cell_type.filter(
+                self.cells_in_region(
+                    region_of_interest,
+                    with_properties=query_properties))
         if not by_cell_property:
             return cells.shape[0]
         return cells[
             by_cell_property]\
             .value_counts()
-        
-    def __cell_counts_by_property(self,
+
+    def __get_cell_counts_by_property(self,
             region_of_interest,
             _property):
         """..."""
@@ -402,7 +392,7 @@ class BlueBrainModelHelper:
         cells\
             = self.cells_in_region(
                 region_of_interest,
-                properties=properties)
+                with_properties=properties)
         if not _property:
             return np.count_nonzero(
                 roi.contains(
@@ -424,40 +414,40 @@ class BlueBrainModelHelper:
             = data_series.sum()
         return data_series
 
-    def cell_counts_by_cell_type(self,
+    def get_cell_counts_by_cell_type(self,
             region_of_interest):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
-        return self.cell_counts(
+        return self.get_cell_counts(
             region_of_interest,
-            _property=Cell.SYNAPSE_CLASS)
+            by_property=Cell.SYNAPSE_CLASS)
 
-    def cell_counts_by_synapse_class(self,
+    def get_cell_counts_by_synapse_class(self,
             region_of_interest):
         """alias..."""
-        return self.cell_counts(
+        return self.get_cell_counts(
             region_of_interest,
-            _property=Cell.SYNAPSE_CLASS)
+            by_property=Cell.SYNAPSE_CLASS)
 
-    def cell_counts_by_morph_class(self,
+    def get_cell_counts_by_morph_class(self,
             region_of_interest):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
-        return self.cell_counts(
+        return self.get_cell_counts(
             region_of_interest,
-            _property=Cell.MORPH_CLASS)
+            by_property=Cell.MORPH_CLASS)
 
-    def cell_counts_by_mtype(self,
+    def get_cell_counts_by_mtype(self,
             region_of_interest):
         """..."""
-        return self.cell_counts(
+        return self.get_cell_counts(
             region_of_interest,
-            _property=Cell.MTYPE)
+            by_property=Cell.MTYPE)
 
-    def cell_counts_by_morphology(self,
+    def get_cell_counts_by_morphology(self,
             region_of_interest):
         mtype_counts\
-            = self.cell_counts_by_mtype(
+            = self.get_cell_counts_by_mtype(
                 region_of_interest)
         dataframe\
             = pd.DataFrame({
@@ -474,7 +464,7 @@ class BlueBrainModelHelper:
     def cell_densities_by_mtype(self,
             region_of_interest):
         mtype_counts\
-            = self.cell_counts_by_mtype(
+            = self.get_cell_counts_by_mtype(
                 region_of_interest)
         cell_density\
             = 1.e9 * mtype_counts.values / region_of_interest.volume 
@@ -563,7 +553,7 @@ class BlueBrainModelHelper:
             region_of_interest,
             gtype_dataframe):
         mtype_counts\
-            = self.cell_counts_by_morphology(region_of_interest)\
+            = self.get_cell_counts_by_morphology(region_of_interest)\
                   .loc[gtype_dataframe.keys()]\
                   .fillna(0.0)
         marker_stain_dataframe\

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Cell
-from bluepy.geometry.roi import ROI
+from bluepy.geometry.roi import ROI as RegionOfInterest
 from dmt.vtk.utils.collections import *
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
@@ -177,9 +177,9 @@ class RandomCrossection(
 
 class RandomRegionOfInterest(
         CircuitRandomVariate):
-    """Random ROIs"""
-    value_type = ROI
-    label = "roi"
+    """Random regions of interest"""
+    value_type = RegionOfInterest
+    label = "region_of_interest"
 
     def __init__(self,
             circuit,
@@ -276,7 +276,7 @@ class RandomBoxCorners(
             sampled_box_shape=50.*np.ones(3),
             *args, **kwargs):
         """..."""
-        self.random_roi\
+        self.random_region_of_interest\
             = RandomRegionOfInterest(
                 circuit,
                 circuit_geometry,
@@ -294,7 +294,7 @@ class RandomBoxCorners(
             condition,
             *args, **kwargs):
         """"..."""
-        return self.random_roi(
+        return self.random_region_of_interest(
             condition,
             *args, **kwargs).bbox
 

@@ -123,13 +123,43 @@ class CellType(
                     = emuset(
                         field.property_type) #to be interpreted as Any
         super().__init__(*args, **kwargs)
+        self.__properties = {}
+        self.__property_names = []
 
     @property
     def properties(self):
         """..."""
-        return {
-            key: getattr(self, key, None)
-            for key in self.get_fields()}
+        if not self.__properties:
+            self.__properties\
+                = {property_name: getattr(self, property_name)
+                   for property_name in self.get_fields()
+                   if hasattr(self, property_name)}
+        return self.__properties
+
+    def get_property(self, property_name):
+        """If 'property_name' is not a part of this CellType specification,
+        then return a universal set containing values of type(property_name)"""
+        return self.properties.get(
+            property_name,
+            emuset(type(property_name)))
+
+    @property
+    def property_names(self):
+        """Which properties have been specified?"""
+        if not self.__property_names:
+            self.__property_names\
+                = [property_name
+                   for property_name, property_value in self.properties.items()
+                   if property_value]
+        return self.__property_names
+
+    def filter(self, cells):
+        """Filter a DataFrame of cells to return that are of this cell type.
+        Parameters
+        cells :: pandas DataFrame."""
+        return cells[[
+            cell[1] in self
+            for cell in cells[self.property_names].iterrows()]]
 
     def issubtype(this, that):
         """Is this CellType a subtype of that CellType"""
@@ -140,6 +170,17 @@ class CellType(
     def issupertype(this, that):
         """Is this CellType a supertype of that CellType"""
         return that.issubtype(this)
+
+    def __contains__(self, cell):
+        """class CellType may quack as a set of cells.
+
+        Parameters
+        -----------------------------------------------------------------------
+        cell :: A dict or a pandas DataSeries."""
+        return all(
+            property_value in self.get_property(property_name)
+            for property_name, property_value in cell.items())
+
 
     def __repr__(self):
         """show me"""
@@ -169,6 +210,7 @@ class CellType(
     def __str__(self):
         """Another way to show me?"""
         return self.__repr__()
+
             
 #cannot do this inside class definition:
 CellType.Any = CellType()
