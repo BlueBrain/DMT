@@ -1,12 +1,13 @@
+import numpy as np
 import pandas as pd
 from dmt.model import interface, adapter
 from neuro_dmt.library.users.armando.validations.hippocampus import\
-    CellDensityValidation
+    MtypeCellDensityValidation
 from bluepy.v2.enums import Cell
 from bluepy.v2.circuit import Circuit
 
 @adapter.adapter(Circuit)
-@interface.implementation(CellDensityValidation.AdapterInterface)
+@interface.implementation(MtypeCellDensityValidation.AdapterInterface)
 class HippocampusAdapter:
 
     def __init__(self, *args, **kwargs):
@@ -37,3 +38,62 @@ class HippocampusAdapter:
         composition['model_mean'] = means
         composition['model_std'] = stds
         return composition
+
+    def get_layer_composition(self, circuit):
+        atlas = circuit.atlas
+        brain_regions = atlas.load_data('brain_regions')
+        hierarchy = atlas.load_hierarchy()
+        labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
+        df = pd.DataFrame(index=labels, columns=np.arange(7))
+        scale = 1000000
+
+        for idx in range(7):
+            mod = []
+            ids1 = hierarchy.collect('acronym', 'mc'+str(idx), 'id')
+            gids1 = circuit.cells.ids({Cell.REGION: '@mc'+str(idx)+'.*'})
+
+            # Neurons in CA1
+            mod.append(len(gids1) * scale / brain_regions.volume(ids1))
+
+            # SLM-SR neurons in SLM-SR
+            ids2 = hierarchy.collect('acronym', 'mc'+str(idx)+';SLM', 'id')\
+                            .union(
+                                hierarchy.collect(
+                                    'acronym',
+                                    'mc'+str(idx)+';SR',
+                                    'id'))
+            ids = ids1.intersection(ids2)
+            gids2 = np.append(circuit.cells.ids({'$target': 'SLM'}),
+                              circuit.cells.ids({'$target': 'SR'}))
+            gids = np.intersect1d(gids1, gids2)
+            mod.append(len(gids) * scale / brain_regions.volume(ids))
+
+            # SP neurons in SP
+            ids2 = hierarchy.collect('acronym', 'mc'+str(idx)+';SP', 'id')
+            ids = ids1.intersection(ids2)
+            gids2 = circuit.cells.ids({'$target': 'SP'})
+            gids = np.intersect1d(gids1, gids2)
+            mod.append(len(gids) * scale / brain_regions.volume(ids))
+
+            # SP_PC in SP
+            ids2 = hierarchy.collect('acronym', 'mc'+str(idx)+';SP', 'id')
+            ids = ids1.intersection(ids2)
+            gids2 = circuit.cells.ids({'$target': 'SP_PC'})
+            gids = np.intersect1d(gids1, gids2)
+            mod.append(len(gids) * scale / brain_regions.volume(ids))
+
+            # SO neurons in SP
+            ids2 = hierarchy.collect('acronym', 'mc'+str(idx)+';SO', 'id')
+            ids = ids1.intersection(ids2)
+            gids2 = circuit.cells.ids({'$target': 'SO'})
+            gids = np.intersect1d(gids1, gids2)
+            mod.append(len(gids) * scale / brain_regions.volume(ids))
+
+            df[idx] = mod
+            means = df.mean(axis=1)
+            stds = df.std(axis=1)
+            df['mean'] = means
+            df['std'] = stds
+            df['sem'] = stds / means
+
+            return df

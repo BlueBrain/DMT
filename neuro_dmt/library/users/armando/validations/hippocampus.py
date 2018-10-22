@@ -12,7 +12,7 @@ reference_data = pd.read_csv(os.path.join(dmt_path, data_path),
                              delim_whitespace=True, index_col=0, skiprows=1,
                              names=['exp_mean'])
 
-class CellDensityValidation:
+class MtypeCellDensityValidation:
 
     def __init__(self, adapter, *args, **kwargs):
         self.adapter = adapter
@@ -71,7 +71,49 @@ class CellDensityValidation:
 
         plt.subplots_adjust(top=0.84)
 
-        filename = '.' + str(time.time()) + '.png'
+        filename = os.path.join("neuro_dmt", "library",
+                                "users", "armando",
+                                "mtype_densities{}.png".format(time.time()))
         plt.savefig(filename)
 
-        plt.show()
+
+class ByLayerCellDensityValidation:
+
+    experimental_mean = np.array([35.2, 1.9, 272.4, 264, 11.3])
+    experimental_sem = np.array([0.5, 0.3, 14.3, 14.6, 0.9])
+
+    def __init__(self, adapter, *args, **kwargs):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+
+        def get_layer_composition(self, circuit):
+            pass
+
+    def __call__(self, circuit):
+        composition = self.adapter.get_layer_composition(circuit)
+        self.plot(composition)
+
+    def plot(self, composition):
+        fig, ax = plt.subplots()
+
+        labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
+        ind = np.arange(len(labels))
+        width = 0.35
+
+        s1 = ax.bar(ind, composition['mean'],
+                    width, yerr=composition['sem'].values)
+        s2 = ax.bar(ind + width, self.experimental_mean, width,
+                    yerr=self.experimental_sem)
+
+        ax.set_ylabel('density (10^3/mm^3)')
+        ax.set_title('Neuron density')
+        ax.set_xticks(ind + width / 2)
+        ax.set_xticklabels(labels)
+
+        ax.legend((s1[0], s2[0]), ('Model', 'Experiment'))
+
+        filename = os.path.join("neuro_dmt", "library",
+                                "users", "armando",
+                                "layer_densities{}.png".format(time.time()))
+        plt.savefig(filename)
