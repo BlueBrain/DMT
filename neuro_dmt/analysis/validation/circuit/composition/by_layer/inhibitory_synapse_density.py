@@ -4,14 +4,16 @@ from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.analysis.validation.circuit.composition.by_layer \
     import ByLayerCompositionValidation
 
-class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
+class InhibitorySynapseDensityValidation(
+        ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
 
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
         super().__init__(
             Phenomenon(
@@ -19,7 +21,9 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
                 "Count of inhibitory synapses in a unit volume",
                 group="composition"),
             *args, **kwargs)
-    class AdapterInterface(Interface):
+
+    class AdapterInterface(
+            Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
 
@@ -54,7 +58,11 @@ class InhibitorySynapseDensityValidation(ByLayerCompositionValidation):
             pass
 
      
-    def get_measurement(self, circuit_model, *args, **kwargs):
+    def get_measurement(self,
+            circuit_model,
+            *args, **kwargs):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_inhibitory_synapse_density(
-            circuit_model, self.spatial_parameters)
+        return self.adapter\
+                   .get_inhibitory_synapse_density(
+                       circuit_model,
+                       spatial_parameters=self.spatial_parameters)

@@ -4,13 +4,15 @@ from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.analysis.validation.circuit.composition.by_layer \
     import ByLayerCompositionValidation
 
-class SynapseDensityValidation(ByLayerCompositionValidation):
+class SynapseDensityValidation(
+        ByLayerCompositionValidation):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
         super().__init__(
             Phenomenon(
@@ -20,10 +22,12 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
             *args, **kwargs)
 
 
-    class AdapterInterface(Interface):
+    class AdapterInterface(
+            Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
-        def get_label(self, circuit_model):
+        def get_label(self,
+                circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -32,7 +36,9 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
             """
             pass
 
-        def get_synapse_density(self, circuit_model, spatial_parameters):
+        def get_synapse_density(self,
+                circuit_model,
+                spatial_parameters):
             """Get volume density of synapses in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -52,7 +58,11 @@ class SynapseDensityValidation(ByLayerCompositionValidation):
             pass
 
      
-    def get_measurement(self, circuit_model, *args, **kwargs):
+    def get_measurement(self,
+            circuit_model,
+            *args, **kwargs):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_synapse_density(
-            circuit_model, self.spatial_parameters)
+        return self.adapter\
+                   .get_synapse_density(
+                       circuit_model,
+                       spatial_parameters=self.spatial_parameters)

@@ -379,9 +379,21 @@ class BlueBrainModelHelper:
                     with_properties=query_properties))
         if not by_cell_property:
             return cells.shape[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get cell counts by cell property {}".format(by_cell_property),
+            "columns retrieved {}".format(cells.columns))
+        if cells.shape[0] == 0:
+            property_values\
+                = for_given_cell_type.get_property(
+                    by_cell_property)
+            return pd.Series({
+                "{}".format(property_value): 0.0
+                for property_value in property_values})
         return cells[
             by_cell_property]\
             .value_counts()
+        
 
     def __get_cell_counts_by_property(self,
             region_of_interest,
@@ -546,8 +558,8 @@ class BlueBrainModelHelper:
         })
         return(
             1.e9 * scale_factor *
-            synapse_count /
-            region_of_interest.volume())
+            synapse_count / region_of_interest.volume)
+            
 
     def marker_stains(self,
             region_of_interest,
@@ -632,7 +644,7 @@ class BlueBrainModelHelper:
                 spine_density_per_unit_len_std)
 
         return(
-            random_spine_density() * total_spine_length / roi.volume
+            random_spine_density()*total_spine_length/region_of_interest.volume
             if total_spine_length else None)
 
     def soma_volume_fraction(self,
@@ -687,9 +699,9 @@ class BlueBrainModelHelper:
             print(
                 "total volumes obtained ", ntotal,
                 " with number valid ", nvalid)
-
-            f = ((ntotal + 1.0)/ (nvalid + 1.0))
-            vol_frac = (f * np.sum([v for v in soma_volumes if v]) / roi.volume)
+            volume_fraction\
+                = (((ntotal + 1.0)/ (nvalid + 1.0)) *
+                   np.sum([v for v in soma_volumes if v]) /
+                   region_of_interest.volume)
             print("soma volume fraction for the roi: ", vol_frac)
-
         return volume_fraction

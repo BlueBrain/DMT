@@ -149,11 +149,12 @@ class BlueBrainModelAdapter(
             = StatisticalMeasurement(
                 random_variate=random_variate,
                 sample_size=self.sample_size)
-        return self.filled(
-            get_measurement(
-                method,
-                *args, **kwargs),
-            by=parameters)
+        return\
+            self.filled(
+                get_measurement(
+                    method,
+                    *args, **kwargs),
+                by=parameters)
 
     def spatial_measurement(self,
             method,
@@ -162,22 +163,23 @@ class BlueBrainModelAdapter(
             random_variate=None,
             *args, **kwargs):
         """..."""
-        return self.statistical_measurement(
-            circuit,
-            method,
-            parameters=(
-                parameters if parameters
-                else {self.circuit_geometry.column_parameters()}),
-            random_variate=random_variate,
-            sampled_box_shape=self._sampled_box_shape,
-            *args, **kwargs)
-
+        return\
+            self.statistical_measurement(
+                circuit,
+                method,
+                parameters=(
+                    parameters if parameters
+                    else {self.circuit_geometry.column_parameter()}),
+                random_variate=random_variate,
+                sampled_box_shape=self._sampled_box_shape,
+                *args, **kwargs)
+    
     def get_cell_density(self,
-                         circuit,
-                         spatial_parameters=None,
-                         by_property=None,
-                         for_cell_type=CellType.Any,
-                         *args, **kwargs):
+            circuit,
+            spatial_parameters=None,
+            by_property=None,
+            for_cell_type=CellType.Any,
+            *args, **kwargs):
         """..."""
         return self.spatial_measurement(
             method=composition.CellDensity(
@@ -191,95 +193,35 @@ class BlueBrainModelAdapter(
                 RandomRegionOfInterest if spatial_parameters
                 else RandomColumnOfInterest))
 
-
-    def get_cell_density0(self,
-            circuit,
-            spatial_parameters=None,
-            by_cell_property=None, #implies all cells.  none or one property supported, multiple properties is non-trivial
-            layer=None,
-            synapse_class=None,
-            morph_class=None,
-            *args, **kwargs):
-        """...Get cell density from the circuit,
-        as a function of parameters in 'spatial_parameters'.
-        
-        Note
-        ------------------------------------------------------------------------
-        Default "spatial_parameters" value of None implies no condition. This is
-        non-trivial to implement, and is not yet implemented."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "get cell density from adapter with spatial parameters {}"\
-            .format(spatial_parameters))
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """by cell property? {}""".format(by_cell_property))
-        given_cell_type = {}
-        if synapse_class:
-            given_cell_type["synapse_class"]\
-                = synapse_class
-        if morph_class:
-            given_cell_type["morph_class"]\
-                = morph_class
-        if layer:
-            given_cell_type["layer"]\
-                = layer
-        method\
-            = composition.CellDensity(
-                circuit,
-                by_property=by_cell_property,
-                for_given=given_cell_type)
-        if by_cell_property:
-            method0\
-                = composition.CellDensity(
-                    circuit,
-                    by_property=by_cell_property)
-        else:
-            given_cell_type = {}
-            if synapse_class:
-                given_cell_type["synapse_class"]\
-                    = synapse_class
-            if morph_class:
-                given_cell_type["morph_class"]\
-                    = morph_class
-            method0\
-                = composition.CellDensity(
-                    circuit,
-                    for_given=given_cell_type)
-        return self.spatial_measurement(
-            method=method,
-            circuit=circuit,
-            parameters=(
-                spatial_parameters if spatial_parameters
-                else {self.circuit_geometry.column_parameter()}),
-            random_variate=(
-                RandomRegionOfInterest if spatial_parameters
-                else RandomColumnOfInterest),
-            *args, **kwargs)
-        
     def get_cell_ratio(self,
             circuit,
-            by):
+            spatial_parameters=None,
+            *args, **kwargs):
         """..."""
         return self.spatial_measurement(
             method=composition.CellRatio(circuit),
             circuit=circuit,
-            by=by)
+            parameters=spatial_parameters,
+            *args, **kwargs)
 
     def get_inhibitory_synapse_density(self,
             circuit,
-            by):
+            spatial_parameters=None,
+            *args, **kwargs):
         """Implement this!"""
         return self.spatial_measurement(
             method=composition.InhibitorySynapseDensity(circuit),
             circuit=circuit,
-            by=by)
+            parameters=spatial_parameters,
+            *args, **kwargs)
 
     def get_synapse_density(self,
             circuit,
-            by):
+            spatial_parameters=None,
+            *args, **kwargs):
         """Implement this!"""
         return self.spatial_measurement(
             method=composition.ExtrinsicIntrinsicSynapseDensity(circuit),
             circuit=circuit,
-            by=by)
+            parameters=spatial_parameters,
+            *args, **kwargs)

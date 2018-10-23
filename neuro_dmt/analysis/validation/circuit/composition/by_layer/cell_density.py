@@ -21,11 +21,13 @@ class CellDensityValidation(
                 group="composition"),
             *args, **kwargs)
 
-    class AdapterInterface(Interface):
+    class AdapterInterface(
+            Interface):
         """All methods listed here must be implemented by an adapter for this
         interface.
         """
-        def get_label(self, circuit_model):
+        def get_label(self,
+                circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -35,8 +37,8 @@ class CellDensityValidation(
             pass
 
         def get_cell_density(self,
-                            circuit_model,
-                            spatial_parameters):
+                circuit_model,
+                spatial_parameters):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
