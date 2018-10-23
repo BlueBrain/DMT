@@ -9,8 +9,9 @@ distinction between estimation and measurement."""
 from abc import ABC, abstractmethod
 import collections
 import pandas as pd
+from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random \
     import RandomVariate, ConditionedRandomVariate
@@ -26,40 +27,37 @@ class Measurement:
     pass
 
 
-class Method(ABC):
+class Method(
+        WithFCA,
+        ABC):
     """A class that encapsulates data and methods needed by a statistical
     measurement."""
 
-    units = ClassAttribute(
+    units = Field(
         __name__ = "units",
         __type__ = str,
         __doc__  = """String representation of the units of the
         measurement value computed by this Method. Notice that in the future,
-        we may use a class Unit."""
-    )
-    @property
-    @abstractmethod
-    def label(self):
-        """
-        Return
-        ------------------------------------------------------------------------
-        type str #to be used in a report, plot, plot-caption, data-frame column
-        """
-        pass
+        we may use a class Unit.""")
 
-    @property
-    @abstractmethod
-    def phenomenon(self) :
-        """The measured phenomenon."""
-        pass
+    label = Field(
+        __name__="label",
+        __type__=str,
+        __doc__="""That can be used to label the measured data
+        in a report or plot.""")
 
-    @property
-    def return_type(self):
-        """..."""
-        try:
-            return self.__return_type
-        except AttributeError:
-            return float
+    phenomenon = Field(
+        __name__="phenomenon",
+        __type__=Phenomenon,
+        __doc__="""The phenomenon measured.""")
+
+    return_type = Field(
+        __name__="return_type",
+        __type__=type,
+        __default__=float,
+        __doc__="""Set this to the __call__ method's return. In our uses,
+        we have returned 'float' or 'pandas.DataSeries'.""")
+
 
     @abstractmethod
     def __call__(self,

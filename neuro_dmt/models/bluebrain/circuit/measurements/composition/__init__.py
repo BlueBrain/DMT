@@ -1,64 +1,98 @@
 """Circuit composition measurements for Blue Brain circuits."""
 import numpy as np
 import pandas as pd
+from bluepy.v2.enums import Cell
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
+from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
-class CellDensity(
+class CompositionMeasurementMethd(
         measurement.Method):
-    """..."""
+    """Common attributes of composition measurement.Method"""
 
-    label = "in-silico"
-    phenomenon = Phenomenon("Cell Density", "Number of cells in a unit volume")
-    units = "1000/mm^3"
 
     def __init__(self,
             circuit,
             by_property=None,
-            for_cell_type={},
+            for_cell_type=CellType.Any,
             *args, **kwargs):
         """..."""
-        self.__property = by_property
-        self.__cell_type = for_cell_type
-        self.__circuit = circuit
-        self.__helper = BlueBrainModelHelper(circuit=circuit)
-        self.__return_type = float if not by_property else pd.Series
+        self._property = by_property
+        self._cell_type = for_cell_type
+        self._circuit = circuit
+        self._helper = BlueBrainModelHelper(circuit=circuit)
+
+        if "label" not in kwargs:
+            self.label = "in-silico"
+        if "return_type" not in kwargs:
+            kwargs["return_type"]\
+                = float if not by_property else pd.Series
+        super().__init__(
+            *args, **kwargs)
+
+
+class CellDensity(
+        CompositionMeasurementMethd):
+    """..."""
+
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            circuit,
+            phenomenon=Phenomenon(
+                "Cell Density",
+                "Number of cells in a unit volume"),
+            units="1000/mm^3",
+            *args, **kwargs)
 
     def __call__(self,
             region_of_interest):
         """Number of cells in a unit volume, [1000/mm^3]"""
         cell_counts\
-            =  self.__helper.get_cell_counts(
+            =  self._helper.get_cell_counts(
                 region_of_interest,
-                by_cell_property=self.__property,
-                for_given_cell_type=self.__cell_type)
+                by_cell_property=self._property,
+                for_given_cell_type=self._cell_type)
         return 1.e6 * cell_counts / region_of_interest.volume
 
 
-class CellRatio(measurement.Method):
+class CellRatio(
+        CompositionMeasurementMethd):
     """..."""
 
-    label = "in-silico"
-    phenomenon = Phenomenon("cell_ratio",
-                            "Fraction of inhibitory cells in the circuit.")
-    units = "Count"
-
-    def __init__(self, circuit):
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
         """..."""
-        self.__circuit = circuit
-        self.__helper  = BlueBrainModelHelper(circuit=circuit)
+        super().__init__(
+            circuit,
+            by_property=Cell.SYNAPSE_CLASS,
+            phenomenon=Phenomenon(
+                "cell_ratio",
+                "Fraction of inhibitory cells in the circuit."),
+            units="Count",
+            return_type=float,
+            *args, **kwargs)
 
-    def __call__(self, roi):
+    def __call__(self,
+            region_of_interest):
         """Ratio of the number of inhibitory cells to
-        the number of excitatory cells in a region of interest (roi)
+        the number of excitatory cells in a region of interest
         of the circuit.
         """
-        ccounts = self.__helper.cell_counts(roi)
-        return (1.0 + ccounts['INH']) / (1.0 + ccounts['TOT'])
+        cell_counts\
+            = self._helper.get_cell_counts(
+                region_of_interest,
+                by_cell_property=self._property,
+                for_given_cell_type=self._cell_type)
+        return (1.0 + cell_counts['INH']) / (1.0 + np.sum(cell_counts))
 
-    
+
+
 class InhibitorySynapseDensity(measurement.Method):
     """..."""
 

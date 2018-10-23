@@ -369,8 +369,8 @@ class BlueBrainModelHelper:
             *args, **kwargs):
         """..."""
         query_properties\
-            = for_given_cell_type.property_names
-        if by_cell_property:
+            = list(for_given_cell_type.property_names)
+        if by_cell_property and by_cell_property not in query_properties:
             query_properties.append(by_cell_property)
         cells\
             = for_given_cell_type.filter(

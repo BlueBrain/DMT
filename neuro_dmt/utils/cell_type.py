@@ -148,9 +148,10 @@ class CellType(
         """Which properties have been specified?"""
         if not self.__property_names:
             self.__property_names\
-                = [property_name
-                   for property_name, property_value in self.properties.items()
-                   if property_value]
+                = list({
+                    property_name
+                    for property_name, property_value in self.properties.items()
+                    if property_value})
         return self.__property_names
 
     def filter(self, cells):
