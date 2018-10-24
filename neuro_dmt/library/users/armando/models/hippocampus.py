@@ -111,3 +111,26 @@ class HippocampusAdapter:
                 = circuit.stats.sample_bouton_density(
                     sample, group=gids, synapses_per_bouton=1.2)
         return data, mtypes
+
+    def get_syns_per_conn(self, circuit, sample):
+
+        mtypes = circuit.v2.cells.mtypes
+        model_mean = pandas.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        model_std = pandas.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        for pre_mtype in mtypes:
+            for post_mtype in mtypes:
+                pre = circuit.v2.cells.ids(group={Cell.MTYPE: pre_mtype, '$target': 'mc2_Column'}, limit=nsample)
+                post = circuit.v2.cells.ids(group={Cell.MTYPE:  post_mtype})
+                data = circuit.v2.stats.sample_pathway_synapse_count(nsample,
+                                                                  pre=pre,
+                                                                  post=post)
+                # only pre cells from cylinder
+        pre = circuit.v2.cells.ids(group={Cell.MTYPE: 'SP_PC',
+                                       '$target': 'mc2_Column'})
+        post = circuit.v2.cells.ids(group='SP_PC')
+        data = circuit.v2.stats.sample_pathway_synapse_count(1000,
+                                                             pre=pre,
+                                                             post=post)
+        # only pre cells from cylinder
+        model_mean[post_mtype][pre_mtype] = data.mean()
+        model_std[post_mtype][pre_mtype] = data.std()

@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 from dmt.model.interface import Interface
-from bluepy.v2.enums import Cell
 import yaml
+import seaborn
 
 dmt_path = "~/dmt"
 data_path = "neuro_dmt/library/users/armando/data/Armando2018_by_mtype.tsv"
@@ -195,67 +195,47 @@ class BoutonDensityValidation:
         plt.savefig(filename)
         # plt.show()
 
-# class SynapsesPerConnectionValidation:
 
-#     def __init__(self, adapter):
-#         self.adapter = adapter
+class SynapsesPerConnectionValidation:
 
-#     class AdapterInterface(Interface):
-#         pass
+    bio_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180219'\
+               '/bioname/nsyn_per_connection_20180125.tsv'
 
-#     def plot():
-#         plt.clf
-#         x = df['mod_mean'].values
-#         y = df['bio_mean'].values
-#         l = np.linspace(0, max(x.max(), y.max()), 50)
-#         fig, ax = plt.subplots()
-#         fig.suptitle('synapses per connection')
-#         ax.plot(x, y, 'o')
-#         ax.errorbar(x, y, xerr=df['mod_std'].values,
-#                     yerr=df['bio_std'].values,
-#                     fmt='o', ecolor='g', capthick=2)
-#         ax.plot(l, l, 'k--')
-#         ax.set_xlabel('Model (#)')
-#         ax.set_ylabel('Experiment (#)')
+    def __init__(self, adapter):
+        self.adapter = adapter
 
-#         timestamp = datetime.now().strftime('%Y%m%dT%H%M%S')
+    class AdapterInterface(Interface):
+        pass
 
-#         filename = os.path.join("neuro_dmt", "library",
-#                                 "users", "armando",
-#                                 "syns_per_conn{}.png"
-#                                 .format(timestamp))
+    def plot(df, model_mean):
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
 
-#         plt.savefig(filename)
-#         plt.show()
-#         # put both plots in A4 page
-#         plt.close('all')
-#         fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+        fig.suptitle('synapses per connection', fontsize=16)
 
-#         fig.suptitle('synapses per connection', fontsize=16)
+        seaborn.heatmap(model_mean, ax=axs[0])
+        axs[0].set_xlabel('post mtype')
+        axs[0].set_ylabel('pre mtype')
 
-#         seaborn.heatmap(model_mean, ax=axs[0])
-#         axs[0].set_xlabel('post mtype')
-#         axs[0].set_ylabel('pre mtype')
+        x = df['mod_mean'].values
+        y = df['bio_mean'].values
+        l = np.linspace(0, max(x.max(), y.max()), 50)
+        axs[1].plot(x, y, 'o')
+        axs[1].errorbar(x, y, xerr=df['mod_std'].values,
+                        yerr=df['bio_std'].values,
+                        fmt='o', ecolor='g', capthick=2)
+        axs[1].plot(l, l, 'k--')
+        axs[1].set_xlabel('Model (#)')
+        axs[1].set_ylabel('Experiment (#)')
 
-#         x = df['mod_mean'].values
-#         y = df['bio_mean'].values
-#         l = np.linspace(0, max(x.max(), y.max()), 50)
-#         axs[1].plot(x, y, 'o')
-#         axs[1].errorbar(x, y, xerr=df['mod_std'].values,
-#                         yerr=df['bio_std'].values,
-#                         fmt='o', ecolor='g', capthick=2)
-#         axs[1].plot(l, l, 'k--')
-#         axs[1].set_xlabel('Model (#)')
-#         axs[1].set_ylabel('Experiment (#)')
+        fig.tight_layout()
 
-#         fig.tight_layout()
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+        filename = os.path.join("neuro_dmt", "library",
+                                "users", "armando",
+                                "syns_per_conn{}.png"
+                                .format(time.time()))
 
-#         plt.subplots_adjust(hspace=0.4, top=0.92)
-#         filename = os.path.join("neuro_dmt", "library",
-#                                 "users", "armando",
-#                                 "syns_per_conn{}.png"
-#                                 .format(timestamp))
+        plt.savefig(filename)
 
-#         plt.savefig(filename)
-
-#         plt.show()
+        plt.show()
