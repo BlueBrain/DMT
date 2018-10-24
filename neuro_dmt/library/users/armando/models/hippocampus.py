@@ -97,3 +97,17 @@ class HippocampusAdapter:
             df['sem'] = stds / means
 
             return df
+
+    def get_bouton_density(self, circuit, sample):
+        """get bouton density"""
+        mtypes = circuit.cells.mtypes
+        data = pd.DataFrame(index=mtypes, columns=np.arange(sample)+1)
+        for mtype in mtypes:
+            gids = circuit.cells.ids(group={Cell.MTYPE: mtype,
+                                               Cell.REGION: '@mc2.*'},
+                                        limit=sample)
+
+            data.loc[mtype][:len(gids)]\
+                = circuit.stats.sample_bouton_density(
+                    sample, group=gids, synapses_per_bouton=1.2)
+        return data, mtypes
