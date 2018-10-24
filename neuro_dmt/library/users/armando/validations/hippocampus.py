@@ -1,64 +1,81 @@
 import os
+import sys
+import time
+import yaml
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 from dmt.model.interface import Interface
-import yaml
+from dmt.vtk.plotting import golden_figure
 
-dmt_path = "~/dmt"
-data_path = "neuro_dmt/library/users/armando/data/Armando2018_by_mtype.tsv"
-reference_data = pd.read_csv(os.path.join(dmt_path, data_path),
-                             delim_whitespace=True, index_col=0, skiprows=1,
-                             names=['exp_mean'])
 
 class MtypeCellDensityValidation:
 
-    def __init__(self, adapter, *args, **kwargs):
+    def __init__(self,
+                 data_path,
+                 adapter,
+                 *args, **kwargs):
+        """..."""
+        self.reference_data\
+            = pd.read_csv(
+                data_path,
+                delim_whitespace=True,
+                index_col=0)
         self.adapter = adapter
-        pass
 
 
     class AdapterInterface(Interface):
+        """Specify the method / attributes required from the model.
+        The methods sketched out here will be used in this analyses.
+        The model adapter must provide these methods."""
 
-        def get_interneuron_mtypes(self, circuit):
+        def filter_interneuron_mtypes(self, circuit):
+            """..."""
             pass
 
         def get_mtype_composition(self, circuit):
+            """..."""
             pass
 
-    def __call__(self, circuit):
-        return self.plot(self.adapter.get_mtype_composition(circuit),
-                         circuit)
 
-    def plot(self, composition, circuit):
-        fig = plt.figure(figsize=(8, 6))
+    def __call__(self, circuit):
+        """...Call Me..."""
+        composition = 1.e2 * self.adapter.get_mtype_composition(circuit)
+        filename = self.plot(composition, circuit)
+        sys.stdout.write("figure saved at {}\n".format(filename))
+
+    def plot(self, circuit_composition, circuit):
+        """..."""
+        fig = golden_figure()
         ax0 = plt.subplot2grid((1, 4), (0, 0), colspan=3)
         ax1 = plt.subplot2grid((1, 4), (0, 3))
-        INT_mtypes = self.adapter.get_interneuron_mtypes(circuit)
+        INT_mtypes = self.adapter.filter_interneuron_mtypes(circuit_composition)
         width = 0.35
-
-        composition_concat = pd.concat(
-            [composition[['model_mean', 'model_std']], reference_data], axis=1)
 
         fig.suptitle('Cell composition', fontsize=16)
 
-        s1 = ax0.bar(np.arange(len(INT_mtypes)),
-                     composition_concat.loc[INT_mtypes]['model_mean'].values,
-                     width,
-                     yerr=composition_concat.loc[INT_mtypes]['model_std'].values)
-        s2 = ax0.bar(np.arange(len(INT_mtypes)) + width,
-                     composition_concat.loc[INT_mtypes]['exp_mean'].values,
-                     width)
+        s1 = ax0.bar(
+            np.arange(len(INT_mtypes)),
+            circuit_composition.loc[INT_mtypes]["mean"].values,
+            width,
+            yerr=circuit_composition.loc[INT_mtypes]["std"].values)
+        s2 = ax0.bar(
+            np.arange(len(INT_mtypes)) + width,
+            self.reference_data.loc[INT_mtypes]["mean"].values,
+            width)
+
         ax0.set_title('interneurons')
         ax0.set_ylabel('Percentage (%)')
         ax0.set_xlabel('mtype')
         ax0.set_xticks(np.arange(len(INT_mtypes)) + width / 2)
         ax0.set_xticklabels(INT_mtypes, rotation='vertical')
 
-        ax1.bar(0, composition_concat.loc['SP_PC']['model_mean'],
-                width, yerr=composition_concat.loc['SP_PC']['model_std'])
-        ax1.bar(0 + width, composition_concat.loc['SP_PC']['exp_mean'], width)
+        ax1.bar(
+            0, circuit_composition.loc['SP_PC']['mean'],
+            width, yerr=circuit_composition.loc['SP_PC']['std'])
+        ax1.bar(
+            0 + width, self.reference_data.loc['SP_PC']['mean'],
+            width)
         ax1.set_title('pyramidal cells')
         ax1.set_ylabel('Percentage (%)')
         ax1.set_xlabel('mtype')
@@ -71,19 +88,30 @@ class MtypeCellDensityValidation:
 
         plt.subplots_adjust(top=0.84)
 
-        filename = os.path.join("neuro_dmt", "library",
-                                "users", "armando",
-                                "mtype_densities{}.png".format(time.time()))
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+        if not os.path.exists(report_path):
+            os.makedirs(report_path)
+        filename\
+            = os.path.join(
+                report_path,
+                "mtype_density_validation_{}.png".format(time.time()))
         plt.savefig(filename)
+        return filename
 
 
 class ByLayerCellDensityValidation:
 
-    experimental_mean = np.array([35.2, 1.9, 272.4, 264, 11.3])
-    experimental_sem = np.array([0.5, 0.3, 14.3, 14.6, 0.9])
-
     def __init__(self, adapter, *args, **kwargs):
+        """..."""
         self.adapter = adapter
+        self.reference_data\
+            = pd.DataFrame(
+                data={"mean": [35.2, 1.9, 272.4, 264, 11.3],
+                      "sem": [0.5, 0.3, 14.3, 14.6, 0.9]},
+                index=pd.Index(['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']))
 
     class AdapterInterface(Interface):
 
@@ -92,19 +120,19 @@ class ByLayerCellDensityValidation:
 
     def __call__(self, circuit):
         composition = self.adapter.get_layer_composition(circuit)
-        self.plot(composition)
+        filename = self.plot(composition)
+        sys.stdout.write("figure saved at {}\n".format(filename))
 
     def plot(self, composition):
         fig, ax = plt.subplots()
 
-        labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
-        ind = np.arange(len(labels))
+        ind = np.arange(self.reference_data.shape[0])
         width = 0.35
-
-        s1 = ax.bar(ind, composition['mean'],
-                    width, yerr=composition['sem'].values)
-        s2 = ax.bar(ind + width, self.experimental_mean, width,
-                    yerr=self.experimental_sem)
+        labels = self.reference_data.index
+        s1 = ax.bar(ind, composition.loc[labels]['mean'],
+                    width, yerr=composition.loc[labels]['std'].values)
+        s2 = ax.bar(ind + width, self.reference_data["mean"], width,
+                    yerr=self.reference_data["sem"])
 
         ax.set_ylabel('density (10^3/mm^3)')
         ax.set_title('Neuron density')
@@ -113,7 +141,15 @@ class ByLayerCellDensityValidation:
 
         ax.legend((s1[0], s2[0]), ('Model', 'Experiment'))
 
-        filename = os.path.join("neuro_dmt", "library",
-                                "users", "armando",
-                                "layer_densities{}.png".format(time.time()))
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+        if not os.path.exists(report_path):
+            os.makedirs(report_path)
+        filename\
+            = os.path.join(
+                report_path,
+                "layer_density_validation_{}.png".format(time.time()))
         plt.savefig(filename)
+        return filename
