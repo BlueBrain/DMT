@@ -25,3 +25,6 @@ doc/auto/
 build/
 doc/build/
 *~
+\#*\#
+.\#*
+*.png
