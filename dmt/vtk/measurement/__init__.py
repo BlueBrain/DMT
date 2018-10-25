@@ -140,13 +140,14 @@ class StatisticalMeasurement:
             method,
             *args, **kwargs):
         """call me"""
+        if "sample_size" not in kwargs:
+            kwargs["size"] = self.sample_size
+        else:
+            kwargs["size"] = kwargs["sample_size"]
         data\
             = summary_statistic(
                 self.sample(
                     method,
-                    size=kwargs.get(
-                        "size",
-                        self.sample_size),
                     *args, **kwargs))
         levels\
             = data.index.names

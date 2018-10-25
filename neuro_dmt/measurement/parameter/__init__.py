@@ -47,7 +47,7 @@ class BrainCircuitMeasurementParameter(
         if collections.check(value):
             return '_'.join(self.value_repr.get(v, "{}".format(v))
                             for v in value)
-        return self.value_repr(value, "{}".format(value))
+        return self.value_repr.get(value, "{}".format(value))
 
 class BrainCircuitSpatialParameter(
         BrainCircuitMeasurementParameter):
@@ -172,7 +172,7 @@ class HippocampalLayerSLM_SR_Fused(
         super().__init__(
             value_type=str,
             brain_region=brain_regions.hippocampus,
-            values=["SLM-SR", "SP", "SO"],
+            values=[("SLM", "SR"), "SP", "SO"],
             *args, **kwargs)
 
 

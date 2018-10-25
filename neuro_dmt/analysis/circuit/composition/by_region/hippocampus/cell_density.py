@@ -7,7 +7,7 @@ from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 from neuro_dmt.utils.enums import Cell
 from neuro_dmt.measurement.parameter\
-    import HippocampalLayer
+    import HippocampalLayerSLM_SR_Fused, HippocampalLayer
 from neuro_dmt.utils.cell_type import CellType
 
 class CellCompositionAnalysis(
@@ -95,6 +95,7 @@ class CellCompositionAnalysis(
                 name="cell_type")
         hippocampal_layer\
             = HippocampalLayer()
+#            = HippocampalLayerSLM_SR_Fused()
         layer_density\
             = self.adapter\
                   .get_cell_density(
@@ -112,9 +113,5 @@ class CellCompositionAnalysis(
             = pd.concat([
                 ca1_density.data,
                 sp_pc_density.data,
-                layer_density.data
-            ]).append(
-                pd.Series(
-                    layer_density.data.loc["SLM"] + layer_density.data.loc["SR"],
-                    name="SLM-SR"))
+                layer_density.data])
         return measurement

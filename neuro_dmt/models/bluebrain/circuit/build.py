@@ -54,6 +54,8 @@ class CircuitGeometry(WithFCA, ABC):
     def get_brain_region_spec(self,
             brain_region):
         """..."""
+        if hasattr(self, "region_specialization"):
+            return self.region_specialization
         try:
             return self.specializations[
                 brain_region]

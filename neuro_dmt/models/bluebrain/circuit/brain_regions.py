@@ -101,12 +101,17 @@ class BrainRegionSpecific(
             = self._target
         return query_dict
 
+    def query_param(self, param):
+        """A parameter such as 'layer' may need to be something else
+        in a bluepy query. Override this method if so,"""
+        return param
+
     def cell_query(self,
             condition,
             *args, **kwargs):
         """A dict that can be passed to circuit.cells.get(...).
         Concrete implementation may override """
         return {
-            param: condition.get_value(param)
+            self.query_param(param): condition.get_value(param)
             for param in self.cell_group_params
             if param in condition}

@@ -16,7 +16,7 @@ from neuro_dmt.models.bluebrain.circuit.random_variate import \
 from neuro_dmt.analysis.circuit.composition.by_region.hippocampus.cell_density\
     import CellCompositionAnalysis
 from neuro_dmt.models.bluebrain.circuit.O1.build\
-    import O1CircuitGeometry
+    import Hippocampal, O1CircuitGeometry
     
 
 circuit_config_path\
@@ -25,6 +25,17 @@ circuit_config_path\
         "O1",
         "20180219",
         "CircuitConfig")
+
+
+class HippocampusSpecialization(
+        Hippocampal):
+    def query_param(self, param):
+        """..."""
+        if param == "layer":
+            return "region"
+        return param
+
+O1CircuitGeometry.region_specialization = HippocampusSpecialization()
 logger\
     = Logger(
         client=__name__,
@@ -45,4 +56,4 @@ cca = CellCompositionAnalysis(
     animal="rat",
     spatial_parameters={hippocampal_layer},
     adapter=bbma)
-measurement = cca.get_measurement(circuit_model)
+#measurement = cca.get_measurement(circuit_model)

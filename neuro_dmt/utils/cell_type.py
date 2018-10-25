@@ -49,7 +49,7 @@ class CellProperty(
             setattr(
                 instance,
                 self.instance_storage_name,
-                emuset(*value if value else self.property_type))
+                emuset(*value) if value else emuset(self.property_type))
             return
         setattr(
             instance,
