@@ -89,11 +89,13 @@ class MtypeCellDensityValidation:
         fig.tight_layout()
 
         plt.subplots_adjust(top=0.84)
-
+        # TODO: this bit here is repeated often: abstract somwhere else
+        # TODO: e.g. module-level variable as default for kwarg
         report_path\
             = os.path.join(
                 os.path.dirname(__file__),
                 "reports")
+
         if not os.path.exists(report_path):
             os.makedirs(report_path)
         filename\
@@ -154,7 +156,7 @@ class ByLayerCellDensityValidation:
                 report_path,
                 "layer_density_validation_{}.png".format(time.time()))
         plt.savefig(filename)
-
+        return filename
 
 class BoutonDensityValidation:
 
@@ -224,9 +226,143 @@ class BoutonDensityValidation:
 
         filename = os.path.join("neuro_dmt", "library",
                                 "users", "armando",
-                                "bouton_density{}.pdf".format(time.time()))
+                                "bouton_density_validation{}.pdf"
+                                .format(time.time()))
 
         plt.savefig(filename)
         # plt.show()
 
         return filename
+
+class SynsPerConnValidation():
+    """validate number of synapses per connection"""
+
+    bio_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180219/'\
+               'bioname/nsyn_per_connection_20180125.tsv'
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+        pass
+
+    def __call__(self, circuit):
+        df = pd.read_csv(self.bio_path, skiprows=1,
+                         names=['pre', 'post', 'bio_mean', 'bio_std'],
+                         usecols=[0, 1, 2, 3], delim_whitespace=True)
+        model_mean, model_std = self.adapter.get_syns_per_conn(circuit)
+        df['model_mean'] = np.NAN
+        df['model_std'] = np.NAN
+        for idx in df.index:
+            pre = df.loc[idx, 'pre']
+            post = df.loc[idx, 'post']
+            df.loc[idx, 'model_mean'] = model_mean[post][pre]
+            df.loc[idx, 'model_std'] = model_std[post][pre]
+
+        filenames = self.plot(df, model_mean, model_std)
+
+        sys.stdout.write("figure saved at {}\n".format(filenames))
+
+        return
+
+    class AdapterInterface(Interface):
+
+        def get_syns_per_conn(self, circuit):
+            pass
+
+    def plot(self, df, model_mean, model_std):
+
+        # put both plots in A4 page
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('synapses per connection', fontsize=16)
+
+        seaborn.heatmap(model_mean, ax=axs[0])
+        axs[0].set_xlabel('post mtype')
+        axs[0].set_ylabel('pre mtype')
+
+        x = df['model_mean'].values
+        y = df['bio_mean'].values
+        l = np.linspace(0, max(x.max(), y.max()), 50)
+        axs[1].plot(x, y, 'o')
+        axs[1].errorbar(x, y,
+                        xerr=df['model_std'].values, yerr=df['bio_std'].values,
+                        fmt='o', ecolor='g', capthick=2)
+        axs[1].plot(l, l, 'k--')
+        axs[1].set_xlabel('Model (#)')
+        axs[1].set_ylabel('Experiment (#)')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        filename1\
+            = os.path.join(
+                report_path,
+                "syns_per_conn_validation{}.pdf".format(time.time()))
+
+        plt.savefig(filename1)
+
+        def conn_class(pre, post):
+            if (pre=='SP_PC')&(post=='SP_PC'):
+                return 'ee'
+            if (pre=='SP_PC')&(post!='SP_PC'):
+                return 'ei'
+            if (pre!='SP_PC')&(post=='SP_PC'):
+                return 'ie'
+            else:
+                return 'ii'
+
+        df['connection_class'] = [conn_class(pre, post)
+                                  for pre, post in zip(df['pre'].values,
+                                                       df['post'].values)]
+
+        plt.close('')
+        fig, ax = plt.subplots()
+
+        x = df['model_mean'].values
+        y = df['bio_mean'].values
+        l = np.linspace(0, max(x.max(), y.max()), 50)
+        ax.plot(l, l, 'k--', label='diagonal')
+
+        x_ee = df[df['connection_class']=='ee']['model_mean'].values
+        y_ee = df[df['connection_class']=='ee']['bio_mean'].values
+        ax.plot(x_ee, y_ee, 'ro', label='EE')
+
+        x_ei = df[df['connection_class']=='ei']['model_mean'].values
+        y_ei = df[df['connection_class']=='ei']['bio_mean'].values
+        ax.plot(x_ei, y_ei, 'go', label='EI')
+
+        x_ie = df[df['connection_class']=='ie']['model_mean'].values
+        y_ie = df[df['connection_class']=='ie']['bio_mean'].values
+        ax.plot(x_ie, y_ie, 'bo', label='IE')
+
+        x_ii = df[df['connection_class']=='ii']['model_mean'].values
+        y_ii = df[df['connection_class']=='ii']['bio_mean'].values
+        ax.plot(x_ii, y_ii, 'mo', label='II')
+
+        m,b = np.polyfit(x, y, 1)
+        x_fit = np.arange(0, x.max(), 1)
+        y_fit = m*x_fit + b
+        ax.plot(x_fit, y_fit, 'r', label='fit')
+
+        ax.legend(loc=2)
+
+        fig.suptitle('Number of appositions per connection')
+
+        ax.set_xlabel('Structural circuit (#)')
+        ax.set_ylabel('Bio data (#)')
+
+        filename2\
+            = os.path.join(
+                report_path,
+                "apps_per_conn_classes_fitting{}.pdf".format(time.time()))
+
+        fig.savefig(filename2)
+        plt.show()
+
+        return (filename1, filename2)

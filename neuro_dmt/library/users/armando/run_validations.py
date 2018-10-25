@@ -23,17 +23,21 @@ dpaths = {validations_module.MtypeCellDensityValidation:
 
 circs = {
     'O1_20180904':
-    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904.temp/CircuitConfig',
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig',
+
+    'O1_20180904_struct':
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/'
+    'CircuitConfig_struct',
 
     # 'O1_20180821':
-    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180821.temp/CircuitConfig',
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180821/CircuitConfig',
 
     # 'O1_20180821_struct':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/'
     # 'O1/20180821/CircuitConfig_struct',
 
-    'CA1_20180506':
-    '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
+    # 'CA1_20180506':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
 
     # 'CA1_20180506_struct':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/'
@@ -54,10 +58,11 @@ def run_valid(validation, circuit):
 
 
 def test():
-    for name, cpath in circs.items():
-        circ = bluepy.v2.circuit.Circuit(cpath)
-        for n, v in validations.items():
-            print('running', n, "for", name)
+    for n, v in validations.items():
+        for name, cpath in circs.items():
+            circ = bluepy.v2.circuit.Circuit(cpath)
+            print('\nrunning', n, "for", name)
             run_valid(v, circ)
+            print('')
 
 test()
