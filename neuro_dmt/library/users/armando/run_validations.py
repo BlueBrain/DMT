@@ -61,8 +61,9 @@ def test():
     for n, v in validations.items():
         for name, cpath in circs.items():
             circ = bluepy.v2.circuit.Circuit(cpath)
-            print('\nrunning', n, "for", name)
+            print('------------',
+                  '\nrunning:', n, "for", name)
             run_valid(v, circ)
-            print('')
+            print('------------\n\n')
 
 test()

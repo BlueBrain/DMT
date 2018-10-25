@@ -363,6 +363,5 @@ class SynsPerConnValidation():
                 "apps_per_conn_classes_fitting{}.pdf".format(time.time()))
 
         fig.savefig(filename2)
-        plt.show()
 
         return (filename1, filename2)
