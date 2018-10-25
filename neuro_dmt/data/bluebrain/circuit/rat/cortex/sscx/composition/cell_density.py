@@ -12,7 +12,6 @@ from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
 class RatSomatosensoryCortexCellDensityData(
         RatSomatosensoryCortexCompositionData):
     """Somatosensory cortex cell density data for the Rat."""
-
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
@@ -22,8 +21,7 @@ class RatSomatosensoryCortexCellDensityData(
                 group="composition"),
             *args, **kwargs)
 
-    @classmethod
-    def get_reference_datasets(cls, reference_data_dir):
+    def get_reference_datasets(self, reference_data_dir):
         """Available reference data to be used to validate cell density."""
         defelipe2002 = datasets.load(reference_data_dir, "DeFelipe2002")
         defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
@@ -47,35 +45,35 @@ class RatSomatosensoryCortexCellDensityData(
         return Record(
             primary=defelipe2017.short_name,
             datasets={
-                defelipe2017.short_name: cls.with_metadata(
+                defelipe2017.short_name: self.with_metadata(
                     defelipe2017,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2017.density_means,
                         defelipe2017.density_stds,
                         scale_factor=0.8229e-3) ),
-                defelipe2014.short_name: cls.with_metadata(
+                defelipe2014.short_name: self.with_metadata(
                     defelipe2014,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2014.density_means,
                         defelipe2014.density_stds,
                         scale_factor=1.e-3) ),
-                defelipe2011.short_name: cls.with_metadata(
+                defelipe2011.short_name: self.with_metadata(
                     defelipe2011,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2011.density_means,
                         defelipe2011.density_stds) ),
-                defelipe2002.short_name: cls.with_metadata(
+                defelipe2002.short_name: self.with_metadata(
                     defelipe2002,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2002.density_means,
                         defelipe2002.density_stds) ),
-                meyer2010.short_name: cls.with_metadata(
+                meyer2010.short_name: self.with_metadata(
                     meyer2010,
-                    cls.summarized(
+                    self.summarized(
                         meyer2010.density_means,
                         meyer2010.density_stds) ),
-                sonja.short_name: cls.with_metadata(
+                sonja.short_name: self.with_metadata(
                     sonja,
-                    cls.summarized(
+                    self.summarized(
                         sonja.density_means,
                         sonja.density_stds) ) } )

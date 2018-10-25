@@ -2,13 +2,38 @@
 
 from abc import ABC, abstractmethod
 import os
-from dmt.model import Callable, AIBase
+from dmt.model import AIBase
 from dmt.vtk.author import Author
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
-from dmt.vtk.utils import utils
+
+class Registry:
+    """Store your subclass instances"""
+    def __init__(self, cls, *args, **kwargs):
+        """..."""
+        self.register_type = cls
+        self.__known_instances = []
+        super().__init__(*args, **kwargs)
+
+    def insert(self, instance):
+        """Insert an subclass instance"""
+        if not isinstance(instance, self.register_type):
+            return None
+        self.__known_instances.append(instance)
+        
+    def find(self, **kwargs):
+        """..."""
+        def __satisfies(instance):
+            """..."""
+            return all(
+                hasattr(instance, attr) and getattr(instance, attr) == value
+                for attr, value in kwargs.items() )
+        return [
+            instance for instance in self.__known_instances
+            if __satisfies(instance)]
+
 
 @with_logging(Logger.level.STUDY)
 @document_fields
@@ -20,6 +45,7 @@ class Analysis(WithFCA, AIBase):
     analysis_type = Field(
         __name__="analysis_type",
         __type__=str,
+        __default__="analysis",
         __doc__="To be used to save reports and figures.")
 
     phenomena = Field(
@@ -57,22 +83,15 @@ class Analysis(WithFCA, AIBase):
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(*args, **kwargs)
+        self.registry = Registry(Analysis)
+        self.registry.insert(self)
 
     def _get_output_dir(self):
         """..."""
-        try:
-            odp = self.output_dir_path
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "No 'output_dir_path'",
-                "\tAttributeError: {}".format(e))
-            odp = None
-
+        odp = getattr(self, "output_dir_path", None)
         return os.path.join(
             odp if odp else os.getcwd(),
-            self.analysis_type,
-            utils.grouped_label(self.phenomena))
+            self.analysis_type)
 
     @abstractmethod
     def get_report(self, *args, **kwargs):
@@ -119,3 +138,127 @@ class Analysis(WithFCA, AIBase):
                 report_file_name=fname)
 
         return report
+
+
+
+class OfSinglePhenomenon:
+    """Mixin single phenomenon into an analysis or a validation."""
+
+    phenomenon = Field(
+        __name__="phenomenon",
+        __type__=Phenomenon,
+        __doc__="""A SinglePhenomenonValidation can have only one Phenomenon
+        that is measured, validated, and reported.""")
+
+    def __init__(self,
+            phenomenon,
+            *args, **kwargs):
+        """..."""
+        self.phenomenon = phenomenon
+        kwargs["phenomena"] = {phenomenon}
+        super().__init__(*args, **kwargs)
+
+    def _get_output_dir(self):
+        """..."""
+        group_label_path\
+            = os.path.join(
+                self.phenomenon.group if self.phenomenon.group else "ungrouped",
+                self.phenomenon.label)
+        try:
+            return os.path.join(
+                super()._get_output_dir(),
+                group_label_path)
+        except AttributeError:
+            return group_label_path
+
+    def get_caption(self, model_measurement):
+        """Caption that will be shown below the validation plot.
+
+        Implementation Notes
+        ------------------------------------------------------------------------
+        Measurement method must be known to produce an informative caption.
+        However this information is available only to the model adapter, and
+        not to the class representing the validation itself. The author of the
+        concrete implementation of SinglePhenomenonValidation will have to
+        determine where to get the information required to produce a caption.
+
+        Parameters
+        ------------------------------------------------------------------------
+        model_measurement :: Record(phenomenon :: Phenomenon#that was measured,
+        ~                           label :: String,#used to label the measureemnt
+        ~                           region_label :: String,#for regions measured
+        ~                           data :: DataFrame["region", "mean", "std"],
+        ~                           method :: String #how measurement was made.])
+        """
+        return "{} is plotted. {}\n Method: {}"\
+            .format(self.phenomenon.title,
+                    self.phenomenon.description,
+                    model_measurement.method)
+
+
+class OfMultiPhenomena:
+    """Mixin multi phenomena into an analysis or validation."""
+
+    phenomena = Field(
+        __name__="phenomena",
+        __typecheck__=Field.typecheck.collection(Phenomenon),
+        __doc__="Phenomena analyzed.")
+
+    def __init__(self,
+            phenomena,
+            *args, **kwargs):
+        """..."""
+        self.phenomena = phenomena
+        super().__init__(*args, **kwargs)
+
+    def _get_output_dir(self):
+        """..."""
+        group_label_path\
+            = os.path.join(
+                *Phenomenon.group_label(
+                    *Phenomenon.sorted(self.phenomena)) )
+        try:
+            return os.path.join(
+                super()._get_output_dir(),
+                group_label_path)
+        except AttributeError:
+            return group_label_path
+
+    def get_caption(self, model_measurement):
+        """Caption that will be shown below the validation plot.
+
+        Implementation Notes
+        ------------------------------------------------------------------------
+        Measurement method must be known to produce an informative caption.
+        However this information is available only to the model adapter, and
+        not to the class representing the validation itself. The author of the
+        concrete implementation of SinglePhenomenonValidation will have to
+        determine where to get the information required to produce a caption.
+
+        Parameters
+        ------------------------------------------------------------------------
+        model_measurement :: Record(phenomenon :: Phenomenon#that was measured,
+        ~                           label :: String,#used to label the measureemnt
+        ~                           region_label :: String,#for regions measured
+        ~                           data :: DataFrame["region", "mean", "std"],
+        ~                           method :: String #how measurement was made.])
+        """
+        sorted_phenomena = Phenomenon.sorted(self.phenomena)
+        group, label\
+            = Phenomenon.group_label(
+                *sorted_phenomena)
+        return "{} are plotted. {}\n Method: {}".format(
+            label,
+            Phenomenon.make_description(
+                *sorted_phenomena),
+            model_measurement.method)
+
+
+class SinglePhenomenonAnalysis(
+        OfSinglePhenomenon,
+        Analysis):
+    """A partially mixed Mixin"""
+    def __init__(phenomenon, *args, **kwargs):
+        """..."""
+        super().__init__(phenomenon, *args, **kwargs)
+

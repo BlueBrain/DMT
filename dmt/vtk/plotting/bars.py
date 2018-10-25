@@ -38,9 +38,6 @@ class BarPlot(Plot):
         creation.
         """
 
-        if len(plotting_datasets) == 0:
-            raise ValueError("Nothing to plot!")
-
         fig = golden_figure(height=self.height, width=self.width)
         nbar = len(plotting_datasets)
         width = 1.0 / (1.0 + nbar)
@@ -49,16 +46,20 @@ class BarPlot(Plot):
         xs = list(plotting_datasets[0].data.index)
         x = np.arange(len(xs))
         x0 = x - (nbar / 2) * width
+        
+        def _plot_index(i, df, label):
+            return plt.bar(x0 + index * width,
+                           df["mean"].values,
+                           width,
+                           color=self.colors[(index-1) % len(self.colors)],
+                           yerr=df["std"].values,
+                           label=label)
 
+        _plot_index(0, self._data, self._label)
         index = 1
         for pe in plotting_datasets:
             df = pe.data.fillna(0.0)
-            a_plot = plt.bar(x0 + index * width,
-                             df["mean"].values,
-                             width,
-                             color=self.colors[(index - 1) % len(self.colors)],
-                             yerr=df["std"].values,
-                             label=pe.label)
+            a_plot = _plot_index(index, df, pe.label)
             index += 1
 
         plt.title(self.title, fontsize=24)

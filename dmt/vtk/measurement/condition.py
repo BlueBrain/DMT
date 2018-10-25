@@ -1,18 +1,40 @@
 """Measurement can be made under given conditions."""
 
-import collections
 import pandas as pd
+from dmt.vtk.utils import collections
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter.group import ParameterGroup
 
 
 class Condition:
     """Collection of fields that together condition a statistical measurement."""
-    def __init__(self, param_value_pairs):
+    def __init__(self,
+            param_value_pairs,
+            *args, **kwargs):
         """..."""
-        self.__param_value_pairs = param_value_pairs
-        self.__record = Record(**{param.label: value
-                                  for param, value in param_value_pairs})
+        self.__param_value_pairs\
+            = [(self.__get_label(param), value)
+               for param, value in param_value_pairs]
+        self.__record\
+            = Record(
+                **{param: value
+                   for param, value in self.__param_value_pairs})
+        super().__init__(*args, **kwargs)
+
+    @classmethod
+    def __get_label(cls, param):
+        """..."""
+        try:
+            return param.label
+        except AttributeError:
+            return param
+
+    def __contains__(self, key):
+        """..."""
+        return self.__get_label(key) in self.__record
+
+    def specifies(self, parameter):
+        """Does condition specify a value for parameter 'key'?"""
 
     @property
     def value(self):
@@ -31,27 +53,35 @@ class Condition:
     @property
     def index(self):
         """A Pandas Index object."""
-        return pd.MultiIndex.from_tuples(
-            [tuple(value for param, value in self.__param_value_pairs)],
-            names=[param.label for param, _ in self.__param_value_pairs]
-        )
+        return pd.MultiIndex.from_tuples([
+            tuple(value for _, value in self.__param_value_pairs)],
+            names=[param for param, _ in self.__param_value_pairs])
 
     def is_valid(self, value):
         """..."""
-        return all(hasattr(value, field) for field in self.fields)
+        return all(
+            hasattr(value, field)
+            for field in self.fields)
 
+    def plus(self, param_value_pairs):
+        """..."""
+        return Condition(
+            self.__param_value_pairs +
+            [(self.__get_label(param), value)
+             for param, value in param_value_pairs])
 
-class ConditionGenerator(ParameterGroup):
+class ConditionGenerator(
+        ParameterGroup):
     """a minor extension."""
 
     def __init__(self, arg0, *args, **kwargs):
         """..."""
-        self.__conditioning_variables = (
-            {v.label: v for v in arg0}
-            if isinstance(arg0,  collections.Iterable) else
-            dict([(arg0.label, arg0)] + [(arg.label, arg) for arg in args])
-        )
-        super(ConditionGenerator, self).__init__(arg0, *args, **kwargs)
+        self.__conditioning_variables\
+            = ({v.label: v for v in arg0}
+               if collections.check(arg0) else
+               dict([(arg0.label, arg0)] +
+                    [(arg.label, arg) for arg in args]))
+        super().__init__(arg0, *args, **kwargs)
             
     @property
     def conditioning_variables(self):
@@ -64,7 +94,8 @@ class ConditionGenerator(ParameterGroup):
 
     def __iter__(self):
         for d in self.kwargs:
-            yield Condition([(param, d[param.label]) for param in self.parameters])
+            yield Condition([
+                (param, d[param.label]) for param in self.parameters ])
 
     @property
     def values(self):

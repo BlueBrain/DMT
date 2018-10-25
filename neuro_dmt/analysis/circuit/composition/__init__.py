@@ -1,4 +1,4 @@
-"""Code relevant for validation of composition phenomena"""
+"""Analysis of a circuit's composition."""
 
 from abc import abstractmethod
 import os
@@ -9,7 +9,7 @@ from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
 from neuro_dmt.utils.brain_regions import BrainRegion
-from neuro_dmt.validations.circuit import BrainCircuitAnalysis
+from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.measurement.parameter import BrainCircuitSpatialParameter
 
 

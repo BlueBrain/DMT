@@ -75,7 +75,8 @@ class HippocampusAdapter:
             """..."""
             column_atlas_ids\
                 = __get_atlas_ids(column_index)
-            column_cell_query = {k: v for k, v in cell_type.items()}
+            column_cell_query\
+                = {k: v for k, v in cell_type.items()}
             column_cell_query.update({
                 Cell.REGION: "@mc{}.*".format(column_index)})
             column_cells\
@@ -89,22 +90,28 @@ class HippocampusAdapter:
 
             def __layer_cell_query(layer):
                 """..."""
-                layer_cell_query = {k: v for k, v in cell_type.items()}
+                layer_cell_query\
+                    = {k: v for k, v in cell_type.items()}
                 layer_cell_query.update({
                     "layer": layer})
                 return layer_cell_query
 
             layers_cells\
                 = [gid for layer in layers
-                   for gid in circuit.cells.ids(__layer_cell_query(layer))]
+                   for gid in circuit.cells.ids(
+                           __layer_cell_query(
+                               layer))]
             column_layer_atlas_ids\
                 = column_atlas_ids.intersection(
                     layers_atlas_ids)
             column_layer_cells\
-                = np.intersect1d(column_cells, layers_cells)
+                = np.intersect1d(
+                    column_cells,
+                    layers_cells)
             return(1.e6 *
                    len(column_layer_cells) /
-                   brain_regions.volume(column_layer_atlas_ids))
+                   brain_regions.volume(
+                       column_layer_atlas_ids))
 
         def __get_cell_density_array(
                 layers=[],

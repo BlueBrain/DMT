@@ -15,46 +15,44 @@ class TestFieldType(WithFCA):
         __name__="field_one",
         __type__=list,
         __is_valid__= Field.typecheck.collection(value_type),
-        __doc__="Collection of type"
-    )
+        __doc__="Collection of type")
+    
     field_two = Field(
         __name__="field_two",
         __type__=set,
         __is_valid__=Field.typecheck.collection("value_type"),
-        __doc__="Collection of type specified by this Test's 'value_type' attribute."
+        __doc__="Collection of type specified by this Test's 'value_type' attribute.")
 
-    )
     field_three = Field(
         __name__="field_three",
         __type__=dict,
         __is_valid__ = Field.typecheck.mapping(value_type, order_type),
-        __doc__="check type of mapping"
-    )
+        __doc__="check type of mapping")
+    
     field_four = Field(
         __name__="field_four",
         __type__=dict,
         __is_valid__=Field.typecheck.mapping("value_type", "order_type"),
-        __doc__="check type of mapping"
-    )
+        __doc__="check type of mapping")
+    
     optional_field = Field.Optional(
         __name__ = "optional_field",
         __type__=dict,
-        __doc__="To test that WithFCA tolerates optional fields."
-    )
+        __doc__="To test that WithFCA tolerates optional fields.")
+    
     default_field = Field(
         __name__ = "default_field",
         __type__ = int,
         __doc__ = "To test a field is set to its default value.",
-        __default__=1
-    )
+        __default__=1)
+    
     any_field = Field.Optional(
         __name__="any_field",
         __typecheck__ = Field.typecheck.any(
             int, str, float,
-            Field.typecheck.mapping(int, str)
-        ),
-        __doc__="To test that Field type may be one of many"
-    )
+            Field.typecheck.mapping(int, str)),
+        __doc__="To test that Field type may be one of many")
+    
     def __init__(self, f1=[], f2=set([1,2]), f3={}, f4={}, **kwargs):
         """..."""
         self.field_one = f1

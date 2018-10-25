@@ -3,6 +3,7 @@
 import collections
 from itertools import *
 
+
 class Namespace:
     """A namespace!"""
     def __init__(self, **kwargs):
@@ -10,8 +11,9 @@ class Namespace:
 
 class Record:
     """A record, like a C-struct"""
-    def __init__(self, **kwargs):
-        self.__field_names = [k for k in kwargs.keys()]
+    def __init__(self, *args, **kwargs):
+        """..."""
+        self.__field_names = tuple(kwargs.keys())
         self.__dict__.update(kwargs)
 
     @property
@@ -44,6 +46,10 @@ class Record:
     @property
     def values(self):
         return (v for v in self.as_dict.values())
+
+    def __contains__(self, key):
+        """..."""
+        return hasattr(self, key)
 
     def get(self, key, default=None):
         """Make Record behave like a dict"""
@@ -110,4 +116,9 @@ def drop(n, xs):
 
 def step(n, xs):
     return islice(xs, None, None, n)
-    
+
+def check(xs):
+    """Check xs is a collection."""
+    return(
+        isinstance(xs, collections.Iterable) and
+        not isinstance(xs, (str, bytes)) )

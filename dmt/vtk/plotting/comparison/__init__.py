@@ -14,14 +14,11 @@ class ComparisonPlot(Plot):
         data :: Either[ DataFrame[mean :: Double, std  :: Double],
         ~               DataFrame[mean :: Double] ]
         """
-        self._data_record = data
-        self._data = data.data
-        self._label = data.label
         self._comparison_level = kwargs.get("level", None)
         self._comparison_data = kwargs.get("comparison_data", None)
         self._given_vars = kwargs.get("given", None)
         self._compared_values = kwargs.get("compared_values", None)
-        super(ComparisonPlot, self).__init__(*args, **kwargs)
+        super().__init__(data, *args, **kwargs)
 
     def against(self, datasets, given=()):
         """Compare data against..."""
@@ -47,18 +44,19 @@ class ComparisonPlot(Plot):
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s data's index.
                     Please choose from {}."""\
-                    .format(g.label, self, self._data.index.names)
-                )
+                    .format(g.label, self, self._data.index.names))
+                
             if g.label not in self._comparison_data.index.names:
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s
                      comparison_data's index. Please choose from {}."""\
-                    .format(g, self, self._comparison_data.index.names)
-                )
+                    .format(g, self, self._comparison_data.index.names))
+                
 
         return self.against(self._comparison_data, given=given)
 
     def level_values(self, level=None):
+        """..."""
         if not level:
             return None
         idx = self._comparison_data.index
@@ -79,6 +77,7 @@ class ComparisonPlot(Plot):
     
     @property
     def compared_values(self):
+        """..."""
         if self._compared_values:
             return self._compared_values
         return [Record(name=name, label=name)
@@ -91,13 +90,13 @@ class ComparisonPlot(Plot):
             return self._given_vars[0]
         except TypeError :
             return self._given_vars
-
         return None
 
     @property
     def given_variable_values(self):
         """Values of the 'given' vars that will be plotted."""
         g = self.given.label
-        return (self._data.index if not g else
-                [self.given.repr(v) for v in self.level_values(g)])
+        return (
+            self._data.index if not g else
+            [self.given.repr(v) for v in self.level_values(g)])
                

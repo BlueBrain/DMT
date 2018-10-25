@@ -74,7 +74,8 @@ class Report:
         """Determine the location where to save the report."""
         odp = output_dir_path if output_dir_path else os.getcwd()
         if with_timestamp:
-            odp = os.path.join(odp, timestamp())
+            daytime = timestamp()
+            odp = os.path.join(odp, daytime.day, daytime.time)
 
         odp = os.path.join(odp)
         

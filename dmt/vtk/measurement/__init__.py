@@ -9,8 +9,9 @@ distinction between estimation and measurement."""
 from abc import ABC, abstractmethod
 import collections
 import pandas as pd
+from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import ClassAttribute, Field
+from dmt.vtk.utils.descriptor import Field, WithFCA
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.parameter.random \
     import RandomVariate, ConditionedRandomVariate
@@ -26,35 +27,41 @@ class Measurement:
     pass
 
 
-class Method(ABC):
+class Method(
+        WithFCA,
+        ABC):
     """A class that encapsulates data and methods needed by a statistical
     measurement."""
 
-    units = ClassAttribute(
+    units = Field(
         __name__ = "units",
         __type__ = str,
         __doc__  = """String representation of the units of the
         measurement value computed by this Method. Notice that in the future,
-        we may use a class Unit."""
-    )
-    @property
-    @abstractmethod
-    def label(self):
-        """
-        Return
-        ------------------------------------------------------------------------
-        type str #to be used in a report, plot, plot-caption, data-frame column
-        """
-        pass
+        we may use a class Unit.""")
 
-    @property
-    @abstractmethod
-    def phenomenon(self) :
-        """The measured phenomenon."""
-        pass
+    label = Field(
+        __name__="label",
+        __type__=str,
+        __doc__="""That can be used to label the measured data
+        in a report or plot.""")
+
+    phenomenon = Field(
+        __name__="phenomenon",
+        __type__=Phenomenon,
+        __doc__="""The phenomenon measured.""")
+
+    return_type = Field(
+        __name__="return_type",
+        __type__=type,
+        __default__=float,
+        __doc__="""Set this to the __call__ method's return. In our uses,
+        we have returned 'float' or 'pandas.DataSeries'.""")
+
 
     @abstractmethod
-    def __call__(self, **measurement_parameters):
+    def __call__(self,
+            **measurement_parameters):
         """Perform a single measurement.
 
         Implementation Guidelines
@@ -66,10 +73,12 @@ class Method(ABC):
         """
         pass
 
-    def get(self, **measurement_parameters):
+    def get(self,
+            **measurement_parameters):
         """Perform a single measurement for the given parameters.
         This is an alias..."""
-        return self.__call__(**measurement_parameters)
+        return self.__call__(
+            **measurement_parameters)
 
  
 
@@ -79,55 +88,84 @@ class StatisticalMeasurement:
     random_variate = Field(
         __name__ = "random_variate",
         __type__ = RandomVariate,
-        __doc__  = """A random variate can be sampled."""
-    )
+        __doc__  = """A random variate can be sampled.""")
+    
     sample_size = Field(
         __name__="sample_size",
         __type__=int,
-        __doc__="""Number of samples to be drawn for each statistical measurement."""
-    )
-    def __init__(self, random_variate, sample_size=20):
+        __doc__="""Number of samples to be drawn
+        for each statistical measurement.""")
+    
+    def __init__(self,
+            random_variate,
+            sample_size=20):
         """..."""
-        self.random_variate = random_variate
-        self.sample_size = sample_size
+        self.random_variate\
+            = random_variate
+        self.sample_size\
+            = sample_size
 
-    def sample(self, method, size=20, *args, **kwargs):
+    def sample(self,
+            method,
+            size=20,
+            *args, **kwargs):
         """..."""
-        params = self.random_variate.sample(size=size, *args, **kwargs)
+        params\
+            = self.random_variate.sample(
+                size=size,
+                *args, **kwargs)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) params index: {}"\
-            .format(params.index)
-        )
-        data = [method(**row[1]) for row in params.iterrows()]
-        measurement = pd.DataFrame({method.label: data}, index=params.index)
+            .format(params.index))
+        data\
+            = [method(**row[1])
+               for row in params.iterrows()]
+        if issubclass(method.return_type, float):
+            measurement\
+                = pd.DataFrame(
+                    {method.label: data},
+                    index=params.index)
+        else:
+            measurement\
+                = pd.DataFrame(
+                    data,
+                    index=params.index)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) measurement.index: {}"\
-            .format(measurement.index)
-        )
+            .format(
+                measurement.index))
         return measurement
 
-    def __call__(self, method, *args, **kwargs):
-        """call me"""
-        data = summary_statistic(self.sample(
+    def __call__(self,
             method,
-            size=kwargs.get("size", self.sample_size),
-            *args, **kwargs
-        ))
-        levels = data.index.names
+            *args, **kwargs):
+        """call me"""
+        if "sample_size" not in kwargs:
+            kwargs["size"] = self.sample_size
+        else:
+            kwargs["size"] = kwargs["sample_size"]
+        data\
+            = summary_statistic(
+                self.sample(
+                    method,
+                    *args, **kwargs))
+        levels\
+            = data.index.names
         if len(levels) == 1:
-            return Record(phenomenon=method.phenomenon,
-                          label=method.label,
-                          method=method_description(method),
-                          data=data,
-                          units=method.units,
-                          parameter=levels[0])
-
-        return Record(phenomenon=method.phenomenon,
-                      label=method.label,
-                      method=method_description(method),
-                      data=data,
-                      units=method.units,
-                      parameter_groups=levels)
+            return Record(
+                phenomenon=method.phenomenon,
+                label=method.label,
+                method=method_description(method),
+                data=data,
+                units=method.units,
+                parameter=levels[0])
+        return Record(
+            phenomenon=method.phenomenon,
+            label=method.label,
+            method=method_description(method),
+            data=data,
+            units=method.units,
+            parameter_groups=levels)
 
 
 def method_description(measurement_method):

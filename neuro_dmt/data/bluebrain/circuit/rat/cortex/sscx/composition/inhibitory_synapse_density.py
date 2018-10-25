@@ -23,15 +23,14 @@ class RatSomatosensoryCortexInhibitorySynapseDensityData(
                 group="composition"),
             *args, **kwargs)
 
-    @classmethod
-    def get_reference_datasets(cls, reference_data_dir):
+    def get_reference_datasets(self, reference_data_dir):
         defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
         return Record(
             primary=defelipe2011.short_name,
             datasets={
-                defelipe2011.short_name: cls.with_metadata(
+                defelipe2011.short_name: self.with_metadata(
                     defelipe2011,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2011.density_means,
                         defelipe2011.density_stds))})
 

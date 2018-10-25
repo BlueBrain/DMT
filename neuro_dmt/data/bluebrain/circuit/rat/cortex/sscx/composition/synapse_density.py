@@ -10,12 +10,7 @@ class RatSomatosensoryCortexSynapseDensityData(
         RatSomatosensoryCortexCompositionData):
     """..."""
 
-    def __init__(self,
-                 data=os.path.join("/gpfs/bbp.cscs.ch/home/sood",
-                                   "work/validations/dmt",
-                                   "examples/datasets/cortex/sscx/rat",
-                                   "synapse_density"),
-                 *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
             phenomenon=Phenomenon(
@@ -24,8 +19,7 @@ class RatSomatosensoryCortexSynapseDensityData(
                 group="composition"),
             *args, **kwargs)
 
-    @classmethod
-    def get_reference_datasets(cls, reference_data_dir):
+    def get_reference_datasets(self, reference_data_dir):
         defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")
         defelipe2002 = datasets.load(reference_data_dir, "DeFelipe2002")
         anton2014 = datasets.load(reference_data_dir, "AntonSanchez2014")
@@ -33,18 +27,18 @@ class RatSomatosensoryCortexSynapseDensityData(
         return Record(
             primary=anton2014.short_name,
             datasets={
-                defelipe2011.short_name: cls.with_metadata(
+                defelipe2011.short_name: self.with_metadata(
                     defelipe2011,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2011.density_means,
                         defelipe2011.density_stds)),
-                defelipe2002.short_name: cls.with_metadata(
+                defelipe2002.short_name: self.with_metadata(
                     defelipe2002,
-                    cls.summarized(
+                    self.summarized(
                         defelipe2002.density_means,
                         defelipe2002.density_stds)),
-                anton2014.short_name: cls.with_metadata(
+                anton2014.short_name: self.with_metadata(
                     anton2014,
-                    cls.summarized(
+                    self.summarized(
                         anton2014.density_means,
                         anton2014.density_stds))})

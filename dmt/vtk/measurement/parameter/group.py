@@ -21,8 +21,8 @@ class ParameterGroup:
         """
         self.__parameters = (
             arg0 if isinstance(arg0, collections.Iterable)
-            else (arg0,) + args
-        )
+            else (arg0,) + args)
+        
 
     @property
     def parameters(self):

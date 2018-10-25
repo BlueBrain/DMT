@@ -7,14 +7,20 @@ from dmt.data.reference import MultiReferenceData
 from neuro_dmt.measurement.parameter import\
     BrainCircuitSpatialParameter, CorticalLayer
 from neuro_dmt.utils.brain_regions import BrainRegion
+from neuro_dmt.data.bluebrain import BlueBrainData
 
-class BlueBrainCircuitCompositionData(MultiReferenceData):
+class BlueBrainCircuitCompositionData(
+        BlueBrainData,
+        MultiReferenceData):
     """Base class that describes circuit composition data used for validating
      Blue Brain Project circuits."""
 
-    animal = Field.Optional(
+    __available_data = {}
+
+    animal = Field(
         __name__="animal",
         __type__=str,
+        __default__="mammal",
         __doc__="Animal model that the data was measured for.")
 
     spatial_parameters = Field(
@@ -37,10 +43,31 @@ class BlueBrainCircuitCompositionData(MultiReferenceData):
         __type__=Phenomenon,
         __doc__="The phenomenon that this data represents.")
 
-    def __init__(self, data, *args, **kwargs):
-        """..."""
-        #kwargs["data"] = data
-        super().__init__(data, *args, **kwargs)
+    data_location = Field.Optional(
+        __name__="data_location",
+        __type__=str,
+        __doc__="""This should be the directory where composition data is
+        located, under which individual files contain measurement data of a
+        single phenomenon.""")
+
+    def __init__(self,
+            phenomenon,
+            data_location,
+            *args, **kwargs):
+        """Data is loaded from self.data_location"""
+        self.data_location = data_location
+        super().__init__(
+            data=self.get_data_location(phenomenon),
+            phenomenon=phenomenon,
+            *args, **kwargs)
+
+        BlueBrainCircuitCompositionData.insert(self)
+
+    @property
+    def label(self):
+        """This is a default implementation.
+        Implement a specification for your needs."""
+        return self.phenomenon.label
 
     @abstractmethod
     def get_reference_datasets(self, data_location):
@@ -87,3 +114,7 @@ class BlueBrainCircuitCompositionData(MultiReferenceData):
                 return "Not Available."
         return None
 
+    @abstractmethod
+    def get(self, phenomenon):
+        """Get data for a given phenomenon."""
+        return NotImplementedError("Implement this method.")
