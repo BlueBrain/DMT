@@ -74,14 +74,14 @@ class BlueBrainModelAdapter(
         __typecheck__=Field.typecheck.subtype(CircuitGeometry),
         __doc__="""The build of the circuit, O1 or atlas based...""")
 
-    spatial_random_variate = Field(
-        __name__="spatial_random_variate",
+    get_spatial_random_variate = Field(
+        __name__="get_spatial_random_variate",
         __type__=type,
         __is_valid_value__=Field.typecheck.subtype(CircuitRandomVariate),
         __default__=RandomRegionOfInterest,
-        __doc__="""A slot to set this adapter's spatial parameter --- with
+        __doc__="""A slot to set this adapter's spatial parameter generator --- with
         respect to which a circuit's spatial phenomena can be measured. """)
-    
+
     sample_size = Field(
         __name__="sample_size",
         __type__=int,
@@ -125,26 +125,23 @@ class BlueBrainModelAdapter(
     def statistical_measurement(self,
             circuit,
             method,
-            parameters=None,
-            random_variate_type=None,
+            parameters={},
+            get_random_variate=None,
             *args, **kwargs):
         """..."""
         self.logger.debug(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with parameters {}"""\
             .format(parameters))
-        if not random_variate_type:
-            random_variate_type = self.spatial_random_variate
+        if not get_random_variate:
+            get_random_variate = self.get_spatial_random_variate
         random_variate\
-            = random_variate_type(
+            = get_random_variate(
                 circuit,
                 self.circuit_geometry,
                 self.brain_region,
-                *args, **kwargs)
-        if parameters:
-            random_variate\
-                = random_variate.given(
-                    parameters)
+                *args, **kwargs
+            ).given(parameters)
         get_measurement\
             = StatisticalMeasurement(
                 random_variate=random_variate,
@@ -159,24 +156,27 @@ class BlueBrainModelAdapter(
     def spatial_measurement(self,
             method,
             circuit,
-            parameters=None,
-            random_variate=None,
+            parameters={},
             *args, **kwargs):
         """..."""
-        return\
-            self.statistical_measurement(
+        if not parameters:
+            return self.statistical_measurement(
                 circuit,
                 method,
-                parameters=(
-                    parameters if parameters
-                    else {self.circuit_geometry.column_parameter()}),
-                random_variate=random_variate,
-                sampled_box_shape=self._sampled_box_shape,
+                parameters={self.circuit_geometry.column_parameter()},
+                get_random_variate=RandomColumnOfInterest,
                 *args, **kwargs)
+        return self.statistical_measurement(
+            circuit,
+            method,
+            parameters=parameters,
+            get_random_variate=RandomRegionOfInterest,
+            sampled_box_shape=self._sampled_box_shape,
+            *args, **kwargs)
     
     def get_cell_density(self,
             circuit,
-            spatial_parameters=None,
+            spatial_parameters={},
             by_property=None,
             for_cell_type=CellType.Any,
             *args, **kwargs):
@@ -189,13 +189,11 @@ class BlueBrainModelAdapter(
                 *args, **kwargs),
             circuit=circuit,
             parameters=spatial_parameters,
-            random_variate=(
-                RandomRegionOfInterest if spatial_parameters
-                else RandomColumnOfInterest))
+            *args, **kwargs)
 
     def get_cell_ratio(self,
             circuit,
-            spatial_parameters=None,
+            spatial_parameters={},
             *args, **kwargs):
         """..."""
         return self.spatial_measurement(
@@ -206,9 +204,9 @@ class BlueBrainModelAdapter(
 
     def get_inhibitory_synapse_density(self,
             circuit,
-            spatial_parameters=None,
+            spatial_parameters={},
             *args, **kwargs):
-        """Implement this!"""
+        """..."""
         return self.spatial_measurement(
             method=composition.InhibitorySynapseDensity(circuit),
             circuit=circuit,
@@ -217,9 +215,9 @@ class BlueBrainModelAdapter(
 
     def get_synapse_density(self,
             circuit,
-            spatial_parameters=None,
+            spatial_parameters={},
             *args, **kwargs):
-        """Implement this!"""
+        """..."""
         return self.spatial_measurement(
             method=composition.ExtrinsicIntrinsicSynapseDensity(circuit),
             circuit=circuit,

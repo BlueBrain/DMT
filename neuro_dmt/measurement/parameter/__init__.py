@@ -3,6 +3,7 @@ these can be used as base classes by model adapters, and required and coded
 against by validation authors. The author of a model adapter then has to just
 look up the documentation to write an appropriate base class."""
 
+from dmt.vtk.utils import collections
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
@@ -19,7 +20,17 @@ class BrainCircuitMeasurementParameter(
         __doc__="""A utility class object that contains some generic information
         about the brain region that this BrainCircuitMeasurementParameter
         is for. You can always us brain_regions.whole_brain!""")
-    
+
+    values = Field(
+        __name__="values",
+        __type__=list,
+        __is_valid__=Field.typecheck.collection(
+            Field.typecheck.either(
+                Field.typecheck.collection("value_type"),
+                Field.typecheck.singleton("value_type"))),
+        __doc__="""Values must be a list whose elements are either of
+        instance 'value_type' or a tuple of 'value_type'.""")
+
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -31,6 +42,12 @@ class BrainCircuitMeasurementParameter(
             super().__init__(
                 *args, **kwargs)
 
+    def repr(self, value):
+        """Override because values may be a tuple."""
+        if collections.check(value):
+            return '_'.join(self.value_repr.get(v, "{}".format(v))
+                            for v in value)
+        return self.value_repr(value, "{}".format(value))
 
 class BrainCircuitSpatialParameter(
         BrainCircuitMeasurementParameter):
@@ -89,6 +106,18 @@ class CorticalLayer(
         
 
 class CorticalLayer23Fused(
+        LayerIndex):
+    """..."""
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(
+            brain_region=brain_regions.cortex,
+            value_type=int,
+            values=[1, (2,3), 4, 5, 6],
+            value_repr={1: "I", (2,3): "II/III", 4:"IV", 5: "V", 6: "VI"},
+            *args, **kwargs)
+
+class CorticalLayer23Fused0(
         LayerIndex):
     """Represents cortical layers, when layers 2 and 3 are fused into one."""
 

@@ -3,11 +3,11 @@ random values."""
 
 from abc import ABC, abstractmethod
 import copy
-import collections
 import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
 from dmt.vtk.measurement.condition import Condition, ConditionGenerator
+from dmt.vtk.utils import collections
 from dmt.vtk.utils.collections import Record, take
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.descriptor import WithFCA
@@ -122,8 +122,11 @@ class ConditionedRandomVariate(
             reset_condition_type=False):
         """..."""
         if not conditioning_vars:
-            raise TypeError(
-                "missing 1 required argument 'conditioning_vars'")
+            self.logger.info(
+                self.logger.get_source_info(),
+                "no variables passed to condition {} instance with"\
+                .format(self.__class__.__name__))
+            return self
 
         l = len(conditioning_vars)
         self.logger.debug(
@@ -133,12 +136,7 @@ class ConditionedRandomVariate(
                 self.logger.get_source_info(),
                 "conditioning_vars{}"\
                 .format(conditioning_vars))
-            if (isinstance(
-                    conditioning_vars,
-                    collections.Iterable)
-                and not isinstance(
-                    conditioning_vars,
-                    (str, bytes,))):
+            if collections.check(conditioning_vars):
                 conditioning_vars\
                     = tuple(v for v in conditioning_vars[0])
             else:

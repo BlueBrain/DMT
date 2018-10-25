@@ -86,7 +86,7 @@ class CellCompositionAnalysis(
                   .get_cell_density(
                       circuit_model,
                       layer="SP",
-                      given_cell_type=CellType(
+                      for_cell_type=CellType(
                           morph_class="PYR"))
         sp_pc_density.data.index\
             = pd.Index(
@@ -112,5 +112,9 @@ class CellCompositionAnalysis(
             = pd.concat([
                 ca1_density.data,
                 sp_pc_density.data,
-                layer_density.data])
+                layer_density.data
+            ]).append(
+                pd.Series(
+                    layer_density.data.loc["SLM"] + layer_density.data.loc["SR"],
+                    name="SLM-SR"))
         return measurement

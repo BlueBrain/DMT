@@ -49,7 +49,7 @@ class CellProperty(
             setattr(
                 instance,
                 self.instance_storage_name,
-                emuset(*value) if value else emuset(self.property_type)) 
+                emuset(*value if value else self.property_type))
             return
         setattr(
             instance,
@@ -212,7 +212,19 @@ class CellType(
         """Another way to show me?"""
         return self.__repr__()
 
-            
+    @property
+    def cell_group_query(self):
+        """..."""
+        return {
+            property_name: tuple(property_value)
+            for property_name, property_value in self.properties
+            if(property_value and
+               property_value != getattr(self.__class__,
+                                         property_name).value_set) }
+
+
+
+
 #cannot do this inside class definition:
 CellType.Any = CellType()
 

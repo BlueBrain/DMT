@@ -15,7 +15,6 @@ class Condition:
         self.__param_value_pairs\
             = [(self.__get_label(param), value)
                for param, value in param_value_pairs]
-
         self.__record\
             = Record(
                 **{param: value
@@ -29,6 +28,13 @@ class Condition:
             return param.label
         except AttributeError:
             return param
+
+    def __contains__(self, key):
+        """..."""
+        return self.__get_label(key) in self.__record
+
+    def specifies(self, parameter):
+        """Does condition specify a value for parameter 'key'?"""
 
     @property
     def value(self):
@@ -88,9 +94,8 @@ class ConditionGenerator(
 
     def __iter__(self):
         for d in self.kwargs:
-            yield Condition(
-                [(param, d[param.label])
-                 for param in self.parameters])
+            yield Condition([
+                (param, d[param.label]) for param in self.parameters ])
 
     @property
     def values(self):

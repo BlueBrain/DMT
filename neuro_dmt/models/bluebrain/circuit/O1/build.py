@@ -18,18 +18,10 @@ class Cortical(
     """..."""
 
     def __init__(self,
-            by=tuple(),
             target="mc2_Column",
-
             *args, **kwargs):
         """..."""
-        cell_group_params\
-            = by if by else ("layer",
-                             "$target",
-                             Cell.SYNAPSE_CLASS,
-                             Cell.MORPH_CLASS)
         super().__init__(
-            cell_group_params,
             brain_region=brain_regions.cortex,
             target=target,
             *args, **kwargs)
@@ -40,13 +32,9 @@ class Hippocampal(
     """..."""
 
     def __init__(self,
-            by=None,
             *args, **kwargs):
         """..."""
-        cell_group_params\
-            = by if by else ("region",)
         super().__init__(
-            cell_group_params,
             brain_region=brain_regions.hippocampus,
             *args, **kwargs)
 
@@ -59,18 +47,20 @@ class O1CircuitGeometry(
         brain_regions.cortex: Cortical(),
         brain_regions.hippocampus: Hippocampal() }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
         self.label = "O1"
         self.layer_thickness\
             = kwargs.get(
                 "layer_thickness",
                 np.array([
-                        164.94915873,
-                         148.87602025,
-                         352.92508322,
-                         189.57183895,
-                         525.05585701,
-                         700.37845971]))
+                    164.94915873,
+                    148.87602025,
+                    352.92508322,
+                    189.57183895,
+                    525.05585701,
+                    700.37845971]))
         self.lattice_vector\
             = kwargs.get(
                 "lattice_vector",
@@ -82,12 +72,13 @@ class O1CircuitGeometry(
                 10.)
         self.__midplane = None
         super().__init__(
+            circuit,
             *args, **kwargs)
 
     @property
     def thickness(self):
         """..."""
-        return np.sum(self.layer_thicknesss)
+        return np.sum(self.layer_thickness)
 
     @property
     def midplane(self):
@@ -112,10 +103,10 @@ class O1CircuitGeometry(
     def midplane_projection(self, point):
         """Project the given point on to the circuit's mid plane."""
         point[1] = self.midplane.point[1]
-        return np.array(
+        return np.array([
             point[0],
             self.midplane.point[1],
-            point[2])
+            point[2]])
 
     def random_position(self,
             brain_region,
@@ -123,7 +114,7 @@ class O1CircuitGeometry(
             offset = 50. * np.ones(3),
             *args, **kwargs):
         """...
-        Handle the an empty ("Record()") condition by returning
+        Handle empty ("Record()") condition by returning
         a point at the center of the columns"""
         self.logger.debug(
             self.logger.get_source_info(),

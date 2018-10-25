@@ -83,19 +83,6 @@ class CircuitRandomVariate(
         """..."""
         return self._helper
 
-    def cell_query(self,
-            condition,
-            *args, **kwargs):
-        """...redirect to brain region.
-        This allows us to not have to subclass from RandomPosition and 
-        BrainRegionSpecific mixins. We can redirect to 'self.brain_region'.
-        We could """
-        query.update(
-            self.brain_region.cell_query(
-                condition,
-                *args, **kwargs))
-        return query
-
 
 class RandomPosition(
         CircuitRandomVariate):
@@ -151,7 +138,7 @@ class RandomCrossection(
         RandomPosition):
     """..."""
     def __init__(self,
-            cicuit,
+            circuit,
             circuit_geometry,
             brain_region,
             offset=50.,
@@ -191,7 +178,8 @@ class RandomRegionOfInterest(
         self.logger.debug(
             self.logger.get_source_info(),
             """Init RandomRegionOfInterest for brain region {}"""\
-            .format(brain_region.label))
+            .format(brain_region.label),
+            """sampled box shape {}""".format(sampled_box_shape))
         self.sampled_box_shape = sampled_box_shape
         self.random_position\
             = RandomPosition(
@@ -246,6 +234,11 @@ class RandomColumnOfInterest(
         """..."""
         self.crossection\
             = crossection
+        super().__init__(
+            circuit,
+            circuit_geometry,
+            brain_region,
+            *args, **kwargs)
         self.random_position\
             = RandomCrossection(
                 circuit,
@@ -253,15 +246,11 @@ class RandomColumnOfInterest(
                 brain_region,
                 offset=crossection/2.,
                 *args, **kwargs)
-        super().__init__(
-            circuit,
-            circuit_geometry,
-            brain_region,
-            sampled_box_shape=np.array([
+        self.sampled_box_shape\
+            = np.array([
                 crossection,
-                circuit_geometry.thickness,
-                crossection]),
-            *args, **kwargs)
+                self.circuit_geometry.thickness,
+                crossection])
 
 
 class RandomBoxCorners(

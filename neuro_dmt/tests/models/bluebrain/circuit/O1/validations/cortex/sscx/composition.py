@@ -1,14 +1,23 @@
 """Test develop cell density validation."""
 import os
-from bluepy.v2.circuit import Circuit
-from dmt.vtk.utils.logging import Logger
+from bluepy.v2.circuit\
+    import Circuit
+from dmt.vtk.utils.logging\
+    import Logger
 from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
-    import validations as rat_validations
+    import validations\
+    as rat_validations
 from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
-    import validations as mouse_validations
-from neuro_dmt.utils import brain_regions
+    import validations\
+    as mouse_validations
+from neuro_dmt.utils\
+    import brain_regions
 from neuro_dmt.models.bluebrain.circuit.O1.build\
     import O1CircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.adapter\
+    import BlueBrainModelAdapter
+from neuro_dmt.models.bluebrain.circuit.random_variate\
+    import RandomRegionOfInterest
 
 validations\
     = dict(
@@ -22,6 +31,7 @@ circuit_config_path\
         mouse=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj66/circuits",
             "O1", "20180305", "CircuitConfig") )
+
 
 logger = Logger(client=__name__, level=Logger.level.TEST)
                 
@@ -46,4 +56,14 @@ def run(animal, validation_name, output_dir_path=os.getcwd()):
             Circuit(animal_circuit_config_path),
             save_report=True)
     return report
-                      
+
+rat_circuit\
+    = Circuit(circuit_config_path["rat"])
+mouse_circuit\
+    = Circuit(circuit_config_path["mouse"])
+bbma\
+    = BlueBrainModelAdapter(
+        brain_region=brain_regions.cortex,
+        circuit_geometry=O1CircuitGeometry,
+        spatial_random_variate=RandomRegionOfInterest,
+        model_label="in-silico")

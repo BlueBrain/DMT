@@ -197,34 +197,67 @@ class Field:
         def get_type(instance, type_arg):
             """..."""
             if isinstance(type_arg, str):
-                try:
-                    return getattr(instance, type_arg)
-                except AttributeError as e:
-                    raise e
+                return getattr(instance, type_arg)
             return type_arg
+
+        @staticmethod
+        def singleton(elem_type_arg):
+            """Check that a value is of a given type."""
+            def check(instance, value):
+                """..."""
+                return isinstance(
+                    value,
+                    Field.typecheck.get_type(
+                        instance,
+                        elem_type_arg))
+            return check
 
         @staticmethod
         def collection(elem_type_arg):
             """
             Arguments
             --------------------------------------------------------------------
-            elem_type_arg :: Either[type, str]# either type to check against, or
-            ~                                 # instance attribute that provides it
+            elem_type_arg :: Either[type, # either type to check against, or
+            ~                       str, # instance attribute that provides it
+            ~                       function] #function that checks each element
+            ~                                 
             """
 
             def check(instance, candidate_attr_value):
                 """..."""
-                elem_type = Field.typecheck.get_type(instance, elem_type_arg)
 
-                for element in candidate_attr_value:
-                    if not isinstance(element, elem_type):
-                        raise TypeError(
-                            """element {} of a collection field of {} instance
-                            does not type-check {}"""\
-                            .format(element,
-                                    instance.__class__.__name__,
-                                    elem_type.__name__)
-                        )
+                if not isinstance(elem_type_arg, type) and callable(elem_type_arg):
+                    for element in candidate_attr_value:
+                        try:
+                            element_checks = elem_type_arg(instance, element)
+                        except TypeError as e:
+                            raise TypeError(
+                                """element {} of a collection field of
+                                {} instance does not type-check"""\
+                                .format(
+                                    element,
+                                    instance.__class__.__name__))
+                else:
+                    Field.logger.debug(
+                        Field.logger.get_source_info(),
+                        """Get element type for argument {}"""\
+                        .format(elem_type_arg))
+                    elem_type\
+                        = Field.typecheck.get_type(
+                            instance,
+                            elem_type_arg)
+                    Field.logger.debug(
+                        Field.logger.get_source_info(),
+                        """elem type {}""".format(elem_type))
+                    for element in candidate_attr_value:
+                        if not isinstance(element, elem_type):
+                            raise TypeError(
+                                """element {} of a collection field of 
+                                {} instance does not type-check {}"""\
+                                .format(element,
+                                        instance.__class__.__name__,
+                                        elem_type.__name__))
+                    
                 return True
             return check
 
@@ -278,8 +311,7 @@ class Field:
                         Field.logger.ignore(
                             Field.logger.get_source_info(),
                             "{} did not type-check {}"\
-                            .format(candidate_attr_value, head_type.__name__)
-                        )
+                            .format(candidate_attr_value, head_type.__name__))
 
                 try:
                     if head_type(instance, candidate_attr_value):
@@ -289,8 +321,7 @@ class Field:
                         Field.logger.get_source_info(),
                         "object {} to type-check against could not be called to type check."\
                         .format(head_type),
-                        "\t{}: {}".format(type(e).__name__, e)
-                    )
+                        "\t{}: {}".format(type(e).__name__, e))
 
                 if len(tail_types) == 0:
                     return False

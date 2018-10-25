@@ -25,7 +25,9 @@ class CircuitGeometry(WithFCA, ABC):
         __doc__="""Maps brain region to a code specialization
         for that brain region.""")
     
-    def __init__(self, circuit, *args, **kwargs):
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
         """..."""
         self._circuit = circuit
         self._helper = BlueBrainModelHelper(circuit=circuit)

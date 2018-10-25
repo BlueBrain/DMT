@@ -27,6 +27,7 @@ class BrainRegionSpecific(
     These methods will typcially be abstract in some other code.
     BrainRegionSpecific classes will not be useful on their known.
     They simply provide code specialized to particular brain regions."""
+
     brain_region = Field(
         __name__="brain_region",
         __type__=BrainRegion,
@@ -41,10 +42,16 @@ class BrainRegionSpecific(
         create cell queries. You can stick in anything here that a cell
         query will accept. The entries here must be a subset of condition_type
         fields.""",
+        __default__=(Cell.LAYER,
+                     Cell.REGION,
+                     "$target",
+                     Cell.SYNAPSE_CLASS,
+                     Cell.MORPH_CLASS,
+                     Cell.ETYPE,
+                     Cell.MTYPE),
         __examples__=[("layer", "target"), ("layer", ), ("mtype", "layer",)])
     
     def __init__(self,
-            cell_group_params,
             target=None,
             *args, **kwargs):
         """...
@@ -53,10 +60,8 @@ class BrainRegionSpecific(
         ------------------------------------------------------------------------
         cell_group_params :: tuple #...
         """
-        self.cell_group_params\
-            = cell_group_params
-        self._target\
-            = target
+        self._target = target
+            
         try:
             super().__init__(
                 *args, **kwargs)
@@ -77,7 +82,6 @@ class BrainRegionSpecific(
                 "No target set for {} instance."\
                 .format(self.__class__.__name__))
         return self._target
-
 
     def with_target(self,
             query_dict,
@@ -102,11 +106,7 @@ class BrainRegionSpecific(
             *args, **kwargs):
         """A dict that can be passed to circuit.cells.get(...).
         Concrete implementation may override """
-        param_values = {
-            param: condition.get_value(param)
-            for param in self.cell_group_params}
         return {
-            param: value
-            for param, value in param_values.items()
-            if value}
- 
+            param: condition.get_value(param)
+            for param in self.cell_group_params
+            if param in condition}

@@ -2,13 +2,12 @@
 
 from abc import ABC, abstractmethod
 import os
-from dmt.model import Callable, AIBase
+from dmt.model import AIBase
 from dmt.vtk.author import Author
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.logging import Logger, with_logging
-from dmt.vtk.utils import utils
 
 class Registry:
     """Store your subclass instances"""

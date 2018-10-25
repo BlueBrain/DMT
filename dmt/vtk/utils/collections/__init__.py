@@ -47,6 +47,10 @@ class Record:
     def values(self):
         return (v for v in self.as_dict.values())
 
+    def __contains__(self, key):
+        """..."""
+        return hasattr(self, key)
+
     def get(self, key, default=None):
         """Make Record behave like a dict"""
         return getattr(self, key, default)
