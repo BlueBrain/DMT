@@ -194,3 +194,39 @@ class HippocampusAdapter:
         # only pre cells from cylinder# only pre cells from cylinder
         #############################################
         return model_mean, model_std
+
+    def get_number_connections(self, circuit):
+
+        mtypes = circuit.cells.mtypes
+        means = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        stds = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        max_nsample = 10
+
+        for pre in mtypes:
+            for post in mtypes:
+                pre_gids = circuit.cells.ids(group={Cell.MTYPE: pre,
+                                                    '$target': 'mc2_Column'},
+                                             limit=max_nsample)
+
+                post_gids = circuit.cells.ids(group={Cell.MTYPE: post,
+                                                     '$target': 'Mosaic'})
+                data = circuit.stats.sample_divergence(pre=pre_gids,
+                                                       post=post_gids,
+                                                       by='conn')
+                means[post][pre] = data.mean()
+                stds[post][pre] = data.std()
+        return means, stds, mtypes
+
+    def get_conn_to_PC_INT(self, means, mtypes):
+
+        conn_pc = means.SP_PC
+        conn_int = (means.sum(axis=1) - means.SP_PC)
+        connections = pd.DataFrame(index=mtypes)
+        connections['model_PC'] = conn_pc.values
+        connections['model_INT'] = conn_int.values
+        connections['model_UN'] = 0.0
+        # quick hack to combine same cell type from different layers
+        connections.loc['S_BS'] = connections.loc[['SP_BS', 'SO_BS']].mean()
+        connections.drop(['SP_BS', 'SO_BS'], inplace=True)
+        connections.rename(lambda x: x.split('_')[1], inplace=True)
+        return connections

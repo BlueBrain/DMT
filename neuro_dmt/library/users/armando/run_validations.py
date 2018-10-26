@@ -41,7 +41,7 @@ circs = {
 
     # 'CA1_20180506_struct':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/'
-    # '20180506.temp/CircuitConfig_struct',
+    # '20180506/CircuitConfig_struct',
 
 
 }

@@ -9,7 +9,7 @@ from dmt.model.interface import Interface
 
 import seaborn
 from dmt.vtk.plotting import golden_figure
-
+from matplotlib.colors import SymLogNorm
 
 
 class MtypeCellDensityValidation:
@@ -372,14 +372,24 @@ class DivergenceValidation:
     conn_exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
                          '/20180219/bioname/connections.txt'
 
+    exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                    '20180219/bioname/divergence.txt'
+
     def __init__(self, adapter):
-        pass
+        self.adapter = adapter
 
     class AdapterInterface(Interface):
         pass
 
     def __call__(self, circuit):
+
+        self.report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
         means, stds, mtypes = self.adapter.get_number_connections(circuit)
+        print(self.heatmap(means, stds))
         connections = self.adapter.get_conn_to_PC_INT(means, mtypes)
 
 
@@ -391,13 +401,34 @@ class DivergenceValidation:
         indices = ['AA', 'BP', 'BS', 'CCKBC', 'Ivy', 'OLM',
                    'PC', 'PPA', 'PVBC', 'SCA']
         conn_result2 = conn_result.loc[indices]
+        print(self.stacked(conn_result2))
         # TODO conn_result2 gets modified more later
         # TODO result2
+        conn_result2['model_tot'] = conn_result2['model_PC']\
+                                    + conn_result2['model_INT']
+        conn_result2['exp_tot'] = conn_result2['exp_PC']\
+                                  + conn_result2['exp_INT']\
+                                  + conn_result2['exp_UN']
+        print(self.comparison_bars(conn_result2))
+        div_pc = means.SP_PC / means.sum(axis=1)
+        div_int = (means.sum(axis=1) - means.SP_PC) / means.sum(axis=1)
+        divergence = pd.DataFrame(index=mtypes)
+        divergence['model_PC'] = div_pc.values
+        divergence['model_INT'] = div_int.values
+        divergence['model_UN'] = 0.0
+        divergence.loc['S_BS'] = divergence.loc[['SP_BS', 'SO_BS']].mean()
+        divergence.drop(['SP_BS', 'SO_BS'], inplace=True)
 
-        self.plot(means, stds, result2, conn_result2)
+        exp_data = pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['exp_PC', 'exp_INT', 'exp_UN'])
+        result = pd.concat([divergence, exp_data], axis=1)
+        indices = ['AA', 'BP', 'BS', 'CCKBC', 'Ivy',
+                   'OLM', 'PC', 'PPA', 'PVBC', 'SCA']
+        result2 = result.loc[indices]
+        print(self.percentage_bars(result2))
 
-    def plot(self, means, stds, result2, conn_result2):
-
+    def heatmap(self, means, stds):
         fig, ax = plt.subplots()
 
         # for heatmap with logarithmic scale
@@ -407,20 +438,16 @@ class DivergenceValidation:
         ax.set_xlabel('Postsynaptic mtype')
         ax.set_ylabel('Presynaptic mtype')
 
-        report_path\
-            = os.path.join(
-                os.path.dirname(__file__),
-                "reports")
-
         filename0\
             = os.path.join(
-                report_path,
+                self.report_path,
                 "number_connections{}.pdf".format(time.time()))
 
         plt.savefig(filename0, bbox_inches='tight')
-
-
         plt.close('all')
+        return filename0
+
+    def stacked(self, conn_result2):
         fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
 
         fig.suptitle('Divergence', fontsize=16)
@@ -445,12 +472,14 @@ class DivergenceValidation:
 
         filename1\
             = os.path.join(
-                report_path,
+                self.report_path,
                 "divergence_absolute{}.pdf".format(time.time()))
         plt.savefig(filename1)
 
-        # put both plots in A4 page
         plt.close('all')
+        return filename1
+
+    def comparison_bars(self, conn_result2):
 
         fig, axs = plt.subplots(3, 1, figsize=(8.27, 11.69))
 
@@ -483,13 +512,15 @@ class DivergenceValidation:
 
         filename2\
             = os.path.join(
-                report_path,
+                self.report_path,
                 "n_efferent_synapses{}.pdf".format(time.time()))
 
         plt.savefig(filename2)
 
-        # put both plots in A4 page
         plt.close('all')
+        return filename2
+
+    def percentage_bars(self, result2):
         fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
 
         fig.suptitle('Divergence', fontsize=16)
@@ -514,9 +545,9 @@ class DivergenceValidation:
 
         filename3\
             = os.path.join(
-                report_path,
-                "divergence_absolute{}.pdf".format(time.time()))
+                self.report_path,
+                "divergence_percent{}.pdf".format(time.time()))
 
         plt.savefig(filename3)
 
-        return filename0, filename1, filename2, filename3
+        return filename3
