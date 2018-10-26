@@ -266,3 +266,25 @@ class HippocampusAdapter:
                                    + connections['model_INT']
 
         return connections
+
+    def get_laminar_distribution():
+        annotation = circuit.atlas.load_data("brain_regions")
+        hierarchy = circuit.atlas.load_hierarchy()
+
+        result = c.v2.stats.synapse_region_distribution(annotation,
+                                                        Synapse.PRE_MTYPE,
+                                                        pre={'$target':
+                                                             'cylinder'},
+                                                        normalize=True)
+        mapping = {k: v for v in ['SLM', 'SR', 'SP', 'SO']
+                   for k in hierarchy.collect('acronym', v, 'id')}
+
+        result2 = result.groupby(lambda r: mapping.get(r, 'out'),
+                                 axis=1).sum()
+        cols = ['SO', 'SP', 'SR', 'SLM', 'out']
+        result2 = result2[cols]
+        result2.index = result2.index.astype(str)
+        result2.loc['S_BS'] = result2.loc[['SP_BS', 'SO_BS']].mean()
+        result2.drop(['SP_BS', 'SO_BS'], inplace=True)
+        result2.rename(lambda x: x.split('_')[1], inplace=True)
+        return result2

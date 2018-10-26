@@ -604,11 +604,74 @@ class ConvergenceValidation:
 
         return filename
 
-# class LaminarDistributionSynapses:
+class LaminarDistributionSynapses:
 
-#     def __init__(self, adapter):
-#         self.adapter = adapter
+    exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                    '20180219/bioname/laminar_distribution.txt'
 
-#     def __call__(self, circuit):
-#         pass
-#     def
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+        pass
+
+    def __call__(self, circuit):
+
+        exp_data = pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['SO', 'SP', 'SR', 'SLM'])
+        result2 = self.adapter.get_laminar_distribution(circuit)
+        concatenated = pd.concat([result2, exp_data], axis=1,
+                                 keys=['model', 'experiment'])
+        indices = ['AA', 'BP', 'BS', 'CCKBC',
+                   'Ivy', 'OLM', 'PC', 'PPA', 'SCA', 'Tri']
+        concatenated2 = concatenated.loc[indices]
+        self.plot(concatenated2)
+        pass
+
+    def plot(self, concatenated2):
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Laminar distribution of synapses', fontsize=16)
+
+        axs[0].set_title('Model')
+        concatenated2['model'].plot(kind='bar', stacked=True,
+                                    sort_columns=True, legend=False,
+                                    ax=axs[0])
+        handles, labels = axs[0].get_legend_handles_labels()
+        axs[0].legend(handles[::-1], labels[::-1],
+                      loc='center left', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('%')
+
+        axs[1].set_title('Experiment')
+        concatenated2['experiment'].plot(kind='bar', stacked=True,
+                                         sort_columns=True,
+                                         legend='reverse',
+                                         ax=axs[1])
+        handles, labels = axs[1].get_legend_handles_labels()
+        axs[1].legend(handles[::-1], labels[::-1],
+                      loc='center left', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('%')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        if not os.path.exists(report_path):
+            os.makedirs(report_path)
+        filename\
+            = os.path.join(
+                report_path,
+                "laminar_distribution{}.png".format(time.time()))
+
+        plt.savefig(filename)
+
+        plt.show()
+        return filename
