@@ -1,12 +1,15 @@
 """Atlas based circuit build's geometry"""
 
 from abc import abstractmethod
+import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
 from voxcell.hierarchy import Hierarchy
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.measurement.condition import Condition
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
+from neuro_dmt.utils import brain_regions
 
 
 class AtlasCircuitGeometry(
@@ -21,6 +24,7 @@ class AtlasCircuitGeometry(
 
     def __init__(self,
             circuit,
+            circuit_specialization,
             *args, **kwargs):
         """..."""
         if "atlas" not in kwargs:
@@ -34,6 +38,8 @@ class AtlasCircuitGeometry(
         self.label = "Atlas"
         self._hierarchy = None
         self._brain_region_voxels = None
+        self._circuit_specialization\
+            = circuit_specialization
         super().__init__(
             circuit,
             *args, **kwargs)
@@ -63,3 +69,47 @@ class AtlasCircuitGeometry(
             id for region in regions
             for id in self.hierarchy.collect(
                     "acronym", region, "id")}
+
+    def random_position(self,
+            brain_region=brain_regions.whole_brain,
+            condition=Condition([]),
+            offset=50.*np.ones(3)):
+        """Get a random position in region given by "brain_region" under given
+        'condition'. The parameter 'condition' will subset a region inside
+        'brain_region'.
+        Parameters
+        -----------------------------------------------------------------------
+        brain_region:
+        ~    The larger brain region that the circuit was built for.
+        ~    Examples: SSCx, hippocampus CA1, Iso-cortex
+        condition:
+        ~    specifies a region inside brain_region to get a random position in
+        """
+        atlas_region_acronyms\
+            = self._circuit_specialization\
+                  .get_atlas_region_acronyms(
+                      condition)
+        atlas_ids\
+            = self.get_atlas_ids(
+                *atlas_region_acronyms)
+        is_ids_voxel\
+            = self.brain_region_voxels.with_data(
+                np.in1d(
+                    self.brain_region_voxels.raw,
+                    list(atlas_ids)
+                ).reshape(
+                    self.brain_region_voxels.shape))
+        while True:
+            random_voxel\
+                = self.brain_region_voxels\
+                      .indices_to_positions(
+                          np.array([
+                              np.random.randint(n)
+                              for n in self.brain_region_voxels.shape]))
+            if is_ids_voxel.lookup(random_voxel):
+                return random_voxel
+            else:
+                continue
+            break
+        return None
+
