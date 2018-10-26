@@ -1,7 +1,12 @@
 """Test develop random variates for the Atlas based circuit.
 Methods tested here will find their way into AtlasCircuitGeometry..."""
+from bluepy.v2.circuit import Circuit
 from bluepy.v2.enums import Cell
 import numpy as np
+
+circuit\
+    = Circuit(
+        '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig')
 
 def get_atlas_ids(
         hierarchy,

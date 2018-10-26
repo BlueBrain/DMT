@@ -1,5 +1,6 @@
 """Build Geometry of a circuit."""
 from abc import ABC, abstractmethod
+from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
 from neuro_dmt.utils.brain_regions import BrainRegion
@@ -9,6 +10,12 @@ from neuro_dmt.models.bluebrain.circuit.brain_regions import BrainRegionSpecific
 class CircuitGeometry(WithFCA, ABC):
     """Geometry of a circuit! Dump all circuit build geometry 
     dependent method definitions here."""
+
+    _circuit\
+        = Field(
+            __name__="_circuit",
+            __type__=Circuit,
+            __doc__="""The circuit that this geometry is about.""")
 
     label = Field(
         __name__="label",
@@ -29,9 +36,9 @@ class CircuitGeometry(WithFCA, ABC):
             circuit,
             *args, **kwargs):
         """..."""
-        self._circuit = circuit
+        kwargs["_circuit"] = circuit
         self._helper = BlueBrainModelHelper(circuit=circuit)
-        super(CircuitGeometry, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @abstractmethod
     def random_position(self, condition):
