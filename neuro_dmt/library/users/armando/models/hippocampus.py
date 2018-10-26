@@ -230,3 +230,39 @@ class HippocampusAdapter:
         connections.drop(['SP_BS', 'SO_BS'], inplace=True)
         connections.rename(lambda x: x.split('_')[1], inplace=True)
         return connections
+
+    def get_n_eff_syns(self, circuit):
+        max_nsample = 10
+        mtypes = circuit.cells.mtypes
+        means = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        stds = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        for pre in mtypes:
+            for post in mtypes:
+                pre_gids = circuit.cells.ids(group={Cell.MTYPE: pre,
+                                                    '$target': 'Mosaic'})
+                post_gids = circuit.cells.ids(group={Cell.MTYPE: post,
+                                                     '$target': 'mc2_Column'},
+                                              limit=max_nsample)
+
+
+                data = circuit.stats.sample_convergence(pre=pre_gids,
+                                                        post=post_gids,
+                                                        by='syn')
+                means[post][pre] = data.mean()
+                stds[post][pre] = data.std()
+
+
+        conn_pc = means.loc['SP_PC',:]
+        conn_int = (means.sum(axis=0) - means.loc['SP_PC',:])
+        connections = pd.DataFrame(index=mtypes)
+        connections['model_PC'] = conn_pc.values
+        connections['model_INT'] = conn_int.values
+
+        connections.loc['S_BS'] = connections.loc[['SP_BS', 'SO_BS']].mean()
+        connections.drop(['SP_BS', 'SO_BS'], inplace=True)
+
+        connections.rename(lambda x: x.split('_')[1], inplace=True)
+        connections['model_tot'] = connections['model_PC']\
+                                   + connections['model_INT']
+
+        return connections

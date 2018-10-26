@@ -551,3 +551,44 @@ class DivergenceValidation:
         plt.savefig(filename3)
 
         return filename3
+
+
+class ConvergenceValidation:
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    def __call__(self, circuit):
+        connections = self.adapter.get_n_eff_syns(circuit)
+        print(self.plot(connections))
+        return
+
+    def plot(self, connections):
+        """..."""
+        fig, ax = plt.subplots()
+
+        fig.suptitle('Number of afferent synapses', fontsize=16)
+
+        connections.loc[:, ['model_PC', 'model_INT']]\
+                   .plot(kind='bar', stacked=True, legend=False, ax=ax)
+        ax.legend(['PC', 'INT'], loc='upper left', frameon=True)
+        ax.set_xlabel('mtype')
+        ax.set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.6, top=0.92)
+
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        filename\
+            = os.path.join(
+                report_path,
+                "n_afferent_synapses{}.pdf".format(time.time()))
+
+        plt.savefig(filename)
+
+        return filename
