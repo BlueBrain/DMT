@@ -365,3 +365,158 @@ class SynsPerConnValidation():
         fig.savefig(filename2)
 
         return (filename1, filename2)
+
+
+class DivergenceValidation:
+
+    conn_exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
+                         '/20180219/bioname/connections.txt'
+
+    def __init__(self, adapter):
+        pass
+
+    class AdapterInterface(Interface):
+        pass
+
+    def __call__(self, circuit):
+        means, stds, mtypes = self.adapter.get_number_connections(circuit)
+        connections = self.adapter.get_conn_to_PC_INT(means, mtypes)
+
+
+        conn_exp_data = pd.read_csv(self.conn_exp_data_path,
+                                    delim_whitespace=True,
+                                    index_col=0, skiprows=1,
+                                    names=['exp_PC', 'exp_INT', 'exp_UN'])
+        conn_result = pd.concat([connections, conn_exp_data], axis=1)
+        indices = ['AA', 'BP', 'BS', 'CCKBC', 'Ivy', 'OLM',
+                   'PC', 'PPA', 'PVBC', 'SCA']
+        conn_result2 = conn_result.loc[indices]
+        # TODO conn_result2 gets modified more later
+        # TODO result2
+
+        self.plot(means, stds, result2, conn_result2)
+
+    def plot(self, means, stds, result2, conn_result2):
+
+        fig, ax = plt.subplots()
+
+        # for heatmap with logarithmic scale
+        seaborn.heatmap(means, norm=SymLogNorm(linthresh=0.1), ax=ax)
+
+        fig.suptitle('Average number of connections')
+        ax.set_xlabel('Postsynaptic mtype')
+        ax.set_ylabel('Presynaptic mtype')
+
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        filename0\
+            = os.path.join(
+                report_path,
+                "number_connections{}.pdf".format(time.time()))
+
+        plt.savefig(filename0, bbox_inches='tight')
+
+
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Divergence', fontsize=16)
+
+        axs[0].set_title('Model')
+        conn_result2.loc[:, ['model_PC', 'model_INT']]\
+                    .plot(kind='bar', stacked=True, legend=False, ax=axs[0])
+        axs[0].legend(['PC', 'INT'], loc='lower right', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Number of synapses')
+
+        axs[1].set_title('Experiment')
+        conn_result2.loc[:, ['exp_PC', 'exp_INT', 'exp_UN']]\
+                    .plot(kind='bar', stacked=True, legend=False, ax=axs[1])
+        axs[1].legend(['PC', 'INT', 'UN'], loc='lower right', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+
+        filename1\
+            = os.path.join(
+                report_path,
+                "divergence_absolute{}.pdf".format(time.time()))
+        plt.savefig(filename1)
+
+        # put both plots in A4 page
+        plt.close('all')
+
+        fig, axs = plt.subplots(3, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Number of efferent synapses', fontsize=16)
+
+        axs[0].set_title('Total number of efferent synapses')
+        conn_result2.loc[:, ['model_tot', 'exp_tot']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[0])
+        axs[0].legend(['Model', 'Experiment'], loc='upper left', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Number of synapses')
+
+        axs[1].set_title('Number of synapses to PCs')
+        conn_result2.loc[:, ['model_PC', 'exp_PC']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[1])
+
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Number of synapses')
+
+        axs[2].set_title('Number of synapses to INTs')
+        conn_result2.loc[:, ['model_INT', 'exp_INT']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[2])
+
+        axs[2].set_xlabel('mtype')
+        axs[2].set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.6, top=0.92)
+
+        filename2\
+            = os.path.join(
+                report_path,
+                "n_efferent_synapses{}.pdf".format(time.time()))
+
+        plt.savefig(filename2)
+
+        # put both plots in A4 page
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Divergence', fontsize=16)
+
+        axs[0].set_title('Model')
+        result2.loc[:, ['model_PC', 'model_INT']]\
+               .plot(kind='bar', stacked=True, legend=False, ax=axs[0])
+        axs[0].legend(['PC', 'INT'], loc='lower right', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Percentage (%)')
+
+        axs[1].set_title('Experiment')
+        result2.loc[:, ['exp_PC', 'exp_INT', 'exp_UN']]\
+               .plot(kind='bar', stacked=True, legend=False, ax=axs[1])
+        axs[1].legend(['PC', 'INT', 'UN'], loc='lower right', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Percentage (%)')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+
+        filename3\
+            = os.path.join(
+                report_path,
+                "divergence_absolute{}.pdf".format(time.time()))
+
+        plt.savefig(filename3)
+
+        return filename0, filename1, filename2, filename3
