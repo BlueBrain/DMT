@@ -61,14 +61,6 @@ class AtlasCircuitGeometry(
                     "brain_regions")
         return self._brain_region_voxels
 
-    def get_atlas_ids(self,
-            *regions):
-        """We can get region ids from the atlas, one region at a time,
-        but may want region ids for several regions at the same time."""
-        return {
-            id for region in regions
-            for id in self.hierarchy.collect(
-                    "acronym", region, "id")}
 
     def random_position(self,
             brain_region=brain_regions.whole_brain,
@@ -85,13 +77,10 @@ class AtlasCircuitGeometry(
         condition:
         ~    specifies a region inside brain_region to get a random position in
         """
-        atlas_region_acronyms\
-            = self._circuit_specialization\
-                  .get_atlas_region_acronyms(
-                      condition)
         atlas_ids\
-            = self.get_atlas_ids(
-                *atlas_region_acronyms)
+            = self._circuit_specialization.get_atlas_ids(
+                self.hierarchy,
+                condition)
         is_ids_voxel\
             = self.brain_region_voxels.with_data(
                 np.in1d(

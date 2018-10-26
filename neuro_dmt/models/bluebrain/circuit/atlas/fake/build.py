@@ -5,6 +5,7 @@ from dmt.vtk.utils import collections
 from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
+from neuro_dmt.measurement.parameter import Column
 from neuro_dmt.models.bluebrain.circuit.brain_regions\
     import BrainRegionSpecific
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
@@ -12,7 +13,7 @@ from neuro_dmt.models.bluebrain.circuit.atlas.build\
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, random_location
 
-
+    
 class Hippocampal(
         BrainRegionSpecific):
     """..."""
@@ -20,11 +21,15 @@ class Hippocampal(
             *args, **kwargs):
         """..."""
         self.central_column = "mc2" #for O1 circuits --- can this be generalized?
+        self.column_parameter\
+            = Column(
+                value_type=str,
+                values=["mc{}".format(n) for n in range(7)])
         super().__init__(
             brain_region=brain_regions.hippocampus,
             *args, **kwargs)
 
-    def get_atlas_region_acronyms(self,
+    def __get_atlas_region_acronyms(self,
             condition):
         """In developing this class, we assume that atlas paths will
         follow the convention used in one of Hippocampus O1 circuits:
@@ -40,8 +45,54 @@ class Hippocampal(
             "{};{}".format(self.central_column, layer)
             for layer in layers]
 
+    def get_atlas_ids(self,
+            hierarchy,
+            condition=Condition([])):
+        """..."""
+        return {
+            id for region in self.__get_atlas_region_acronyms(condition)
+            for id in hierarchy.collect(
+                    "acronym", region, "id")}
 
 
+class Cortical(
+        BrainRegionSpecific):
+    """..."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        self.central_column\
+            = "mc2_Column"
+        self.column_parameter\
+            = Column(
+                value_type=str,
+                values=["mc{}_Column".format(n) for n in range(7)])
+        super().__init__(
+            brain_region=brain_regions.cortex,
+            *args, **kwargs)
+
+    def get_atlas_ids(self,
+            hierarchy,
+            condition=Condition([])):
+        """..."""
+        layers = condition.get_value("layer")
+        if not layers:
+            return hierarchy.collect(
+                "acronym", self.central_column, "id")
+        if not collections.check(layers):
+            return hierarchy.collect(
+                "acronym", self.central_column, "id"
+            ).intersection(
+                hierarchy.collect(
+                    "acronym", "L{}".format(layers), "id"))
+        return hierarchy.collect(
+                "acronym", self.central_column, "id"
+            ).intersection({
+                id for layer in layers
+                for id in hierarchy.collect(
+                        "acronym", "L{}".format(layer), "id")})
+        
+        
 class FakeAtlasCircuitGeometry(
         AtlasCircuitGeometry):
     """Specialization of circuit geometry methods for
@@ -74,13 +125,13 @@ class FakeAtlasCircuitGeometry(
     def column_parameter(self,
             *args, **kwargs):
         """..."""
-        raise NotImplementedError("DEVMODE")
+        return self._circuit_specialization.column_parameter
 
     def __compute_geometry(self):
         """..."""
         central_column_ids\
-            = self.get_atlas_ids(
-                self._circuit_specialization.central_column)
+            = self._circuit_specialization.get_atlas_ids(
+                self.hierarchy)
         is_ids_voxel\
             = self.brain_region_voxels.with_data(
                 np.in1d(
