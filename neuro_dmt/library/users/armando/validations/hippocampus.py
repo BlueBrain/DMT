@@ -379,7 +379,12 @@ class DivergenceValidation:
         self.adapter = adapter
 
     class AdapterInterface(Interface):
-        pass
+
+        def get_number_connections(self, circuit):
+            pass
+
+        def get_conn_to_PC_INT(self, means, mtypes):
+            pass
 
     def __call__(self, circuit):
 
@@ -390,6 +395,7 @@ class DivergenceValidation:
 
         means, stds, mtypes = self.adapter.get_number_connections(circuit)
         print(self.heatmap(means, stds))
+        # TODO should this really be in adappter?
         connections = self.adapter.get_conn_to_PC_INT(means, mtypes)
 
 
@@ -558,6 +564,11 @@ class ConvergenceValidation:
     def __init__(self, adapter):
         self.adapter = adapter
 
+    class AdapterInterface(Interface):
+
+        def get_n_eff_syns(self, circuit):
+            pass
+
     def __call__(self, circuit):
         connections = self.adapter.get_n_eff_syns(circuit)
         print(self.plot(connections))
@@ -592,3 +603,12 @@ class ConvergenceValidation:
         plt.savefig(filename)
 
         return filename
+
+# class LaminarDistributionSynapses:
+
+#     def __init__(self, adapter):
+#         self.adapter = adapter
+
+#     def __call__(self, circuit):
+#         pass
+#     def
