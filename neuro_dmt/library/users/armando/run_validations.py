@@ -1,27 +1,69 @@
 import os
-import sys
 import bluepy
-from bluepy.v2.enums import Cell
-from neuro_dmt.library.users.armando.validations.hippocampus import\
-    MtypeCellDensityValidation, ByLayerCellDensityValidation
+import neuro_dmt.library.users.armando.validations.hippocampus\
+    as validations_module
+# from neuro_dmt.library.users.armando.validations.hippocampus import\
+#     MtypeCellDensityValidation, ByLayerCellDensityValidation,\
+#     BoutonDensityValidation
 from neuro_dmt.library.users.armando.models.hippocampus import\
     HippocampusAdapter
+import neuro_dmt.library.users.armando as armando
 
-circuit_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig'
+armando_rootdir = os.path.dirname(armando.__file__)
 
-circuit = bluepy.v2.circuit.Circuit(circuit_path)
 
-sys.stdout.write(
-    "Load data from current location: {}\n".format(
-        os.path.dirname(__file__)))
+validations = {n.split(".")[-1]: v
+               for n, v in validations_module.__dict__.items()
+               if ("Validation" in n)}
 
-mtype_cell_density\
-    = MtypeCellDensityValidation(
-        data_path=os.path.join(
-            os.path.dirname(__file__),
-            "data", "Armando2018_by_mtype.tsv"),
-        adapter=HippocampusAdapter())
-mtype_cell_density(circuit)
+dpaths = {validations_module.MtypeCellDensityValidation:
+          os.path.join(
+              armando_rootdir,
+              "data", "Armando2018_by_mtype.tsv")}
 
-layer_cell_density = ByLayerCellDensityValidation(adapter=HippocampusAdapter())
-layer_cell_density(circuit)
+circs = {
+    'O1_20180904':
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig',
+
+    'O1_20180904_struct':
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/'
+    'CircuitConfig_struct',
+
+    # 'O1_20180821':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180821/CircuitConfig',
+
+    # 'O1_20180821_struct':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/'
+    # 'O1/20180821/CircuitConfig_struct',
+
+    # 'CA1_20180506':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
+
+    # 'CA1_20180506_struct':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/'
+    # '20180506.temp/CircuitConfig_struct',
+
+
+}
+
+
+def run_valid(validation, circuit):
+    kwargs = {"adapter": HippocampusAdapter()}
+
+    if validation in dpaths.keys():
+        kwargs["data_path"] = dpaths[validation]
+        print("using data: ", dpaths[validation])
+    valid = validation(**kwargs)
+    return valid(circuit)
+
+
+def test():
+    for n, v in validations.items():
+        for name, cpath in circs.items():
+            circ = bluepy.v2.circuit.Circuit(cpath)
+            print('------------',
+                  '\nrunning:', n, "for", name)
+            run_valid(v, circ)
+            print('------------\n\n')
+
+test()

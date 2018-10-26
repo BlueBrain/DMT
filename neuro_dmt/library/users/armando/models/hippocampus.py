@@ -6,6 +6,7 @@ from neuro_dmt.library.users.armando.validations.hippocampus import\
 from bluepy.v2.enums import Cell
 from bluepy.v2.circuit import Circuit
 
+
 @adapter.adapter(Circuit)
 @interface.implementation(MtypeCellDensityValidation.AdapterInterface)
 class HippocampusAdapter:
@@ -142,6 +143,54 @@ class HippocampusAdapter:
                      for layer_label in ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
                      for column_index in range(7)],
                     names=["column", "region"]))
+
         return cell_densities.groupby("region")\
                              .agg(["mean", "std"])["cell_density"]
-        #df['sem'] = stds / means
+
+    def get_bouton_density(self, circuit, sample):
+        """get bouton density"""
+        mtypes = circuit.cells.mtypes
+        data = pd.DataFrame(index=mtypes, columns=np.arange(sample)+1)
+        for mtype in mtypes:
+            gids = circuit.cells.ids(group={Cell.MTYPE: mtype,
+                                            Cell.REGION: '@mc2.*'},
+                                     limit=sample)
+
+            data.loc[mtype][:len(gids)]\
+                = circuit.stats.sample_bouton_density(
+                    sample, group=gids, synapses_per_bouton=1.2)
+
+        return data, mtypes
+
+    def get_syns_per_conn(self, circuit, nsample=10):
+
+        mtypes = circuit.cells.mtypes
+        model_mean = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        model_std = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+
+        for pre_mtype in mtypes:
+            for post_mtype in mtypes:
+                pre = circuit.cells.ids(group={Cell.MTYPE: pre_mtype,
+                                               '$target': 'mc2_Column'},
+                                        limit=nsample)
+
+                post = circuit.cells.ids(group={Cell.MTYPE:  post_mtype})
+                data = circuit.stats.sample_pathway_synapse_count(nsample,
+                                                                  pre=pre,
+                                                                  post=post)
+                # only pre cells from cylinder
+
+                model_mean[post_mtype][pre_mtype] = data.mean()
+                model_std[post_mtype][pre_mtype] = data.std()
+
+        ###############################################
+        # TODO does this code actually do anything? ##
+        pre = circuit.cells.ids(group={Cell.MTYPE: 'SP_PC',
+                                       '$target': 'mc2_Column'})
+        post = circuit.cells.ids(group='SP_PC')
+        data = circuit.stats.sample_pathway_synapse_count(1000,
+                                                          pre=pre,
+                                                          post=post)
+        # only pre cells from cylinder# only pre cells from cylinder
+        #############################################
+        return model_mean, model_std
