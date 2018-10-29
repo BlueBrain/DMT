@@ -6,27 +6,30 @@ from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import Column
-from neuro_dmt.models.bluebrain.circuit.brain_regions\
-    import BrainRegionSpecific
+from neuro_dmt.models.bluebrain.circuit.specialization\
+    import CircuitSpecialization
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
     import AtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, random_location
 
     
-class Hippocampal(
-        BrainRegionSpecific):
+class HippocampalAtlasSpecialization(
+        CircuitSpecialization):
     """..."""
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.central_column = "mc2" #for O1 circuits --- can this be generalized?
+        self.central_column\
+            = "mc2" #for O1 circuits --- can this be generalized?
         self.column_parameter\
             = Column(
                 value_type=str,
                 values=["mc{}".format(n) for n in range(7)])
+        if "brain_region" not in kwargs: #if there, it should be a hippocampus sub-region, eg CA1
+            kwargs["brain_region"]\
+                = brain_regions.hippocampus
         super().__init__(
-            brain_region=brain_regions.hippocampus,
             *args, **kwargs)
 
     def __get_atlas_region_acronyms(self,
@@ -54,9 +57,14 @@ class Hippocampal(
             for id in hierarchy.collect(
                     "acronym", region, "id")}
 
+    @property
+    def target(self):
+        """..."""
+        return self.central_column
 
-class Cortical(
-        BrainRegionSpecific):
+
+class CorticalAtlasSpecialization(
+        CircuitSpecialization):
     """..."""
     def __init__(self,
             *args, **kwargs):
@@ -67,8 +75,10 @@ class Cortical(
             = Column(
                 value_type=str,
                 values=["mc{}_Column".format(n) for n in range(7)])
+        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
+            kwargs["brain_region"]\
+                = brain_regions.cortex
         super().__init__(
-            brain_region=brain_regions.cortex,
             *args, **kwargs)
 
     def get_atlas_ids(self,
@@ -92,17 +102,62 @@ class Cortical(
                 for id in hierarchy.collect(
                         "acronym", "L{}".format(layer), "id")})
         
+    @property
+    def target(self):
+        """..."""
+        return self.central_column
         
+class IsoCortexAtlasSpecialization(
+        CircuitSpecialization):
+    """..."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        self.column_parameter\
+            = Column(
+                value_type=str,
+                values=["mc{}_Column".format(n) for n in range(7)])
+        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
+            kwargs["brain_region"]\
+                = brain_regions.cortex
+        super().__init__(
+            *args, **kwargs)
+
+    def get_atlas_ids(self,
+            hierarchy,
+            condition=Condition([])):
+        """..."""
+        layers = condition.get_value("layer")
+        subregion = condition.get_value("subregion") #subregion of the iso-cortex
+        if not layers:
+            return hierarchy.collect(
+                "acronym", subregion,  "id")
+        if not collections.check(layers):
+            return hierarchy.collect(
+                "acronym", subregion, "id"
+            ).intersection(
+                hierarchy.collect(
+                    "acronym", "L{}".format(layers), "id"))
+        return hierarchy.collect(
+                "acronym", subregion, "id"
+            ).intersection({
+                id for layer in layers
+                for id in hierarchy.collect(
+                        "acronym", "L{}".format(layer), "id")})
+        
+    @property
+    def target(self):
+        """..."""
+        return self.central_column
+ 
 class FakeAtlasCircuitGeometry(
         AtlasCircuitGeometry):
-    """Specialization of circuit geometry methods for
-    (fake) atlas based circuits."""
+    """Circuit geometry methods for (fake) atlas based circuits."""
 
-    specializations = {}
+    label = "O1Atlas"
 
     def __init__(self,
             circuit,
-            circuit_specialization,
             *args, **kwargs):
         """...
         Parameters
@@ -119,7 +174,6 @@ class FakeAtlasCircuitGeometry(
             = None
         super().__init__(
             circuit,
-            circuit_specialization,
             *args, **kwargs)
 
     def column_parameter(self,
@@ -182,7 +236,6 @@ class FakeAtlasCircuitGeometry(
         return self.__column_top
 
     def random_column(self,
-            brain_region=brain_regions.whole_brain,
             crossection=50.):
         """..."""
         random_pos\
@@ -205,3 +258,38 @@ class FakeAtlasCircuitGeometry(
         return Cuboid(
             random_pos - square + bottom,
             random_pos + square + top)
+
+
+class CorticalFakeAtlasCircuitGeometry(
+        FakeAtlasCircuitGeometry):
+    """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
+    been set to 'CorticalAtlasSpecialization'"""
+    def __init__(self,
+            circuit, 
+            *args, **kwargs):
+        """..."""
+        self.circuit_specialization\
+            = CorticalAtlasSpecialization(
+                *args, **kwargs)
+        super().__init__(
+            circuit, 
+            *args, **kwargs)
+
+
+class HippocampalFakeAtlasCircuitGeometry(
+        FakeAtlasCircuitGeometry):
+    """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
+    been set to 'HippocampalAtlasSpecialization'"""
+    def __init__(self,
+            circuit, 
+            *args, **kwargs):
+        """..."""
+        self.circuit_specialization\
+            = HippocampalAtlasSpecialization(
+                *args, **kwargs)
+        super().__init__(
+            circuit, 
+            *args, **kwargs)
+
+    
+        

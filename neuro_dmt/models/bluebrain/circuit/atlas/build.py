@@ -9,22 +9,35 @@ from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.condition import Condition
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.specialization\
+    import CircuitSpecialization
 from neuro_dmt.utils import brain_regions
+
+
+class AtlasCircuitSpecialization(
+        CircuitSpecialization):
+    """Base class for atlas based circuit specializations."""
+
+    @abstractmethod
+    def get_atlas_ids(self,
+            hierarchy,
+            condition=Condition([])):
+        """..."""
+        pass
 
 
 class AtlasCircuitGeometry(
         CircuitGeometry):
     """Specify atlas circuit based attributes."""
+    label = "Atlas"
 
     atlas\
         = Field(
             __name__="atlas",
             __type__=Atlas,
             __doc__="""Brain atlas used to build this circuit.""")
-
     def __init__(self,
             circuit,
-            circuit_specialization,
             *args, **kwargs):
         """..."""
         if "atlas" not in kwargs:
@@ -35,11 +48,8 @@ class AtlasCircuitGeometry(
                     """Atlas neither passed as a key-word argument,
                     nor available as a circuit instance {}'s attribute."""\
                     .format(self))
-        self.label = "Atlas"
         self._hierarchy = None
         self._brain_region_voxels = None
-        self._circuit_specialization\
-            = circuit_specialization
         super().__init__(
             circuit,
             *args, **kwargs)
@@ -63,9 +73,9 @@ class AtlasCircuitGeometry(
 
 
     def random_position(self,
-            brain_region=brain_regions.whole_brain,
             condition=Condition([]),
-            offset=50.*np.ones(3)):
+            offset=50.*np.ones(3),
+            *args, **kwargs):
         """Get a random position in region given by "brain_region" under given
         'condition'. The parameter 'condition' will subset a region inside
         'brain_region'.
@@ -78,7 +88,7 @@ class AtlasCircuitGeometry(
         ~    specifies a region inside brain_region to get a random position in
         """
         atlas_ids\
-            = self._circuit_specialization.get_atlas_ids(
+            = self.circuit_specialization.get_atlas_ids(
                 self.hierarchy,
                 condition)
         is_ids_voxel\
