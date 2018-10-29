@@ -199,6 +199,7 @@ class O1CircuitGeometry(
         return self.layer_start
 
     def random_column(self,
+            brain_region=None,
             crossection=50.):
         """Get a random column, spanning all the layers."""
         random_pos = self.random_crossectional_point()
