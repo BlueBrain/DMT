@@ -69,10 +69,14 @@ class BlueBrainModelAdapter(
         __type__=BrainRegion,
         __doc__="Provides a model independent tag for the brain region.")
 
-    circuit_geometry = Field(
-        __name__="circuit_geometry",
+    circuit_geometry_type = Field(
+        __name__="circuit_geometry_type",
+        __type__=type,
         __typecheck__=Field.typecheck.subtype(CircuitGeometry),
-        __doc__="""The build of the circuit, O1 or atlas based...""")
+        __doc__="""A plugin that provides methods for a circuit's geometry.
+        A subtype of 'class CircuitGeometry' is expected --- that uses keyword
+        arguments for initialization, and will be initialized by passing circuit
+        as a keyword argument.""")
 
     get_spatial_random_variate = Field(
         __name__="get_spatial_random_variate",
@@ -138,7 +142,7 @@ class BlueBrainModelAdapter(
         random_variate\
             = get_random_variate(
                 circuit,
-                self.circuit_geometry,
+                self.circuit_geometry_type,
                 self.brain_region,
                 *args, **kwargs
             ).given(parameters)
@@ -163,7 +167,7 @@ class BlueBrainModelAdapter(
             return self.statistical_measurement(
                 circuit,
                 method,
-                parameters={self.circuit_geometry.column_parameter()},
+                parameters={self.circuit_geometry_type.column_parameter()},
                 get_random_variate=RandomColumnOfInterest,
                 *args, **kwargs)
         return self.statistical_measurement(

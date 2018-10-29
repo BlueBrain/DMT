@@ -46,7 +46,7 @@ def run(animal, validation_name, output_dir_path=os.getcwd()):
     validation\
         = animal_validations.get(
             validation_name,
-            circuit_geometry=O1CircuitGeometry,
+            circuit_geometry_type=O1CircuitGeometry,
             output_dir_path=output_dir_path)
     logger.info(
         logger.get_source_info(),
@@ -64,6 +64,6 @@ mouse_circuit\
 bbma\
     = BlueBrainModelAdapter(
         brain_region=brain_regions.cortex,
-        circuit_geometry=O1CircuitGeometry,
+        circuit_geometry_type=O1CircuitGeometry,
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico")

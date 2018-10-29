@@ -20,7 +20,7 @@ class MouseSomatosensoryCortexCellDensityValidation(
     """..."""
 
     def __init__(self,
-            circuit_geometry,
+            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -29,7 +29,7 @@ class MouseSomatosensoryCortexCellDensityValidation(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry=circuit_geometry,
+            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
@@ -39,7 +39,7 @@ class MouseSomatosensoryCortexCellRatioValidation(
         CellRatioValidation):
     """..."""
     def __init__(self,
-            circuit_geometry,
+            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -48,7 +48,7 @@ class MouseSomatosensoryCortexCellRatioValidation(
                 "cell_ratio")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry=circuit_geometry,
+            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
         
 
@@ -59,7 +59,7 @@ class MouseSomatosensoryCortexInhibitorySynapseDensityValidation(
     """..."""
 
     def __init__(self,
-            circuit_geometry,
+            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -68,7 +68,7 @@ class MouseSomatosensoryCortexInhibitorySynapseDensityValidation(
                 "inhibitory_synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry=circuit_geometry,
+            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
@@ -79,7 +79,7 @@ class MouseSomatosensoryCortexSynapseDensityValidation(
     """..."""
 
     def __init__(self,
-            circuit_geometry,
+            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -88,12 +88,12 @@ class MouseSomatosensoryCortexSynapseDensityValidation(
                 "synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry=circuit_geometry,
+            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
 def get(validation_name,
-        circuit_geometry,
+        circuit_geometry_type,
         output_dir_path=os.getcwd()):
     """..."""
     available_validations = dict(
@@ -103,7 +103,7 @@ def get(validation_name,
         synapse_density=MouseSomatosensoryCortexSynapseDensityValidation)
     try:
         return available_validations[validation_name](
-            circuit_geometry=circuit_geometry,
+            circuit_geometry_type=circuit_geometry_type,
             output_dir_path=output_dir_path)
     except KeyError as e:
         raise NotImplementedError(
