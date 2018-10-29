@@ -120,7 +120,6 @@ class RandomPosition(
 
         return self.circuit_geometry\
                    .random_position(
-                       self.brain_region,
                        condition,
                        *args, **kwargs)
                                                   

@@ -1,34 +1,38 @@
-"""Brain regions covered by BlueBrain circuits, or the regions that we have
-adapters for"""
+"""Circuit instance specific methods and attributes.
+BBP circuit building pipeline is under continuous development.
+Most volatile parts can be placed here. In addition, the circuit
+builder herself may customize circuit attributes, and will require her
+circuit adapters to be aware of those customizations. The circuit builder can
+subclass the base class provided here and specialize these methods and
+attributes to use rest of the validation code."""
 
-"""BBP specific random variates, and related utilities."""
 from abc import ABC, abstractmethod
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils.descriptor import Field, WithFCA
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.brain_regions import BrainRegion
 
-#@with_logging(Logger.level.STUDY)
-class BrainRegionSpecific(
+class CircuitSpecialization(
         WithFCA,
         ABC):
-    """Brain region specific methods.
-    These methods will typcially be abstract in some other code.
-    BrainRegionSpecific classes will not be useful on their known.
-    They simply provide code specialized to particular brain regions."""
-
+    """Abstract Base class that can be subclassed to define Mixins specialized
+    for (very) specific BBP circuits."""
+    
     brain_region = Field(
         __name__="brain_region",
         __type__=BrainRegion,
-        __doc__="""A utility class object that contains some generic information
-        about the brain region that this BrainRegionSpecific codes for.""")
-    
+        __doc__="""A utility class instance that contains some generic
+        information about the brain region that this CircuitSpecialization is
+        specialized for.""",
+        __default__=brain_regions.whole_brain)
+
     cell_group_params = Field(
         __name__="cell_group_params",
         __type__=tuple,
-        __doc__="""Tuple of cell query fields that group cells, and whose values
-        measurements will be (jointly) conditioned on. Use this information to
-        create cell queries. You can stick in anything here that a cell
-        query will accept. The entries here must be a subset of condition_type
+        __doc__="""Tuple of (BluePy query) fields that group cells. Measurements
+        will be (jointly) conditioned on the values of these fields. Use this
+        information to create cell queries. You can stick in anything that a
+        cell query will accept. The entries must be a subset of condition_type
         fields.""",
         __default__=(Cell.LAYER,
                      Cell.REGION,
@@ -36,40 +40,25 @@ class BrainRegionSpecific(
                      Cell.SYNAPSE_CLASS,
                      Cell.MORPH_CLASS,
                      Cell.ETYPE,
-                     Cell.MTYPE),
-        __examples__=[("layer", "target"), ("layer", ), ("mtype", "layer",)])
-    
-    def __init__(self,
-            target=None,
-            *args, **kwargs):
-        """...
+                     Cell.MTYPE))
 
-        Parameters
-        ------------------------------------------------------------------------
-        cell_group_params :: tuple #...
-        """
-        self._target = target
-            
-        try:
-            super().__init__(
-                *args, **kwargs)
-        except:
-            pass
-        
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            *args, **kwargs)
+
+
     @property
     def region_label(self):
         """..."""
         return self.brain_region.label
 
     @property
+    @abstractmethod
     def target(self):
-        """..."""
-        if not self._target:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "No target set for {} instance."\
-                .format(self.__class__.__name__))
-        return self._target
+        """You can specify a target of cells to study."""
+        pass
 
     def with_target(self,
             query_dict,

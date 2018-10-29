@@ -13,7 +13,7 @@ from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.models.bluebrain.circuit.O1.build\
-    import O1CircuitGeometry
+    import SSCxO1CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.adapter\
     import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.random_variate\
@@ -46,7 +46,7 @@ def run(animal, validation_name, output_dir_path=os.getcwd()):
     validation\
         = animal_validations.get(
             validation_name,
-            circuit_geometry_type=O1CircuitGeometry,
+            circuit_geometry_type=SSCxO1CircuitGeometry,
             output_dir_path=output_dir_path)
     logger.info(
         logger.get_source_info(),
@@ -64,6 +64,6 @@ mouse_circuit\
 bbma\
     = BlueBrainModelAdapter(
         brain_region=brain_regions.cortex,
-        circuit_geometry_type=O1CircuitGeometry,
+        circuit_geometry_type=SSCxO1CircuitGeometry,
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico")
