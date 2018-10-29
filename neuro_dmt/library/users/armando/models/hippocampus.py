@@ -194,3 +194,97 @@ class HippocampusAdapter:
         # only pre cells from cylinder# only pre cells from cylinder
         #############################################
         return model_mean, model_std
+
+    def get_number_connections(self, circuit):
+
+        mtypes = circuit.cells.mtypes
+        means = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        stds = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        max_nsample = 10
+
+        for pre in mtypes:
+            for post in mtypes:
+                pre_gids = circuit.cells.ids(group={Cell.MTYPE: pre,
+                                                    '$target': 'mc2_Column'},
+                                             limit=max_nsample)
+
+                post_gids = circuit.cells.ids(group={Cell.MTYPE: post,
+                                                     '$target': 'Mosaic'})
+                data = circuit.stats.sample_divergence(pre=pre_gids,
+                                                       post=post_gids,
+                                                       by='conn')
+                means[post][pre] = data.mean()
+                stds[post][pre] = data.std()
+        return means, stds, mtypes
+
+    def get_conn_to_PC_INT(self, means, mtypes):
+
+        conn_pc = means.SP_PC
+        conn_int = (means.sum(axis=1) - means.SP_PC)
+        connections = pd.DataFrame(index=mtypes)
+        connections['model_PC'] = conn_pc.values
+        connections['model_INT'] = conn_int.values
+        connections['model_UN'] = 0.0
+        # quick hack to combine same cell type from different layers
+        connections.loc['S_BS'] = connections.loc[['SP_BS', 'SO_BS']].mean()
+        connections.drop(['SP_BS', 'SO_BS'], inplace=True)
+        connections.rename(lambda x: x.split('_')[1], inplace=True)
+        return connections
+
+    def get_n_eff_syns(self, circuit):
+        max_nsample = 10
+        mtypes = circuit.cells.mtypes
+        means = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        stds = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        for pre in mtypes:
+            for post in mtypes:
+                pre_gids = circuit.cells.ids(group={Cell.MTYPE: pre,
+                                                    '$target': 'Mosaic'})
+                post_gids = circuit.cells.ids(group={Cell.MTYPE: post,
+                                                     '$target': 'mc2_Column'},
+                                              limit=max_nsample)
+
+
+                data = circuit.stats.sample_convergence(pre=pre_gids,
+                                                        post=post_gids,
+                                                        by='syn')
+                means[post][pre] = data.mean()
+                stds[post][pre] = data.std()
+
+
+        conn_pc = means.loc['SP_PC',:]
+        conn_int = (means.sum(axis=0) - means.loc['SP_PC',:])
+        connections = pd.DataFrame(index=mtypes)
+        connections['model_PC'] = conn_pc.values
+        connections['model_INT'] = conn_int.values
+
+        connections.loc['S_BS'] = connections.loc[['SP_BS', 'SO_BS']].mean()
+        connections.drop(['SP_BS', 'SO_BS'], inplace=True)
+
+        connections.rename(lambda x: x.split('_')[1], inplace=True)
+        connections['model_tot'] = connections['model_PC']\
+                                   + connections['model_INT']
+
+        return connections
+
+    def get_laminar_distribution():
+        annotation = circuit.atlas.load_data("brain_regions")
+        hierarchy = circuit.atlas.load_hierarchy()
+
+        result = c.v2.stats.synapse_region_distribution(annotation,
+                                                        Synapse.PRE_MTYPE,
+                                                        pre={'$target':
+                                                             'cylinder'},
+                                                        normalize=True)
+        mapping = {k: v for v in ['SLM', 'SR', 'SP', 'SO']
+                   for k in hierarchy.collect('acronym', v, 'id')}
+
+        result2 = result.groupby(lambda r: mapping.get(r, 'out'),
+                                 axis=1).sum()
+        cols = ['SO', 'SP', 'SR', 'SLM', 'out']
+        result2 = result2[cols]
+        result2.index = result2.index.astype(str)
+        result2.loc['S_BS'] = result2.loc[['SP_BS', 'SO_BS']].mean()
+        result2.drop(['SP_BS', 'SO_BS'], inplace=True)
+        result2.rename(lambda x: x.split('_')[1], inplace=True)
+        return result2

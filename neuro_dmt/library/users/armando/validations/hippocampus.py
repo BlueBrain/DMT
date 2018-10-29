@@ -9,7 +9,7 @@ from dmt.model.interface import Interface
 
 import seaborn
 from dmt.vtk.plotting import golden_figure
-
+from matplotlib.colors import SymLogNorm
 
 
 class MtypeCellDensityValidation:
@@ -189,7 +189,7 @@ class BoutonDensityValidation:
         data['mod_mean'] = means[selected].values
         data['mod_std'] = stds[selected].values
 
-        self.plot(data, means, stds, mtypes)
+        print(self.plot(data, means, stds, mtypes))
         return
 
     def plot(self, data, means, stds, mtypes):
@@ -365,3 +365,313 @@ class SynsPerConnValidation():
         fig.savefig(filename2)
 
         return (filename1, filename2)
+
+
+class DivergenceValidation:
+
+    conn_exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
+                         '/20180219/bioname/connections.txt'
+
+    exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                    '20180219/bioname/divergence.txt'
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+
+        def get_number_connections(self, circuit):
+            pass
+
+        def get_conn_to_PC_INT(self, means, mtypes):
+            pass
+
+    def __call__(self, circuit):
+
+        self.report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        means, stds, mtypes = self.adapter.get_number_connections(circuit)
+        print(self.heatmap(means, stds))
+        # TODO should this really be in adappter?
+        connections = self.adapter.get_conn_to_PC_INT(means, mtypes)
+
+
+        conn_exp_data = pd.read_csv(self.conn_exp_data_path,
+                                    delim_whitespace=True,
+                                    index_col=0, skiprows=1,
+                                    names=['exp_PC', 'exp_INT', 'exp_UN'])
+        conn_result = pd.concat([connections, conn_exp_data], axis=1)
+        indices = ['AA', 'BP', 'BS', 'CCKBC', 'Ivy', 'OLM',
+                   'PC', 'PPA', 'PVBC', 'SCA']
+        conn_result2 = conn_result.loc[indices]
+        print(self.stacked(conn_result2))
+        # TODO conn_result2 gets modified more later
+        # TODO result2
+        conn_result2['model_tot'] = conn_result2['model_PC']\
+                                    + conn_result2['model_INT']
+        conn_result2['exp_tot'] = conn_result2['exp_PC']\
+                                  + conn_result2['exp_INT']\
+                                  + conn_result2['exp_UN']
+        print(self.comparison_bars(conn_result2))
+        div_pc = means.SP_PC / means.sum(axis=1)
+        div_int = (means.sum(axis=1) - means.SP_PC) / means.sum(axis=1)
+        divergence = pd.DataFrame(index=mtypes)
+        divergence['model_PC'] = div_pc.values
+        divergence['model_INT'] = div_int.values
+        divergence['model_UN'] = 0.0
+        divergence.loc['S_BS'] = divergence.loc[['SP_BS', 'SO_BS']].mean()
+        divergence.drop(['SP_BS', 'SO_BS'], inplace=True)
+
+        exp_data = pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['exp_PC', 'exp_INT', 'exp_UN'])
+        result = pd.concat([divergence, exp_data], axis=1)
+        indices = ['AA', 'BP', 'BS', 'CCKBC', 'Ivy',
+                   'OLM', 'PC', 'PPA', 'PVBC', 'SCA']
+        result2 = result.loc[indices]
+        print(self.percentage_bars(result2))
+
+    def heatmap(self, means, stds):
+        fig, ax = plt.subplots()
+
+        # for heatmap with logarithmic scale
+        seaborn.heatmap(means, norm=SymLogNorm(linthresh=0.1), ax=ax)
+
+        fig.suptitle('Average number of connections')
+        ax.set_xlabel('Postsynaptic mtype')
+        ax.set_ylabel('Presynaptic mtype')
+
+        filename0\
+            = os.path.join(
+                self.report_path,
+                "number_connections{}.pdf".format(time.time()))
+
+        plt.savefig(filename0, bbox_inches='tight')
+        plt.close('all')
+        return filename0
+
+    def stacked(self, conn_result2):
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Divergence', fontsize=16)
+
+        axs[0].set_title('Model')
+        conn_result2.loc[:, ['model_PC', 'model_INT']]\
+                    .plot(kind='bar', stacked=True, legend=False, ax=axs[0])
+        axs[0].legend(['PC', 'INT'], loc='lower right', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Number of synapses')
+
+        axs[1].set_title('Experiment')
+        conn_result2.loc[:, ['exp_PC', 'exp_INT', 'exp_UN']]\
+                    .plot(kind='bar', stacked=True, legend=False, ax=axs[1])
+        axs[1].legend(['PC', 'INT', 'UN'], loc='lower right', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+
+        filename1\
+            = os.path.join(
+                self.report_path,
+                "divergence_absolute{}.pdf".format(time.time()))
+        plt.savefig(filename1)
+
+        plt.close('all')
+        return filename1
+
+    def comparison_bars(self, conn_result2):
+
+        fig, axs = plt.subplots(3, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Number of efferent synapses', fontsize=16)
+
+        axs[0].set_title('Total number of efferent synapses')
+        conn_result2.loc[:, ['model_tot', 'exp_tot']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[0])
+        axs[0].legend(['Model', 'Experiment'], loc='upper left', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Number of synapses')
+
+        axs[1].set_title('Number of synapses to PCs')
+        conn_result2.loc[:, ['model_PC', 'exp_PC']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[1])
+
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Number of synapses')
+
+        axs[2].set_title('Number of synapses to INTs')
+        conn_result2.loc[:, ['model_INT', 'exp_INT']]\
+                    .plot(kind='bar', stacked=False, legend=False, ax=axs[2])
+
+        axs[2].set_xlabel('mtype')
+        axs[2].set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.6, top=0.92)
+
+        filename2\
+            = os.path.join(
+                self.report_path,
+                "n_efferent_synapses{}.pdf".format(time.time()))
+
+        plt.savefig(filename2)
+
+        plt.close('all')
+        return filename2
+
+    def percentage_bars(self, result2):
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Divergence', fontsize=16)
+
+        axs[0].set_title('Model')
+        result2.loc[:, ['model_PC', 'model_INT']]\
+               .plot(kind='bar', stacked=True, legend=False, ax=axs[0])
+        axs[0].legend(['PC', 'INT'], loc='lower right', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('Percentage (%)')
+
+        axs[1].set_title('Experiment')
+        result2.loc[:, ['exp_PC', 'exp_INT', 'exp_UN']]\
+               .plot(kind='bar', stacked=True, legend=False, ax=axs[1])
+        axs[1].legend(['PC', 'INT', 'UN'], loc='lower right', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('Percentage (%)')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+
+        filename3\
+            = os.path.join(
+                self.report_path,
+                "divergence_percent{}.pdf".format(time.time()))
+
+        plt.savefig(filename3)
+
+        return filename3
+
+
+class ConvergenceValidation:
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+
+        def get_n_eff_syns(self, circuit):
+            pass
+
+    def __call__(self, circuit):
+        connections = self.adapter.get_n_eff_syns(circuit)
+        print(self.plot(connections))
+        return
+
+    def plot(self, connections):
+        """..."""
+        fig, ax = plt.subplots()
+
+        fig.suptitle('Number of afferent synapses', fontsize=16)
+
+        connections.loc[:, ['model_PC', 'model_INT']]\
+                   .plot(kind='bar', stacked=True, legend=False, ax=ax)
+        ax.legend(['PC', 'INT'], loc='upper left', frameon=True)
+        ax.set_xlabel('mtype')
+        ax.set_ylabel('Number of synapses')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.6, top=0.92)
+
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        filename\
+            = os.path.join(
+                report_path,
+                "n_afferent_synapses{}.pdf".format(time.time()))
+
+        plt.savefig(filename)
+
+        return filename
+
+class LaminarDistributionSynapses:
+
+    exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                    '20180219/bioname/laminar_distribution.txt'
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+        pass
+
+    def __call__(self, circuit):
+
+        exp_data = pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['SO', 'SP', 'SR', 'SLM'])
+        result2 = self.adapter.get_laminar_distribution(circuit)
+        concatenated = pd.concat([result2, exp_data], axis=1,
+                                 keys=['model', 'experiment'])
+        indices = ['AA', 'BP', 'BS', 'CCKBC',
+                   'Ivy', 'OLM', 'PC', 'PPA', 'SCA', 'Tri']
+        concatenated2 = concatenated.loc[indices]
+        self.plot(concatenated2)
+        pass
+
+    def plot(self, concatenated2):
+        plt.close('all')
+        fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
+
+        fig.suptitle('Laminar distribution of synapses', fontsize=16)
+
+        axs[0].set_title('Model')
+        concatenated2['model'].plot(kind='bar', stacked=True,
+                                    sort_columns=True, legend=False,
+                                    ax=axs[0])
+        handles, labels = axs[0].get_legend_handles_labels()
+        axs[0].legend(handles[::-1], labels[::-1],
+                      loc='center left', frameon=True)
+        axs[0].set_xlabel('mtype')
+        axs[0].set_ylabel('%')
+
+        axs[1].set_title('Experiment')
+        concatenated2['experiment'].plot(kind='bar', stacked=True,
+                                         sort_columns=True,
+                                         legend='reverse',
+                                         ax=axs[1])
+        handles, labels = axs[1].get_legend_handles_labels()
+        axs[1].legend(handles[::-1], labels[::-1],
+                      loc='center left', frameon=True)
+        axs[1].set_xlabel('mtype')
+        axs[1].set_ylabel('%')
+
+        fig.tight_layout()
+
+        plt.subplots_adjust(hspace=0.4, top=0.92)
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        if not os.path.exists(report_path):
+            os.makedirs(report_path)
+        filename\
+            = os.path.join(
+                report_path,
+                "laminar_distribution{}.png".format(time.time()))
+
+        plt.savefig(filename)
+
+        plt.show()
+        return filename
