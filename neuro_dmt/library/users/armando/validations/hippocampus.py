@@ -189,7 +189,7 @@ class BoutonDensityValidation:
         data['mod_mean'] = means[selected].values
         data['mod_std'] = stds[selected].values
 
-        self.plot(data, means, stds, mtypes)
+        print(self.plot(data, means, stds, mtypes))
         return
 
     def plot(self, data, means, stds, mtypes):
