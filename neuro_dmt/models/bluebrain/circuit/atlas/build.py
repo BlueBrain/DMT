@@ -5,6 +5,7 @@ import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
 from voxcell.hierarchy import Hierarchy
 from bluepy.v2.circuit import Circuit
+from dmt.vtk.utils import collections
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.condition import Condition
 from neuro_dmt.models.bluebrain.circuit.build\
@@ -25,7 +26,53 @@ class AtlasCircuitSpecialization(
         """..."""
         pass
 
+class IsoCortexAtlasSpecialization(
+        AtlasCircuitSpecialization):
+    """..."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        self.column_parameter\
+            = Column(
+                value_type=str,
+                values=["mc{}_Column".format(n) for n in range(7)])
+        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
+            kwargs["brain_region"]\
+                = brain_regions.cortex
+        super().__init__(
+            *args, **kwargs)
 
+    def get_atlas_ids(self,
+            hierarchy,
+            condition=Condition([])):
+        """..."""
+        layers\
+            = condition.get_value(
+                "layer")
+        subregion\
+            = condition.get_value(
+                "subregion") #subregion of the iso-cortex
+        if not layers:
+            return hierarchy.collect(
+                "acronym", subregion,  "id")
+        if not collections.check(layers):
+            return hierarchy.collect(
+                "acronym", subregion, "id"
+            ).intersection(
+                hierarchy.collect(
+                    "acronym", "L{}".format(layers), "id"))
+        return hierarchy.collect(
+                "acronym", subregion, "id"
+            ).intersection({
+                id for layer in layers
+                for id in hierarchy.collect(
+                        "acronym", "L{}".format(layer), "id")})
+        
+    @property
+    def target(self):
+        """..."""
+        raise NotImplementedError
+ 
 class AtlasCircuitGeometry(
         CircuitGeometry):
     """Specify atlas circuit based attributes."""
@@ -112,3 +159,15 @@ class AtlasCircuitGeometry(
             break
         return None
 
+    def random_column(self,
+            iso_cortex_subregion,
+            *args, **kwargs):
+        """..."""
+        raise NotImplementedError(
+            "random_column that spans all the layers of an Isocortex subregion.")
+
+    def column_parameter(self,
+            iso_cortex_subregion,
+            *args, **kwargs):
+        """..."""
+        raise NotImplementedError

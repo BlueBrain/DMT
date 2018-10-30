@@ -117,7 +117,6 @@ class RandomPosition(
             self.logger.get_source_info(),
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
-
         return self.circuit_geometry\
                    .random_position(
                        condition,

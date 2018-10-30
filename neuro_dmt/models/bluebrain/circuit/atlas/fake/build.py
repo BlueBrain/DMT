@@ -6,16 +6,14 @@ from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import Column
-from neuro_dmt.models.bluebrain.circuit.specialization\
-    import CircuitSpecialization
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
-    import AtlasCircuitGeometry
+    import AtlasCircuitSpecialization, AtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, random_location
 
     
 class HippocampalAtlasSpecialization(
-        CircuitSpecialization):
+        AtlasCircuitSpecialization):
     """..."""
     def __init__(self,
             *args, **kwargs):
@@ -64,7 +62,7 @@ class HippocampalAtlasSpecialization(
 
 
 class CorticalAtlasSpecialization(
-        CircuitSpecialization):
+        AtlasCircuitSpecialization):
     """..."""
     def __init__(self,
             *args, **kwargs):
@@ -107,49 +105,7 @@ class CorticalAtlasSpecialization(
         """..."""
         return self.central_column
         
-class IsoCortexAtlasSpecialization(
-        CircuitSpecialization):
-    """..."""
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        self.column_parameter\
-            = Column(
-                value_type=str,
-                values=["mc{}_Column".format(n) for n in range(7)])
-        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
-            kwargs["brain_region"]\
-                = brain_regions.cortex
-        super().__init__(
-            *args, **kwargs)
 
-    def get_atlas_ids(self,
-            hierarchy,
-            condition=Condition([])):
-        """..."""
-        layers = condition.get_value("layer")
-        subregion = condition.get_value("subregion") #subregion of the iso-cortex
-        if not layers:
-            return hierarchy.collect(
-                "acronym", subregion,  "id")
-        if not collections.check(layers):
-            return hierarchy.collect(
-                "acronym", subregion, "id"
-            ).intersection(
-                hierarchy.collect(
-                    "acronym", "L{}".format(layers), "id"))
-        return hierarchy.collect(
-                "acronym", subregion, "id"
-            ).intersection({
-                id for layer in layers
-                for id in hierarchy.collect(
-                        "acronym", "L{}".format(layer), "id")})
-        
-    @property
-    def target(self):
-        """..."""
-        return self.central_column
- 
 class FakeAtlasCircuitGeometry(
         AtlasCircuitGeometry):
     """Circuit geometry methods for (fake) atlas based circuits."""
@@ -179,7 +135,7 @@ class FakeAtlasCircuitGeometry(
     def column_parameter(self,
             *args, **kwargs):
         """..."""
-        return self._circuit_specialization.column_parameter
+        return self.circuit_specialization.column_parameter
 
     def __compute_geometry(self):
         """..."""
