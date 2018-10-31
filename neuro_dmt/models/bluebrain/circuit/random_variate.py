@@ -227,7 +227,7 @@ class RandomSpanningColumnOfInterest(
     to define an equivalent definition for atlas based circuits."""
 
     value_type = RegionOfInterest
-    label = """spanning_column"""
+    label = "region_of_interest" 
 
     def __init__(self,
             circuit,

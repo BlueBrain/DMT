@@ -48,7 +48,7 @@ class HippocampalAtlasSpecialization(
         super().__init__(
             *args, **kwargs)
 
-    def get_meso_column_parameter(self,
+    def get_spanning_column_parameter(self,
             column_values=range(7)):
         """..."""
         return\
@@ -143,6 +143,10 @@ class FakeAtlasCircuitGeometry(
 
     def __compute_geometry(self):
         """..."""
+        self.logger.info(
+            self.logger.get_source_info(),
+            """Compoute geometry in {} instance"""\
+            .format(self.__class__.__name__))
         central_column_ids\
             = self.circuit_specialization\
                   .get_atlas_ids(
@@ -176,12 +180,13 @@ class FakeAtlasCircuitGeometry(
                 column_top=np.max(central_column_voxels[:, 1]))
                 
     def random_spanning_column(self,
+            condition=Condition([]),
             crossection=50.):
         """..."""
         if not self.__layer_geometry:
             self.__compute_geometry()
         random_pos\
-            = self.random_position()
+            = self.random_position(condition)
         random_pos[1] = 0.0 
         square\
             = (crossection *

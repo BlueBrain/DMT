@@ -237,14 +237,6 @@ class AtlasCircuitGeometry(
             break
         return None
 
-    def random_spanning_column(self,
-            region,
-            *args, **kwargs):
-        """A random column (a long box) passing through all the 6 layers,
-        contained (mostly) inside the requested (sub) region of the circuit."""
-        raise NotImplementedError(
-            "A column that spans all the layers of a (sub) region of the circuit.")
-
     def spanning_column_parameter(self,
             regions=[],
             *args, **kwargs):

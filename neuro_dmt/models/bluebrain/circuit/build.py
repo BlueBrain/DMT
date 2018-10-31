@@ -68,7 +68,7 @@ class CircuitGeometry(
     
     @abstractmethod
     def spanning_column_parameter(self,
-            region=None,
+            regions=[],
             *args, **kwargs):
         """Spatial parameter representing a column that spans all the layers
         (or another sub-region) of a brain region. Unlike sub-region (layer),
