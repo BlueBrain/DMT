@@ -113,7 +113,7 @@ class RandomPosition(
             condition,
             *args, **kwargs):
         """..."""
-        self.logger.debug(
+        self.logger.ignore(
             self.logger.get_source_info(),
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
@@ -121,7 +121,7 @@ class RandomPosition(
                    .random_position(
                        condition,
                        *args, **kwargs)
-                                                  
+
     def row(self, condition, value):
         """..."""
         return pd.DataFrame(
@@ -132,7 +132,7 @@ class RandomPosition(
             index=condition.index)
 
 
-class RandomCrossection(
+class RandomCrossectionalPoint(
         RandomPosition):
     """..."""
     def __init__(self,
@@ -163,6 +163,7 @@ class RandomCrossection(
 class RandomRegionOfInterest(
         CircuitRandomVariate):
     """Random regions of interest"""
+
     value_type = RegionOfInterest
     label = "region_of_interest"
 
@@ -194,10 +195,12 @@ class RandomRegionOfInterest(
 
     def __call__(self,
             condition,
+            sampled_box_shape=None,
             *args, **kwargs):
         """..."""
         half_box\
-            = self.sampled_box_shape / 2.
+            = (sampled_box_shape if sampled_box_shape
+               else self.sampled_box_shape / 2.)
         position\
             = self.random_position(
                 condition,
@@ -216,40 +219,49 @@ class RandomRegionOfInterest(
             index=condition.index)
 
 
-class RandomColumnOfInterest(
-        RandomRegionOfInterest):
+class RandomSpanningColumnOfInterest(
+        CircuitRandomVariate):
     """A random column of interest is a random region of interest
     that spans the entire columnar dimension of the circuit.
     While well defined for O1 micro-circuits, we will have to be creative
     to define an equivalent definition for atlas based circuits."""
 
+    value_type = RegionOfInterest
+    label = """spanning_column"""
+
     def __init__(self,
             circuit,
             circuit_geometry,
             brain_region,
-            crossection = 100.,
+            crossection=50.,
             *args, **kwargs):
         """..."""
-        self.crossection\
+        self.__crossection\
             = crossection
         super().__init__(
             circuit,
             circuit_geometry,
             brain_region,
             *args, **kwargs)
-        self.random_position\
-            = RandomCrossection(
-                circuit,
-                circuit_geometry,
-                brain_region,
-                offset=crossection/2.,
-                *args, **kwargs)
-        self.sampled_box_shape\
-            = np.array([
-                crossection,
-                self.circuit_geometry.thickness,
-                crossection])
 
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """Call Me"""
+        return self.circuit_geometry\
+                   .random_spanning_column(
+                       condition,
+                       crossection=self.__crossection)
+
+    def row(self,
+            condition,
+            value):
+        """..."""
+        return pd.DataFrame(
+            [value],
+            columns=[self.label],
+            index=condition.index)
+    
 
 class RandomBoxCorners(
         CircuitRandomVariate):

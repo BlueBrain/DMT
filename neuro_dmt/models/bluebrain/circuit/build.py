@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field, WithFCA
+from dmt.vtk.measurement.condition import Condition
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit\
     import BlueBrainModelHelper
@@ -57,14 +58,17 @@ class CircuitGeometry(
         pass
 
     @abstractmethod
-    def random_column(self,
-            crosssection):
-        """..."""
+    def random_spanning_column(self,
+            condition=Condition([]),
+            crossection=50.):
+        """A square faced column spanning all the sub-regions of the circuit.
+        Ideally this column should be orthogonal to any layered sub-regions. As
+        a first implementation we will use rectilinear colulmns."""
         raise NotImplementedError()
-
-    @classmethod
+    
     @abstractmethod
-    def column_parameter(cls,
+    def spanning_column_parameter(self,
+            region=None,
             *args, **kwargs):
         """Spatial parameter representing a column that spans all the layers
         (or another sub-region) of a brain region. Unlike sub-region (layer),

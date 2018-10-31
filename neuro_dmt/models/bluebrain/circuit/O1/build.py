@@ -1,53 +1,75 @@
 """O1 circuit build geometry"""
 import numpy as np
 from bluepy.v2.enums import Cell
+from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
+from neuro_dmt.measurement.parameter\
+    import BrainCircuitSpatialParameter
+from neuro_dmt.measurement.parameter\
+    import Column
 from neuro_dmt.models.bluebrain.circuit.specialization\
     import CircuitSpecialization
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
-from neuro_dmt.models.bluebrain.circuit.O1.parameters import HyperColumn
+from neuro_dmt.models.bluebrain.circuit.O1.parameters\
+    import HyperColumn
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
-class SSCxCorticalO1Specialization(
+class O1LayeredCircuitSpecialization(
         CircuitSpecialization):
-    """..."""
+    """Mixin class that provides
+    abstract and concrete methods that should be common to all O1.v6a circuits
+    --- circuits that have a fake Atlas holding their O1 geometry."""
+
+    central_meso_column\
+        = Field(
+            __name__="central_meso_column",
+            __type__=str,
+            __default__="mc2_Column",
+            __doc__="""There are seven meso-columns. Column 2 ('mc2_Column') 
+            is the central column, but in a particular hippocampus CA1 circuit
+            it has been called 'mc2'...""")
+
+    lattice_vector\
+        = Field(
+            __name__="lattice_vector",
+            __type__=Record,
+            __is_valid__=lambda instance, value: "a1" in value and "a2" in value)
+
+    layer_thickness\
+        = Field(
+            __name__="layer_thickness",
+            __type__=np.ndarray,
+            __is_valid__=lambda instance, value: len(value.shape) == 1,
+            __doc__="""Array of layer thicknesses.""")
+
+    layer_bottom\
+        = Field(
+            __name__="layer_bottom",
+            __type__=float,
+            __doc__="""Min value of the circuit layers' y-axis. This should
+            be where L1 starts.""")
 
     def __init__(self,
             *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.sscx,
+            cell_group_params=(
+                Cell.LAYER,
+                Cell.REGION,
+                "$target",
+                Cell.SYNAPSE_CLASS,
+                Cell.MORPH_CLASS,
+                Cell.ETYPE,
+                Cell.MTYPE,
+                "meso_column",),
             *args, **kwargs)
-
-    @property
-    def layer_thickness(self):
-        """..."""
-        return np.array([
-            164.94915873,
-            148.87602025,
-            352.92508322,
-            189.57183895,
-            525.05585701,
-            700.37845971])
-
-    @property
-    def lattice_vector(self):
-        """..."""
-        return Record(
-            a1=np.array([0.0, 0.0, 230.92]),
-            a2=np.array([199.98, 0.0, -115.46]))
-
-    @property
-    def layer_bottom(self):
-        """..."""
-        return 10.
-
+        
     @property
     def layer_top(self):
         """..."""
@@ -56,36 +78,46 @@ class SSCxCorticalO1Specialization(
     @property
     def target(self):
         """..."""
-        return "mc2_Column"
+        return self.central_meso_column
 
-    @property
-    def central_column(self):
-        """..."""
-        return "mc2_Column"
-
-
-class HippocampalO1Specialization(
-        CircuitSpecialization):
+   
+    
+class SSCxCorticalO1Specialization(
+        O1LayeredCircuitSpecialization):
     """..."""
 
     def __init__(self,
             *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.hippocampus,
+            brain_region=brain_regions.sscx,
+            central_meso_column="mc2_Column",
+            lattice_vector=Record(
+                a1=np.array([0.0, 0.0, 230.92]),
+                a2=np.array([199.98, 0.0, -115.46])),
+            layer_thickness=np.array([
+                164.94915873,
+                148.87602025,
+                352.92508322,
+                189.57183895,
+                525.05585701,
+                700.37845971]),
+            layer_bottom=10.,
             *args, **kwargs)
 
-    @property
-    def target(self):
-        """..."""
-        return "mc2_Column"
-
-    @property
-    def central_column(self):
-        """..."""
-        return "mc2_Column"
-
-
+    def get_spanning_column_parameter(self,
+            column_values=range(7)):
+        """A parameter whose values are meso-columns of the
+        O1 circuit. While in most O1 circuits the values would be those
+        of the default value above, at least on one Hippocampus CA1 circuit
+        it's values do not contain the trailing '_Column'..."""
+        return\
+            Column(
+                value_type=str,
+                values=["mc{}_Column".format(n)
+                        for n in column_values])
+    
+    
 class O1CircuitGeometry(
         CircuitGeometry):
     """Specializations of methods for the O1.v6a circuits."""
@@ -162,34 +194,16 @@ class O1CircuitGeometry(
                 bounds.bbox[1] - offset)
         return random_location(box)
 
-    def central_column(self,
-            column_index = 2,
-            crossection=50.):
-        """..."""
-        mean_position\
-            = self.__center(
-                {"$target": "mc{}_Column".format(column_index)})\
-                  .mean()
-        square\
-            = crossection * np.array([1., 0., 1.])
-        point_0\
-            = np.array(
-                mean_position - square)
-        point_0[1]\
-            = self.circuit_specialization\
-                  .layer_bottom
-        point_1\
-            = np.array(
-                mean_position + square)
-        point_1[1]\
-            = self.thickness
-        return Cuboid(point_0, point_1)
-
-    def random_crossectional_point(self):
+    def random_crossectional_point(self,
+            meso_column=None):
         """Get a random point orthogonal to the layer axis"""
+        if not meso_column:
+            meso_column\
+                = self.circuit_specialization\
+                      .central_meso_column
         cells\
             = self.circuit.cells.get(
-                {"$target": self.circuit_specialization.central_column},
+                {"$target": meso_column},
                 properties=XYZ)
         random_pos\
             = np.array(
@@ -200,15 +214,17 @@ class O1CircuitGeometry(
         return random_pos
 
     @property
-    def column_bottom(self):
+    def meso_column_bottom(self):
         """..."""
         return self.circuit_specialization.layer_bottom
 
     def random_column(self,
+            meso_column=None,
             crossection=50.):
         """Get a random column, spanning all the layers."""
         random_pos\
-            = self.random_crossectional_point()
+            = self.random_crossectional_point(
+                meso_column)
         square\
             = (crossection *
                np.array([
@@ -216,29 +232,36 @@ class O1CircuitGeometry(
         bottom\
             = np.array([
                 0.0,
-                self.column_bottom,
+                self.meso_column_bottom,
                 0.0 ])
         top\
             = np.array([
                 0.0,
-                self.column_bottom + self.thickness,
+                self.meso_column_bottom + self.thickness,
                 0.0])
         return Cuboid(
             random_pos - square + bottom,
             random_pos + square + top)
 
-    @classmethod
-    def column_parameter(cls,
-            values=[2],
-            *args, **kwargs):
+    def random_spanning_column(self,
+            condition=Condition([]),
+            crossection=50.):
+        """..."""
+        return\
+            self.random_column(
+                meso_column=condition.get_value(
+                    self.spanning_column_parameter().label),
+                crossection=crossection)
+
+    def spanning_column_parameter(self,
+            meso_columns=[2]):
         """Spatial parameter representing a column that spans all the layers
         (or another sub-region) of a brain region. Unlike sub-region (layer),
         this spatial parameter Column depends on the (geometric) build of the
         circuit."""
-        return HyperColumn(
-            values=values,
-            *args, **kwargs)
-
+        return self.circuit_specialization\
+                   .get_spanning_column_parameter(
+                       column_values=meso_columns)
 
 
 class SSCxO1CircuitGeometry(
@@ -252,24 +275,3 @@ class SSCxO1CircuitGeometry(
                 *args, **kwargs)
         super().__init__(
             *args, **kwargs)
-
-
-class HippocampusO1CircuitGeometry(
-        O1CircuitGeometry):
-    """O1CircuitGeometry whose 'circuit_specialization' is already set."""
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        self.circuit_specialization\
-            = HippocampalO1Specialization(
-                *args, **kwargs)
-        super().__init__(
-            *args, **kwargs)
-
-
-
-
-
-
-
-

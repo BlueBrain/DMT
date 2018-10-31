@@ -39,7 +39,7 @@ from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     CircuitRandomVariate,\
     RandomRegionOfInterest,\
-    RandomColumnOfInterest
+    RandomSpanningColumnOfInterest
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
@@ -163,12 +163,15 @@ class BlueBrainModelAdapter(
             parameters={},
             *args, **kwargs):
         """..."""
-        if not parameters:
+        if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
             return self.statistical_measurement(
                 circuit,
                 method,
-                parameters={self.circuit_geometry_type.column_parameter()},
-                get_random_variate=RandomColumnOfInterest,
+                parameters={
+                    self.circuit_geometry_type(
+                        circuit
+                    ).spanning_column_parameter()},
+                get_random_variate=RandomSpanningColumnOfInterest,
                 *args, **kwargs)
         return self.statistical_measurement(
             circuit,
