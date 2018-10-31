@@ -218,7 +218,7 @@ class O1CircuitGeometry(
         """..."""
         return self.circuit_specialization.layer_bottom
 
-    def random_column(self,
+    def __random_column(self,
             meso_column=None,
             crossection=50.):
         """Get a random column, spanning all the layers."""
@@ -248,7 +248,7 @@ class O1CircuitGeometry(
             crossection=50.):
         """..."""
         return\
-            self.random_column(
+            self.__random_column(
                 meso_column=condition.get_value(
                     self.spanning_column_parameter().label),
                 crossection=crossection)

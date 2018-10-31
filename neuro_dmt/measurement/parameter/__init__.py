@@ -3,6 +3,7 @@ these can be used as base classes by model adapters, and required and coded
 against by validation authors. The author of a model adapter then has to just
 look up the documentation to write an appropriate base class."""
 
+from bluepy.v2.enums import Cell
 from dmt.vtk.utils import collections
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
 from dmt.vtk.utils.descriptor import Field
@@ -179,7 +180,8 @@ class HippocampalLayerSLM_SR_Fused(
 class Column(
         BrainCircuitSpatialParameter):
     """A column covers the entire region,
-    orthogonally to the layers --- as much as possible."""
+    orthogonally to the layers --- as much as possible.
+    'Column' may be used for O1 circuits."""
 
     def __init__(self,
             *args, **kwargs):
@@ -187,6 +189,22 @@ class Column(
         if "label" not in kwargs:
             super().__init__(
                 label="column",
+                *args, **kwargs)
+        else:
+            super().__init__(
+                *args, **kwargs)
+
+
+class AtlasRegion(
+        BrainCircuitSpatialParameter):
+    """Regions in the brain atlas."""
+
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        if "label" not in kwargs:
+            super().__init__(
+                label=Cell.REGION,
                 *args, **kwargs)
         else:
             super().__init__(

@@ -9,6 +9,8 @@ from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils import collections
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.condition import Condition
+from neuro_dmt.measurement.parameter import AtlasRegion
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.specialization\
@@ -92,9 +94,11 @@ class AtlasBasedLayeredCircuitSpecialization(
             condition=Condition([])):
         """..."""
         return {
-            id for region in self.__get_atlas_region_acronyms(condition)
-            for id in hierarchy.collect(
-                    "acronym", region, "id")}
+            region_id
+            for region_acronym in self.__get_atlas_region_acronyms(
+                    condition)
+            for region_id in hierarchy.collect(
+                    "acronym", region_acronym, "id")}
         
     @property
     def target(self):
@@ -118,36 +122,11 @@ class IsoCortexAtlasSpecialization(
         super().__init__(
             *args, **kwargs)
 
-    def get_atlas_ids(self,
-            hierarchy,
-            condition=Condition([])):
+    def get_spanning_column_parameter(self,
+            regions=["SSp-ll"]):
         """..."""
-        layers\
-            = condition.get_value(
-                "layer")
-        isocortex_region\
-            = condition.get_value(
-                Cell.REGION) 
-        if not layers:
-            return hierarchy.collect(
-                "acronym", isocortex_region,  "id")
-        if not collections.check(layers):
-            return hierarchy.collect(
-                "acronym", isocortex_region, "id"
-            ).intersection(
-                hierarchy.collect(
-                    "acronym", "L{}".format(layers), "id"))
-        return hierarchy.collect(
-                "acronym", isocortex_region, "id"
-            ).intersection({
-                id for layer in layers
-                for id in hierarchy.collect(
-                        "acronym", "L{}".format(layer), "id")})
-
-    @property
-    def target(self):
-        """..."""
-        raise NotImplementedError
+        raise NotImplementedError(
+            """""")
 
 class AtlasCircuitGeometry(
         CircuitGeometry):
@@ -173,6 +152,7 @@ class AtlasCircuitGeometry(
                     .format(self))
         self._hierarchy = None
         self._brain_region_voxels = None
+        self._region_geometry = {}
         super().__init__(
             circuit,
             *args, **kwargs)
@@ -192,6 +172,44 @@ class AtlasCircuitGeometry(
                 = self.atlas.load_data(
                     "brain_regions")
         return self._brain_region_voxels
+
+    def _get_region_geometry(self,
+            condition=Condition([])):
+        """Compute geometry of a region."""
+        region\
+            = condition.get_value(
+                Cell.REGION)
+        if not region in self._region_geometry:
+            region_ids\
+                = self.circuit_specialization\
+                      .get_atlas_ids(
+                          self.hierarchy,
+                          condition=Condition([(Cell.REGION, region)]))
+            nx, ny, nz\
+                    = self.brain_region_voxels.shape
+            self.logger.info(
+                self.logger.get_source_info(),
+                """build is_ids_voxel data of shape {}X{}X{}"""\
+                .format(nx, ny, nz))
+            voxels\
+                = self.brain_region_voxels\
+                      .indices_to_positions(
+                          np.array([
+                              np.array([i,j,k])
+                              for i in range(nx)
+                              for j in range(ny)
+                              for k in range(nz)]))
+            region_voxels\
+                = np.array([
+                    v for v in voxels
+                    if self.brain_region_voxels.lookup(v) in region_ids])
+            self._region_geometry[region]\
+                = Record(
+                    bottom=np.min(
+                        region_voxels[:, 1]),
+                    top=np.max(
+                        region_voxels[:, 1]))
+        return self._region_geometry[region]
 
     def random_position(self,
             condition=Condition([]),
@@ -213,16 +231,10 @@ class AtlasCircuitGeometry(
             """Get random position from atlas based circuit geometry's.""",
             """\tgiven: {}""".format(condition.value))
         atlas_ids\
-            = self.circuit_specialization.get_atlas_ids(
-                self.hierarchy,
-                condition)
-        is_ids_voxel\
-            = self.brain_region_voxels.with_data(
-                np.in1d(
-                    self.brain_region_voxels.raw,
-                    list(atlas_ids)
-                ).reshape(
-                    self.brain_region_voxels.shape))
+            = self.circuit_specialization\
+                  .get_atlas_ids(
+                      self.hierarchy,
+                      condition)
         while True:
             random_voxel\
                 = self.brain_region_voxels\
@@ -230,7 +242,7 @@ class AtlasCircuitGeometry(
                           np.array([
                               np.random.randint(n)
                               for n in self.brain_region_voxels.shape]))
-            if is_ids_voxel.lookup(random_voxel):
+            if self.brain_region_voxels.lookup(random_voxel) in atlas_ids:
                 return random_voxel
             else:
                 continue
@@ -238,8 +250,59 @@ class AtlasCircuitGeometry(
         return None
 
     def spanning_column_parameter(self,
-            regions=[],
+            regions=["SSp-ll"],
             *args, **kwargs):
         """Parameter with values that are columns through the
         requiested iso_cortex_regions"""
-        raise NotImplementedError
+        return AtlasRegion(
+            value_type=str,
+            values=regions,
+            *args, **kwargs)
+
+    def random_spanning_column(self,
+            condition=Condition([(Cell.Region, "SSp-ll")]),
+            crossection=50.):
+        """..."""
+        region_geometry\
+            = self._get_region_geometry(
+                condition)
+        random_pos\
+             = self.random_position(
+                 condition)
+        random_pos[1] = 0.0
+        square\
+            = (crossection *
+               np.array([
+                   1.0, 0.0, 1.0 ]))
+        bottom\
+            = np.array([
+                0.0,
+                region_geometry.bottom,
+                0.0])
+        top\
+            = np.array([
+                0.0,
+                region_geometry.top,
+                0.0])
+        return Cuboid(
+            random_pos - square + bottom,
+            random_pos + square + top)
+
+            
+               
+class CortexAtlasCircuitGeometry(
+        AtlasCircuitGeometry):
+    """AtlasCircuitGeometry whose 'circuit_specialization' has already
+    been set to 'CorticalAtlasSpecialization'"""
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
+        """..."""
+        self.circuit_specialization\
+            = IsoCortexAtlasSpecialization(
+                *args, **kwargs)
+        super().__init__(
+            circuit,
+            *args, **kwargs)
+
+

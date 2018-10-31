@@ -176,8 +176,10 @@ class FakeAtlasCircuitGeometry(
                 #if self.brain_region_voxels.lookup(v) in central_column_ids])
         self.__layer_geometry\
             = Record(
-                column_bottom=np.min(central_column_voxels[:, 1]),
-                column_top=np.max(central_column_voxels[:, 1]))
+                column_bottom=np.min(
+                    central_column_voxels[:, 1]),
+                column_top=np.max(
+                    central_column_voxels[:, 1]))
                 
     def random_spanning_column(self,
             condition=Condition([]),
@@ -212,14 +214,14 @@ class CorticalFakeAtlasCircuitGeometry(
     """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
     been set to 'CorticalAtlasSpecialization'"""
     def __init__(self,
-            circuit, 
+            circuit,
             *args, **kwargs):
         """..."""
         self.circuit_specialization\
             = CorticalAtlasSpecialization(
                 *args, **kwargs)
         super().__init__(
-            circuit, 
+            circuit,
             *args, **kwargs)
 
 
@@ -228,15 +230,15 @@ class HippocampalFakeAtlasCircuitGeometry(
     """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
     been set to 'HippocampalAtlasSpecialization'"""
     def __init__(self,
-            circuit, 
+            circuit,
             *args, **kwargs):
         """..."""
         self.circuit_specialization\
             = HippocampalAtlasSpecialization(
                 *args, **kwargs)
         super().__init__(
-            circuit, 
+            circuit,
             *args, **kwargs)
 
-    
-        
+
+
