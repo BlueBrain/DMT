@@ -7,15 +7,18 @@ from voxcell.nexus.voxelbrain import Atlas
 from voxcell.hierarchy import Hierarchy
 from bluepy.v2.circuit import Circuit
 from dmt.vtk.utils import collections
+from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.condition import Condition
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import AtlasRegion
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.specialization\
     import CircuitSpecialization
-from neuro_dmt.utils import brain_regions
+from neuro_dmt.models.bluebrain.circuit.geometry import \
+    Cuboid, collect_sample, random_location
 
 
 class AtlasBasedCircuitSpecialization(
@@ -191,24 +194,37 @@ class AtlasCircuitGeometry(
                 self.logger.get_source_info(),
                 """build is_ids_voxel data of shape {}X{}X{}"""\
                 .format(nx, ny, nz))
-            voxels\
-                = self.brain_region_voxels\
-                      .indices_to_positions(
-                          np.array([
-                              np.array([i,j,k])
-                              for i in range(nx)
-                              for j in range(ny)
-                              for k in range(nz)]))
-            region_voxels\
-                = np.array([
-                    v for v in voxels
-                    if self.brain_region_voxels.lookup(v) in region_ids])
+
+            region_bottom\
+                = np.finfo(float).max
+            region_top\
+                = np.finfo(float).min
+
+            count = 0 #track iteration
+            for i in range(nx):
+                for j in range(ny):
+                    for k in range(nz):
+                        pos\
+                            = self.brain_region_voxels\
+                                  .indices_to_positions(
+                                      np.array([i,j,k]) )
+                        if self.brain_region_voxels.lookup(pos) in region_ids:
+                            if pos[1] > region_top:
+                                region_top = pos[1]
+                            if pos[1] < region_bottom:
+                                region_bottom = pos[1]
+                        if count % 1000 == 0:
+                            self.logger.info(
+                                self.logger.get_source_info(),
+                                """check {}-th voxel at position {}"""\
+                                .format(count + 1, pos),
+                                "\t bottom: {}\t top: {}"\
+                                .format(region_bottom, region_top))
+                        count += 1
             self._region_geometry[region]\
                 = Record(
-                    bottom=np.min(
-                        region_voxels[:, 1]),
-                    top=np.max(
-                        region_voxels[:, 1]))
+                    bottom=region_bottom,
+                    top=region_top)
         return self._region_geometry[region]
 
     def random_position(self,
@@ -260,7 +276,7 @@ class AtlasCircuitGeometry(
             *args, **kwargs)
 
     def random_spanning_column(self,
-            condition=Condition([(Cell.Region, "SSp-ll")]),
+            condition=Condition([(Cell.REGION, "SSp-ll")]),
             crossection=50.):
         """..."""
         region_geometry\
