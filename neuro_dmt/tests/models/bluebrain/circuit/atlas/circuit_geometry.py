@@ -18,7 +18,8 @@ bb_adapter\
         brain_region=brain_regions.cortex,
         circuit_geometry_type=CortexAtlasCircuitGeometry,
         spatial_random_variate=RandomRegionOfInterest,
-        model_label="in-silico")
+        model_label="in-silico",
+        sample_size=5)
 
 
 

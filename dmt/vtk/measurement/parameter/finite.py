@@ -124,30 +124,28 @@ class FiniteValuedParameter(
                              name=dataframe.index.name)
         return dataframe.set_index(new_index)
 
-    def _filled_multi_index(self, dataframe,
-                            sorted=True, ascending=True,
-                            with_index_renamed=True):
+    def _filled_multi_index(self,
+                dataframe,
+                *args, **kwargs):
         """fill in a multi indexed dataframe."""
         index = dataframe.index
         assert(isinstance(index, pd.MultiIndex))
         assert(self.label in dataframe.index.names)
 
         df_values = level_values(dataframe, level=self.label)
-        missing_values = list(self.values - set(df_values))
+        missing_values = list(set(self.values) - set(df_values))
         if len(missing_values) == 0:
-            return (self.with_index_renamed(dataframe) if with_index_renamed
-                    else dataframe)
+            return dataframe
 
         cols = dataframe.columns
         dfs = [dataframe.xs(v, level=self.label) for v in missing_values]
         mdf = 0.0 * (dfs[0].copy())
 
         missing_dfs = len(missing) * [mdf.copy()]
-        full_df = pd.concat(dfs + missing_dfs,
-                            keys=df_values + missing_values,
-                            names=[self.label])
-        return (self.with_index_renamed(full_df, ascending=ascending)
-                if with_index_renamed else full_df)
+        return pd.concat(
+            dfs + missing_dfs,
+            keys=df_values + missing_values,
+            names=[self.label])
 
     def filled(self, dataframe,
                sorted=True, ascending=True,
@@ -157,9 +155,12 @@ class FiniteValuedParameter(
         self.logger.debug("measurement has an index of type {}"\
                           .format(type(dataframe.index)))
         if isinstance(dataframe.index, pd.MultiIndex):
-            return self._filled_multi_index(dataframe,
-                                            sorted=True,ascending=ascending,
-                                            with_index_renamed=with_index_renamed)
+            return\
+                self._filled_multi_index(
+                    dataframe,
+                    sorted=True,
+                    ascending=ascending,
+                    with_index_renamed=with_index_renamed)
         if dataframe.index.name != self.label:
             raise ValueError("index name {} != self.label {}"\
                              .format(dataframe.index.name, self.label))
