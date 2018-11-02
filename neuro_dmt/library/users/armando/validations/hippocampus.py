@@ -10,6 +10,8 @@ from dmt.model.interface import Interface
 import seaborn
 from dmt.vtk.plotting import golden_figure
 from matplotlib.colors import SymLogNorm
+from bluepy.v2.enums import Synapse
+from PyPDF2 import PdfFileMerger, PdfFileReader
 
 
 class MtypeCellDensityValidation:
@@ -158,6 +160,7 @@ class ByLayerCellDensityValidation:
         plt.savefig(filename)
         return filename
 
+
 class BoutonDensityValidation:
 
     bio_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180219/'\
@@ -233,6 +236,7 @@ class BoutonDensityValidation:
         # plt.show()
 
         return filename
+
 
 class SynsPerConnValidation():
     """validate number of synapses per connection"""
@@ -397,7 +401,6 @@ class DivergenceValidation:
         print(self.heatmap(means, stds))
         # TODO should this really be in adappter?
         connections = self.adapter.get_conn_to_PC_INT(means, mtypes)
-
 
         conn_exp_data = pd.read_csv(self.conn_exp_data_path,
                                     delim_whitespace=True,
@@ -604,6 +607,7 @@ class ConvergenceValidation:
 
         return filename
 
+
 class LaminarDistributionSynapses:
 
     exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
@@ -674,4 +678,101 @@ class LaminarDistributionSynapses:
         plt.savefig(filename)
 
         plt.show()
+        return filename
+
+
+class SynsConnDistributionValidation:
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface(Interface):
+
+        def get_syns_conn_dist(self, circuit, pre, post):
+            pass
+
+        def get_mtypes():
+            pass
+
+    def __call__(self, circuit):
+        mtypes = list(self.adapter.get_mtypes(circuit))[:3]
+        max_nsample = 100
+        filenames = []
+        for pre in mtypes:
+            for post in mtypes:
+                print(pre, post)
+                nsample, nsyns_conn, table\
+                    = self.adapter.get_syns_conn_dist(
+                        circuit, pre, post, max_nsample)
+                filenames.append(self.plot(pre, post, table,
+                                           nsyns_conn, max_nsample))
+        merger = PdfFileMerger()
+        for filename in filenames:
+            print(filename)
+            merger.append(PdfFileReader(filename))
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        merger.write(os.path.join(report_path,
+                                  "nsyn_conn_dist{}.pdf"
+                                  .format(time.time())))
+        return
+
+    def plot(self, pre, post, table, nsyns_conn,
+             nsample):
+        plt.close('all')
+        fig, ax = plt.subplots(3, 2, figsize=(8.27, 11.69))
+
+        plt.figtext(0.1, 0.95, pre + '->' + post,
+                    fontsize=20, fontweight='bold')
+        plt.figtext(0.1, 0.9, 'sample size = ' + str(nsample),
+                    fontsize=14)
+
+        post_bo = table[Synapse.POST_BRANCH_ORDER].values
+        post_path = table[Synapse.POST_NEURITE_DISTANCE].values
+        pre_bo = table[Synapse.PRE_BRANCH_ORDER].values
+        pre_path = table[Synapse.PRE_NEURITE_DISTANCE].values
+
+        fig.delaxes(ax[0, 0])
+        ax[0, 1].hist(nsyns_conn)
+        ax[0, 1].set_title('number of syns per conn')
+        ax[0, 1].set_xlabel('#')
+        ax[0, 1].set_ylabel('#')
+        ax[1, 0].hist(post_bo)
+        ax[1, 0].set_title('postsynaptic branch order')
+        ax[1, 0].set_xlabel('#')
+        ax[1, 0].set_ylabel('#')
+        ax[1, 1].hist(post_path)
+        ax[1, 1].set_title('postsynaptic path length')
+        ax[1, 1].set_xlabel('um')
+        ax[1, 1].set_ylabel('#')
+        ax[2, 0].hist(pre_bo)
+        ax[2, 0].set_title('presynaptic branch order')
+        ax[2, 0].set_xlabel('#')
+        ax[2, 0].set_ylabel('#')
+        ax[2, 1].hist(pre_path)
+        ax[2, 1].set_title('presynaptic path length')
+        ax[2, 1].set_xlabel('um')
+        ax[2, 1].set_ylabel('#')
+
+        fig.tight_layout()
+
+        report_path\
+            = os.path.join(
+                os.path.dirname(__file__),
+                "reports")
+
+        tmp = os.path.join(report_path, 'tmp')
+        if not os.path.exists(tmp):
+            os.makedirs(tmp)
+
+        filename\
+            = os.path.join(
+                tmp,
+                "{}-{}_scdistr.pdf".format(pre, post))
+
+        fig.savefig(filename)
+        print(filename)
         return filename

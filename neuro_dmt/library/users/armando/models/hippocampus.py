@@ -3,8 +3,9 @@ import pandas as pd
 from dmt.model import interface, adapter
 from neuro_dmt.library.users.armando.validations.hippocampus import\
     MtypeCellDensityValidation
-from bluepy.v2.enums import Cell
+from bluepy.v2.enums import Cell, Synapse
 from bluepy.v2.circuit import Circuit
+from bluepy.utils import take_n
 
 
 @adapter.adapter(Circuit)
@@ -288,3 +289,27 @@ class HippocampusAdapter:
         result2.drop(['SP_BS', 'SO_BS'], inplace=True)
         result2.rename(lambda x: x.split('_')[1], inplace=True)
         return result2
+
+    def get_syns_conn_dist(self, circuit, pre, post, max_nsample):
+        it = circuit.connectome.iter_connections(pre, post,
+                                                 return_synapse_ids=True,
+                                                 shuffle=True,
+                                                 unique_gids=True)
+        sample = [conn[2] for conn in take_n(it, max_nsample)]
+        nsample = len(sample)
+
+        # if not nsample:
+        #     return
+
+        synapse_ids = sum(sample, [])
+        nsyns_conn = list(map(len, sample))
+        table = circuit.connectome.synapse_properties(synapse_ids,
+                                                   [Synapse.POST_BRANCH_ORDER,
+                                                    Synapse.POST_NEURITE_DISTANCE,
+                                                    Synapse.POST_BRANCH_TYPE,
+                                                    Synapse.PRE_BRANCH_ORDER,
+                                                    Synapse.PRE_NEURITE_DISTANCE])
+        return nsample, nsyns_conn, table
+
+    def get_mtypes(self, circuit):
+        return circuit.cells.mtypes
