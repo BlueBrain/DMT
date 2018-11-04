@@ -251,6 +251,14 @@ class AtlasCircuitGeometry(
                   .get_atlas_ids(
                       self.hierarchy,
                       condition)
+        if self.brain_region_voxels.count(atlas_ids) == 0:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """Ids for region in condition {} not represented
+                in voxel data.""".format(condition.value))
+            return None
+
+        count = 0
         while True:
             random_voxel\
                 = self.brain_region_voxels\
@@ -260,7 +268,14 @@ class AtlasCircuitGeometry(
                               for n in self.brain_region_voxels.shape]))
             if self.brain_region_voxels.lookup(random_voxel) in atlas_ids:
                 return random_voxel
+            elif count == 10000000: #10 million. Is that enough?
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    """10 million voxels sampled, none had ids for the region
+                    requested in {}.""".format(condition.value))
+                break
             else:
+                count += 1
                 continue
             break
         return None

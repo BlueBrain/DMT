@@ -98,12 +98,11 @@ class BlueBrainModelAdapter(
         __doc__="""Label to be used in reporting.""")
     
     def __init__(self,
-            sampled_box_shape=50.*np.ones(3), 
+            sampled_box_shape=100.*np.ones(3), 
             *args, **kwargs):
         """..."""
         self._sampled_box_shape\
             = sampled_box_shape
-
         super().__init__(
             *args, **kwargs)
 
