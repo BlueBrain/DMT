@@ -609,7 +609,7 @@ class ConvergenceValidation:
 
 
 # TODO get working, Synapse.PRE_MTYPE doesn't exist?
-class LaminarDistributionSynapses:#Validation:
+class LaminarDistributionSynapsesValidation:
 
     exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
                     '20180219/bioname/laminar_distribution.txt'
@@ -698,8 +698,8 @@ class SynsConnDistributionValidation:
             pass
 
     def __call__(self, circuit):
-        ### just shortened here
-        mtypes = list(self.adapter.get_mtypes(circuit))[:2]
+
+        mtypes = list(self.adapter.get_mtypes(circuit))
         max_nsample = 100
         filenames = []
         for pre in mtypes:
