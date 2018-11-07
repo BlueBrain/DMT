@@ -39,7 +39,7 @@ from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.random_variate import \
     CircuitRandomVariate,\
     RandomRegionOfInterest,\
-    RandomColumnOfInterest
+    RandomSpanningColumnOfInterest
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid, collect_sample, random_location
 
@@ -69,10 +69,14 @@ class BlueBrainModelAdapter(
         __type__=BrainRegion,
         __doc__="Provides a model independent tag for the brain region.")
 
-    circuit_geometry = Field(
-        __name__="circuit_geometry",
+    circuit_geometry_type = Field(
+        __name__="circuit_geometry_type",
+        __type__=type,
         __typecheck__=Field.typecheck.subtype(CircuitGeometry),
-        __doc__="""The build of the circuit, O1 or atlas based...""")
+        __doc__="""A plugin that provides methods for a circuit's geometry.
+        A subtype of 'class CircuitGeometry' is expected --- that uses keyword
+        arguments for initialization, and will be initialized by passing circuit
+        as a keyword argument.""")
 
     get_spatial_random_variate = Field(
         __name__="get_spatial_random_variate",
@@ -94,12 +98,11 @@ class BlueBrainModelAdapter(
         __doc__="""Label to be used in reporting.""")
     
     def __init__(self,
-            sampled_box_shape=50.*np.ones(3), 
+            sampled_box_shape=100.*np.ones(3), 
             *args, **kwargs):
         """..."""
         self._sampled_box_shape\
             = sampled_box_shape
-
         super().__init__(
             *args, **kwargs)
 
@@ -138,7 +141,7 @@ class BlueBrainModelAdapter(
         random_variate\
             = get_random_variate(
                 circuit,
-                self.circuit_geometry,
+                self.circuit_geometry_type,
                 self.brain_region,
                 *args, **kwargs
             ).given(parameters)
@@ -159,12 +162,15 @@ class BlueBrainModelAdapter(
             parameters={},
             *args, **kwargs):
         """..."""
-        if not parameters:
+        if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
             return self.statistical_measurement(
                 circuit,
                 method,
-                parameters={self.circuit_geometry.column_parameter()},
-                get_random_variate=RandomColumnOfInterest,
+                parameters={
+                    self.circuit_geometry_type(
+                        circuit
+                    ).spanning_column_parameter()},
+                get_random_variate=RandomSpanningColumnOfInterest,
                 *args, **kwargs)
         return self.statistical_measurement(
             circuit,

@@ -1,75 +1,132 @@
 """O1 circuit build geometry"""
 import numpy as np
 from bluepy.v2.enums import Cell
+from dmt.vtk.measurement.condition import Condition
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.models.bluebrain.circuit.brain_regions\
-    import BrainRegionSpecific
-from neuro_dmt.models.bluebrain.circuit.build import CircuitGeometry
+from neuro_dmt.measurement.parameter\
+    import BrainCircuitSpatialParameter
+from neuro_dmt.measurement.parameter\
+    import Column
+from neuro_dmt.models.bluebrain.circuit.specialization\
+    import CircuitSpecialization
+from neuro_dmt.models.bluebrain.circuit.build\
+    import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry import \
     Cuboid,  random_location
-from neuro_dmt.models.bluebrain.circuit.O1.parameters import HyperColumn
+from neuro_dmt.models.bluebrain.circuit.O1.parameters\
+    import HyperColumn
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
-class Cortical(
-        BrainRegionSpecific):
-    """..."""
+class O1LayeredCircuitSpecialization(
+        CircuitSpecialization):
+    """Mixin class that provides
+    abstract and concrete methods that should be common to all O1.v6a circuits
+    --- circuits that have a fake Atlas holding their O1 geometry."""
+
+    central_meso_column\
+        = Field(
+            __name__="central_meso_column",
+            __type__=str,
+            __default__="mc2_Column",
+            __doc__="""There are seven meso-columns. Column 2 ('mc2_Column') 
+            is the central column, but in a particular hippocampus CA1 circuit
+            it has been called 'mc2'...""")
+
+    lattice_vector\
+        = Field(
+            __name__="lattice_vector",
+            __type__=Record,
+            __is_valid__=lambda instance, value: "a1" in value and "a2" in value)
+
+    layer_thickness\
+        = Field(
+            __name__="layer_thickness",
+            __type__=np.ndarray,
+            __is_valid__=lambda instance, value: len(value.shape) == 1,
+            __doc__="""Array of layer thicknesses.""")
+
+    layer_bottom\
+        = Field(
+            __name__="layer_bottom",
+            __type__=float,
+            __doc__="""Min value of the circuit layers' y-axis. This should
+            be where L1 starts.""")
 
     def __init__(self,
-            target="mc2_Column",
             *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.cortex,
-            target=target,
+            cell_group_params=(
+                Cell.LAYER,
+                Cell.REGION,
+                "$target",
+                Cell.SYNAPSE_CLASS,
+                Cell.MORPH_CLASS,
+                Cell.ETYPE,
+                Cell.MTYPE,
+                "meso_column",),
             *args, **kwargs)
+        
+    @property
+    def layer_top(self):
+        """..."""
+        return self.layer_bottom  + np.sum(self.layer_thickness)
 
+    @property
+    def target(self):
+        """..."""
+        return self.central_meso_column
 
-class Hippocampal(
-        BrainRegionSpecific):
+   
+    
+class SSCxCorticalO1Specialization(
+        O1LayeredCircuitSpecialization):
     """..."""
 
     def __init__(self,
             *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.hippocampus,
+            brain_region=brain_regions.sscx,
+            central_meso_column="mc2_Column",
+            lattice_vector=Record(
+                a1=np.array([0.0, 0.0, 230.92]),
+                a2=np.array([199.98, 0.0, -115.46])),
+            layer_thickness=np.array([
+                164.94915873,
+                148.87602025,
+                352.92508322,
+                189.57183895,
+                525.05585701,
+                700.37845971]),
+            layer_bottom=10.,
             *args, **kwargs)
 
-
+    def get_spanning_column_parameter(self,
+            column_values=range(7)):
+        """A parameter whose values are meso-columns of the
+        O1 circuit. While in most O1 circuits the values would be those
+        of the default value above, at least on one Hippocampus CA1 circuit
+        it's values do not contain the trailing '_Column'..."""
+        return\
+            Column(
+                value_type=str,
+                values=["mc{}_Column".format(n)
+                        for n in column_values])
+    
+    
 class O1CircuitGeometry(
         CircuitGeometry):
     """Specializations of methods for the O1.v6a circuits."""
 
-    specializations = {
-        brain_regions.cortex: Cortical(),
-        brain_regions.hippocampus: Hippocampal() }
+    label = "O1"
 
     def __init__(self,
             circuit,
             *args, **kwargs):
-        self.label = "O1"
-        self.layer_thickness\
-            = kwargs.get(
-                "layer_thickness",
-                np.array([
-                    164.94915873,
-                    148.87602025,
-                    352.92508322,
-                    189.57183895,
-                    525.05585701,
-                    700.37845971]))
-        self.lattice_vector\
-            = kwargs.get(
-                "lattice_vector",
-                Record(a1=np.array([0.0, 0.0, 230.92]),
-                       a2=np.array([199.98, 0.0, -115.46])))
-        self.layer_start\
-            = kwargs.get(
-                "layer_start",
-                10.)
         self.__midplane = None
         super().__init__(
             circuit,
@@ -78,7 +135,9 @@ class O1CircuitGeometry(
     @property
     def thickness(self):
         """..."""
-        return np.sum(self.layer_thickness)
+        return np.sum(
+            self.circuit_specialization\
+            .layer_thickness)
 
     @property
     def midplane(self):
@@ -94,7 +153,7 @@ class O1CircuitGeometry(
         """Center of the circuit.
         This could be computed from the geometry,
         if only we new the position of the central column."""
-        cells = self._circuit.cells
+        cells = self.circuit.cells
         return np.array(
             cells.get(query, properties=XYZ).mean()
             if query else
@@ -102,54 +161,31 @@ class O1CircuitGeometry(
 
     def midplane_projection(self, point):
         """Project the given point on to the circuit's mid plane."""
-        point[1] = self.midplane.point[1]
         return np.array([
             point[0],
             self.midplane.point[1],
             point[2]])
 
     def random_position(self,
-            brain_region,
             condition = Record(),
             offset = 50. * np.ones(3),
             *args, **kwargs):
         """...
         Handle empty ("Record()") condition by returning
         a point at the center of the columns"""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "find random position with condition {}"\
-            .format(condition.value),
-            "for brain region {}".format(brain_region.label))
-        brain_region_spec\
-            = self.get_brain_region_spec(
-                brain_region)
         target\
             = kwargs.get(
                 "target",
-                brain_region_spec.target)
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "with target {}".format(target))
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """brain region specific cell group params {}"""\
-            .format(brain_region_spec.cell_group_params))
+                self.circuit_specialization.target)
         query\
-            = brain_region_spec.cell_query(
+            = self.circuit_specialization.cell_query(
                 condition,
                 *args, **kwargs)
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "with query {}".format(query))
         bounds\
-            = self._helper\
+            = self.helper\
                   .geometric_bounds(
                       query,
                       target=target)
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "with bounds {}".format(bounds.bbox))
         if bounds is None:
             return None
         box\
@@ -158,32 +194,16 @@ class O1CircuitGeometry(
                 bounds.bbox[1] - offset)
         return random_location(box)
 
-    def central_column(self,
-            column_index = 2,
-            crossection=50.):
-        """..."""
-        mean_position\
-            = self._center(
-                {"$target": "mc{}_Column".format(column_index)})\
-                  .mean()
-        square\
-            = crossection * np.array([1., 0., 1.])
-        point_0\
-            = np.array(mean_position - square)
-        point_0[1]\
-            = self.layer_start
-
-        point_1\
-            = np.array(mean_position + square)
-        point_1[1]\
-            = self.thickness
-        return Cuboid(point_0, point_1)
-
-    def random_crossectional_point(self):
+    def random_crossectional_point(self,
+            meso_column=None):
         """Get a random point orthogonal to the layer axis"""
+        if not meso_column:
+            meso_column\
+                = self.circuit_specialization\
+                      .central_meso_column
         cells\
-            = self._circuit.cells.get(
-                {"$target": "mc2_Column"},
+            = self.circuit.cells.get(
+                {"$target": meso_column},
                 properties=XYZ)
         random_pos\
             = np.array(
@@ -194,15 +214,17 @@ class O1CircuitGeometry(
         return random_pos
 
     @property
-    def column_start(self):
+    def meso_column_bottom(self):
         """..."""
-        return self.layer_start
+        return self.circuit_specialization.layer_bottom
 
-    def random_column(self,
-            brain_region=None,
+    def __random_column(self,
+            meso_column=None,
             crossection=50.):
         """Get a random column, spanning all the layers."""
-        random_pos = self.random_crossectional_point()
+        random_pos\
+            = self.random_crossectional_point(
+                meso_column)
         square\
             = (crossection *
                np.array([
@@ -210,25 +232,46 @@ class O1CircuitGeometry(
         bottom\
             = np.array([
                 0.0,
-                self.column_start,
+                self.meso_column_bottom,
                 0.0 ])
         top\
             = np.array([
                 0.0,
-                self.column_start + self.thickness,
+                self.meso_column_bottom + self.thickness,
                 0.0])
         return Cuboid(
             random_pos - square + bottom,
             random_pos + square + top)
 
-    @classmethod
-    def column_parameter(cls,
-            values=[2],
-            *args, **kwargs):
+    def random_spanning_column(self,
+            condition=Condition([]),
+            crossection=50.):
+        """..."""
+        return\
+            self.__random_column(
+                meso_column=condition.get_value(
+                    self.spanning_column_parameter().label),
+                crossection=crossection)
+
+    def spanning_column_parameter(self,
+            meso_columns=[2]):
         """Spatial parameter representing a column that spans all the layers
         (or another sub-region) of a brain region. Unlike sub-region (layer),
         this spatial parameter Column depends on the (geometric) build of the
         circuit."""
-        return HyperColumn(
-            values=values,
+        return self.circuit_specialization\
+                   .get_spanning_column_parameter(
+                       column_values=meso_columns)
+
+
+class SSCxO1CircuitGeometry(
+        O1CircuitGeometry):
+    """O1CircuitGeometry whose 'circuit_specialization' is already set."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        self.circuit_specialization\
+            = SSCxCorticalO1Specialization(
+                *args, **kwargs)
+        super().__init__(
             *args, **kwargs)
