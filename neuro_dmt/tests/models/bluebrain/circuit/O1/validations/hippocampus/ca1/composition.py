@@ -15,8 +15,10 @@ from neuro_dmt.models.bluebrain.circuit.random_variate import \
     RandomRegionOfInterest
 from neuro_dmt.analysis.circuit.composition.by_region.hippocampus.cell_density\
     import CellCompositionAnalysis
+from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
+    import HippocampalFakeAtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.O1.build\
-    import Hippocampal, O1CircuitGeometry
+    import O1CircuitGeometry, SSCxCorticalO1Specialization
     
 
 circuit_config_path\
@@ -27,15 +29,26 @@ circuit_config_path\
         "CircuitConfig")
 
 
-class HippocampusSpecialization(
-        Hippocampal):
+class HippocampalO1Specialization(
+        SSCxCorticalO1Specialization):
     def query_param(self, param):
-        """..."""
-        if param == "layer":
-            return "region"
+        if param == 'layer':
+            return 'region'
         return param
 
-O1CircuitGeometry.region_specialization = HippocampusSpecialization()
+class HippocampalO1CircuitGeometry(
+        O1CircuitGeometry):
+    """O1CircuitGeometry whose 'circuit_specialization' is already set."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        self.circuit_specialization\
+            = HippocampalO1Specialization(
+                *args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
+
+    
 logger\
     = Logger(
         client=__name__,
@@ -46,7 +59,7 @@ circuit_model\
 bbma\
     = BlueBrainModelAdapter(
         brain_region=brain_regions.hippocampus,
-        circuit_geometry=O1CircuitGeometry,
+        circuit_geometry_type=HippocampalO1CircuitGeometry,
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico")
 hippocampal_layer\
@@ -56,4 +69,4 @@ cca = CellCompositionAnalysis(
     animal="rat",
     spatial_parameters={hippocampal_layer},
     adapter=bbma)
-#measurement = cca.get_measurement(circuit_model)
+m = measurement = cca.get_measurement(circuit_model)

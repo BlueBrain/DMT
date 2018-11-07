@@ -161,6 +161,10 @@ class FakeAtlasCircuitGeometry(
         nx, ny, nz\
             = self.brain_region_voxels\
                   .shape
+        self.logger.info(
+            self.logger.get_source_info(),
+            "brain_region shape: {}".format(self.brain_region_voxels.shape))
+
         voxels\
             = self.brain_region_voxels\
                   .indices_to_positions(
@@ -169,18 +173,30 @@ class FakeAtlasCircuitGeometry(
                           for i in range(nx)
                           for j in range(ny)
                           for k in range(nz)]))
+        self.logger.info(
+            self.logger.get_source_info(),
+            "voxels shape: {}".format(voxels.shape))
+
         central_column_voxels\
             = np.array([
                 v for v in voxels
                 if is_ids_voxel.lookup(v)])
                 #if self.brain_region_voxels.lookup(v) in central_column_ids])
+        self.logger.info(
+            self.logger.get_source_info(),
+            "central_column_voxels shape: {}"
+            .format(central_column_voxels.shape))
+
         self.__layer_geometry\
             = Record(
                 column_bottom=np.min(
                     central_column_voxels[:, 1]),
                 column_top=np.max(
-                    central_column_voxels[:, 1]))
-                
+                    central_column_voxels)[:, 1])
+        self.logger.info(
+            self.logger.get_source_info(),
+            "layer geometry computed {}".format(self.__layer_geometry))
+
     def random_spanning_column(self,
             condition=Condition([]),
             crossection=50.):

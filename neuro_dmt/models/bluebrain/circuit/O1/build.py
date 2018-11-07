@@ -177,10 +177,15 @@ class O1CircuitGeometry(
             = kwargs.get(
                 "target",
                 self.circuit_specialization.target)
+
         query\
             = self.circuit_specialization.cell_query(
                 condition,
                 *args, **kwargs)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "query: {}".format(query),
+            "condition: {}".format(condition.value))
         bounds\
             = self.helper\
                   .geometric_bounds(

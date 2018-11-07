@@ -9,6 +9,10 @@ from neuro_dmt.library.users.armando.models.hippocampus import\
     HippocampusAdapter
 import neuro_dmt.library.users.armando as armando
 
+# TODO change to nose/unittest based tests
+## test class for each validation, test method for each circuit
+print(os.getcwd())
+
 armando_rootdir = os.path.dirname(armando.__file__)
 
 
