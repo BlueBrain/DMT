@@ -49,7 +49,7 @@ circs = {
 
 def run_valid(validation, circuit):
     kwargs = {"adapter": HippocampusAdapter()}
-
+    circuit = bluepy.v2.circuit.Circuit(circuit)
     if validation in dpaths.keys():
         kwargs["data_path"] = dpaths[validation]
         print("using data: ", dpaths[validation])
@@ -60,10 +60,10 @@ def run_valid(validation, circuit):
 def test():
     for n, v in validations.items():
         for name, cpath in circs.items():
-            circ = bluepy.v2.circuit.Circuit(cpath)
+
             print('------------',
                   '\nrunning:', n, "for", name)
-            run_valid(v, circ)
+            run_valid(v, cpath)
             print('------------\n\n')
 
 
