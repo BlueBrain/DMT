@@ -608,7 +608,8 @@ class ConvergenceValidation:
         return filename
 
 
-class LaminarDistributionSynapses:
+# TODO get working, Synapse.PRE_MTYPE doesn't exist?
+class LaminarDistributionSynapses:#Validation:
 
     exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
                     '20180219/bioname/laminar_distribution.txt'
@@ -617,7 +618,9 @@ class LaminarDistributionSynapses:
         self.adapter = adapter
 
     class AdapterInterface(Interface):
-        pass
+
+        def get_laminar_distribution(self, circuit):
+            pass
 
     def __call__(self, circuit):
 
@@ -695,7 +698,8 @@ class SynsConnDistributionValidation:
             pass
 
     def __call__(self, circuit):
-        mtypes = list(self.adapter.get_mtypes(circuit))[:3]
+        ### just shortened here
+        mtypes = list(self.adapter.get_mtypes(circuit))[:2]
         max_nsample = 100
         filenames = []
         for pre in mtypes:
@@ -776,3 +780,87 @@ class SynsConnDistributionValidation:
         fig.savefig(filename)
         print(filename)
         return filename
+
+
+class PCPCConnProbValidation:
+
+    def __init__(self, adapter):
+        self.adapter = adapter
+
+    class AdapterInterface:
+
+        def connection_probability(circuit,
+                                   pre_mtype, post_mtype,
+                                   distance, nsample):
+            pass
+
+    def __call__(self, circuit):
+        distance = 450  # um
+        nsample = 1000
+        target_probability = 11.0/989
+        pre_mtype = 'SP_PC'
+        post_mtype = pre_mtype
+
+        nrepetitions = 10
+        model_probability = np.zeros(nrepetitions)
+
+        for idx in range(nrepetitions):
+            model_probability[idx]\
+                = self.adapter.connection_probability(circuit,
+                                                      pre_mtype,
+                                                      post_mtype,
+                                                      distance, nsample)
+        print(self.plot_conn_prob(model_probability, target_probability))
+        binsize = 100
+        nbins = 10
+        dists = [(idx+1)*binsize for idx in range(nbins)]
+        post_mtype = "Inhibitory"
+        model_probability = [
+            self.adapter.connection_probability(circuit,
+                                                pre_mtype, post_mtype,
+                                                dists[idx], nsample)
+            for idx in range(nbins)]
+        print(self.plot_conn_prob_vs_distance(dists, model_probability,
+                                        pre_mtype, post_mtype))
+
+    def plot_conn_prob(self, model_probability, target_probability):
+        fig, ax = plt.subplots()
+        ind = 1
+        width = 0.75
+        ax.bar(ind, model_probability.mean(), width,
+               yerr=model_probability.std(), label='model')
+        ax.bar(ind+width, target_probability, width, yerr=0,
+               label='experiment')
+        fig.suptitle('Connection probability')
+        plt.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='off')
+        ax.set_ylabel('Probability')
+        plt.legend(loc='upper right')
+        timestamp = str(time.time())
+        filename = os.path.join(os.path.dirname(__file__), "reports")\
+                   + '/connection_probability_PC-PC_'\
+                   + timestamp + '.png'
+        fig.savefig(filename)
+        return filename
+
+    def plot_conn_prob_vs_distance(self, dists, model_probability,
+                                   pre_mtype, post_mtype):
+        fig, ax = plt.subplots()
+        width = 90
+
+        ax.bar(dists, model_probability, width, label='model')
+        title = pre_mtype + '->' + post_mtype + ' connection probability'
+        fig.suptitle(title)
+        ax.set_xlabel('Distance (um)')
+        ax.set_ylabel('Probability')
+        plt.legend(loc='upper right')
+        timestamp = str(time.time())
+        filename = os.path.join(os.path.dirname(__file__), "reports")\
+                   + '/connection_probability_'\
+                   + timestamp + '.png'
+        fig.savefig(filename)
+        return(filename)

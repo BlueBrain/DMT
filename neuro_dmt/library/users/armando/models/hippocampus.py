@@ -28,7 +28,7 @@ class HippocampusAdapter:
         mtypes = circuit.cells.mtypes
         targets = ["mc{}".format(idx) for idx in range(7)]
 
-        def __get_cell_fractions(target):
+        def get_cell_fractions(target):
             """..."""
             cell_counts\
                 = np.array([
@@ -41,7 +41,7 @@ class HippocampusAdapter:
         cell_fracs\
             = pd.DataFrame(
                 data={"cell_fraction": [c for target in targets
-                                     for c in __get_cell_fractions(target)]},
+                                        for c in get_cell_fractions(target)]},
                 index=pd.MultiIndex.from_tuples(
                     tuples=[(target, mtype)
                             for target in targets for mtype in mtypes],
@@ -268,15 +268,15 @@ class HippocampusAdapter:
 
         return connections
 
-    def get_laminar_distribution():
+    def get_laminar_distribution(self, circuit):
         annotation = circuit.atlas.load_data("brain_regions")
         hierarchy = circuit.atlas.load_hierarchy()
 
-        result = c.v2.stats.synapse_region_distribution(annotation,
-                                                        Synapse.PRE_MTYPE,
-                                                        pre={'$target':
-                                                             'cylinder'},
-                                                        normalize=True)
+        result = circuit.stats.synapse_region_distribution(annotation,
+                                                           Synapse.PRE_MTYPE,
+                                                           pre={'$target':
+                                                                'cylinder'},
+                                                           normalize=True)
         mapping = {k: v for v in ['SLM', 'SR', 'SP', 'SO']
                    for k in hierarchy.collect('acronym', v, 'id')}
 
@@ -303,13 +303,39 @@ class HippocampusAdapter:
 
         synapse_ids = sum(sample, [])
         nsyns_conn = list(map(len, sample))
-        table = circuit.connectome.synapse_properties(synapse_ids,
-                                                   [Synapse.POST_BRANCH_ORDER,
-                                                    Synapse.POST_NEURITE_DISTANCE,
-                                                    Synapse.POST_BRANCH_TYPE,
-                                                    Synapse.PRE_BRANCH_ORDER,
-                                                    Synapse.PRE_NEURITE_DISTANCE])
+        table = circuit.connectome.synapse_properties(
+            synapse_ids,
+            [Synapse.POST_BRANCH_ORDER,
+             Synapse.POST_NEURITE_DISTANCE,
+             Synapse.POST_BRANCH_TYPE,
+             Synapse.PRE_BRANCH_ORDER,
+             Synapse.PRE_NEURITE_DISTANCE])
         return nsample, nsyns_conn, table
 
     def get_mtypes(self, circuit):
         return circuit.cells.mtypes
+
+    def connection_probability(self, circuit, pre_mtype, post_mtype,
+                               distance, nsample):
+
+        def pair_euclidian_distance(circuit, pregid, postgid):
+            p0 = circuit.cells.get(pregid, [Cell.X, Cell.Y, Cell.Z]).values
+            p1 = circuit.cells.get(postgid, [Cell.X, Cell.Y, Cell.Z]).values
+            return np.linalg.norm(p1 - p0)
+
+        connected = 0
+        pregids = circuit.cells.ids(pre_mtype, nsample)
+        for pregid in pregids:
+            # check if the cells are within the defined distance
+            distant = True
+            while distant:
+                postgid = circuit.cells.ids(post_mtype, sample=1)
+                if postgid == pregid:
+                    pass
+                if pair_euclidian_distance(circuit, pregid, postgid)\
+                   < distance:
+                    distant = False
+            if circuit.stats.sample_pathway_synapse_count(1, pre=pregid,
+                                                          post=postgid) > 0:
+                connected += 1
+        return connected/nsample
