@@ -102,7 +102,7 @@ class AtlasBasedLayeredCircuitSpecialization(
                     condition)
             for region_id in hierarchy.collect(
                     "acronym", region_acronym, "id")}
-        
+
     @property
     def target(self):
         """..."""
@@ -131,6 +131,7 @@ class IsoCortexAtlasSpecialization(
         raise NotImplementedError(
             """""")
 
+
 class AtlasCircuitGeometry(
         CircuitGeometry):
     """Specify atlas circuit based attributes."""
@@ -141,6 +142,7 @@ class AtlasCircuitGeometry(
             __name__="atlas",
             __type__=Atlas,
             __doc__="""Brain atlas used to build this circuit.""")
+
     def __init__(self,
             circuit,
             *args, **kwargs):
@@ -166,6 +168,7 @@ class AtlasCircuitGeometry(
         if not self._hierarchy:
             self._hierarchy = self.atlas.load_hierarchy()
         return self._hierarchy
+
 
     @property
     def brain_region_voxels(self):
@@ -244,7 +247,7 @@ class AtlasCircuitGeometry(
         """
         self.logger.info(
             self.logger.get_source_info(),
-            """Get random position from atlas based circuit geometry's.""",
+            "Get random position from atlas based circuit geometry.",
             """\tgiven: {}""".format(condition.value))
         atlas_ids\
             = self.circuit_specialization\
@@ -319,8 +322,7 @@ class AtlasCircuitGeometry(
             random_pos - square + bottom,
             random_pos + square + top)
 
-            
-               
+
 class CortexAtlasCircuitGeometry(
         AtlasCircuitGeometry):
     """AtlasCircuitGeometry whose 'circuit_specialization' has already

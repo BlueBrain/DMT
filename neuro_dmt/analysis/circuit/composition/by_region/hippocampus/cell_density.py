@@ -7,13 +7,13 @@ from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 from neuro_dmt.utils.enums import Cell
 from neuro_dmt.measurement.parameter\
-    import HippocampalLayerSLM_SR_Fused, HippocampalLayer
+    import LayerIndex, HippocampalLayerSLM_SR_Fused
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.cell_type import CellType
-
+from neuro_dmt.measurement.parameter import BrainCircuitMeasurementParameter
 class CellCompositionAnalysis(
         ByLayerCompositionAnalysis):
     """Analysis of a circuit's cell composition."""
-
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
@@ -37,8 +37,9 @@ class CellCompositionAnalysis(
 
         def get_cell_density(self,
                 circuit_model,
-                spatial_parameters=None,
-                given={}):
+                spatial_parameters={},
+                by_property=None,
+                for_cell_property=CellType.Any):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
@@ -46,20 +47,21 @@ class CellCompositionAnalysis(
             Parameters
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
-            spatial_parameters :: set{SpatialParameter} #that cell density be measured against
-            given :: dict# providing conditions on cell properties
+            spatial_parameters :: Set[SpatialParameter] # to measure against
+            given :: dict # providing conditions on cell properties
 
             Returns
             --------------------------------------------------------------------
-            Record(phenomenon :: Phenomenon, #that was measured
+            Record[phenomenon :: Phenomenon, #that was measured
             ~      region_label :: String, #label for regions in data
             ~      data :: DataFrame["region", "mean", "std"],
-            ~      method :: String)
+            ~      method :: String]
 
             Note
             --------------------------------------------------------------------
-            If 'spatial_parameters' are 'None', get cell density for the whole
+            If 'spatial_parameters' set is empty, get cell density for the whole
             circuit.
+
             Example
             --------------------------------------------------------------------
             If 'spatial_parameter' is 'CorticalLayer', the adapter should return
@@ -81,11 +83,16 @@ class CellCompositionAnalysis(
                 ["CA1"],
                 dtype="object",
                 name="cell_type")
+        JustSPLayer\
+            = LayerIndex(
+                value_type=str,
+                brain_region=brain_regions.hippocampus,
+                values=["SP"])
         sp_pc_density\
             = self.adapter\
                   .get_cell_density(
                       circuit_model,
-                      layer="SP",
+                      spatial_parameters={JustSPLayer},
                       for_cell_type=CellType(
                           morph_class="PYR"))
         sp_pc_density.data.index\
@@ -94,8 +101,7 @@ class CellCompositionAnalysis(
                 dtype="object",
                 name="cell_type")
         hippocampal_layer\
-            = HippocampalLayer()
-#            = HippocampalLayerSLM_SR_Fused()
+            = HippocampalLayerSLM_SR_Fused()
         layer_density\
             = self.adapter\
                   .get_cell_density(

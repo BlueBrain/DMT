@@ -51,7 +51,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements import composition
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-@adapter.adapter(Circuit)
+@adapter.adapter(Circuit) #the type of circuit models this Adapter can adapt
 class BlueBrainModelAdapter(
         WithFCA):
     """Adapt a circuit from the Blue Brain Project (BBP).
@@ -62,7 +62,7 @@ class BlueBrainModelAdapter(
     """
     author = Author.zero
 
-    label = 'layer'
+    label = "adapter"
 
     brain_region = Field(
         __name__="brain_region",
