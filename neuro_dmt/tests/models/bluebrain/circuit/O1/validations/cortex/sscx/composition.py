@@ -1,7 +1,5 @@
 """Test develop cell density validation."""
 import os
-from bluepy.v2.circuit\
-    import Circuit
 from voxcell.nexus.voxelbrain import LocalAtlas
 from dmt.vtk.utils.logging\
     import Logger
@@ -13,29 +11,39 @@ from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
     as mouse_validations
 from neuro_dmt.utils\
     import brain_regions
-from neuro_dmt.models.bluebrain.circuit.O1.build\
-    import SSCxO1CircuitGeometry
-from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
-    import CorticalFakeAtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.circuit_model\
+    import CircuitModel
+from neuro_dmt.library.bluebrain.circuit.models.sscx import\
+    get_mouse_sscx_O1_circuit_model,\
+    get_rat_sscx_O1_circuit_model,\
+    get_sscx_fake_atlas_circuit_model
 from neuro_dmt.models.bluebrain.circuit.adapter\
     import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 
-validations\
-    = dict(
+get_validations=\
+    dict(
         rat=rat_validations,
         mouse=mouse_validations)
-circuit_config_path\
-    = dict(
+get_circuit_config_path=\
+    dict(
         rat=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj64/circuits",
             "O1.v6a", "20171212", "CircuitConfig"),
         mouse=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj66/circuits",
             "O1", "20180305", "CircuitConfig") )
-atlas_path\
-    = dict(
+get_circuit_model=\
+    dict(
+        rat=dict(
+            O1=get_rat_sscx_O1_circuit_model,
+            S1=get_sscx_fake_atlas_circuit_model),
+        mouse=dict(
+            O1=get_mouse_sscx_O1_circuit_model,
+            S1=get_sscx_fake_atlas_circuit_model))
+get_atlas_path=\
+    dict(
         rat=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj64/circuits",
             "O1.v6a", "20171212", ".atlas", 
@@ -44,54 +52,35 @@ atlas_path\
             "/gpfs/bbp.cscs.ch/project/proj66/entities",
             "dev", "atlas", "O1-152"))
 
-
 logger = Logger(client=__name__, level=Logger.level.TEST)
-                
 
 def run(
     animal,
     validation_name,
-    circuit_geometry_type=SSCxO1CircuitGeometry,
+    circuit_geometry_type="O1",
     output_dir_path=os.getcwd()):
     """..."""
     logger.info(
+        logger.get_source_info(),
         "Will run validation {}".format(validation_name))
-
-    animal_validations\
-        = validations[animal]
-    animal_circuit_config_path\
-        = circuit_config_path[animal]
-    validation\
-        = animal_validations.get(
+    validation=\
+        get_validations[animal].get(
             validation_name,
-            circuit_geometry_type=circuit_geometry_type,
             output_dir_path=output_dir_path)
     logger.info(
         logger.get_source_info(),
-        "validation type {}".format(validation.__class__))
-
-    circuit = Circuit(animal_circuit_config_path)
-    try:
-        atlas = circuit.atlas
-    except:
-        circuit.atlas = LocalAtlas(atlas_path[animal])
-
+        "validation type {}".format(
+            validation.__class__))
+    circuit_model=\
+        get_circuit_model[animal][circuit_geometry_type](
+            circuit_config=get_circuit_config_path[animal],
+            animal=animal,
+            atlas_path=get_atlas_path[animal])
     report\
         = validation(
-            circuit,
+            circuit_model,
             save_report=True)
     return report
 
-rat_circuit\
-    = Circuit(circuit_config_path["rat"])
-mouse_circuit\
-    = Circuit(circuit_config_path["mouse"])
-
-def get_bb_adapter(brain_region=brain_regions.sscx,
-                   circuit_geometry_type=SSCxO1CircuitGeometry):
-    """..."""
-    return BlueBrainModelAdapter(
-        brain_region=brain_region,
-        circuit_geometry_type=circuit_geometry_type,
-        spatial_random_variate=RandomRegionOfInterest,
-        model_label="in-silico")
+#run("rat", "cell_density")
+#run("mouse", "cell_ratio")

@@ -13,14 +13,13 @@ from neuro_dmt.analysis.validation.circuit.composition.by_layer import\
 from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
     import MouseSomatosensoryCortexCompositionData
 
-class MouseSomatosensoryCortexCellDensityValidation(
+class MouseSSCxCellDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         CellDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -29,17 +28,15 @@ class MouseSomatosensoryCortexCellDensityValidation(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
-class MouseSomatosensoryCortexCellRatioValidation(
+class MouseSSCxCellRatioValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         CellRatioValidation):
     """..."""
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -48,18 +45,16 @@ class MouseSomatosensoryCortexCellRatioValidation(
                 "cell_ratio")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
         
 
-class MouseSomatosensoryCortexInhibitorySynapseDensityValidation(
+class MouseSSCxInhibitorySynapseDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         InhibitorySynapseDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -68,18 +63,16 @@ class MouseSomatosensoryCortexInhibitorySynapseDensityValidation(
                 "inhibitory_synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
-class MouseSomatosensoryCortexSynapseDensityValidation(
+class MouseSSCxSynapseDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         SynapseDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
         self.animal = "mouse"
@@ -88,26 +81,24 @@ class MouseSomatosensoryCortexSynapseDensityValidation(
                 "synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
 def get(validation_name,
-        circuit_geometry_type,
         output_dir_path=os.getcwd()):
     """..."""
     available_validations = dict(
-        cell_density=MouseSomatosensoryCortexCellDensityValidation,
-        cell_ratio=MouseSomatosensoryCortexCellRatioValidation,
-        inhibitory_synapse_density=MouseSomatosensoryCortexInhibitorySynapseDensityValidation,
-        synapse_density=MouseSomatosensoryCortexSynapseDensityValidation)
+        cell_density=MouseSSCxCellDensityValidation,
+        cell_ratio=MouseSSCxCellRatioValidation,
+        inhibitory_synapse_density=MouseSSCxInhibitorySynapseDensityValidation,
+        synapse_density=MouseSSCxSynapseDensityValidation)
     try:
         return available_validations[validation_name](
-            circuit_geometry_type=circuit_geometry_type,
             output_dir_path=output_dir_path)
     except KeyError as e:
         raise NotImplementedError(
-            "Validation named {}.\n \tKeyError: {}.\n Available validations: \n {}"\
+            """Validation named {}.\n \tKeyError: {}.\n
+            Available validations: \n {}"""\
             .format(
                 validation_name, e,
                 '\n'.join(

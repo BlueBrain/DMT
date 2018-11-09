@@ -168,18 +168,19 @@ class ConditionedRandomVariate(
                     .format(variable.label,
                             self.__class__.__name__))
         return self.__with_condition_generator(
-            ConditionGenerator(conditioning_vars))
+            ConditionGenerator(
+                conditioning_vars))
 
     def conditioned_values(self,
             condition,
             *args, **kwargs):
-        """Yield random values of this RandomVariate for given conditions.a
-        """
+        """Yield random values of this RandomVariate 
+        for given conditions."""
         while True:
-            loc = self(condition)
-            if loc is None:
+            value = self(condition)
+            if value is None:
                 break
-            yield loc
+            yield value
 
     @abstractmethod
     def __call__(self,
@@ -237,7 +238,6 @@ class ConditionedRandomVariate(
                 """No condition generator, will pass empty conditions,
                 that should be interpreted as no conditions.""")
             conditions = {}
-
         if not self.is_valid(conditions):
             self.logger.warn(
                 self.logger.get_source_info(),
@@ -245,10 +245,8 @@ class ConditionedRandomVariate(
                 Please provide one that produces conditions of type:\n {}"""\
                 .format(self.condition_type))
             return None
-
         return pd.concat([
-            self.sample_one(condition,
-                            size=size)
+            self.sample_one(condition, size=size)
             for condition in conditions])
 
     def transform(self,

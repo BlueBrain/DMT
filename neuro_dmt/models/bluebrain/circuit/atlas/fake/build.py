@@ -27,89 +27,6 @@ from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, random_location
 
 
-class HippocampalAtlasSpecialization(
-        AtlasBasedLayeredCircuitSpecialization):
-    """This CircuitSpecialization is for a particular Hippocampus circuit,
-    circa 201809DD, and particularly the circuit at
-    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig'.
-    We will put a copy of this class in our validation/analysis library.
-    """
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        self.representative_region\
-            = "mc2"
-        self.atlas_acronym_separator\
-            = ";"
-        self.brain_region\
-            = kwargs.get(
-                "brain_region",
-                brain_regions.hippocampus)
-        super().__init__(
-            *args, **kwargs)
-
-    def get_spanning_column_parameter(self,
-            column_values=range(7)):
-        """..."""
-        return\
-            Column(
-                value_type=str,
-                values=["mc{}".format(n)
-                        for n in column_values])
-    
-
-class CorticalAtlasSpecialization(
-        AtlasBasedLayeredCircuitSpecialization):
-    """..."""
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        self.representative_region\
-            = "mc2_Column"
-        self.atlas_acronym_separator\
-            = ''
-        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
-            kwargs["brain_region"]\
-                = brain_regions.cortex
-        super().__init__(
-            *args, **kwargs)
-
-    def get_atlas_ids(self,
-            hierarchy,
-            condition=Condition([])):
-        """The code below applies to the rat SSCx circuit circa 201712DD.
-        Future atlases will support the code in the base class
-        AtlasBasedLayeredCircuitSpecialization."""
-        meso_column = condition.get_value(Cell.REGION) #meso-columns termed as region
-        if not meso_column:
-            meso_column = self.representative_region
-        layers = condition.get_value("layer")
-        if not layers:
-            return hierarchy.collect(
-                "acronym", meso_column, "id")
-        if not collections.check(layers):
-            return hierarchy.collect(
-                "acronym", meso_column, "id"
-            ).intersection(
-                hierarchy.collect(
-                    "acronym", "L{}".format(layers), "id"))
-        return hierarchy.collect(
-                "acronym", meso_column, "id"
-            ).intersection({
-                id for layer in layers
-                for id in hierarchy.collect(
-                        "acronym", "L{}".format(layer), "id")})
-        
-    def get_spanning_column_parameter(self,
-            column_values=range(7)):
-        """..."""
-        return\
-            Column(
-                value_type=str,
-                values=["mc{}_Column".format(n)
-                        for n in column_values])
-
-
 class FakeAtlasCircuitGeometry(
         AtlasCircuitGeometry,
         O1CircuitGeometry):
@@ -227,38 +144,5 @@ class FakeAtlasCircuitGeometry(
         return Cuboid(
             random_pos - square + bottom,
             random_pos + square + top)
-
-
-class CorticalFakeAtlasCircuitGeometry(
-        FakeAtlasCircuitGeometry):
-    """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
-    been set to 'CorticalAtlasSpecialization'"""
-    def __init__(self,
-            circuit,
-            *args, **kwargs):
-        """..."""
-        self.circuit_specialization\
-            = CorticalAtlasSpecialization(
-                *args, **kwargs)
-        super().__init__(
-            circuit,
-            *args, **kwargs)
-
-
-class HippocampalFakeAtlasCircuitGeometry(
-        FakeAtlasCircuitGeometry):
-    """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
-    been set to 'HippocampalAtlasSpecialization'"""
-    def __init__(self,
-            circuit,
-            *args, **kwargs):
-        """..."""
-        self.circuit_specialization\
-            = HippocampalAtlasSpecialization(
-                *args, **kwargs)
-        super().__init__(
-            circuit,
-            *args, **kwargs)
-
 
 

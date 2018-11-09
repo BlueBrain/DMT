@@ -12,7 +12,6 @@ class CompositionMeasurementMethod(
         measurement.Method):
     """Common attributes of composition measurement.Method"""
 
-
     def __init__(self,
             circuit,
             by_property=None,

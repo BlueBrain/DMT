@@ -13,102 +13,97 @@ from neuro_dmt.analysis.validation.circuit.composition.by_layer import\
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
     import RatSomatosensoryCortexCompositionData
 
-class RatSomatosensoryCortexCellDensityValidation(
+class RatSSCxCellDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         CellDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
-        self.animal = "rat"
+        self.animal\
+            = "rat"
         reference_data\
             = RatSomatosensoryCortexCompositionData.get(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
-class RatSomatosensoryCortexCellRatioValidation(
+class RatSSCxCellRatioValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         CellRatioValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
-        self.animal = "rat"
+        self.animal\
+            = "rat"
         reference_data\
             = RatSomatosensoryCortexCompositionData.get(
                 "cell_ratio")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
         
 
-class RatSomatosensoryCortexInhibitorySynapseDensityValidation(
+class RatSSCxInhibitorySynapseDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         InhibitorySynapseDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
-        self.animal = "rat"
+        self.animal\
+            = "rat"
         reference_data\
             = RatSomatosensoryCortexCompositionData.get(
                 "inhibitory_synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
-class RatSomatosensoryCortexSynapseDensityValidation(
+class RatSSCxSynapseDensityValidation(
         SomatosensoryCortexCompositionValidation,
         MeasureByCorticalLayer,
         SynapseDensityValidation):
     """..."""
 
     def __init__(self,
-            circuit_geometry_type,
             *args, **kwargs):
         """..."""
-        self.animal = "rat"
+        self.animal\
+            = "rat"
         reference_data\
             = RatSomatosensoryCortexCompositionData.get(
                 "synapse_density")
         super().__init__(
             reference_data=reference_data,
-            circuit_geometry_type=circuit_geometry_type,
             *args, **kwargs)
 
 
 def get(validation_name,
-        circuit_geometry_type,
         output_dir_path=os.getcwd()):
     """..."""
     available_validations = dict(
-        cell_density=RatSomatosensoryCortexCellDensityValidation,
-        cell_ratio=RatSomatosensoryCortexCellRatioValidation,
-        inhibitory_synapse_density=RatSomatosensoryCortexInhibitorySynapseDensityValidation,
-        synapse_density=RatSomatosensoryCortexSynapseDensityValidation)
+        cell_density=RatSSCxCellDensityValidation,
+        cell_ratio=RatSSCxCellRatioValidation,
+        inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityValidation,
+        synapse_density=RatSSCxSynapseDensityValidation)
     try:
         return available_validations[validation_name](
-            circuit_geometry_type=circuit_geometry_type,
             output_dir_path=output_dir_path)
     except KeyError as e:
         raise NotImplementedError(
-            "Validation named {}.\n \tKeyError: {}.\n Available validations: \n {}"\
+            """Validation named {}.\n \tKeyError: {}.\n
+            Available validations: \n {}"""\
             .format(
                 validation_name, e,
                 '\n'.join(

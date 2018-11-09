@@ -116,8 +116,9 @@ class SSCxCorticalO1Specialization(
                 value_type=str,
                 values=["mc{}_Column".format(n)
                         for n in column_values])
-    
-    
+
+
+
 class O1CircuitGeometry(
         CircuitGeometry):
     """Specializations of methods for the O1.v6a circuits."""
@@ -268,15 +269,3 @@ class O1CircuitGeometry(
                    .get_spanning_column_parameter(
                        column_values=meso_columns)
 
-
-class SSCxO1CircuitGeometry(
-        O1CircuitGeometry):
-    """O1CircuitGeometry whose 'circuit_specialization' is already set."""
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        self.circuit_specialization\
-            = SSCxCorticalO1Specialization(
-                *args, **kwargs)
-        super().__init__(
-            *args, **kwargs)
