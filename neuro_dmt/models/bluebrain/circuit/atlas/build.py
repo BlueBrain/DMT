@@ -323,7 +323,7 @@ class AtlasCircuitGeometry(
             random_pos + square + top)
 
 
-class CortexAtlasCircuitGeometry(
+class IsoCortexAtlasBasedCircuitGeometry(
         AtlasCircuitGeometry):
     """AtlasCircuitGeometry whose 'circuit_specialization' has already
     been set to 'CorticalAtlasSpecialization'"""

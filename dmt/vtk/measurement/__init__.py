@@ -85,16 +85,17 @@ class Method(
 @with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
     """Make statistical measurements."""
-    random_variate = Field(
-        __name__ = "random_variate",
-        __type__ = RandomVariate,
-        __doc__  = """A random variate can be sampled.""")
-    
-    sample_size = Field(
-        __name__="sample_size",
-        __type__=int,
-        __doc__="""Number of samples to be drawn
-        for each statistical measurement.""")
+    random_variate\
+        = Field(
+            __name__ = "random_variate",
+            __type__ = RandomVariate,
+            __doc__  = """A random variate can be sampled.""")
+    sample_size\
+        = Field(
+            __name__="sample_size",
+            __type__=int,
+            __doc__="""Number of samples to be drawn
+            for each statistical measurement.""")
     
     def __init__(self,
             random_variate,
@@ -111,9 +112,10 @@ class StatisticalMeasurement:
             *args, **kwargs):
         """..."""
         params\
-            = self.random_variate.sample(
-                size=size,
-                *args, **kwargs)
+            = self.random_variate\
+                  .sample(
+                      size=size,
+                      *args, **kwargs)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) params index: {}"\
             .format(params.index))
