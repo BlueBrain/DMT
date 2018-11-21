@@ -10,22 +10,15 @@ class SomatosensoryCortexCompositionValidation:
 
     def __init__(self,
             reference_data,
-            circuit_geometry_type,
             sample_size=20,
             sampled_box_shape=50.*np.ones(3),
             *args, **kwargs):
         """..."""
-        model_label\
-            = "Blue Brain {} Circuit for SSCx".format(
-                circuit_geometry_type.label) #expect label to be a class attribute
         super().__init__(
             reference_data=reference_data,
             brain_region=brain_regions.sscx,
             plotter_type=BarPlotComparison,
             adapter=BlueBrainModelAdapter(
-                brain_region=brain_regions.cortex, #consider removing this
-                circuit_geometry_type=circuit_geometry_type,
-                model_label=model_label,
                 sample_size=sample_size,
                 sampled_box_shape=sampled_box_shape,
                 *args, **kwargs),

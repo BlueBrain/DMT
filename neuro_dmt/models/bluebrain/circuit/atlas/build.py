@@ -34,6 +34,7 @@ class AtlasBasedCircuitSpecialization(
         pass
 
 
+
 class AtlasBasedLayeredCircuitSpecialization(
         AtlasBasedCircuitSpecialization):
     """'get_atlas_ids method defined here seems to be the future of
@@ -108,28 +109,6 @@ class AtlasBasedLayeredCircuitSpecialization(
         """..."""
         return self.representative_region
 
-
-class IsoCortexAtlasSpecialization(
-        AtlasBasedLayeredCircuitSpecialization):
-    """..."""
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
-            kwargs["brain_region"]\
-                = brain_regions.cortex
-        self.atlas_acronym_separator\
-            = '' #empty string, i.e. no separator
-        self.representative_region\
-            = "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
-        super().__init__(
-            *args, **kwargs)
-
-    def get_spanning_column_parameter(self,
-            regions=["SSp-ll"]):
-        """..."""
-        raise NotImplementedError(
-            """""")
 
 
 class AtlasCircuitGeometry(
@@ -321,21 +300,4 @@ class AtlasCircuitGeometry(
         return Cuboid(
             random_pos - square + bottom,
             random_pos + square + top)
-
-
-class IsoCortexAtlasBasedCircuitGeometry(
-        AtlasCircuitGeometry):
-    """AtlasCircuitGeometry whose 'circuit_specialization' has already
-    been set to 'CorticalAtlasSpecialization'"""
-    def __init__(self,
-            circuit,
-            *args, **kwargs):
-        """..."""
-        self.circuit_specialization\
-            = IsoCortexAtlasSpecialization(
-                *args, **kwargs)
-        super().__init__(
-            circuit,
-            *args, **kwargs)
-
 
