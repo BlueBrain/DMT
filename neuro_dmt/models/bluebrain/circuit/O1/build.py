@@ -81,44 +81,6 @@ class O1LayeredCircuitSpecialization(
         return self.central_meso_column
 
    
-    
-class SSCxCorticalO1Specialization(
-        O1LayeredCircuitSpecialization):
-    """..."""
-
-    def __init__(self,
-            *args, **kwargs):
-        """..."""
-        super().__init__(
-            brain_region=brain_regions.sscx,
-            central_meso_column="mc2_Column",
-            lattice_vector=Record(
-                a1=np.array([0.0, 0.0, 230.92]),
-                a2=np.array([199.98, 0.0, -115.46])),
-            layer_thickness=np.array([
-                164.94915873,
-                148.87602025,
-                352.92508322,
-                189.57183895,
-                525.05585701,
-                700.37845971]),
-            layer_bottom=10.,
-            *args, **kwargs)
-
-    def get_spanning_column_parameter(self,
-            column_values=range(7)):
-        """A parameter whose values are meso-columns of the
-        O1 circuit. While in most O1 circuits the values would be those
-        of the default value above, at least on one Hippocampus CA1 circuit
-        it's values do not contain the trailing '_Column'..."""
-        return\
-            Column(
-                value_type=str,
-                values=["mc{}_Column".format(n)
-                        for n in column_values])
-
-
-
 class O1CircuitGeometry(
         CircuitGeometry):
     """Specializations of methods for the O1.v6a circuits."""
