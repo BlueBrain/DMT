@@ -1,24 +1,23 @@
-"""Validation of cell density by layer."""
+"""Analysis of cell density by layer."""
 from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.analysis.validation.circuit.composition.by_layer \
-    import ByLayerCompositionValidation
+from neuro_dmt.analysis.circuit.composition.by_layer \
+    import ByLayerCompositionAnalysis
 
-class InhibitorySynapseDensityValidation(
-        ByLayerCompositionValidation):
-    """Cell density validation is a 'unit' test case for a circuit model.
-    Cell density is a spatial composition phenomenon.
+class CellRatioAnalysis(
+        ByLayerCompositionAnalysis):
+    """Cell ratio analysis is a 'unit' test case for a circuit model.
+    Cell ratio is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,
     and require that from measurements made on the circuit model."""
-
 
     def __init__(self,
             *args, **kwargs):
         """..."""
         super().__init__(
             Phenomenon(
-                "Inhibitory Synapse Density",
-                "Count of inhibitory synapses in a unit volume",
+                "Cell Ratio",
+                "Ratio of inhibitory to excitatory cells in a region",
                 group="composition"),
             *args, **kwargs)
 
@@ -26,8 +25,8 @@ class InhibitorySynapseDensityValidation(
             Interface):
         """All methods listed here must be implemented by an adapter for this
         interface."""
-
-        def get_label(self, circuit_model):
+        def get_label(self,
+                circuit_model):
             """Get a label for the circuit model.
 
             Parameters
@@ -36,10 +35,10 @@ class InhibitorySynapseDensityValidation(
             """
             pass
 
-        def get_inhibitory_synapse_density(self,
+        def get_cell_ratio(self,
                 circuit_model,
                 spatial_parameters):
-            """Get volume density of inhibitory synapses for a circuit.
+            """Get cell ratio for a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this validation.
             
@@ -51,18 +50,17 @@ class InhibitorySynapseDensityValidation(
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
             ~      label :: String, #used as label for the measurement
-            ~      region_label :: String, #label for regions in data
+            ~      region_label :: String, #label for regions in data, eg layer
             ~      data :: DataFrame["mean", "std"],
             ~      method :: String)
             """
             pass
 
-     
     def get_measurement(self,
             circuit_model,
             *args, **kwargs):
         """Get measurement of the phenomenon validated."""
         return self.adapter\
-                   .get_inhibitory_synapse_density(
+                   .get_cell_ratio(
                        circuit_model,
                        spatial_parameters=self.spatial_parameters)

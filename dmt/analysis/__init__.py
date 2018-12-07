@@ -224,7 +224,8 @@ class OfMultiPhenomena:
         except AttributeError:
             return group_label_path
 
-    def get_caption(self, model_measurement):
+    def get_caption(self,
+            model_measurement):
         """Caption that will be shown below the validation plot.
 
         Implementation Notes
