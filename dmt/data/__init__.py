@@ -7,32 +7,44 @@ from dmt.vtk.utils.descriptor import Field, document_fields, WithFCA
 from dmt.vtk.utils.collections import Record
 
 @document_fields
-class ReferenceData(WithFCA):
-    """Data from experiments, to be used as reference data in a validation."""
-    data = Field(
-        __name__="data",
-        __type__=object,
-        __typecheck__=Field.typecheck.any(
-            pd.DataFrame, Record,
-            Field.typecheck.mapping(str, pd.DataFrame),
-            Field.typecheck.mapping(str, Record)
-        ),
-        __doc__="""Attribute 'value' of ReferenceData is the actual data.
-        We cannot set type of 'value'. It may either be a pandas 
-        """
-    )
+class ReferenceData(
+        WithFCA):
+    """Data from experiments, or a reference model,
+    to be used as reference data in a model comparison,
+    or an experimental validation."""
+    data=\
+        Field(
+            __name__="data",
+            __type__=object,
+            __typecheck__=Field.typecheck.any(
+                pd.DataFrame,
+                Record,
+                Field.typecheck.mapping(str, pd.DataFrame),
+                Field.typecheck.mapping(str, Record)),
+            __doc__="""Attribute 'value' of ReferenceData is the actual data.
+            We cannot set type of 'value'. It may either be a pandas
+            dataframe""")
+    description=\
+        Field(
+            __name__="description",
+            __type__=str,
+            __default__="Reference data",
+            __doc__="Describe this reference data instance.")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
-        super().__init__(*args, **kwargs)
+        if "data" not in kwargs:
+            super().__init__(
+                *args,
+                data=self.load(*args, **kwargs),
+                **kwargs)
+        else:
+            super().__init__(
+                *args, **kwargs)
 
-    @property
-    def description(self):
-        """Describe this data. A default behavior is provided.
-        Please override and provide a good description of your data."""
-        return "Not Available"
-
-    def _is_location(self, data_value):
+    def _is_location(self,
+            data_value):
         """...
         'data_value' will be passed as a keyword argument to '__init__'.
         For now we assume that 'data_value' is location of data if and only if
@@ -41,12 +53,36 @@ class ReferenceData(WithFCA):
         """
         return isinstance(data_value, str)
 
-
     @abstractmethod
-    def load(self, *args, **kwargs):
-        """get data."""
+    def _load_from_object(self, data):
+        """Load data from an object that contains data."""
         pass
 
+    @abstractmethod
+    def _load_from_location(self, data):
+        """..."""
+        pass
+
+    def load(self, data, *args, **kwargs):
+        """Default method that assumes that loading from location
+        results in a data-object that can be loaded as reference data.
+        """
+        if not self._is_location(data):
+            try:
+                return self._load_from_object(
+                    data)
+            except TypeError as e:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    "{}: {}".format(type(e), e),
+                    "\t{} object data is probably not the required type",
+                    "\t{}".format(e))
+        else:
+            return self._load_from_object(
+                self._load_from_location(
+                    data))
+        return pd.DataFrame()
+        
     @property
     @abstractmethod
     def primary_dataset(self):

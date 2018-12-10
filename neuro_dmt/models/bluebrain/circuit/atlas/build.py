@@ -25,14 +25,12 @@ class AtlasBasedCircuitSpecialization(
         CircuitSpecialization):
     """Base class for atlas based circuit specializations."""
 
-        
     @abstractmethod
     def get_atlas_ids(self,
             hierarchy,
             condition=Condition([])):
         """..."""
         pass
-
 
 
 class AtlasBasedLayeredCircuitSpecialization(

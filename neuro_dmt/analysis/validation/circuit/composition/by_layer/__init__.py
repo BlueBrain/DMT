@@ -8,6 +8,8 @@ from dmt.vtk.utils.descriptor import Field, document_fields
 from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter.group import ParameterGroup
+from neuro_dmt.analysis.comparison.circuit.composition.by_layer\
+    import ByLayerCompositionComparison
 from neuro_dmt.analysis.validation.circuit.composition.by_layer.report \
     import ValidationReport
 from neuro_dmt.analysis.circuit.composition import SpatialCompositionAnalysis
@@ -20,7 +22,8 @@ from neuro_dmt.analysis.circuit.composition.by_layer import\
 
 @document_fields
 class ByLayerCompositionValidation(
-        ValidationTestCase):
+        ValidationTestCase,
+        ByLayerCompositionComparison):
     """Validation of a single circuit composition phenomenon.
     Validation is against reference data that provide experimental data
     as a function of layer. This base class may be used for validation
@@ -36,54 +39,12 @@ class ByLayerCompositionValidation(
     def __init__(self,
             phenomenon,
             *args, **kwargs):
+        """...
         """
-        This validation will be made against multiple datasets. Each dataset
-        should provide a 'Record' as specified below."""
         super().__init__(
             phenomenon,
             *args, **kwargs)
 
-    def plot(self,
-            model_measurement,
-            comparison_label="dataset",
-            *args, **kwargs):
-        """Plot the data.
-        This a default method --- a subclass may have special needs to plot.
-        In that case this method can be overridden."""
-        name=\
-            model_measurement.phenomenon.name
-        try:
-            kwargs['output_dir_path']\
-                = self.output_dir_path
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "Could not find an attribute",
-                "\tAttributeError: {}".format(e))
-
-        kwargs['title']=\
-            name
-        kwargs['xlabel']=\
-            model_measurement.parameter
-        kwargs['ylabel']=\
-            "{} / [{}]".format(
-                "mean {}".format(name.lower()),
-                model_measurement.units)
-        kwargs.update(
-            self.plot_customization)
-        data_record=\
-            Record(
-                data=model_measurement.data,
-                label=model_measurement.label)
-        plotter=\
-            self.plotter_type(data_record)\
-                .comparing(comparison_label)\
-                .against(self.validation_data)\
-                .for_given(self.plotting_parameter)\
-                .with_customization(**kwargs)
-
-        return plotter.plot()
-            
     def get_report(self,
             model_measurement):
         """Create a report."""

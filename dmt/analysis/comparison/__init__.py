@@ -4,6 +4,8 @@ import os
 import numpy as np
 import pandas as pd
 from dmt.analysis import Analysis, OfSinglePhenomenon
+from dmt.data import ReferenceData
+from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.judgment.verdict import Verdict
 from dmt.vtk.author import Author
@@ -22,12 +24,64 @@ class Comparison:
             __default__=0.05,
             __doc__="""p-value threshold to determine if a validation passed
             or not.""")
+    reference_data=\
+        Field.Optional(
+            __name__="reference_data",
+            __type__=ReferenceData,
+            __doc__="""If not provided, assume comparison does not use
+            reference data""")
+    plotter_type=\
+        Field.Optional(
+            __name__="plotter_type",
+            __typecheck__=Field.typecheck.subtype(ComparisonPlot),
+            __doc__="""A subclass of {} to be plot comparison
+            results.""".format(ComparisonPlot))
+    plot_customization=\
+        Field.Optional(
+            __name__="plot_customization",
+            __type__=dict,
+            __doc__="A dict containing customization of the plot.")
+
+
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            *args, **kwargs)
+
+    @property
+    def _reference_data(self):
+        """..."""
+        try:
+            return self.reference_data.data
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Could not get data from reference data.",
+                "Caught AttributeError: \n\t{}".format(e))
+        return None
+
+    def get_reference_data(self):
+        """..."""
+        return self._reference_data
+
+    def data_description(self):
+        """Describe the experimental data used for validation."""
+        return self.reference_data.description
 
     @abstractmethod
     @property
-    def get_reference_data(self):
-        """Get reference data for comparing."""
-        pass
+    def reference_data_for_statistical_comparison(self):
+        """..."""
+        raise NotImplementedError(
+            "Prepare the reference data for statistical comparison.")
+
+    @abstractmethod
+    @property
+    def reference_data_for_plotting(self):
+        """Prepare the dataset to be plotted."""
+        raise NotImplementedError(
+            "Prepare the reference data to plot.")
 
     def get_verdict(self, p_value):
         """Use p-value threshold to judge if the validation was a success.
@@ -62,10 +116,10 @@ class Comparison:
 
         model_data=(
             model_measurement.data[model_measurement.label]
-            if model_measurement.label in model_measurement.data else
-            model_measurement.data)
+            if model_measurement.label in model_measurement.data 
+            else model_measurement.data)
         reference_measurement=\
-            self.get_dataset_for_pvalue_calculation
+            self.reference_data_for_statistical_comparison
         if reference_measurement is not None:
             delta_mean=\
                 abs(
@@ -104,6 +158,7 @@ class Comparison:
         return np.nan
 
 
+
 @document_fields
 class ModelComparison(
         Comparison):
@@ -119,16 +174,15 @@ class ModelComparison(
             *args, **kwargs):
         """..."""
         super().__init__(
-            *args, **kwargs)
-        self.reference_model_measurement=\
-            self.get_measurement(
-                self.reference_model,
-                *args, **kwargs)
-        
+            *args,
+            reference_data=self.get_reference_measurement(*args, **kwargs),
+            **kwargs)
+
     @property
-    def get_dataset_for_pvalue_calculation(self):
+    def reference_data_for_statistical_comparison(self):
         """..."""
-        return self.reference_model_measurement
+        return self.reference_data
+
 
 @document_fields
 class SinglePhenomenonModelComparison(

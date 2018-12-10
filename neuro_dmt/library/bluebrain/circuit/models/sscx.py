@@ -83,7 +83,6 @@ class RatO1CircuitGeometry(
             *args, **kwargs)
 
 
-
 class MouseO1CircuitGeometry(
         O1CircuitGeometry):
     """..."""
@@ -96,7 +95,6 @@ class MouseO1CircuitGeometry(
         super().__init__(
             circuit,
             *args, **kwargs)
-
 
 
 def get_rat_sscx_O1_circuit_model(
@@ -175,7 +173,7 @@ class SSCxFakeAtlasSpecialization(
                 id for layer in layers
                 for id in hierarchy.collect(
                         "acronym", "L{}".format(layer), "id")})
-        
+
     def get_spanning_column_parameter(self,
             column_values=range(7)):
         """..."""

@@ -39,11 +39,11 @@ class SomatosensoryCortexCompositionData(
         This method is tailored for Rat and Mouse data.
         You can customize it for your data, or not use it!"""
         return Record(
-            label = reference_dataset.get('short_name', 'unknown'),
-            region_label = self.primary_spatial_parameter.label,
-            uri = reference_dataset.get('url', 'unknown'),
-            citation = reference_dataset.get('citation', 'unknown'),
-            what = reference_dataset.get('what', 'dunno'),
+            label=reference_dataset.get('short_name', 'unknown'),
+            region_label=self.primary_spatial_parameter.label,
+            uri=reference_dataset.get('url', 'unknown'),
+            citation=reference_dataset.get('citation', 'unknown'),
+            what=reference_dataset.get('what', 'dunno'),
             data=reference_dataframe)
 
     def summarized(self,
@@ -74,22 +74,25 @@ class SomatosensoryCortexCompositionData(
         """Get available data
         Subclasses will provide a concrete version."""
         raise NotImplementedError(
-        "Subclass must provide its own version.")
+            "Subclass must provide its own version.")
 
     @classmethod
-    def get(cls, phenomenon, *args, **kwargs):
+    def get(cls,
+        phenomenon,
+        *args, **kwargs):
         """Get reference data by phenomenon.
 
         Parameters
         --------------------------------------------------------------------
         phenomenon :: Either[str, Phenomenon]"""
 
-        plabel\
-            = (phenomenon.label
-               if isinstance(phenomenon, Phenomenon) else 
-               phenomenon)
-
-        available_data = cls.get_available_data(*args, **kwargs)
+        plabel=\
+            (phenomenon.label
+             if isinstance(phenomenon, Phenomenon) else 
+             phenomenon)
+        available_data=\
+            cls.get_available_data(
+                *args, **kwargs)
         try:
             return available_data[plabel]
         except KeyError as e:
@@ -101,4 +104,3 @@ class SomatosensoryCortexCompositionData(
                 msg += "\t({}) {}\n".format(i, k)
             stderr.write(msg)
         return None
-    
