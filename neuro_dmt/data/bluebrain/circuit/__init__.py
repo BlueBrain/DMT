@@ -17,38 +17,41 @@ class BlueBrainCircuitCompositionData(
 
     __available_data = {}
 
-    animal = Field(
-        __name__="animal",
-        __type__=str,
-        __default__="mammal",
-        __doc__="Animal model that the data was measured for.")
-
-    spatial_parameters = Field(
-        __name__="spatial_parameters",
-        __type__=set,
-        __is_valid__=Field.typecheck.collection(BrainCircuitSpatialParameter),
-        __doc__="""A composition phenomenon must be measured as a function of
-        location in the brain. Field spatial_parameters can be used to 
-        communicate the required measurement parameters to the author of a
-        model adapter.""",
-        __examples__=[{CorticalLayer()}])
-
-    brain_region = Field(
-        __name__="brain_region",
-        __type__=BrainRegion,
-        __doc__="Which brain region is this BlueBrainCircuitCompositionData for?")
-
-    phenomenon = Field(
-        __name__="phenomenon",
-        __type__=Phenomenon,
-        __doc__="The phenomenon that this data represents.")
-
-    data_location = Field.Optional(
-        __name__="data_location",
-        __type__=str,
-        __doc__="""This should be the directory where composition data is
-        located, under which individual files contain measurement data of a
-        single phenomenon.""")
+    animal=\
+        Field(
+            __name__="animal",
+            __type__=str,
+            __default__="mammal",
+            __doc__="Animal model that the data was measured for.")
+    spatial_parameters=\
+        Field(
+            __name__="spatial_parameters",
+            __type__=set,
+            __is_valid__=Field.typecheck.collection(
+                BrainCircuitSpatialParameter),
+            __doc__="""A composition phenomenon must be measured as 
+            a function of location in the brain. Field spatial_parameters 
+            can be used to communicate the required measurement parameters
+            to the author of a model adapter.""",
+            __examples__=[{CorticalLayer()}])
+    brain_region=\
+        Field(
+            __name__="brain_region",
+            __type__=BrainRegion,
+            __doc__="""Which brain region is this
+            BlueBrainCircuitCompositionData for?""")
+    phenomenon=\
+        Field(
+            __name__="phenomenon",
+            __type__=Phenomenon,
+            __doc__="The phenomenon that this data represents.")
+    data_location=\
+        Field.Optional(
+            __name__="data_location",
+            __type__=str,
+            __doc__="""This should be the directory where composition data is
+            located, under which individual files contain measurement data of a
+            single phenomenon.""")
 
     def __init__(self,
             phenomenon,
@@ -73,12 +76,14 @@ class BlueBrainCircuitCompositionData(
     def get_reference_datasets(self, data_location):
         """..."""
         raise NotImplementedError(
-            "Implement get_reference_datasets for your concrete implementation.")
+            """Implement get_reference_datasets
+            for your concrete implementation.""")
 
     def _load_from_object(self, data, *args, **kwargs):
         """..."""
         try:
-            return (data.datasets, data.primary)
+            return data.datasets
+            #return (data.datasets, data.primary)
         except AttributeError as e:
             raise TypeError(
                 "Expected a 'Record' with fields 'datasets' and 'primary'\n"

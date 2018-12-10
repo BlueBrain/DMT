@@ -5,8 +5,8 @@ from neuro_dmt.library.bluebrain.circuit.cortex import\
     MeasureByCorticalLayer
 from neuro_dmt.library.bluebrain.circuit.cortex.sscx.composition import \
     SomatosensoryCortexCompositionValidation
-from neuro_dmt.analysis.validation.circuit.composition.by_layer import\
-    CellDensityValidation,\
+from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
+    import CellDensityValidation,\
     CellRatioValidation,\
     InhibitorySynapseDensityValidation,\
     SynapseDensityValidation
@@ -22,10 +22,10 @@ class RatSSCxCellDensityValidation(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.animal\
-            = "rat"
-        reference_data\
-            = RatSomatosensoryCortexCompositionData.get(
+        self.animal=\
+            "rat"
+        reference_data=\
+            RatSomatosensoryCortexCompositionData.get(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,
@@ -41,10 +41,10 @@ class RatSSCxCellRatioValidation(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.animal\
-            = "rat"
-        reference_data\
-            = RatSomatosensoryCortexCompositionData.get(
+        self.animal=\
+            "rat"
+        reference_data=\
+            RatSomatosensoryCortexCompositionData.get(
                 "cell_ratio")
         super().__init__(
             reference_data=reference_data,
@@ -60,10 +60,10 @@ class RatSSCxInhibitorySynapseDensityValidation(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.animal\
-            = "rat"
-        reference_data\
-            = RatSomatosensoryCortexCompositionData.get(
+        self.animal=\
+            "rat"
+        reference_data=\
+            RatSomatosensoryCortexCompositionData.get(
                 "inhibitory_synapse_density")
         super().__init__(
             reference_data=reference_data,
@@ -79,10 +79,10 @@ class RatSSCxSynapseDensityValidation(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.animal\
-            = "rat"
-        reference_data\
-            = RatSomatosensoryCortexCompositionData.get(
+        self.animal=\
+            "rat"
+        reference_data=\
+            RatSomatosensoryCortexCompositionData.get(
                 "synapse_density")
         super().__init__(
             reference_data=reference_data,
@@ -92,7 +92,7 @@ class RatSSCxSynapseDensityValidation(
 def get(validation_name,
         output_dir_path=os.getcwd()):
     """..."""
-    available_validations = dict(
+    available_validations= dict(
         cell_density=RatSSCxCellDensityValidation,
         cell_ratio=RatSSCxCellRatioValidation,
         inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityValidation,

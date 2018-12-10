@@ -33,8 +33,8 @@ from dmt.vtk.measurement.parameter.random import\
     get_conditioned_random_variate
 from dmt.vtk.utils.logging import Logger, with_logging
 from neuro_dmt.utils.cell_type import CellType
-from neuro_dmt.analysis.validation.circuit.composition.by_layer import\
-    CellDensityValidation,\
+from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
+    import CellDensityValidation,\
     CellRatioValidation,\
     InhibitorySynapseDensityValidation,\
     SynapseDensityValidation

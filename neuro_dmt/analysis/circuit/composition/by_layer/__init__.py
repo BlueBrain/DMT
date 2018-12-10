@@ -89,13 +89,13 @@ class ByLayerCompositionAnalysis(
         return ParameterGroup(tuple(self.spatial_parameters))
 
 
-from neuro_dmt.analysis.circuit.composition.by_layer.\
-    cell_density import CellDensityAnalysis
-from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
-    cell_ratio import CellRatioAnalysis
-from neuro_dmt.analysis.circuit.composition.by_layer.\
-    inhibitory_synapse_density import InhibitorySynapseDensityAnalysis
-from neuro_dmt.analysis.circuit.composition.by_layer.\
-    synapse_density import SynapseDensityAnalysis
-from neuro_dmt.analysis.circuit.composition.by_layer.\
-    soma_volume_fraction import SomaVolumeFractionAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.cell_density\
+    import CellDensityAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.cell_ratio\
+    import CellRatioAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.inhibitory_synapse_density\
+    import InhibitorySynapseDensityAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.synapse_density\
+    import SynapseDensityAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.soma_volume_fraction\
+    import SomaVolumeFractionAnalysis

@@ -1,4 +1,4 @@
 """Test and develop TestCase base class"""
 
-from dmt.validation.test_case import ValidationTestCase
+from dmt.analysis.comparison.validation.test_case import ValidationTestCase
 

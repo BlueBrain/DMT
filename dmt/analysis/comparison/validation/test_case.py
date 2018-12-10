@@ -14,7 +14,7 @@ import pandas as pd
 from dmt.analysis import OfSinglePhenomenon
 from dmt.data import ReferenceData
 from dmt.vtk.utils.collections import Record
-from dmt.analysis.comparison import Comparison
+#from dmt.analysis.comparison import Comparison
 #from dmt.analysis import Analysis
 from dmt.vtk.utils.pandas import flatten
 from dmt.vtk.plotting.comparison import ComparisonPlot
@@ -24,8 +24,7 @@ from dmt.vtk.utils.descriptor import Field, WithFCA, document_fields
 from dmt.vtk.phenomenon import Phenomenon
 
 @document_fields
-class ValidationTestCase(
-        Comparison):
+class ValidationTestCase:
     """A validation test case.
     Instructions on implementing a ValidationTestCase
     -------------------------------------------------
@@ -33,24 +32,6 @@ class ValidationTestCase(
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
-    reference_data=\
-        Field.Optional(
-            __name__="reference_data",
-            __type__=ReferenceData,
-            __doc__="""If not provided, assume validation does not use
-            reference data""")
-    plotter_type=\
-        Field.Optional(
-            __name__="plotter_type",
-            __typecheck__=Field.typecheck.subtype(ComparisonPlot),
-            __doc__="""A subclass of {} to be used plot the results of
-            this validation.""".format(ComparisonPlot))
-    plot_customization=\
-        Field.Optional(
-            __name__="plot_customizaion",
-            __type__=dict,
-            __doc__="A dict containing customization of the plot.")
-
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -60,51 +41,42 @@ class ValidationTestCase(
             *args, **kwargs)
 
     @property
-    def _reference_data(self):
-        """..."""
-        try:
-            return self.reference_data.data
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "Caught Attribute Error: \n\t{}".format(e))
-
-        return None
-
-    @property
     def validation_data(self):
         """Override"""
         if not hasattr(self, "reference_data"):
             raise Exception(
                 "Validation test case {} does not use reference data"\
                 .format(self.__class__.__name__))
+
         data = self._reference_data
+
         if not data:
+            return pd.DataFrame()
+
+        if isinstance(data, pd.DataFrame):
             return data
 
-        if not isinstance(data, dict):
-            if not isinstance(data, pd.DataFrame):
-                raise AttributeError(
-                    "Reference data is not a pandas DataFrame, but {}\n{}"\
-                    .format(type(data).__name__, data))
-            return data
+        if isinstance(data, (dict, Record,)):
+            dataset_names=\
+                [k for k in data.keys()]
+            flattened_dataframe=\
+                flatten({
+                    n: data[n].data for n in dataset_names},
+                        names=["dataset"]
+                )[["mean", "std"]]
+            return\
+                flattened_dataframe.set_index(
+                    pd.MultiIndex(
+                        levels=flattened_dataframe.index.levels,
+                        labels=flattened_dataframe.index.labels,
+                        names=[name.lower()
+                               for name in flattened_dataframe.index.names]))
 
-        assert(isinstance(data, dict))
+        raise AttributeError(
+            "Reference data is neither a 'dict', nor a pandas DataFrame",
+            "It is a {}\n{}"\
+            .format(type(data).__name__, data))
 
-        dataset_names=\
-            [k for k in data.keys()]
-        flattened_dataframe=\
-            flatten({
-                n: data[n].data for n in dataset_names},
-                names=["dataset"]
-            )[["mean", "std"]]
-        return\
-            flattened_dataframe.set_index(
-                pd.MultiIndex(
-                    levels=flattened_dataframe.index.levels,
-                    labels=fdf.index.labels,
-                    names=[n.lower() for n in flattened_dataframe.index.names]))
-                       
     @property
     def reference_datasets(self):
         """Return validation data as a dict."""
@@ -122,31 +94,20 @@ class ValidationTestCase(
         """another name for reference_datasets"""
         return self.reference_datasets
 
-    def data_description(self):
-        """Describe the experimental data used for validation."""
-        return self.reference_data.description
-
-    def get_reference_data(self):
-        """..."""
-        try:
-            return self.reference_data.data
-        except AttributeError as e:
-            self.logger.alert(
-                self.logger.get_source_data(),
-                "Could not get data from reference data.",
-                "\t AttributeError: {}".format(e))
-
-        return None
-
     @property
     def primary_dataset(self):
         """..."""
         return self.reference_data.primary_dataset
 
     @property
-    def get_dataset_for_pvalue_calculation(self):
+    def reference_data_for_statistical_comparison(self):
         """..."""
         return self.reference_data.primary_dataset
+
+    @property
+    def reference_data_for_plotting(self):
+        """..."""
+        return self.validation_data
 
 @document_fields
 class SinglePhenomenonValidation(

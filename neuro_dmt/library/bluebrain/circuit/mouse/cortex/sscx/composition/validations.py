@@ -5,8 +5,8 @@ from neuro_dmt.library.bluebrain.circuit.cortex import\
     MeasureByCorticalLayer
 from neuro_dmt.library.bluebrain.circuit.cortex.sscx.composition import \
     SomatosensoryCortexCompositionValidation
-from neuro_dmt.analysis.validation.circuit.composition.by_layer import\
-    CellDensityValidation,\
+from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
+    import CellDensityValidation,\
     CellRatioValidation,\
     InhibitorySynapseDensityValidation,\
     SynapseDensityValidation
