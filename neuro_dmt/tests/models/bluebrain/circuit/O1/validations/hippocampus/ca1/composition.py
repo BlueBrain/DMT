@@ -62,6 +62,7 @@ class HippocampalAtlasSpecialization(
                 values=["mc{}".format(n)
                         for n in column_values])
     
+
 class HippocampalFakeAtlasCircuitGeometry(
         FakeAtlasCircuitGeometry):
     """FakeAtlasCircuitGeometry whose 'circuit_specialization' has already
@@ -78,27 +79,27 @@ class HippocampalFakeAtlasCircuitGeometry(
             *args, **kwargs)
  
     
-logger\
-    = Logger(
+logger=\
+    Logger(
         client=__name__,
         level=Logger.level.TEST)
-circuit_model\
-    = FakeAtlasBasedCircuitModel(
+circuit_model=\
+    FakeAtlasBasedCircuitModel(
         animal="mouse",
         brain_region=brain_regions.ca1,
         geometry_type=HippocampalFakeAtlasCircuitGeometry,
         circuit_config=circuit_config_path)
-bbma\
-    = BlueBrainModelAdapter(
+bbma=\
+    BlueBrainModelAdapter(
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico")
-hippocampal_layer\
-    = HippocampalLayerSLM_SR_Fused()
-cell_composition_analysis\
-    = CellCompositionAnalysis(
+hippocampal_layer=\
+    HippocampalLayerSLM_SR_Fused()
+cell_composition_analysis=\
+    CellCompositionAnalysis(
         animal="rat",
         spatial_parameters={hippocampal_layer},
         adapter=bbma)
-cell_composition_measurement\
-    = cell_composition_analysis.get_measurement(
+cell_composition_measurement=\
+    cell_composition_analysis.get_measurement(
         circuit_model)

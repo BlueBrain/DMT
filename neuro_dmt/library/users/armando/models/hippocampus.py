@@ -7,7 +7,6 @@ from bluepy.v2.enums import Cell, Synapse
 from bluepy.v2.circuit import Circuit
 from bluepy.utils import take_n
 
-
 @adapter.adapter(Circuit)
 @interface.implementation(MtypeCellDensityValidation.AdapterInterface)
 class HippocampusAdapter:
