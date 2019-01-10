@@ -1,11 +1,11 @@
 """Validation of synapse density by layer."""
 from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
-from neuro_dmt.analysis.validation.circuit.composition.by_layer \
-    import ByLayerCompositionValidation
+from neuro_dmt.analysis.circuit.composition.by_layer \
+    import ByLayerCompositionAnalysis
 
-class SynapseDensityValidation(
-        ByLayerCompositionValidation):
+class SynapseDensityAnalysis(
+        ByLayerCompositionAnalysis):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
     We assume that all measurements are made by region in the brain,

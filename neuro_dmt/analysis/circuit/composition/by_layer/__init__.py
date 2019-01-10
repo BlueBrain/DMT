@@ -91,7 +91,7 @@ class ByLayerCompositionAnalysis(
 
 from neuro_dmt.analysis.circuit.composition.by_layer.\
     cell_density import CellDensityAnalysis
-from neuro_dmt.analysis.validation.circuit.composition.by_layer.\
+from neuro_dmt.analysis.circuit.composition.by_layer.\
     cell_ratio import CellRatioAnalysis
 from neuro_dmt.analysis.circuit.composition.by_layer.\
     inhibitory_synapse_density import InhibitorySynapseDensityAnalysis

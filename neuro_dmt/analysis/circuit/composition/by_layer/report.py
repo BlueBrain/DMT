@@ -10,7 +10,8 @@ from dmt.vtk.utils.utils import get_file_name_base
 from dmt.vtk.utils.logging import Logger, with_logging
 
 @with_logging(Logger.level.STUDY)
-class AnalysisReport(Report):
+class AnalysisReport(
+        Report):
     """A class to be used to report all of our composition validations.
     The html produced by the Cheetah Template used here will display a plot for
     the validation, with a caption, metadata about the authors and their
@@ -21,33 +22,32 @@ class AnalysisReport(Report):
     Associated Cheetah template must be placed  in a directory named templates
     in the same directory as this file."""
 
-    author = Field(
-        __name__ = "author",
-        __type__ = Author,
-        __doc__  = """Author of this validation. If a group has authored,
-        please create a group user as author.""")
-    
-    phenomenon = Field(
-        __name__ = "phenomenon",
-        __type__ = Phenomenon,
-        __doc__  = """Phenomenon that was validated / analyzed.""")
-    
-    figure = Field.Optional(
-        __name__="plot",
-        __type__=object,
-        __doc__="A plot figure")
-
-    caption = Field(
-        __name__ = "caption",
-        __type__ = str,
-        __doc__ = "Caption to go with the plot.")
-    
+    author=\
+        Field(
+            __name__ = "author",
+            __type__ = Author,
+            __doc__  = """Author of this validation. If a group has authored,
+            please create a group user as author.""")
+    phenomenon=\
+        Field(
+            __name__ = "phenomenon",
+            __type__ = Phenomenon,
+            __doc__  = """Phenomenon that was validated / analyzed.""")
+    figure=\
+        Field.Optional(
+            __name__="plot",
+            __type__=object,
+            __doc__="A plot figure")
+    caption=\
+        Field(
+            __name__ = "caption",
+            __type__ = str,
+            __doc__ = "Caption to go with the plot.")
     def __init__(self, *args, **kwargs):
         """initialize!"""
-        template = kwargs.get("template")
-        if template is not None:
+        if "template" in kwargs:
             self.template\
-                = template
+                = kwargs["template"]
         else:
             template_loc\
                 = kwargs.get(
@@ -56,10 +56,12 @@ class AnalysisReport(Report):
                         os.path.dirname(__file__),
                         "templates",
                         "report.cheetah") )
-            with open(template_loc, 'r') as f:
-                self.template = f.read()
+            with open(template_loc, 'r') as template_file:
+                self.template=\
+                    template_file.read()
                          
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
 
     def save(self,
             output_dir_path=None,
