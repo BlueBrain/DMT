@@ -11,7 +11,7 @@ from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
     import AtlasCircuitGeometry
 
-class CircuitModel(
+class BlueBrainCircuitModel(
         WithFCA):
     """Wrap a BluePy circuit to provide its associated geometry,
     along with other information such as it's release date..."""
@@ -42,7 +42,6 @@ class CircuitModel(
             __name__="brain_region",
             __type__=brain_regions.BrainRegion,
             __doc__="The brain region modeled.")
-
 
     def __init__(self,
             *args, **kwargs):
@@ -75,7 +74,7 @@ class CircuitModel(
 
 
 class O1CircuitModel(
-        CircuitModel):
+        BlueBrainCircuitModel):
     """..."""
     label = "BlueBrainO1CircuitModel"
     geometry_type\
@@ -97,7 +96,7 @@ class O1CircuitModel(
 
 
 class AtlasBasedCircuitModel(
-        CircuitModel):
+        BlueBrainCircuitModel):
     """..."""
     label = "BlueBrainAtlasBasedCircuitModel"
     geometry_type\

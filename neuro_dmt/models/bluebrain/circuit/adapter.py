@@ -43,7 +43,7 @@ from neuro_dmt.utils.brain_regions import\
 from neuro_dmt.models.bluebrain.circuit import\
     geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
-    import CircuitModel
+    import BlueBrainCircuitModel
 from neuro_dmt.models.bluebrain.circuit.random_variate import\
     RandomSpatialVariate,\
     RandomRegionOfInterest,\
@@ -58,7 +58,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-@adapter.adapter(CircuitModel) #the type of circuit models this Adapter can adapt
+@adapter.adapter(BlueBrainCircuitModel) #the type of circuit models this Adapter can adapt
 class BlueBrainModelAdapter(
         WithFCA):
     """Adapt a circuit from the Blue Brain Project (BBP).

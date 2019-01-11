@@ -4,17 +4,15 @@ from voxcell.nexus.voxelbrain import LocalAtlas
 from dmt.vtk.utils.logging\
     import Logger
 from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
-    import validations\
-    as rat_validations
+    import validations as rat_validations
 from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
-    import validations\
-    as mouse_validations
+    import validations as mouse_validations
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import CircuitModel
-from neuro_dmt.library.bluebrain.circuit.models.sscx import\
-    get_mouse_sscx_O1_circuit_model,\
+from neuro_dmt.library.bluebrain.circuit.models.sscx\
+    import get_mouse_sscx_O1_circuit_model,\
     get_rat_sscx_O1_circuit_model,\
     get_sscx_fake_atlas_circuit_model
 from neuro_dmt.models.bluebrain.circuit.adapter\

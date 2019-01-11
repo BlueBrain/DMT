@@ -9,7 +9,6 @@ from neuro_dmt.models.bluebrain.circuit.O1.build import *
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 
-
 iso_circuit\
     = Circuit(
         os.path.join(
