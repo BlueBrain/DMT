@@ -58,12 +58,14 @@ class BlueBrainCircuitCompositionData(
             data_location,
             *args, **kwargs):
         """Data is loaded from self.data_location"""
-        self.data_location = data_location
+        self.data_location\
+            = data_location
         super().__init__(
-            data=self.get_data_location(phenomenon),
+            data=self._load_from_location(
+                self.get_data_location(
+                    phenomenon)),
             phenomenon=phenomenon,
             *args, **kwargs)
-
         BlueBrainCircuitCompositionData.insert(self)
 
     @property

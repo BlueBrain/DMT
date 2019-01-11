@@ -19,14 +19,14 @@ class MultiReferenceData(
             datasets. If this field is set to a string, then its value 
             must be the label of one of the datasets in this
             ReferenceData.""")
-    data=\
-        Field(
-            __name__ = "data",
-            __typecheck__=Field.typecheck.either(
-                Field.typecheck.mapping(str, Record),
-                Field.typecheck.mapping(str, dict)),
-            __doc__="""A dict that maps labels to datasets that are 
-            represented as a Record.""")
+    # data=\
+    #     Field(
+    #         __name__ = "data",
+    #         __typecheck__=Field.typecheck.either(
+    #             Field.typecheck.mapping(str, Record),
+    #             Field.typecheck.mapping(str, dict)),
+    #         __doc__="""A dict that maps labels to datasets that are 
+    #         represented as a Record.""")
 
     def __init__(self,
             *args, **kwargs):

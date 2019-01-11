@@ -2,16 +2,11 @@
 import os
 from Cheetah.Template import Template
 from dmt.vtk.reporting import Report
-<<<<<<< HEAD
-=======
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
->>>>>>> 671ad7933edf862204870189d42b7fba95b49b20
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.utils import utils
 from dmt.vtk.utils.logging import Logger, with_logging
-<<<<<<< HEAD
 from neuro_dmt.analysis.circuit.composition.by_layer.report\
     import AnalysisReport
 

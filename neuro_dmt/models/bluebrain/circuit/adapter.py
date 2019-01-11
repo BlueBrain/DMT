@@ -58,7 +58,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-@adapter.adapter(BlueBrainCircuitModel) #the type of circuit models this Adapter can adapt
+@adapter.adapter(BlueBrainCircuitModel) #circuit model type this can adapt
 class BlueBrainModelAdapter(
         WithFCA):
     """Adapt a circuit from the Blue Brain Project (BBP).

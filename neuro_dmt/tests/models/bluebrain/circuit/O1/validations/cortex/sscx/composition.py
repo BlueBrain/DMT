@@ -9,8 +9,6 @@ from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
     import validations as mouse_validations
 from neuro_dmt.utils\
     import brain_regions
-from neuro_dmt.models.bluebrain.circuit.circuit_model\
-    import CircuitModel
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
     import get_mouse_sscx_O1_circuit_model,\
     get_rat_sscx_O1_circuit_model,\

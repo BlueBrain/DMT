@@ -1,5 +1,7 @@
 """iso cortex models"""
 
+from neuro_dmt.utils\
+    import brain_regions
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
     import AtlasBasedCircuitSpecialization, AtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
@@ -55,3 +57,19 @@ class IsoCortexAtlasBasedCircuitModel(
             = IsoCortexAtlasBasedCircuitGeometry
         super().__init__(
             *args, **kwargs)
+
+
+def get_iso_cortex_circuit_model(
+        circuit_config,
+        animal,
+        atlas_path=None,
+        *args, **kwargs):
+    """Factory method that puts together default data
+    to create a class...."""
+    return\
+        IsoCortexAtlasBasedCircuitModel(
+            animal=animal,
+            brain_region=brain_regions.cortex,
+            geometry_type=IsoCortexAtlasBasedCircuitGeometry,
+            circuit_config=circuit_config,
+            atlas_path=atlas_path)

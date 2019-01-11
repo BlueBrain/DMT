@@ -63,11 +63,16 @@ class SomatosensoryCortexCompositionData(
                  .set_index(label)
                      
     def get_data_location(self,
-            phenomenon):
+            directory=None,
+            phenomenon=None):
         """..."""
-        return os.path.join(
-            self.data_location,
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get data location for pheno ",
             phenomenon.label)
+        return os.path.join(
+            self.data_location if not directory else directory,
+            phenomenon.label if phenomenon else "")
 
     @classmethod
     def get_available_data(cls):

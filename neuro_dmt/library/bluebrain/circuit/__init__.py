@@ -10,7 +10,7 @@ from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
 from neuro_dmt.models.bluebrain.circuit.O1.build\
     import O1CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.circuit_model import\
-    CircuitModel,\
+    BlueBrainCircuitModel,\
     O1CircuitModel,\
     FakeAtlasBasedCircuitModel,\
     AtlasBasedCircuitModel
