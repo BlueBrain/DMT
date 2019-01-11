@@ -69,15 +69,15 @@ class Comparison:
         """Describe the experimental data used for validation."""
         return self.reference_data.description
 
-    @abstractmethod
     @property
+    @abstractmethod
     def reference_data_for_statistical_comparison(self):
         """..."""
         raise NotImplementedError(
             "Prepare the reference data for statistical comparison.")
 
-    @abstractmethod
     @property
+    @abstractmethod
     def reference_data_for_plotting(self):
         """Prepare the dataset to be plotted."""
         raise NotImplementedError(
@@ -184,7 +184,6 @@ class ModelComparison(
         return self.reference_data
 
 
-@document_fields
 class SinglePhenomenonModelComparison(
         OfSinglePhenomenon,
         ModelComparison):

@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 import pandas as pd
 from dmt.model import interface, adapter 
-from dmt.validation.test_case import ValidationTestCase
+from dmt.analysis.comparison.validation.test_case import ValidationTestCase
 from dmt.vtk.author import Author
 
 class TestIntegerMath(ValidationTestCase):

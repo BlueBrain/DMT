@@ -2,6 +2,13 @@
 
 import os
 from dmt.vtk.utils.descriptor import Field
+from Cheetah.Template import Template
+from dmt.vtk.reporting import Report
+from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+from dmt.vtk.utils.descriptor import Field
+from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.author import Author
+from dmt.vtk.utils.utils import get_file_name_base
 from neuro_dmt.analysis.comparison.circuit.composition.by_layer.report\
     import ComparisonReport
 
@@ -24,7 +31,6 @@ class ValidationReport(
             __doc__ = """List of metadata, one element for each dataset used 
             by the validation. Please take a look at documentation of the
             validation.""")
-    
     def __init__(self, *args, **kwargs):
         """initialize!"""
         super().__init__(

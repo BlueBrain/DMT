@@ -23,7 +23,7 @@ consider the suggestion below as an object variety of the Adapter pattern.
 
 from abc import ABC, abstractmethod
 import pandas as pd
-from dmt.validation.test_case import ValidationTestCaseBase
+from dmt.analysis.comparison.validation.test_case import ValidationTestCaseBase
 from dmt.vtk.author import Author
 from dmt.model import modelmethod, modelextension 
 

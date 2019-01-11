@@ -1,6 +1,6 @@
 """Compare model phenomena by layer."""
 from dmt.analysis.comparison\
-    import ModelComparison
+    import Comparison
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 from dmt.vtk.utils.descriptor import Field, document_fields

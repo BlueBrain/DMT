@@ -2,20 +2,27 @@
 Validations defined here, (module 'by_layer') apply to any brain region
 that has layers."""
 
-from dmt.data.reference import MultiReferenceData
-from dmt.analysis.validation.test_case import ValidationTestCase
-from dmt.vtk.utils.descriptor import Field, document_fields
-from dmt.vtk.judgment.verdict import Verdict
-from dmt.vtk.utils.collections import Record
-from dmt.vtk.measurement.parameter.group import ParameterGroup
+from dmt.data.reference\
+    import MultiReferenceData
+from dmt.analysis.comparison.validation.test_case\
+    import ValidationTestCase
+from dmt.vtk.utils.descriptor\
+    import Field, document_fields
+from dmt.vtk.judgment.verdict\
+    import Verdict
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.measurement.parameter.group\
+    import ParameterGroup
 from neuro_dmt.analysis.comparison.circuit.composition.by_layer\
     import ByLayerCompositionComparison
 from neuro_dmt.analysis.comparison.validation.\
-    circuit.composition.by_layer.report \
+    circuit.composition.by_layer.report\
     import ValidationReport
-from neuro_dmt.analysis.circuit.composition import SpatialCompositionAnalysis
-from neuro_dmt.analysis.circuit.composition.by_layer import\
-    CellDensityAnalysis,\
+from neuro_dmt.analysis.circuit.composition\
+    import SpatialCompositionAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer \
+    import CellDensityAnalysis,\
     CellRatioAnalysis,\
     InhibitorySynapseDensityAnalysis,\
     SynapseDensityAnalysis
