@@ -15,8 +15,9 @@ from neuro_dmt.data.bluebrain.circuit.cortex import CortexCompositionData
 
 class SomatosensoryCortexCompositionData(
         CortexCompositionData):
-    """Base class for Blue Brain Project Circuit Composition Data"""
-
+    """Base class for Blue Brain Project Circuit Composition Data.
+    """
+    _available_data = []
     def __init__(self,
             animal,
             phenomenon,
@@ -63,10 +64,14 @@ class SomatosensoryCortexCompositionData(
                  .set_index(label)
                      
     def get_data_location(self,
-            phenomenon):
+            phenomenon, 
+            directory=None):
         """..."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get data location for pheno {}".format(phenomenon))
         return os.path.join(
-            self.data_location,
+            self.data_location if not directory else directory,
             phenomenon.label)
 
     @classmethod
@@ -90,11 +95,11 @@ class SomatosensoryCortexCompositionData(
             (phenomenon.label
              if isinstance(phenomenon, Phenomenon) else 
              phenomenon)
-        available_data=\
-            cls.get_available_data(
-                *args, **kwargs)
+        if not cls._available_data:
+            cls._available_data=\
+                cls.get_available_data()
         try:
-            return available_data[plabel]
+            return cls._available_data[plabel](*args, **kwargs)
         except KeyError as e:
             msg = "No data available for {}\n".format(phenomenon)
             msg += "Available data:\n"

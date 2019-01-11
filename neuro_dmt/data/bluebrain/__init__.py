@@ -6,9 +6,11 @@ class BlueBrainData:
 
     __available_data = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
 
         BlueBrainData.insert(self)
    

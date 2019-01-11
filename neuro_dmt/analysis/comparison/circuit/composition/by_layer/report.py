@@ -2,16 +2,11 @@
 import os
 from Cheetah.Template import Template
 from dmt.vtk.reporting import Report
-<<<<<<< HEAD
-=======
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
->>>>>>> 671ad7933edf862204870189d42b7fba95b49b20
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.author import Author
 from dmt.vtk.utils import utils
 from dmt.vtk.utils.logging import Logger, with_logging
-<<<<<<< HEAD
 from neuro_dmt.analysis.circuit.composition.by_layer.report\
     import AnalysisReport
 
@@ -37,6 +32,12 @@ class ComparisonReport(Report):
             __type__=Author,
             __doc__="""Author of this comparison / validation. If a group has
             authored, please create a group used as author.""")
+    template_location=\
+        Field(
+            __name__="template_location",
+            __type__=str,
+            __default__=os.getcwd(),
+            __doc__="location of the Cheetah.Template to create the report.")
     phenomenon=\
         Field(
             __name__="phenomenon",
@@ -78,25 +79,18 @@ class ComparisonReport(Report):
     def __init__(self,
             *args, **kwargs):
         """..."""
-        template=\
-            kwargs.get("template")
-        if template is kwargs:
-            self.template=\
-                kwargs["template"]
-        else:
-            template_loc=\
-                kwargs.get(
-                    "template_loc",
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "templates",
-                        "report.cheetah"))
-            with open(template_loc, 'r') as template_file:
-                self.template=\
-                    template_file.read()
-
+        self._template = None
         super().__init__(
             *args, **kwargs)
+
+    @property
+    def template(self):
+        """..."""
+        if not self._template:
+            with open(self.template_location, 'r') as template_file:
+                self._template = template_file.read()
+                    
+        return self._template
 
     def save(self,
             output_dir_path=None,
@@ -136,20 +130,34 @@ class ComparisonReport(Report):
             "Saving report to {} ".format(
                 report_file_path))
         self.logger.info(
-            self.loggr.get_source_info(),
+            self.logger.get_source_info(),
             "Generating {}".format(
                 plot_file_path))
-        self.figure.savefig(
-            plot_file_path,
-            dpi=100)
         try:
-            temmplate_dict=\
+            self.figure.savefig(
+                plot_file_path,
+                dpi=100)
+        except AttributeError as aerr:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Could not save figure of type {}:\n {}".format(
+                    type(self.figure), aerr))
+        try:
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "report dict\n {}".format(self.__report_dict__))
+            template_dict=\
                 self.__report_dict__
             template_dict.update(dict(
                 image_name=plot_file_name,
                 phenomenon=self.phenomenon.name,
                 author_name=self.author.name,
-                author_affiliation=self.author.affiliation))
+                author_affiliation=self.author.affiliation,
+                caption=self.caption))
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "save report with template enteries from\n {}".format(
+                    template_dict))
             report_template=\
                 Template(
                     self.template,

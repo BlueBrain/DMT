@@ -36,9 +36,17 @@ class RatSomatosensoryCortexCompositionData(
             phenomenon=phenomenon,
             data_location=data_location,
             *args, **kwargs)
-                           
+
     @classmethod
-    def get_available_data(cls, *args, **kwargs):
+    def get_available_data_keys(cls):
+        """A list of keys(labels) for available data."""
+        return ["cell_density",
+                "cell_ratio",
+                "inhibitory_synapse_density",
+                "synapse_density"]
+
+    @classmethod
+    def get_available_data(cls):
         """Get reference data by phenomenon.
 
         Parameters
@@ -57,21 +65,27 @@ class RatSomatosensoryCortexCompositionData(
         from neuro_dmt.data.bluebrain.circuit.rat.\
             cortex.sscx.composition.synapse_density\
             import RatSomatosensoryCortexSynapseDensityData
-        
-        cell_density\
-            = RatSomatosensoryCortexCellDensityData(
-                *args, **kwargs)
-        cell_ratio\
-                = RatSomatosensoryCortexCellRatioData(
-                    *args, **kwargs)
-        inhibitory_synapse_density\
-            = RatSomatosensoryCortexInhibitorySynapseDensityData(
-                *args, **kwargs)
-        synapse_density\
-            = RatSomatosensoryCortexSynapseDensityData(
-                *args, **kwargs)
+
         return dict(
-            cell_density=cell_density,
-            cell_ratio=cell_ratio,
-            inhibitory_synapse_density=inhibitory_synapse_density,
-            synapse_density=synapse_density)
+            cell_density=RatSomatosensoryCortexCellDensityData,
+            cell_ratio=RatSomatosensoryCortexCellRatioData,
+            inhibitory_synapse_density=RatSomatosensoryCortexInhibitorySynapseDensityData,
+            synapse_density=RatSomatosensoryCortexSynapseDensityData)
+        
+        # cell_density=\
+        #     RatSomatosensoryCortexCellDensityData(
+        #         *args, **kwargs)
+        # cell_ratio=\
+        #     RatSomatosensoryCortexCellRatioData(
+        #         *args, **kwargs)
+        # inhibitory_synapse_density=\
+        #     RatSomatosensoryCortexInhibitorySynapseDensityData(
+        #         *args, **kwargs)
+        # synapse_density=\
+        #     RatSomatosensoryCortexSynapseDensityData(
+        #         *args, **kwargs)
+        # return dict(
+        #     cell_density=cell_density,
+        #     cell_ratio=cell_ratio,
+        #     inhibitory_synapse_density=inhibitory_synapse_density,
+        #     synapse_density=synapse_density)

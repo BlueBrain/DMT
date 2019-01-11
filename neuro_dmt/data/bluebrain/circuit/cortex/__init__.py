@@ -10,6 +10,10 @@ class CortexCompositionData(
     For now the purpose of this class to exist is to be a node in the class
     hierarchy for Blue Brain reference data classes."""
 
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self,
+            data,
+            *args, **kwargs):
         """..."""
-        super().__init__(data, *args, **kwargs)
+        super().__init__(
+            data,
+            *args, **kwargs)

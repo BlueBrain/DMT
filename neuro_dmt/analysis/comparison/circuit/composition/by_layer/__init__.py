@@ -1,11 +1,14 @@
 """Compare model phenomena by layer."""
 from dmt.analysis.comparison\
     import Comparison
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.descriptor\
+    import Field, document_fields
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
-from dmt.vtk.utils.descriptor import Field, document_fields
-from neuro_dmt.analysis.circuit.composition.by_layer import\
-    ByLayerCompositionAnalysis,\
+from neuro_dmt.analysis.circuit.composition.by_layer\
+    import ByLayerCompositionAnalysis,\
     CellDensityAnalysis,\
     CellRatioAnalysis,\
     InhibitorySynapseDensityAnalysis,\
@@ -43,7 +46,7 @@ class ByLayerCompositionComparison(
                 "Could not find attribute 'output_dir_path'.",
                 "\tAttributeError: {}".format(e))
         kwargs["title"]=\
-            name
+            model_measurement.label
         kwargs["xlabel"]=\
             model_measurement.parameter
         kwargs["ylabel"]=\
@@ -56,16 +59,16 @@ class ByLayerCompositionComparison(
             self.plotter_type(
                 Record(
                     data=model_measurement.data,
-                    label=model_measurement.label))\
-                .comparing(
-                    compared_quantity)\
-                .against(
-                    self.reference_data_for_plotting)\
-                .for_given(
-                    self.plotting_parameter)\
-                .with_customization(
-                    **kwargs)\
-                .plot()
+                    label=model_measurement.label)
+            ).comparing(
+                    compared_quantity
+            ).against(
+                self.reference_data_for_plotting
+            ).for_given(
+                self.plotting_parameter
+            ).with_customization(
+                **kwargs
+            ).plot()
 
 
 class CellDensityComparison(

@@ -33,5 +33,15 @@ class ValidationReport(
             validation.""")
     def __init__(self, *args, **kwargs):
         """initialize!"""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "Create a validation report with attributes from \n {}".format(
+                kwargs))
+        if "template_location" not in kwargs:
+            kwargs["template_location"]=\
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "templates",
+                    "report.cheetah")
         super().__init__(
             *args, **kwargs)

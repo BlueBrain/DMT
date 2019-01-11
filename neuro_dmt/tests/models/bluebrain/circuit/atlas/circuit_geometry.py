@@ -1,5 +1,6 @@
 import os
 from bluepy.v2.circuit import Circuit
+from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter\
     import AtlasRegion, CorticalLayer
 from neuro_dmt.models.bluebrain.circuit.adapter\

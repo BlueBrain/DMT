@@ -62,8 +62,8 @@ class ByLayerCompositionAnalysis(
         """Plot the data.
         This a default method --- a subclass may have special needs to plot.
         In that case this method can be overridden."""
-        data_record\
-            = Record(
+        data_record=\
+            Record(
                 data=model_measurement.data,
                 label=model_measurement.label)
 

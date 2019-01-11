@@ -89,17 +89,20 @@ class RatSSCxSynapseDensityValidation(
             *args, **kwargs)
 
 
-def get(validation_name,
+def get(
+        validation_name,
         output_dir_path=os.getcwd()):
     """..."""
-    available_validations= dict(
-        cell_density=RatSSCxCellDensityValidation,
-        cell_ratio=RatSSCxCellRatioValidation,
-        inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityValidation,
-        synapse_density=RatSSCxSynapseDensityValidation)
+    available_validations=\
+        dict(
+            cell_density=RatSSCxCellDensityValidation,
+            cell_ratio=RatSSCxCellRatioValidation,
+            inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityValidation,
+            synapse_density=RatSSCxSynapseDensityValidation)
     try:
-        return available_validations[validation_name](
-            output_dir_path=output_dir_path)
+        return\
+            available_validations[validation_name](
+                output_dir_path=output_dir_path)
     except KeyError as e:
         raise NotImplementedError(
             """Validation named {}.\n \tKeyError: {}.\n

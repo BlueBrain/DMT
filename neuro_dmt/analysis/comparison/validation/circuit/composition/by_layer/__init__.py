@@ -35,8 +35,8 @@ class ByLayerCompositionValidation(
     """Validation of a single circuit composition phenomenon.
     Validation is against reference data that provide experimental data
     as a function of layer. This base class may be used for validation
-    composition of any brain region that is composed of layers."""
-
+    composition of any brain region that is composed of layers.
+    """
     reference_data=\
         Field(
             __name__="reference_data",
@@ -68,7 +68,6 @@ class ByLayerCompositionValidation(
             is_fail=verdict == Verdict.FAIL,
             pvalue=pval,
             figure=figure)
-
 
 
 class CellDensityValidation(

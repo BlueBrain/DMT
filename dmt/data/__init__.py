@@ -20,7 +20,8 @@ class ReferenceData(
                 pd.DataFrame,
                 Record,
                 Field.typecheck.mapping(str, pd.DataFrame),
-                Field.typecheck.mapping(str, Record)),
+                Field.typecheck.mapping(str, Record),
+                Field.typecheck.mapping(str, dict)),
             __doc__="""Attribute 'value' of ReferenceData is the actual data.
             We cannot set type of 'value'. It may either be a pandas
             dataframe""")
@@ -67,21 +68,20 @@ class ReferenceData(
         """Default method that assumes that loading from location
         results in a data-object that can be loaded as reference data.
         """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "load data in  ReferenceData, from \n {}".format(data))
+
         if not self._is_location(data):
             try:
-                return self._load_from_object(
-                    data)
+                return self._load_from_object(data)
             except TypeError as e:
                 self.logger.alert(
                     self.logger.get_source_info(),
                     "{}: {}".format(type(e), e),
                     "\t{} object data is probably not the required type",
                     "\t{}".format(e))
-        else:
-            return self._load_from_object(
-                self._load_from_location(
-                    data))
-        return pd.DataFrame()
+        return self._load_from_location(data)
         
     @property
     @abstractmethod

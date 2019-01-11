@@ -29,6 +29,7 @@ class MultiReferenceData(
             represented as a Record.""")
 
     def __init__(self,
+            data,
             *args, **kwargs):
         """..."""
         self.logger.info(
@@ -37,7 +38,15 @@ class MultiReferenceData(
                 self.__class__.__name__),
             *["\t{}: {}".format(k, v) for k, v in kwargs.items()] )
 
+        data_and_primary=\
+            self.load(data)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "data and primary should be a dictionary: \n {}".format(
+                data_and_primary))
         super().__init__(
+            data=data_and_primary["datasets"],
+            primary=data_and_primary["primary"],
             *args, **kwargs)
 
     def get_dataset(self,
@@ -53,7 +62,7 @@ class MultiReferenceData(
                 return self.data.xs(dataset_name, level="dataset")
             except AttributeError:
                 pass
-            return None
+        return None
 
     @property
     def primary_dataset(self):
