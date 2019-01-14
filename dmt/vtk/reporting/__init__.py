@@ -40,17 +40,22 @@ class Report(
     @classmethod
     def update_doc(cls):
         """Add __doc__ of fields to that of this class"""
-        field_docs = "\n\nFields\n"
-        field_docs += 70 * "-" + "\n"
-        field_attrs = []
+        field_docs=\
+            "\n\nFields\n"
+        field_docs+=\
+            70 * "-" + "\n"
+        field_attrs=\
+            []
         for attr, value in cls.__dict__.items():
             if is_field(value):
                 field_attrs.append(attr)
                 field_docs += attr + "\n"
                 field_docs += "    type {}\n".format(value.__type__)
                 field_docs += "    {}\n".format(value.__doc__)
-        field_docs += 70 * "-" + "\n"
-        cls.__doc__ += field_docs
+        field_docs+=\
+            70 * "-" + "\n"
+        cls.__doc__+=\
+            field_docs
         return field_attrs
 
 

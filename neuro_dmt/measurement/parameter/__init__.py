@@ -3,6 +3,7 @@ these can be used as base classes by model adapters, and required and coded
 against by validation authors. The author of a model adapter then has to just
 look up the documentation to write an appropriate base class."""
 
+import numpy as np
 from bluepy.v2.enums import Cell
 from dmt.vtk.utils import collections
 from dmt.vtk.measurement.parameter.finite import FiniteValuedParameter
@@ -13,24 +14,26 @@ from neuro_dmt.utils.brain_regions import BrainRegion
 
 class BrainCircuitMeasurementParameter(
         FiniteValuedParameter):
-    """..."""
-
-    brain_region = Field(
-        __name__="brain_region",
-        __type__=BrainRegion,
-        __doc__="""A utility class object that contains some generic information
-        about the brain region that this BrainCircuitMeasurementParameter
-        is for. You can always us brain_regions.whole_brain!""")
-
-    values = Field(
-        __name__="values",
-        __type__=list,
-        __is_valid__=Field.typecheck.collection(
-            Field.typecheck.either(
-                Field.typecheck.collection("value_type"),
-                Field.typecheck.singleton("value_type"))),
-        __doc__="""Values must be a list whose elements are either of
-        instance 'value_type' or a tuple of 'value_type'.""")
+    """...
+    """
+    brain_region=\
+        Field(
+            __name__="brain_region",
+            __type__=BrainRegion,
+            __doc__="""A utility class object that contains some generic 
+            information about the brain region that this 
+            BrainCircuitMeasurementParameter is for. You can always us
+            brain_regions.whole_brain!""")
+    values=\
+        Field(
+            __name__="values",
+            __type__=list,
+            __is_valid__=Field.typecheck.collection(
+                Field.typecheck.either(
+                    Field.typecheck.collection("value_type"),
+                    Field.typecheck.singleton("value_type"))),
+            __doc__="""Values must be a list whose elements are either of
+            instance 'value_type' or a tuple of 'value_type'.""")
 
     def __init__(self,
             *args, **kwargs):
@@ -105,6 +108,22 @@ class CorticalLayer(
             value_repr={1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"},
             *args, **kwargs)
         
+
+class CorticalDepth(
+        BrainCircuitSpatialParameter):
+    """Depth down a cortical column,
+    as a fraction so that different cortical regions can be compared."""
+    def __init__(self,
+            number_points=20,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            label="cortical_depth_fraction",
+            brain_region=brain_regions.cortex,
+            value_type=float,
+            values=list(np.linspace(0., 1., number_points)),
+            *args, **kwargs)
+
 
 class CorticalLayer23Fused(
         LayerIndex):

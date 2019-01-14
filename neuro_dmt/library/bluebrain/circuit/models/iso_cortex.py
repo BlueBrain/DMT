@@ -3,7 +3,7 @@
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
-    import AtlasBasedCircuitSpecialization, AtlasCircuitGeometry
+    import AtlasBasedLayeredCircuitSpecialization, AtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import AtlasBasedCircuitModel
 
@@ -15,12 +15,12 @@ class IsoCortexAtlasSpecialization(
             *args, **kwargs):
         """..."""
         if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
-            kwargs["brain_region"]\
-                = brain_regions.cortex
-        self.atlas_acronym_separator\
-            = '' #empty string, i.e. no separator
-        self.representative_region\
-            = "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
+            kwargs["brain_region"]=\
+                brain_regions.cortex
+        self.atlas_acronym_separator=\
+            '' #empty string, i.e. no separator
+        self.representative_region=\
+            "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
         super().__init__(
             *args, **kwargs)
 

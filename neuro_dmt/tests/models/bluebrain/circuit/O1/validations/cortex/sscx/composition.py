@@ -13,47 +13,72 @@ from neuro_dmt.library.bluebrain.circuit.models.sscx\
     import get_mouse_sscx_O1_circuit_model,\
     get_rat_sscx_O1_circuit_model,\
     get_sscx_fake_atlas_circuit_model
-from neuro_dmt.models.bluebrain.circuit.adapter\
-    import BlueBrainModelAdapter
-from neuro_dmt.models.bluebrain.circuit.random_variate\
-    import RandomRegionOfInterest
+from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
+    import get_iso_cortex_circuit_model
 
 get_validations=\
     dict(
         rat=rat_validations,
         mouse=mouse_validations)
+project_path=\
+    dict(
+        rat="/gpfs/bbp.cscs.ch/project/proj64",
+        mouse="/gpfs/bbp.cscs.ch/project/proj66")
 get_circuit_config_path=\
     dict(
-        rat=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj64/circuits",
-            "O1.v6a", "20171212", "CircuitConfig"),
-        mouse=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj66/circuits",
-            "O1", "20180305", "CircuitConfig") )
+        rat=dict(
+            O1=os.path.join(
+                project_path["rat"], "circuits",
+                "O1.v6a", "20171212", "CircuitConfig"),
+            F1=os.path.join(
+                project_path["rat"], "circuits",
+                "O1.v6a", "20171212", "CircuitConfig"),
+            S1=os.path.join(
+                project_path["rat"], "circuits",
+                "S1.v6a", "20171206", "CircuitConfig")),
+        mouse=dict(
+            O1=os.path.join(
+                project_path["mouse"], "circuits",
+                "O1", "20180305", "CircuitConfig"),
+            F1=os.path.join(
+                project_path["mouse"], "circuits",
+                "O1", "20180305", "CircuitConfig")))
 get_circuit_model=\
     dict(
         rat=dict(
             O1=get_rat_sscx_O1_circuit_model,
-            S1=get_sscx_fake_atlas_circuit_model),
+            F1=get_sscx_fake_atlas_circuit_model,
+            S1=get_iso_cortex_circuit_model),
         mouse=dict(
             O1=get_mouse_sscx_O1_circuit_model,
-            S1=get_sscx_fake_atlas_circuit_model))
+            F1=get_sscx_fake_atlas_circuit_model,
+            S1=get_iso_cortex_circuit_model))
 get_atlas_path=\
     dict(
-        rat=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj64/circuits",
-            "O1.v6a", "20171212", ".atlas", 
-            "77831ACA-6198-4AA0-82EF-D0475A4E0647"),
-        mouse=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj66/entities",
-            "dev", "atlas", "O1-152"))
-
-logger = Logger(client=__name__, level=Logger.level.TEST)
+        rat=dict(
+            O1=None,
+            F1=os.path.join(
+                project_path["rat"], "circuits",
+                "O1.v6a", "20171212", ".atlas", 
+                "77831ACA-6198-4AA0-82EF-D0475A4E0647"),
+            S1=os.path.join(
+                project_path["rat"], "circuits",
+                "S1.v6a", "20171206", ".atlas",
+                "C63CB79F-392A-4873-9949-0D347682253A")),
+        mouse=dict(
+            O1=None,
+            F1=os.path.join(
+                project_path["mouse"], "entities",
+                "dev", "atlas", "O1-152")))
+logger=\
+    Logger(
+        client=__name__,
+        level=Logger.level.TEST)
 
 def run(
     animal,
     validation_name,
-    circuit_geometry_type="O1",
+    circuit_geometry="O1",
     output_dir_path=os.getcwd()):
     """..."""
     logger.info(
@@ -68,12 +93,12 @@ def run(
         "validation type {}".format(
             validation.__class__))
     circuit_model=\
-        get_circuit_model[animal][circuit_geometry_type](
-            circuit_config=get_circuit_config_path[animal],
+        get_circuit_model[animal][circuit_geometry](
+            circuit_config=get_circuit_config_path[animal][circuit_geometry],
             animal=animal,
-            atlas_path=get_atlas_path[animal])
-    report\
-        = validation(
+            atlas_path=get_atlas_path[animal][circuit_geometry])
+    report=\
+        validation(
             circuit_model,
             save_report=True)
     return report

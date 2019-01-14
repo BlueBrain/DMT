@@ -15,15 +15,16 @@ class BlueBrainCircuitModel(
         WithFCA):
     """Wrap a BluePy circuit to provide its associated geometry,
     along with other information such as it's release date..."""
-    label = "BlueBrainCircuitModel"
-    circuit_config\
-        = Field(
+    label=\
+        "BlueBrainCircuitModel"
+    circuit_config=\
+        Field(
             __name__="circuit_config",
             __type__=str,
             __doc__="""Path to the circuit config that can be loaded
             as a BluePy Circuit.""")
-    geometry_type\
-        = Field(
+    geometry_type=\
+        Field(
             __name__="geometry_type",
             __type__=type,
             __typecheck__=Field.typecheck.subtype(CircuitGeometry),
@@ -32,13 +33,13 @@ class BlueBrainCircuitModel(
             --- that uses keyword arguments for initialization,
             and will be initialized by passing circuit as a keyword
             argument.""")
-    animal\
-        = Field(
+    animal=\
+        Field(
             __name__="animal",
             __type__=str,
             __doc__="Animal for which this circuit was built.")
-    brain_region\
-        = Field(
+    brain_region=\
+        Field(
             __name__="brain_region",
             __type__=brain_regions.BrainRegion,
             __doc__="The brain region modeled.")
@@ -98,9 +99,10 @@ class O1CircuitModel(
 class AtlasBasedCircuitModel(
         BlueBrainCircuitModel):
     """..."""
-    label = "BlueBrainAtlasBasedCircuitModel"
-    geometry_type\
-        = Field(
+    label=\
+        "BlueBrainAtlasBasedCircuitModel"
+    geometry_type=\
+        Field(
             __name__="geometry_type",
             __type__=type,
             __typecheck__=Field.typecheck.subtype(AtlasCircuitGeometry),
@@ -109,8 +111,8 @@ class AtlasBasedCircuitModel(
             --- that uses keyword arguments for initialization,
             and will be initialized by passing circuit as a keyword
             argument.""")
-    atlas_path\
-        = Field.Optional(
+    atlas_path=\
+        Field.Optional(
             __name__="atlas_path",
             __type__=str,
             __doc__="""Path to the circuit's atlas. Provide this
@@ -127,14 +129,16 @@ class AtlasBasedCircuitModel(
         if not self._impl:
             c = Circuit(self.circuit_config)
             try:
-                atlas = c.atlas
-            except:
-                if not getattr(self, "atlas_path", None):
+                circuit_atlas=\
+                    c.atlas
+            except KeyError as e:
+                if not hasattr(self, "atlas_path"):
                     raise TypeError(
-                        """Atlas path not set for  circuit model {}
-                        that was not provided with an atlas attribute."""\
-                        .format(self))
-                c.atlas = LocalAtlas(self.atlas_path)
+                        """Circuit model {} has neither a (working) 'atlas',
+                        nor an 'atlas_path' attribute.""".format(self))
+                c.atlas=\
+                    LocalAtlas(
+                        self.atlas_path)
             self._impl = c
         return self._impl
 

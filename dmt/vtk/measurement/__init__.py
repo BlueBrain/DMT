@@ -85,13 +85,13 @@ class Method(
 @with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
     """Make statistical measurements."""
-    random_variate\
-        = Field(
+    random_variate=\
+        Field(
             __name__ = "random_variate",
             __type__ = RandomVariate,
             __doc__  = """A random variate can be sampled.""")
-    sample_size\
-        = Field(
+    sample_size=\
+        Field(
             __name__="sample_size",
             __type__=int,
             __doc__="""Number of samples to be drawn
@@ -111,25 +111,25 @@ class StatisticalMeasurement:
             size=20,
             *args, **kwargs):
         """..."""
-        params\
-            = self.random_variate\
-                  .sample(
-                      size=size,
-                      *args, **kwargs)
+        params=\
+            self.random_variate\
+                .sample(
+                    size=size,
+                    *args, **kwargs)
         self.logger.debug(
             "StatisticalMeasurement.sample(...) params index: {}"\
             .format(params.index))
-        data\
-            = [method(**row[1])
-               for row in params.iterrows()]
+        data=[
+            method(**row[1])
+            for row in params.iterrows()]
         if issubclass(method.return_type, float):
-            measurement\
-                = pd.DataFrame(
+            measurement=\
+                pd.DataFrame(
                     {method.label: data},
                     index=params.index)
         else:
-            measurement\
-                = pd.DataFrame(
+            measurement=\
+                pd.DataFrame(
                     data,
                     index=params.index)
         self.logger.debug(
@@ -169,6 +169,15 @@ class StatisticalMeasurement:
             units=method.units,
             parameter_groups=levels)
 
+    def get(self,
+            method,
+            *args, **kwargs):
+        """Make and get a measurement."""
+        return\
+            self.__call__(
+                method,
+                *args, **kwargs)
+    
 
 def method_description(measurement_method):
     """Description of the measurement's method.

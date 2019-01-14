@@ -58,7 +58,7 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
 @interface.implementation(CellRatioValidation.AdapterInterface)
 @interface.implementation(InhibitorySynapseDensityValidation.AdapterInterface)
 @interface.implementation(SynapseDensityValidation.AdapterInterface)
-@adapter.adapter(BlueBrainCircuitModel) #circuit model type this can adapt
+@adapter.adapter(BlueBrainCircuitModel) #circuit model type adapted
 class BlueBrainModelAdapter(
         WithFCA):
     """Adapt a circuit from the Blue Brain Project (BBP).
@@ -67,27 +67,28 @@ class BlueBrainModelAdapter(
     organized as hexagonal columns, while respecting the connectivity patterns
     observed in real brain circuits.
     """
-    author = Author.zero
-
-    label = "adapter"
-
-    brain_region = Field.Optional(
-        __name__="brain_region",
-        __type__=BrainRegion,
-        __doc__="Provides a model independent tag for the brain region.")
-
-    sample_size = Field(
-        __name__="sample_size",
-        __type__=int,
-        __default__=20,
-        __doc__="""Number of samples to be drawn for each
-        statistical measurement.""")
-    
-    model_label = Field(
-        __name__="model_label",
-        __type__=str,
-        __default__="BlueBrainCircuitAdapter.",
-        __doc__="""Label to be used in reporting.""")
+    author=\
+        Author.zero
+    label=\
+        "adapter"
+    brain_region=\
+        Field.Optional(
+            __name__="brain_region",
+            __type__=BrainRegion,
+            __doc__="Provides a model independent tag for the brain region.")
+    sample_size=\
+        Field(
+            __name__="sample_size",
+            __type__=int,
+            __default__=20,
+            __doc__="""Number of samples to be drawn for each
+            statistical measurement.""")
+    model_label=\
+        Field(
+            __name__="model_label",
+            __type__=str,
+            __default__="BlueBrainCircuitAdapter.",
+            __doc__="""Label to be used in reporting.""")
     
     def __init__(self,
             sampled_box_shape=100.*np.ones(3), 
@@ -128,18 +129,16 @@ class BlueBrainModelAdapter(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with parameters {}"""\
             .format(parameters))
-        random_variate\
-            = get_random_variate(
-                circuit_model.geometry,
-                *args, **kwargs
-            ).given(parameters)
-        get_measurement\
-            = StatisticalMeasurement(
-                random_variate=random_variate,
-                sample_size=self.sample_size)
         return\
             self.filled(
-                get_measurement(
+                StatisticalMeasurement(
+                    random_variate=get_random_variate(
+                        circuit_model.geometry,
+                        *args, **kwargs
+                    ).given(
+                        parameters),
+                    sample_size=self.sample_size
+                ).get(
                     method,
                     *args, **kwargs),
                 by=parameters)
@@ -156,7 +155,8 @@ class BlueBrainModelAdapter(
                     circuit_model,
                     method,
                     get_random_variate=RandomSpanningColumnOfInterest,
-                    parameters={circuit_model.geometry\
+                    parameters={circuit_model\
+                                .geometry\
                                 .spanning_column_parameter()},
                     *args, **kwargs)
         return\
@@ -175,15 +175,16 @@ class BlueBrainModelAdapter(
             for_cell_type=CellType.Any,
             *args, **kwargs):
         """..."""
-        return self.spatial_measurement(
-            method=composition.CellDensity(
-                circuit_model.bluepy_circuit,
-                by_property=by_property,
-                for_cell_type=for_cell_type,
-                *args, **kwargs),
-            circuit_model=circuit_model,
-            parameters=spatial_parameters,
-            *args, **kwargs)
+        return\
+            self.spatial_measurement(
+                method=composition.CellDensity(
+                    circuit_model.bluepy_circuit,
+                    by_property=by_property,
+                    for_cell_type=for_cell_type,
+                    *args, **kwargs),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
+                *args, **kwargs)
 
     def get_cell_ratio(self,
             circuit_model,
