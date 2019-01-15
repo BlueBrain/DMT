@@ -1,12 +1,18 @@
 import os
-from bluepy.v2.circuit import Circuit
-from neuro_dmt.utils import brain_regions
+from bluepy.v2.circuit\
+    import Circuit
+from dmt.vtk.measurement.condition\
+    import Condition
+from neuro_dmt.utils\
+    import brain_regions
 from neuro_dmt.measurement.parameter\
     import AtlasRegion, CorticalLayer
 from neuro_dmt.models.bluebrain.circuit.adapter\
     import BlueBrainModelAdapter
-from neuro_dmt.models.bluebrain.circuit.atlas.build import *
-from neuro_dmt.models.bluebrain.circuit.O1.build import *
+from neuro_dmt.models.bluebrain.circuit.atlas.build\
+    import *
+from neuro_dmt.models.bluebrain.circuit.O1.build\
+    import *
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
@@ -30,6 +36,18 @@ iso_adapter=\
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)
+
+iso_geometry=\
+    iso_circuit_model.geometry
+
+random_pos=\
+    iso_geometry.random_position(
+        condition=Condition([
+            ("region", "SSp-ll"),
+            ("depth", 0.1)]))
+ssp_ll_column=\
+    iso_geometry.get_cortical_column(
+        "SSp-ll")
 sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64/circuits",

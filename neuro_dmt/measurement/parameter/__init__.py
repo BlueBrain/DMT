@@ -113,12 +113,13 @@ class CorticalDepth(
         BrainCircuitSpatialParameter):
     """Depth down a cortical column,
     as a fraction so that different cortical regions can be compared."""
+    label=\
+        "depth"
     def __init__(self,
             number_points=20,
             *args, **kwargs):
         """..."""
         super().__init__(
-            label="cortical_depth_fraction",
             brain_region=brain_regions.cortex,
             value_type=float,
             values=list(np.linspace(0., 1., number_points)),

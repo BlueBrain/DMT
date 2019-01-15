@@ -55,15 +55,13 @@ class BlueBrainCircuitModel(
     @property
     def circuit(self):
         """..."""
-        if not self._impl:
-            self._impl = Circuit(self.circuit_config)
-        return self._impl
+        return self.bluepy_circuit
 
     @property
     def geometry(self):
         """..."""
         if not self.__geometry:
-            self.__geometry = self.geometry_type(self._impl)
+            self.__geometry = self.geometry_type(self.circuit)
         return self.__geometry
 
     @property
