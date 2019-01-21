@@ -117,10 +117,23 @@ class StatisticalMeasurement:
                     size=size,
                     *args, **kwargs)
         self.logger.debug(
+            self.logger.get_source_info(),
             "StatisticalMeasurement.sample(...) params index: {}"\
             .format(params.index))
+
+        def _make_measurement(row):
+            """make a single measurement."""
+            if kwargs.get("debug", False):
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "make {}-th measurement".format(
+                        _make_measurement.counter))
+                _make_measurement.counter += 1
+            return method(**row[1])
+        _make_measurement.counter = 0
+
         data=[
-            method(**row[1])
+            _make_measurement(row)
             for row in params.iterrows()]
         if issubclass(method.return_type, float):
             measurement=\
@@ -133,6 +146,7 @@ class StatisticalMeasurement:
                     data,
                     index=params.index)
         self.logger.debug(
+            self.logger.get_source_info(),
             "StatisticalMeasurement.sample(...) measurement.index: {}"\
             .format(
                 measurement.index))
@@ -146,13 +160,13 @@ class StatisticalMeasurement:
             kwargs["size"] = self.sample_size
         else:
             kwargs["size"] = kwargs["sample_size"]
-        data\
-            = summary_statistic(
+        data=\
+            summary_statistic(
                 self.sample(
                     method,
                     *args, **kwargs))
-        levels\
-            = data.index.names
+        levels=\
+            data.index.names
         if len(levels) == 1:
             return Record(
                 phenomenon=method.phenomenon,

@@ -224,8 +224,10 @@ class AtlasRegion(
         """..."""
         if "label" not in kwargs:
             super().__init__(
+                value_type=str,
                 label=Cell.REGION,
                 *args, **kwargs)
         else:
             super().__init__(
+                value_type=str,
                 *args, **kwargs)

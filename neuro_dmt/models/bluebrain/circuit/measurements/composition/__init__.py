@@ -8,6 +8,7 @@ from dmt.vtk.utils.collections import Record
 from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
+
 class CompositionMeasurementMethod(
         measurement.Method):
     """Common attributes of composition measurement.Method"""
@@ -165,7 +166,7 @@ class ExtrinsicIntrinsicSynapseDensity(
             phenomenon=Phenomenon(
                 "synapse_density",
                 "Number of synapses in a unit volume"),
-            units="1000/mm^3",
+            units="1e9/mm^3",
             return_type=float,
             *args, **kwargs)
 
