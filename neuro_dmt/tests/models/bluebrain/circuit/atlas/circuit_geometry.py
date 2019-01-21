@@ -36,10 +36,8 @@ iso_adapter=\
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)
-
 iso_geometry=\
     iso_circuit_model.geometry
-
 random_pos=\
     iso_geometry.random_position(
         condition=Condition([

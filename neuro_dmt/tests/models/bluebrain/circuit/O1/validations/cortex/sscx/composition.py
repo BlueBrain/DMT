@@ -29,7 +29,7 @@ get_circuit_config_path=\
         rat=dict(
             O1=os.path.join(
                 project_path["rat"], "circuits",
-                "O1.v6a", "20171212", "CircuitConfig"),
+                "O1.v6a", "20181205", "CircuitConfig"),
             F1=os.path.join(
                 project_path["rat"], "circuits",
                 "O1.v6a", "20171212", "CircuitConfig"),
@@ -58,9 +58,9 @@ get_atlas_path=\
         rat=dict(
             O1=None,
             F1=os.path.join(
-                project_path["rat"], "circuits",
-                "O1.v6a", "20171212", ".atlas", 
-                "77831ACA-6198-4AA0-82EF-D0475A4E0647"),
+                project_path["rat"], "entities",
+                "dev", "atlas",
+                "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"),
             S1=os.path.join(
                 project_path["rat"], "circuits",
                 "S1.v6a", "20171206", ".atlas",

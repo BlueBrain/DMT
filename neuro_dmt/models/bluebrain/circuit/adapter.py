@@ -191,33 +191,36 @@ class BlueBrainModelAdapter(
             spatial_parameters={},
             *args, **kwargs):
         """..."""
-        return self.spatial_measurement(
-            method=composition.CellRatio(
-                circuit_model.bluepy_circuit),
-            circuit_model=circuit_model,
-            parameters=spatial_parameters,
-            *args, **kwargs)
+        return\
+            self.spatial_measurement(
+                method=composition.CellRatio(
+                    circuit_model.bluepy_circuit),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
+                *args, **kwargs)
 
     def get_inhibitory_synapse_density(self,
             circuit_model,
             spatial_parameters={},
             *args, **kwargs):
         """..."""
-        return self.spatial_measurement(
-            method=composition.InhibitorySynapseDensity(
-                circuit_model.bluepy_circuit),
-            circuit_model=circuit_model,
-            parameters=spatial_parameters,
-            *args, **kwargs)
+        return\
+            self.spatial_measurement(
+                method=composition.InhibitorySynapseDensity(
+                    circuit_model.bluepy_circuit),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
+                *args, **kwargs)
 
     def get_synapse_density(self,
             circuit_model,
             spatial_parameters={},
             *args, **kwargs):
         """..."""
-        return self.spatial_measurement(
-            method=composition.ExtrinsicIntrinsicSynapseDensity(
-                circuit_model.bluepy_circuit),
-            circuit_model=circuit_model,
-            parameters=spatial_parameters,
-            *args, **kwargs)
+        return\
+            self.spatial_measurement(
+                method=composition.ExtrinsicIntrinsicSynapseDensity(
+                    circuit_model.bluepy_circuit),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
+                *args, **kwargs)

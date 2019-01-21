@@ -229,7 +229,8 @@ class AtlasCircuitGeometry(
             self._region_mask[region]=\
                 self.atlas.get_region_mask(
                     region)
-        return self._region_mask[region]
+        return\
+            self._region_mask[region]
 
     def get_cortical_column(self,
             region):
@@ -244,7 +245,6 @@ class AtlasCircuitGeometry(
 
     def _random_position_by_depth(self,
             condition,
-            offset,
             *args, **kwargs):
         """Get a random position, at a given depth (measured as a fraction)
         in a brain (sub-)region.
@@ -253,19 +253,23 @@ class AtlasCircuitGeometry(
         condition :: Condition #that should have a 'region'
         ~                      #and a (single value of) 'depth'
         """
-        return self.voxel_brain_region\
-                   .indices_to_positions(
-                       np.array(
-                           self.get_cortical_column(
-                               region=condition.get_value(
-                                   Cell.REGION)
-                           ).get_random_voxel(
-                               condition.get_value(
-                                   CorticalDepth.label))))
-
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get random position by depth",
+            "given region {}, depth {}".format(
+                condition.get_value(Cell.REGION),
+                condition.get_value(CorticalDepth.label)))
+        return\
+            self.voxel_brain_region\
+                .indices_to_positions(
+                    np.array(self\
+                             .get_cortical_column(
+                                 region=condition.get_value(Cell.REGION))
+                             .get_random_voxel(
+                                 condition.get_value(CorticalDepth.label))))
+    
     def random_position(self,
             condition=Condition([]),
-            offset=50.*np.ones(3),
             *args, **kwargs):
         """Get a random position in region given by "brain_region" under given
         'condition'. The parameter 'condition' will subset a region inside
@@ -289,7 +293,7 @@ class AtlasCircuitGeometry(
         depth=\
             condition.get_value(
                 CorticalDepth.label)
-        if layers and depths:
+        if layers and depth:
             raise ValueError(
             """Both 'depth' and 'layer' set in condition to
             compute random position. Please provide only one of these.""")
@@ -297,7 +301,6 @@ class AtlasCircuitGeometry(
             return\
                 self._random_position_by_depth(
                     condition,
-                    offset=offset,
                     *args, **kwargs)
         atlas_ids=\
             self.circuit_specialization\

@@ -31,6 +31,12 @@ class CorticalColumn(
                 np.ndarray),
             __doc__="""Brain region acronym for which to create
             this cortical column.""")
+    depth_dataset=\
+        Field(
+            __name__="depth_dataset",
+            __type__=str,
+            __default__="[PH]y",
+            __doc__="Name of the dataset corresponding to (cortical) depths.")
 
     def __init__(self,
             *args, **kwargs):
@@ -83,7 +89,7 @@ class CorticalColumn(
         if self._voxel_cortical_depth is None:
             self._voxel_cortical_depth=\
                 self.atlas.load_data(
-                    "[PH]y").raw + self.voxel_size / 2.
+                    self.depth_dataset).raw + self.voxel_size / 2.
             self._voxel_cortical_depth[np.logical_not(self.region_mask)]=\
                 np.nan
         return self._voxel_cortical_depth
@@ -105,28 +111,6 @@ class CorticalColumn(
                 np.nanmin(
                     self.voxel_cortical_depth)
         return self._bottom
-
-    # def _set_voxel_ids(self):
-    #     """Set voxel ids..."""
-    #     self.logger.info(
-    #         self.logger.get_source_info(),
-    #         """Setting CorticalColumn {} voxel ids by depth""".format(self.region))
-    #     depths=\
-    #         np.unique(
-    #             self.voxel_cortical_depth)
-    #     self._depths=\
-    #         depths[np.logical_not(np.isnan(depths))]
-    #     self.logger.info(
-    #         self.logger.get_source_info(),
-    #         """Unique depths in the region: {}""".format(self._depths))
-    #     self._voxel_ids=\
-    #         {depth: list(zip(
-    #             *np.nonzero(
-    #                 self.voxel_cortical_depth == depth)))
-    #          for depth in depths}
-    #     self.logger.info(
-    #         self.logger.get_source_info(),
-    #         "Done")
 
     @property
     def depths(self):
@@ -158,19 +142,7 @@ class CorticalColumn(
                 list(zip(
                     *np.nonzero(
                         self.voxel_cortical_depth == depth)))
-        vids=\
-            self._voxel_ids[depth]
-        self.logger.info(
-            self.logger.get_source_info(),
-            """found {} voxels""".format(len(vids)))
-        return vids
-
-    # def get_voxel_ids(self,
-    #         depth):
-    #     """A dict mapping depth to voxel ids at that depth."""
-    #     if not self._voxel_ids:
-    #         self._set_voxel_ids()
-    #     return self._voxel_ids[depth]
+        return self._voxel_ids[depth]
 
     def get_random_voxel(self,
             depth_fraction):
@@ -203,7 +175,7 @@ class CorticalColumn(
             self.get_voxel_ids(
                 self.depths[index])
         if len(candidates) == 0:
-            return none
+            return None
 
         return candidates[
             np.random.randint(len(candidates))]

@@ -313,8 +313,8 @@ class BlueBrainModelHelper:
     def cell_mtypes(self,
             target=None):
         """mtypes of cells."""
-        properties\
-            = [Cell.MTYPE]
+        properties=\
+            [Cell.MTYPE]
         return(
             self._cells.get(
                 properties=properties)
@@ -326,32 +326,34 @@ class BlueBrainModelHelper:
     def cell_gids_for_mtype(self,
             mtype,
             target="mc2_Column"):
-        mtypes\
-            = self.cell_mtypes(
+        mtypes=\
+            self.cell_mtypes(
                 target=target)
-        return np.array(
-            mtypes.index[
-                mtypes[Cell.MTYPE] == mtype]\
-            .values)
+        return\
+            np.array(
+                mtypes\
+                .index[
+                    mtypes[Cell.MTYPE] == mtype]\
+                .values)
 
     def cells_in_region(self,
             region_of_interest,
             with_properties=[]):
         """..."""
-        corner0, corner1\
-            = region_of_interest.bbox
-        query\
-            = {Cell.X: (corner0[0], corner1[0]),
-               Cell.Y: (corner0[1], corner1[1]),
-               Cell.Z: (corner0[2], corner1[2])}
-        cells\
-            = self._cells.get(
+        corner0, corner1=\
+            region_of_interest.bbox
+        query={
+            Cell.X: (corner0[0], corner1[0]),
+            Cell.Y: (corner0[1], corner1[1]),
+            Cell.Z: (corner0[2], corner1[2])}
+        cells=\
+            self._cells.get(
                 query,
                 [Cell.X, Cell.Y, Cell.Z] + with_properties)
-        return cells[
-            region_of_interest.contains(
-                self.__xyz(
-                    cells))]
+        return\
+            cells[
+                region_of_interest.contains(
+                    self.__xyz(cells))]
 
     @staticmethod
     def __xyz(df):
@@ -368,12 +370,14 @@ class BlueBrainModelHelper:
             for_given_cell_type=CellType.Any,
             *args, **kwargs):
         """..."""
-        query_properties\
-            = list(for_given_cell_type.property_names)
+        query_properties=\
+            list(
+                for_given_cell_type.property_names)
         if by_cell_property and by_cell_property not in query_properties:
-            query_properties.append(by_cell_property)
-        cells\
-            = for_given_cell_type.filter(
+            query_properties.append(
+                by_cell_property)
+        cells=\
+            for_given_cell_type.filter(
                 self.cells_in_region(
                     region_of_interest,
                     with_properties=query_properties))
@@ -384,25 +388,26 @@ class BlueBrainModelHelper:
             "get cell counts by cell property {}".format(by_cell_property),
             "columns retrieved {}".format(cells.columns))
         if cells.shape[0] == 0:
-            property_values\
-                = for_given_cell_type.get_property(
+            property_values=\
+                for_given_cell_type.get_property(
                     by_cell_property)
             return pd.Series({
                 "{}".format(property_value): 0.0
                 for property_value in property_values})
-        return cells[
-            by_cell_property]\
-            .value_counts()
+        return\
+            cells[
+                by_cell_property
+            ].value_counts()
         
 
     def __get_cell_counts_by_property(self,
             region_of_interest,
             _property):
         """..."""
-        properties\
-            = [] if not _property else [_property]
-        cells\
-            = self.cells_in_region(
+        properties=\
+            [] if not _property else [_property]
+        cells=\
+            self.cells_in_region(
                 region_of_interest,
                 with_properties=properties)
         if not _property:
@@ -410,76 +415,79 @@ class BlueBrainModelHelper:
                 roi.contains(
                     self.__xyz(
                         cells)))
-        property_values\
-            = cells[
-                _property]\
-                .unique()
-        data_series\
-            = pd.Series({
+        property_values=\
+            cells[_property].unique()
+        data_series=\
+            pd.Series({
                 prop: np.count_nonzero(
                     region_of_interest.contains(
                         self.__xyz(
                             cells[
                                 cells[_property] == prop])))
                 for prop in property_values})
-        data_series["TOT"]\
-            = data_series.sum()
+        data_series["TOT"]=\
+            data_series.sum()
         return data_series
 
     def get_cell_counts_by_cell_type(self,
             region_of_interest):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
-        return self.get_cell_counts(
-            region_of_interest,
-            by_property=Cell.SYNAPSE_CLASS)
+        return\
+            self.get_cell_counts(
+                region_of_interest,
+                by_property=Cell.SYNAPSE_CLASS)
 
     def get_cell_counts_by_synapse_class(self,
             region_of_interest):
         """alias..."""
-        return self.get_cell_counts(
-            region_of_interest,
-            by_property=Cell.SYNAPSE_CLASS)
+        return\
+            self.get_cell_counts(
+                region_of_interest,
+                by_property=Cell.SYNAPSE_CLASS)
 
     def get_cell_counts_by_morph_class(self,
             region_of_interest):
         """Counts of inhibitory and excitatory cells, in a region of interest,
         as a pandas Series."""
-        return self.get_cell_counts(
-            region_of_interest,
-            by_property=Cell.MORPH_CLASS)
+        return\
+            self.get_cell_counts(
+                region_of_interest,
+                by_property=Cell.MORPH_CLASS)
 
     def get_cell_counts_by_mtype(self,
             region_of_interest):
         """..."""
-        return self.get_cell_counts(
-            region_of_interest,
-            by_property=Cell.MTYPE)
+        return\
+            self.get_cell_counts(
+                region_of_interest,
+                by_property=Cell.MTYPE)
 
     def get_cell_counts_by_morphology(self,
             region_of_interest):
-        mtype_counts\
-            = self.get_cell_counts_by_mtype(
+        mtype_counts=\
+            self.get_cell_counts_by_mtype(
                 region_of_interest)
-        dataframe\
-            = pd.DataFrame({
+        dataframe=\
+            pd.DataFrame({
                 'mtype': mtcounts.index,
                 'count': mtcounts.values})
-        dataframe['morphology']\
-            = [mtype.split('_')[1]
-               for mtype in dataframe.mtype]
-        return dataframe\
+        dataframe['morphology']=\
+            [mtype.split('_')[1]
+             for mtype in dataframe.mtype]
+        return\
+            dataframe\
             .groupby(
                 'morphology')\
             .sum()
 
     def cell_densities_by_mtype(self,
             region_of_interest):
-        mtype_counts\
-            = self.get_cell_counts_by_mtype(
+        mtype_counts=\
+            self.get_cell_counts_by_mtype(
                 region_of_interest)
-        cell_density\
-            = 1.e9 * mtype_counts.values / region_of_interest.volume 
+        cell_density=\
+            1.e9 * mtype_counts.values / region_of_interest.volume 
         return pd.DataFrame({
             'mtype': mtype_counts.index,
             'cell_density': cell_density})
@@ -503,63 +511,63 @@ class BlueBrainModelHelper:
         We use this function to get synapse density of inhibitory synapses,
         which mostly  belong to cells in the same layer as the synapse.
         """
-        corner0, corner1\
-            = region_of_interest.bbox
-        synapses\
-            = self._circuit.connectome\
-                           .spatial_index\
-                           .q_window_oncenter(
-                               corner0,
-                               corner1)
-        synapses_excitatory\
-            = synapses[
+        corner0, corner1=\
+            region_of_interest.bbox
+        synapses=\
+            self._circuit\
+                .connectome\
+                .spatial_index\
+                .q_window_oncenter(
+                    corner0,
+                    corner1)
+        synapses_excitatory=\
+            synapses[
                 synapses.excitatory == True]
-        synapses_inhibitory\
-            = synapses[
+        synapses_inhibitory=\
+            synapses[
                 synapses.excitatory == False]
-        midpoints_excitatory\
-            = 0.5 * (
-                synapses_excitatory[[
-                    Synapse.PRE_X_CENTER,
-                    Synapse.PRE_Y_CENTER,
-                    Synapse.PRE_Z_CENTER]]\
-                .values
+        midpoints_excitatory=\
+            0.5 * (
+                synapses_excitatory[
+                    [Synapse.PRE_X_CENTER,
+                     Synapse.PRE_Y_CENTER,
+                     Synapse.PRE_Z_CENTER]
+                ].values
                 +
-                synapses_excitatory[[
-                    Synapse.POST_X_CENTER,
-                    Synapse.POST_Y_CENTER,
-                    Synapse.POST_Z_CENTER]]\
-                .values)
-        midpoints_inhibitory\
-            = 0.5 * (
-                synapses_inhibitory[[
-                    Synapse.PRE_X_CENTER,
+                synapses_excitatory[
+                    [Synapse.POST_X_CENTER,
+                     Synapse.POST_Y_CENTER,
+                     Synapse.POST_Z_CENTER]
+                ].values)
+        midpoints_inhibitory=\
+            0.5 * (
+                synapses_inhibitory[
+                    [Synapse.PRE_X_CENTER,
                     Synapse.PRE_Y_CENTER,
-                    Synapse.PRE_Z_CENTER]]\
-                .values
+                    Synapse.PRE_Z_CENTER]\
+                ].values
                 +
-                synapses_inhibitory[[
-                    Synapse.POST_X_CENTER,
-                    Synapse.POST_Y_CENTER,
-                    Synapse.POST_Z_CENTER]]\
-                .values)
-        synapse_count_excitatory\
-            = np.count_nonzero(
+                synapses_inhibitory[
+                    [Synapse.POST_X_CENTER,
+                     Synapse.POST_Y_CENTER,
+                     Synapse.POST_Z_CENTER]\
+                ].values)
+        synapse_count_excitatory=\
+            np.count_nonzero(
                 region_of_interest.contains(
                     midpoints_excitatory))
-        synapse_count_inhibitory\
-            = np.count_nonzero(
+        synapse_count_inhibitory=\
+            np.count_nonzero(
                 region_of_interest.contains(
                     midpoints_inhibitory))
-        synapse_count = pd.Series({
-            "EXC": synapse_count_excitatory,
-            "INH": synapse_count_inhibitory,
-            "TOT": synapse_count_inhibitory + synapse_count_excitatory
-        })
-        return(
-            1.e9 * scale_factor *
-            synapse_count / region_of_interest.volume)
-            
+        synapse_count=\
+            pd.Series({
+                "EXC": synapse_count_excitatory,
+                "INH": synapse_count_inhibitory,
+                "TOT": synapse_count_inhibitory + synapse_count_excitatory})
+        return\
+            1.e9 * scale_factor *\
+            synapse_count / region_of_interest.volume
 
     def marker_stains(self,
             region_of_interest,
@@ -628,24 +636,31 @@ class BlueBrainModelHelper:
                 nm.BASAL_DENDRITE,
                 nm.APICAL_DENDRITE],
             spine_density_per_unit_len_mean=1.05,
-            spine_density_per_unit_len_std=0.35):
-        """..."""
-        segment_lengths\
-            = self.segment_lengths(region_of_interest)
-        total_spine_length\
-            = np.sum([
+            spine_density_per_unit_len_std=0.35,
+            scale_factor=1.e0):
+        """Density of number of spines per 1 mm^3 cube volume.
+        Parameters
+        -----------------------
+        scale_factor :: Double #can be used to set a unit of counting.
+        ~                      #eg: 1000 spines, or 10^9 spines..."""
+        segment_lengths=\
+            self.segment_lengths(region_of_interest)
+        total_spine_length=\
+            np.sum([
                 segment_lengths[neurite_type]
                 for neurite_type in queried_spine_type])
-        
+        if not total_spine_length:
+            return 0.
+
         def random_spine_density():
             """return a random spine density"""
             return np.random.normal(
                 spine_density_per_unit_len_mean,
                 spine_density_per_unit_len_std)
-
-        return(
-            random_spine_density()*total_spine_length/region_of_interest.volume
-            if total_spine_length else None)
+        
+        return\
+            scale_factor * random_spine_density() *\
+            total_spine_length/(1.e-9 * region_of_interest.volume)
 
     def soma_volume_fraction(self,
             region_of_interest):

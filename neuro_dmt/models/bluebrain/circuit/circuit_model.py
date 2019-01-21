@@ -61,15 +61,21 @@ class BlueBrainCircuitModel(
     def geometry(self):
         """..."""
         if not self.__geometry:
-            self.__geometry = self.geometry_type(self.circuit)
-        return self.__geometry
+            self.__geometry=\
+                self.geometry_type(
+                    self.circuit)
+        return\
+            self.__geometry
 
     @property
     def bluepy_circuit(self):
         """..."""
         if not self._impl:
-            self._impl = Circuit(self.circuit_config)
-        return self._impl
+            self._impl=\
+                Circuit(
+                    self.circuit_config)
+        return\
+            self._impl
 
 
 class O1CircuitModel(

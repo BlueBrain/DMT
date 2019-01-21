@@ -136,28 +136,28 @@ class O1CircuitGeometry(
         """...
         Handle empty ("Record()") condition by returning
         a point at the center of the columns"""
-        target\
-            = kwargs.get(
+        target=\
+            kwargs.get(
                 "target",
                 self.circuit_specialization.target)
-
-        query\
-            = self.circuit_specialization.cell_query(
-                condition,
-                *args, **kwargs)
+        query=\
+            self.circuit_specialization\
+                .cell_query(
+                    condition,
+                    *args, **kwargs)
         self.logger.debug(
             self.logger.get_source_info(),
             "query: {}".format(query),
             "condition: {}".format(condition.value))
-        bounds\
-            = self.helper\
-                  .geometric_bounds(
-                      query,
-                      target=target)
+        bounds=\
+            self.helper\
+                .geometric_bounds(
+                    query,
+                    target=target)
         if bounds is None:
             return None
-        box\
-            = Cuboid(
+        box=\
+            Cuboid(
                 bounds.bbox[0] + offset,
                 bounds.bbox[1] - offset)
         return random_location(box)
