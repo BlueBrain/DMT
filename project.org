@@ -1073,3 +1073,17 @@
     be able to translate the /code/ of ~cortical_layer~ into behavior.
      
      
+
+
+* TODOS
+** TODO make armando's validations use bluebrain adapters
+*** TODO use comparison/validation for hugo's port of armando-validations
+** TODO improve overall circuit measurements
+*** TODO get total number of cells and volume according to atlas
+    will not be statistical
+*** TODO method for total cell count of different types, synapse types
+    allow region_of_interest = None in bbphelpers.get_cell_counts
+    in order to extract cell counts for entire circuit
+** TODO write template for AnalysisReport
+*** TODO write template for ModelComparisonReport
+

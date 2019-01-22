@@ -96,12 +96,14 @@ class ValidationTestCase:
     def reference_datasets(self):
         """Return validation data as a dict."""
         data = self._reference_data
-        if not data:
+        if data is None:
             return None
         if isinstance(data, dict):
             return data
         if isinstance(data, list):
             return {d.label: d for d in data}
+        if isinstance(data, pd.DataFrame):
+            return {'dataset': data}
         return {data.label: data}
 
     @property

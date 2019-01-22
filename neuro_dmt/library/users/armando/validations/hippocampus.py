@@ -5,13 +5,25 @@ import yaml
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from dmt.model.interface import Interface
-
-import seaborn
-from dmt.vtk.plotting import golden_figure
 from matplotlib.colors import SymLogNorm
 from bluepy.v2.enums import Synapse
 from PyPDF2 import PdfFileMerger, PdfFileReader
+import seaborn
+
+from dmt.vtk.plotting import golden_figure
+from dmt.model.interface import Interface
+from dmt.analysis.comparison import Comparison
+from dmt.analysis.comparison.validation.test_case import ValidationTestCase
+from dmt.analysis import OfSinglePhenomenon
+from dmt.data import ReferenceData
+from dmt.vtk.utils.collections import Record
+from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.judgment.verdict import Verdict
+
+from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
+from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
+    import ValidationReport
+
 
 
 class MtypeCellDensityValidation:
@@ -108,37 +120,72 @@ class MtypeCellDensityValidation:
         return filename
 
 
-class ByLayerCellDensityValidation:
+class ByLayerCellDensityValidation(
+        ValidationTestCase,
+        Comparison,
+        OfSinglePhenomenon,
+        BrainCircuitAnalysis):
 
     def __init__(self, adapter, *args, **kwargs):
         """..."""
-        self.adapter = adapter
         self.reference_data\
-            = pd.DataFrame(
-                data={"mean": [35.2, 1.9, 272.4, 264, 11.3],
-                      "sem": [0.5, 0.3, 14.3, 14.6, 0.9]},
-                index=pd.Index(['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']))
+            = ReferenceData(
+                data=pd.DataFrame(
+                    data={"mean": [35.2, 1.9, 272.4, 264, 11.3],
+                          "sem": [0.5, 0.3, 14.3, 14.6, 0.9]},
+                    index=pd.Index(['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO'])),
+                description="Armando's hippocampus CA1 cell densities",
+                uri="somwhere")
+        super().__init__(
+            phenomenon=Phenomenon("cell_density", description="cell density"),
+            animal="rat",
+            output_dir_path=os.path.join(
+                os.path.expanduser("~"),
+                "reports"),
+                adapter=adapter,
+            *args, **kwargs)
 
     class AdapterInterface(Interface):
 
         def get_layer_composition(self, circuit):
             pass
 
-    def __call__(self, circuit):
-        composition = self.adapter.get_layer_composition(circuit)
-        filename = self.plot(composition)
-        sys.stdout.write("figure saved at {}\n".format(filename))
+    def get_label(self):
+        return "cell density"
+
+    def get_measurement(self, circuit):
+        return Record(data=self.adapter.get_layer_composition(circuit),
+                      label="in-silico cell density",
+                      method="armando's by-layer and cell type densities")
+
+    def get_report(self,
+                   model_measurement):
+        """Create a report."""
+        figure = self.plot(model_measurement)
+        pval = self.pvalue(model_measurement)
+        verdict = self.get_verdict(pval)
+        return ValidationReport(
+            phenomenon=self.phenomenon,
+            author=self.author,
+            caption=self.get_caption(model_measurement),
+            reference_datasets=dict(armando=Record(uri="somwhere", label="armando", citation="???", what="what?")),
+            is_pass=verdict == Verdict.PASS,
+            is_fail=verdict == Verdict.FAIL,
+            pvalue=pval,
+            figure=figure)
+
 
     def plot(self, composition):
+        composition = composition.data
         fig, ax = plt.subplots()
 
-        ind = np.arange(self.reference_data.shape[0])
+        ind = np.arange(self.reference_data.data.shape[0])
         width = 0.35
-        labels = self.reference_data.index
+        labels = self.reference_data.data.index
         s1 = ax.bar(ind, composition.loc[labels]['mean'],
                     width, yerr=composition.loc[labels]['std'].values)
-        s2 = ax.bar(ind + width, self.reference_data["mean"], width,
-                    yerr=self.reference_data["sem"])
+        s2 = ax.bar(ind + width, self.reference_data.data["mean"], width,
+                    yerr=self.reference_data.data["sem"])
 
         ax.set_ylabel('density (10^3/mm^3)')
         ax.set_title('Neuron density')
@@ -147,18 +194,7 @@ class ByLayerCellDensityValidation:
 
         ax.legend((s1[0], s2[0]), ('Model', 'Experiment'))
 
-        report_path\
-            = os.path.join(
-                os.path.dirname(__file__),
-                "reports")
-        if not os.path.exists(report_path):
-            os.makedirs(report_path)
-        filename\
-            = os.path.join(
-                report_path,
-                "layer_density_validation_{}.png".format(time.time()))
-        plt.savefig(filename)
-        return filename
+        return fig
 
 
 class BoutonDensityValidation:
