@@ -43,6 +43,7 @@ class AnalysisReport(
             __name__ = "caption",
             __type__ = str,
             __doc__ = "Caption to go with the plot.")
+
     def __init__(self, *args, **kwargs):
         """initialize!"""
         if "template" in kwargs:
@@ -78,26 +79,24 @@ class AnalysisReport(
         Try to create a (html) string using its class' template and save that
         tothe disc. If this fails, call 'Report._save_default'.
         """
-        output_dir_path\
-            = self.get_output_location(
+        output_dir_path=\
+            self.get_output_location(
                 output_dir_path=output_dir_path)
-        file_name_base\
-            = get_file_name_base(
+        file_name_base= \
+            get_file_name_base(
                 report_file_name)
-        report_file_name\
-            = file_name_base + ".html"
-        plot_file_name\
-            = file_name_base + ".png"
-
-
-        report_file_path\
-            = os.path.join(
+        report_file_name= \
+            file_name_base + ".html"
+        plot_file_name= \
+            file_name_base + ".png"
+        report_file_path=\
+            os.path.join(
                 output_dir_path,
                 report_file_name)
-        plot_file_path\
-            = os.path.join(
+        plot_file_path=\
+            os.path.join(
                 output_dir_path,
-                plot_file_name)
+            plot_file_name)
 
         self.logger.debug(
             self.logger.get_source_info(),

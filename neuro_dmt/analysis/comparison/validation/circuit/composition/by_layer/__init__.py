@@ -16,8 +16,7 @@ from dmt.vtk.measurement.parameter.group\
     import ParameterGroup
 from neuro_dmt.analysis.comparison.circuit.composition.by_layer\
     import ByLayerCompositionComparison
-from neuro_dmt.analysis.comparison.validation.\
-    circuit.composition.by_layer.report\
+from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
     import ValidationReport
 from neuro_dmt.analysis.circuit.composition\
     import SpatialCompositionAnalysis

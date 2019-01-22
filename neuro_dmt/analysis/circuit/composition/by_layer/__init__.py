@@ -1,13 +1,18 @@
 """Analysis of a circuit's composition, by layer."""
 
-from abc import abstractmethod
-from dmt.analysis import OfSinglePhenomenon
-from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.utils.collections import Record
-from dmt.vtk.utils.descriptor import  Field, document_fields
-from dmt.vtk.measurement.parameter.group import ParameterGroup
-from neuro_dmt.analysis.circuit.composition import SpatialCompositionAnalysis
-from neuro_dmt.analysis.circuit.composition.by_layer.report\
+from abc\
+    import abstractmethod
+from dmt.analysis\
+    import OfSinglePhenomenon
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.descriptor\
+    import  Field, document_fields
+from dmt.vtk.measurement.parameter.group\
+    import ParameterGroup
+from neuro_dmt.analysis.circuit.composition\
+    import SpatialCompositionAnalysis
+from neuro_dmt.analysis.report.single_phenomenon\
     import AnalysisReport
 
 
@@ -67,26 +72,33 @@ class ByLayerCompositionAnalysis(
                 data=model_measurement.data,
                 label=model_measurement.label)
 
-        return self.plotter_type(data_record)\
-                  .with_customization(
-                      self.add_plot_customization(
-                          model_measurement,
-                          **kwargs))\
-                  .plot()
+        return\
+            self.plotter_type(data_record)\
+                .with_customization(
+                    self.add_plot_customization(
+                        model_measurement,
+                        **kwargs))\
+                .plot()
 
-    def get_report(self, model_measurement):
+    def get_report(self,
+            model_measurement):
         """Create a report."""
-        figure = self.plot(model_measurement)
-        return ValidationReport(
-            phenomenon=self.phenomenon,
-            author=self.author,
-            caption=self.get_caption(model_measurement),
-            figure=figure)
+        figure=\
+            self.plot(
+                model_measurement)
+        return\
+            AnalysisReport(
+                phenomenon=self.phenomenon,
+                author=self.author,
+                figure=figure,
+                caption=self.get_caption(model_measurement))
 
     @property
     def spatial_parameter_group(self):
         """..."""
-        return ParameterGroup(tuple(self.spatial_parameters))
+        return\
+            ParameterGroup(
+                tuple(self.spatial_parameters))
 
 
 from neuro_dmt.analysis.circuit.composition.by_layer.cell_density\

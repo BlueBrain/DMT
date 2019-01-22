@@ -1,17 +1,26 @@
 """Report by layer composition comparison."""
 import os
-from Cheetah.Template import Template
-from dmt.vtk.reporting import Report
-from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.phenomenon import Phenomenon
-from dmt.vtk.author import Author
-from dmt.vtk.utils import utils
-from dmt.vtk.utils.logging import Logger, with_logging
-from neuro_dmt.analysis.circuit.composition.by_layer.report\
+from Cheetah.Template\
+    import Template
+from dmt.vtk.reporting\
+    import Report
+from dmt.vtk.utils.descriptor\
+    import Field
+from dmt.vtk.phenomenon\
+    import Phenomenon
+from dmt.vtk.author\
+    import Author
+from dmt.vtk.utils\
+    import utils
+from dmt.vtk.utils.logging\
+    import Logger, with_logging
+from neuro_dmt.analysis.report.single_phenomenon\
     import AnalysisReport
 
-@with_logging(Logger.level.STUDY)
-class ComparisonReport(Report):
+@with_logging(
+    Logger.level.STUDY)
+class ComparisonReport(
+        Report):
     """Report composition comparisons between models,
     or validations against experimental data.
 

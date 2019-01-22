@@ -7,6 +7,8 @@ from dmt.vtk.utils.descriptor\
     import Field, document_fields
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
+from neuro_dmt.analysis.comparison.report.single_phenomenon\
+    import ComparisonReport
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis,\
     CellDensityAnalysis,\
@@ -70,6 +72,20 @@ class ByLayerCompositionComparison(
                 **kwargs
             ).plot()
 
+    def get_report(self,
+            model_measurement):
+        """..."""
+        figure=\
+            self.plot(
+                model_measurement)
+        pval=\
+            self.pvalue(
+                model_measurement)
+        verdict=\
+            self.get_verdict(
+                pval)
+        return\
+            ComparisonReport
 
 class CellDensityComparison(
         ByLayerCompositionComparison,
