@@ -7,6 +7,8 @@ from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.plotting.bars\
     import BarPlot
+from dmt.vtk.plotting.lines\
+    import LinePlot
 from dmt.vtk.measurement\
     import summary_statistic
 
@@ -28,8 +30,22 @@ plot_figure=\
     test_bar_plot.plot()
 test_bar_plot.save(
     plot_figure,
-    file_name="test_plot.png")
+    file_name="test_bar_plot.png")
 
+test_line_plot=\
+    LinePlot(
+        Record(
+            data=dataframe,
+            label="test"),
+        title="Test Plot",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_analysis_line_plot"))
+line_plot_figure=\
+    test_line_plot.plot()
+test_line_plot.save(
+    line_plot_figure,
+    file_name="test_line_plot.png")
 samples=\
     pd.DataFrame({
         "test": np.random.randint(0, 100, 100)})
