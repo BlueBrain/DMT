@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import SymLogNorm
-from bluepy.v2.enums import Synapse
+from bluepy.v2.enums import Synapse, Cell
 from PyPDF2 import PdfFileMerger, PdfFileReader
 import seaborn
 
@@ -147,14 +147,57 @@ class ByLayerCellDensityValidation(
 
     class AdapterInterface(Interface):
 
-        def get_layer_composition(self, circuit):
+        def get_cell_density(self, circuit, region, layers, cell_type):
+            pass
+
+        def circuit_regions(self, circuit):
             pass
 
     def get_label(self):
         return "cell density"
 
     def get_measurement(self, circuit):
-        return Record(data=self.adapter.get_layer_composition(circuit),
+
+        def get_layer_composition(circuit):
+            """..."""
+            layer_labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
+            scale = 1.e6
+
+            def __get_cell_density_array(
+                    layers=[],
+                    cell_type={}):
+                """..."""
+                return np.array([
+                    self.adapter.get_cell_density(
+                        circuit,
+                        region,
+                        layers=layers,
+                        cell_type=cell_type)
+                    for region in self.adapter.circuit_regions(circuit)])
+
+            cell_densities\
+                = pd.DataFrame(
+                    data={"cell_density": np.concatenate([
+                        __get_cell_density_array(),
+                        __get_cell_density_array(
+                            layers=["SLM", "SR"]),
+                        __get_cell_density_array(
+                            layers=["SP"]),
+                        __get_cell_density_array(
+                            layers=["SP"],
+                            cell_type={Cell.MORPH_CLASS: "PYR"}),
+                        __get_cell_density_array(
+                            layers=["SO"])])},
+                    index=pd.MultiIndex.from_tuples(
+                        [(region, layer_label)
+                         for layer_label in layer_labels
+                         for region in self.adapter.circuit_regions(circuit)],
+                        names=["column", "region"]))
+
+            return cell_densities.groupby("region")\
+                                 .agg(["mean", "std"])["cell_density"]
+        composition = get_layer_composition(circuit)
+        return Record(data=composition,
                       label="in-silico cell density",
                       method="armando's by-layer and cell type densities")
 

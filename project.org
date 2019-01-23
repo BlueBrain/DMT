@@ -1086,4 +1086,6 @@
     in order to extract cell counts for entire circuit
 ** TODO write template for AnalysisReport
 *** TODO write template for ModelComparisonReport
-
+** TODO Simplify
+*** TODO use voxcell.RegionMap.find instead of hierarchy in CircuitSpecialization
+*** TODO remove CircuitSpecialization entirely?
