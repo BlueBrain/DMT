@@ -11,6 +11,7 @@ from neuro_dmt.measurement.parameter\
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.measurement.parameter import BrainCircuitMeasurementParameter
+
 class CellCompositionAnalysis(
         ByLayerCompositionAnalysis):
     """Analysis of a circuit's cell composition."""

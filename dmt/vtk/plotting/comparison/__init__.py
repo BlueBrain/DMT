@@ -6,7 +6,9 @@ from dmt.vtk.utils.exceptions import ValueNotSetError
 
 class ComparisonPlot(Plot):
     """Abstract base class for Specialized Plot for a comparison."""
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self,
+            data,
+            *args, **kwargs):
         """Will compare data 'data'.
 
         Parameters
@@ -14,27 +16,41 @@ class ComparisonPlot(Plot):
         data :: Either[ DataFrame[mean :: Double, std  :: Double],
         ~               DataFrame[mean :: Double] ]
         """
-        self._comparison_level = kwargs.get("level", None)
-        self._comparison_data = kwargs.get("comparison_data", None)
-        self._given_vars = kwargs.get("given", None)
-        self._compared_values = kwargs.get("compared_values", None)
-        super().__init__(data, *args, **kwargs)
+        self._comparison_level=\
+            kwargs.get(
+                "level", None)
+        self._comparison_data=\
+            kwargs.get(
+                "comparison_data", None)
+        self._given_vars=\
+            kwargs.get(
+                "given", None)
+        self._compared_values=\
+            kwargs.get(
+                "compared_values", None)
+        super().__init__(
+            data,
+            *args, **kwargs)
 
-    def against(self, datasets, given=()):
+    def against(self,
+            datasets,
+            given=()):
         """Compare data against..."""
         if self._comparison_level is None:
             raise Exception("{}'s comparison_level not specified."\
                             .format(self.__class__))
-        self._comparison_data=datasets
+        self._comparison_data= datasets
         self._given_vars = given
         return self
 
-    def comparing(self, level):
+    def comparing(self,
+            level):
         """..."""
         self._comparison_level = level
         return self
 
-    def for_given(self, *given):
+    def for_given(self,
+            *given):
         """..."""
         if self._comparison_data is None:
             raise Exception("{}'s comparison_data not specified.".\
@@ -44,18 +60,23 @@ class ComparisonPlot(Plot):
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s data's index.
                     Please choose from {}."""\
-                    .format(g.label, self, self._data.index.names))
-                
+                    .format(
+                        g.label, self,
+                        self._data.index.names))
             if g.label not in self._comparison_data.index.names:
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s
                      comparison_data's index. Please choose from {}."""\
-                    .format(g, self, self._comparison_data.index.names))
-                
+                    .format(
+                        g, self,
+                        self._comparison_data.index.names))
+        return\
+            self.against(
+                self._comparison_data,
+                given=given)
 
-        return self.against(self._comparison_data, given=given)
-
-    def level_values(self, level=None):
+    def level_values(self,
+            level=None):
         """..."""
         if not level:
             return None
@@ -66,22 +87,27 @@ class ComparisonPlot(Plot):
     def comparison_data(self):
         """..."""
         if self._comparison_data is None:
-            raise ValueError("{} has no comparison data!".format(self))
+            raise ValueError(
+                "{} has no comparison data!".format(self))
         return self._comparison_data
 
     @property
     def comparison_level(self):
         """..."""
         if self._comparison_level is None:
-            raise ValueNotSetError("_comparison_level", self)
+            raise ValueNotSetError(
+                "_comparison_level", self)
+        return self._comparison_level
     
     @property
     def compared_values(self):
         """..."""
         if self._compared_values:
             return self._compared_values
-        return [Record(name=name, label=name)
-                for name in self.level_values(self._comparison_level)]
+        return [
+            Record(name=name, label=name)
+            for name in self.level_values(
+                    self.comparison_level)]
 
     @property
     def given(self):

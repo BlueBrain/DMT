@@ -11,11 +11,15 @@ from dmt.vtk.utils.plotting import golden_figure, Plot
 class LinePlot(Plot):
     """Class to help plot lines."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """Initialize bar plot specific attributes."""
-        super(LinePlot, self).__init__(*args, **kwargs)
-        self.line_point_types = kwargs.get('line_point_types',
-                                           ['-o', '--o', '-s', '--s'])
+        self.line_point_types=\
+            kwargs.get(
+                'line_point_types',
+                ['-o', '--o', '-s', '--s'])
+        super().__init__(
+            *args, **kwargs)
 
     def plot(*plotting_datasets, save=True):
         """Make the line plot.

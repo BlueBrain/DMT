@@ -155,6 +155,10 @@ class AtlasCircuitGeometry(
         return self._hierarchy
 
     @property
+    def region_map(self):
+        """Region map of the atlas."""
+
+    @property
     def voxel_brain_region(self):
         """..."""
         if not self._voxel_brain_region:

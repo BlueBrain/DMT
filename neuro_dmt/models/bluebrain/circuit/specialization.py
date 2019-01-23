@@ -48,7 +48,6 @@ class CircuitSpecialization(
         super().__init__(
             *args, **kwargs)
 
-
     @property
     def region_label(self):
         """..."""

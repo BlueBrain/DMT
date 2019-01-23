@@ -210,14 +210,30 @@ def summary_statistic(measurement_sample,
     'measurement_columns'. Thus this method can accommodate more than one
     parameter columns in the measurement to be summarized, as well as it can
     summarize more than one measurement columns."""
-    aggregators = ["mean", "std"]
+    aggregators=\
+        ["mean", "std"]
     if not parameter_columns:
-        return measurement_sample.groupby(level=measurement_sample.index.names)\
-                                 .agg(aggregators)
+        return\
+            measurement_sample\
+            .groupby(
+                level=measurement_sample.index.names)\
+            .agg(
+                aggregators)
+    summary=\
+        measurement_sample\
+        .groupby(
+            parameter_columns)\
+        .agg(
+            aggregators)
+    measurement_columns=\
+        measurement_columns\
+        if measurement_columns\
+        else summary.columns.levels[0]
 
-    summary = measurement_sample.groupby(parameter_columns).agg(aggregators)
-    measurement_columns = measurement_columns if measurement_columns \
-                          else summary.columns.levels[0]
     if len(measurement_columns) == 1:
-        return summary[measurement_columns[0]]
-    return summary[measurement_columns]
+        return\
+            summary[
+                measurement_columns[0]]
+    return\
+        summary[
+            measurement_columns]

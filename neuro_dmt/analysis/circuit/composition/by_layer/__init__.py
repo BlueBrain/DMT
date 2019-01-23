@@ -40,7 +40,8 @@ class ByLayerCompositionAnalysis(
             "Please provide this method to make your plots.")
     
     def add_plot_customization(self,
-            model_measurement, **kwargs):
+            model_measurement,
+            *args, **kwargs):
         """..."""
         try:
             kwargs['output_dir_path']\
@@ -67,13 +68,11 @@ class ByLayerCompositionAnalysis(
         """Plot the data.
         This a default method --- a subclass may have special needs to plot.
         In that case this method can be overridden."""
-        data_record=\
-            Record(
-                data=model_measurement.data,
-                label=model_measurement.label)
-
         return\
-            self.plotter_type(data_record)\
+            self.plotter_type(
+                Record(
+                    data=model_measurement.data,
+                    label=model_measurement.label))\
                 .with_customization(
                     self.add_plot_customization(
                         model_measurement,

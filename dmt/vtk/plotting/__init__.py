@@ -33,33 +33,60 @@ class Plot(ABC):
     All common plotting code will be listed here, as well as
     the interface explosed by all concrete implementations of Plot."""
 
-    def __init__(self, data, *args, **kwargs):
+    def __init__(self,
+            data,
+            *args, **kwargs):
         """Initialize attributes that are common to all
         Plot concrete implementations.
         """
-        self._data_record = data
-        self._data = data.data
-        self._label = data.label
-        print("initialize plotter {} with kwargs {}".format(self, kwargs))
-        self.title = kwargs.get('title', self.__class__.__name__)
-        self.xlabel = kwargs.get('xlabel', 'X')
-        self.ylabel = kwargs.get('ylabel', 'Y')
-        self.output_dir_path = kwargs.get('output_dir_path',
-                                          os.path.join(os.getcwd(), "report"))
-        self.legend_loc = kwargs.get('legend_loc', 'upper left')
-        self.height = kwargs.get('height', 10)
-        self.width = kwargs.get('width', None)
-        self.colors = kwargs.get('colors', ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
-        self.file_name = kwargs.get('file_name', "report")
+        self._data_record= data
+        self._data= data.data
+        self._label= data.label
+        self.title=\
+            kwargs.get(
+                'title',
+                self.__class__.__name__)
+        self.xlabel=\
+            kwargs.get(
+                'xlabel', 'X')
+        self.ylabel=\
+            kwargs.get(
+                'ylabel', 'Y')
+        self.output_dir_path=\
+            os.path.join(
+                kwargs.get(
+                    "output_dir_path",
+                    os.getcwd()),
+                "report")
+        self.legend_loc=\
+            kwargs.get(
+                'legend_loc',
+                'upper left')
+        self.height=\
+            kwargs.get(
+                'height', 10)
+        self.width=\
+            kwargs.get(
+                'width', None)
+        self.colors=\
+            kwargs.get(
+                'colors',
+                ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
+        self.file_name=\
+            kwargs.get(
+                "file_name",
+                "report")
 
-    def with_customization(self, **kwargs):
+    def with_customization(self,
+            *args, **kwargs):
         """Update customization to the plot."""
         for key, value in kwargs.items():
             setattr(self, key, value)
         return self
 
     @abstractmethod
-    def plot(self, *args, **kwargs):
+    def plot(self,
+            *args, **kwargs):
         """Make the plot"""
         pass
 
@@ -68,22 +95,29 @@ class Plot(ABC):
         output_dir_path=None,
         file_name="report.png"):
         """..."""
-        output_dir_path\
-            = os.path.join(
-                output_dir_path if output_dir_path else os.getcwd(), "report")
-        file_name\
-            = file_name if file_name else self.file_name
+        output_dir_path=\
+            output_dir_path if output_dir_path else self.output_dir_path
+        file_name=\
+            file_name if file_name else self.file_name
         if not os.path.exists(output_dir_path):
-            os.makedirs(output_dir_path)
-        fname_base\
-            = get_file_name_base(
+            os.makedirs(
+                output_dir_path)
+        fname_base=\
+            get_file_name_base(
                 file_name if file_name is not None else "report_plot")
-        fname = "{}.png".format(fname_base)
-        output_file_path = os.path.join(output_dir_path, fname)
+        fname=\
+            "{}.png".format(fname_base)
+        output_file_path=\
+            os.path.join(
+                output_dir_path,
+                fname)
         self.logger.info(
             self.logger.get_source_info(),
             "Generating {}".format(output_file_path))
 
-        figure.savefig(output_file_path, dpi=100)
+        figure.savefig(
+            output_file_path,
+            dpi=100)
         
-        return (output_file_path, fname)
+        return\
+            (output_file_path, fname)

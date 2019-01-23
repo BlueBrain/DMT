@@ -17,7 +17,6 @@ class SomatosensoryCortexCompositionValidation:
         super().__init__(
             reference_data=reference_data,
             brain_region=brain_regions.sscx,
-            plotter_type=BarPlotComparison,
             adapter=BlueBrainModelAdapter(
                 sample_size=sample_size,
                 sampled_box_shape=sampled_box_shape,

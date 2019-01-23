@@ -5,6 +5,10 @@ from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.utils.descriptor\
     import Field, document_fields
+from dmt.vtk.plotting.comparison\
+    import ComparisonPlot
+from dmt.vtk.plotting.comparison.barplot\
+    import BarPlotComparison
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 from neuro_dmt.analysis.comparison.report.single_phenomenon\
@@ -21,6 +25,13 @@ class ByLayerCompositionComparison(
         Comparison):
     """..."""
 
+    plotter_type=\
+        Field.Optional(
+            __name__="plotter_type",
+            __typecheck__=Field.typecheck.subtype(ComparisonPlot),
+            __default__=BarPlotComparison,
+            __doc__="""A subclass of {} to be plot comparison
+            results.""".format(ComparisonPlot))
     def __init__(self,
             phenomenon,
             *args, **kwargs):
@@ -53,7 +64,8 @@ class ByLayerCompositionComparison(
             model_measurement.parameter
         kwargs["ylabel"]=\
             "{} / [{}]".format(
-                "mean {}".format(phenomenon.name.lower()),
+                "mean {}".format(
+                    phenomenon.name.lower()),
                 model_measurement.units)
         kwargs.update(
             self.plot_customization)
@@ -61,16 +73,16 @@ class ByLayerCompositionComparison(
             self.plotter_type(
                 Record(
                     data=model_measurement.data,
-                    label=model_measurement.label)
-            ).comparing(
-                    compared_quantity
-            ).against(
-                self.reference_data_for_plotting
-            ).for_given(
-                self.plotting_parameter
-            ).with_customization(
-                **kwargs
-            ).plot()
+                    label=model_measurement.label))\
+                .comparing(
+                    compared_quantity)\
+                .against(
+                    self.reference_data_for_plotting)\
+                .for_given(
+                    self.plotting_parameter)\
+                .with_customization(
+                    **kwargs)\
+                .plot()
 
     def get_report(self,
             model_measurement):

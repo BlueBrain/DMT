@@ -67,7 +67,7 @@ def get_iso_cortex_circuit_model(
     """Factory method that puts together default data
     to create a class...."""
     return\
-        IsoCortexAtlasBasedCircuitModel(
+        AtlasBasedCircuitModel(
             animal=animal,
             brain_region=brain_regions.cortex,
             geometry_type=IsoCortexAtlasBasedCircuitGeometry,
