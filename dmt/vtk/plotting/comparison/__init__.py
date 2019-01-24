@@ -1,5 +1,6 @@
 """Plotting for comparisons."""
 from abc import abstractmethod
+import pandas as pd
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.exceptions import ValueNotSetError
@@ -37,6 +38,12 @@ class ComparisonPlot(Plot):
             datasets,
             given=()):
         """Compare data against..."""
+        if not isinstance(datasets.index, pd.MultiIndex):
+            assert isinstance(datasets.index, pd.Index)
+            datasets.index=\
+                pd.MultiIndex.from_tuples(
+                    tuples=[("reference", i) for i in datasets.index],
+                    names=["dataset", datasets.index.name])
         self._comparison_data= datasets
         self._given_vars = given
         return self

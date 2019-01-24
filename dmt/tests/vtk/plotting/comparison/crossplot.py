@@ -31,7 +31,7 @@ reference_data=\
     pd.DataFrame(
         {"mean": np.linspace(0., 1., N),
          "std": 0.01 * np.ones(N)},
-        index=mindex)
+        index=index)
 alternative_columns=\
     pd.MultiIndex.from_tuples(
         tuples=[("alternative", "mean"), ("alternative", "std")],
@@ -40,9 +40,9 @@ alternative_data=\
     pd.DataFrame(
         np.array([
             np.linspace(0., 1., N) + np.random.uniform(0., 0.1, N),
-            1. * np.ones(N)
+            0.1 * np.ones(N)
         ]).transpose(),
-        index=mindex,
+        index=index,
         columns=alternative_columns)
 test_cross_plot=\
     CrossPlotComparison(
