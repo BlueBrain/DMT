@@ -33,9 +33,10 @@ class CrossPlotComparison(ComparisonPlot):
                     level=self.comparison_level)
             return [Record(data=data, label=cv.label)]
         except Exception as e:
-            self.logger.error("""Could not get comparison data with
-            name and level. Exception {}""".format(e))
-
+            self.logger.error(
+                self.logger.get_source_info(),
+                """Could not get comparison data with
+                name and level. Exception {}""".format(e))
 
     def plot(self, with_customization=None, save=True):
         """
@@ -52,48 +53,43 @@ class CrossPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         fig = golden_figure(height=self.height, width=self.width)
-        ydata = self._data
+        ydata = self.dataframe
         xdata = self.compared_datasets[0].data
+        xlabel = self.compared_datasets[0].label
         given = self.given
         given_values = self.level_values(given) if given else self._data.index
         def __get_row(data_frame, given_val):
             """..."""
-            self.logger.info(
-                self.logger.get_source_info(),
-                "get row {} of dataframe {}".format(given_val, data_frame)
-            )
             if given and isinstance(data_frame.index, pd.MultiIndex):
                 return data_frame.xs(given_val, level=given)
 
             return data_frame.loc[given_val]
 
-        self.logger.info(
-            self.logger.get_source_info(),
-            **["for given {}\n xdata: {} \n ydata: {}"\
-               .format(v, __get_row(xdata, v), __get_row(ydata, v))
-               for v in self.given_variable_values]
-        )
+        # self.logger.info(
+        #     self.logger.get_source_info(),
+        #     *["for given {}\n xdata: {} \n ydata: {}"\
+        #        .format(v, __get_row(xdata, v), __get_row(ydata, v))
+        #        for v in self.given_variable_values])
 
         ys = ydata["mean"].values
         yerr = ydata["std"].values
         ymax = np.max(ys + yerr)
         ymin = np.min(ys - yerr)
 
-        xs = xdata.data["mean"].values
-        xerr = xdata.data["std"].values
+        xs = xdata["mean"].values
+        xerr = xdata["std"].values
         xmax = np.max(xs + xerr)
         xmin = np.min(xs - xerr)
 
         plt.errorbar(xs, ys, fmt="o", xerr=xerr, yerr=yerr)
 
         min_val = min(xmin,  ymin)
-        max_val = np.max(xmax, ymax)
+        max_val = max(xmax, ymax)
         plt.plot([min_val, max_val], [min_val, max_val], "-")
 
         plt.title(self.title, fontsize=24)
-        plt.xlabel(self._label, fontsize=20)
-        #plt.xticks(xs)
-        plt.ylabel(xdata.label, fontsize=20)
+        plt.ylabel(self._label, fontsize=20)
+        plt.xlabel(xlabel, fontsize=20)
 
         fontP = FontProperties()
         fontP.set_size('small')

@@ -87,18 +87,10 @@ class BarPlotComparison(
                     yerr=df["std"].values,
                     label=label)
         index = 1
-
-        if self._label in self._data:
-            _plot_index(
-                index,
-                self._data[self._label],
-                self._label)
-        else:
-            _plot_index(
-                index,
-                self._data,
-                self._label)
-
+        _plot_index(
+            index,
+            self.dataframe,
+            self._label)
         for data_label, data_frame in self.compared_datasets:
             index += 1
             a_plot=\

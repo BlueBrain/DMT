@@ -3,6 +3,7 @@ from abc import abstractmethod
 from dmt.vtk.plotting import Plot
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.exceptions import ValueNotSetError
+from dmt.vtk.measurement.parameter import Parameter
 
 class ComparisonPlot(Plot):
     """Abstract base class for Specialized Plot for a comparison."""
@@ -58,19 +59,21 @@ class ComparisonPlot(Plot):
                 "{}'s comparison_level not specified."\
                 .format(self.__class__))
         for g in given:
-            if g.label not in self._data.index.names:
+            g_label=\
+                getattr(g, "label", g)
+            if g_label not in self._data.index.names:
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s data's index.
                     Please choose from {}."""\
                     .format(
-                        g.label, self,
+                        g_label, self,
                         self._data.index.names))
-            if g.label not in self._comparison_data.index.names:
+            if g_label not in self._comparison_data.index.names:
                 raise Exception(
                     """Label of the 'given' var '{}' is not in {}'s
                      comparison_data's index. Please choose from {}."""\
                     .format(
-                        g, self,
+                        g_label, self,
                         self._comparison_data.index.names))
         return\
             self.against(
@@ -116,15 +119,18 @@ class ComparisonPlot(Plot):
         """self._given_vars may be an iterable."""
         try:
             return self._given_vars[0]
-        except TypeError :
+        except IndexError :
             return self._given_vars
         return None
 
     @property
     def given_variable_values(self):
         """Values of the 'given' vars that will be plotted."""
-        g = self.given.label
-        return (
-            self._data.index if not g else
-            [self.given.repr(v) for v in self.level_values(g)])
+        if isinstance(self.given, Parameter):
+            g = self.given.label
+            return (
+                self._data.index if not g else
+                [self.given.repr(v) for v in self.level_values(g)])
+        return[
+            str(v) for v in self.level_values(self.given)]
                

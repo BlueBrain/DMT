@@ -28,9 +28,7 @@ class BarPlot(Plot):
             "{}".format(self._data))
 
         dataframe=\
-            self._data[self._label]\
-            if self._label in self._data\
-               else self._data
+            self.dataframe
         figure=\
             golden_figure(
                 height=self.height,

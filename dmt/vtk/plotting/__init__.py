@@ -84,6 +84,14 @@ class Plot(ABC):
             setattr(self, key, value)
         return self
 
+    @property
+    def dataframe(self):
+        """..."""
+        return\
+            self._data[self._label]\
+            if self._label in self._data\
+               else self._data
+
     @abstractmethod
     def plot(self,
             *args, **kwargs):
