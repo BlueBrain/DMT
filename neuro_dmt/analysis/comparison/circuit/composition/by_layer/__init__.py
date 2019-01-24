@@ -25,9 +25,9 @@ class ByLayerCompositionComparison(
         Comparison):
     """..."""
 
-    plotter_type=\
+    Plotter=\
         Field.Optional(
-            __name__="plotter_type",
+            __name__="Plotter",
             __typecheck__=Field.typecheck.subtype(ComparisonPlot),
             __default__=BarPlotComparison,
             __doc__="""A subclass of {} to be plot comparison
@@ -70,14 +70,14 @@ class ByLayerCompositionComparison(
         kwargs.update(
             self.plot_customization)
         return\
-            self.plotter_type(
+            self.Plotter(
                 Record(
                     data=model_measurement.data,
                     label=model_measurement.label))\
-                .comparing(
-                    compared_quantity)\
                 .against(
                     self.reference_data_for_plotting)\
+                .comparing(
+                    compared_quantity)\
                 .for_given(
                     self.plotting_parameter)\
                 .with_customization(
@@ -98,6 +98,7 @@ class ByLayerCompositionComparison(
                 pval)
         return\
             ComparisonReport
+
 
 class CellDensityComparison(
         ByLayerCompositionComparison,

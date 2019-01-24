@@ -28,7 +28,7 @@ class BlueBrainCellDensityValidation(
         brain_regions.hippocampus
     spatial_parameters=\
         {HippocampalLayer()}
-    plotter_type=\
+    Plotter=\
         BarPlotComparison
     ModelAdapter=\
         BlueBrainModelAdapter

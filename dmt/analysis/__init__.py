@@ -59,8 +59,8 @@ class Analysis(WithFCA, AIBase):
         __default__=Author.anonymous,
         __doc__="""Author of this analysis.""")
     
-    plotter_type = Field.Optional(
-        __name__="plotter_type",
+    Plotter = Field.Optional(
+        __name__="Plotter",
         __typecheck__=Field.typecheck.subtype(Plot),
         __doc__="""A subclass of {} to be used plot the results of
         this validation.""".format(Plot))

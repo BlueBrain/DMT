@@ -69,7 +69,7 @@ class ByLayerCompositionAnalysis(
         This a default method --- a subclass may have special needs to plot.
         In that case this method can be overridden."""
         return\
-            self.plotter_type(
+            self.Plotter(
                 Record(
                     data=model_measurement.data,
                     label=model_measurement.label))\

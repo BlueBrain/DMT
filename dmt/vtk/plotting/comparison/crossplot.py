@@ -16,16 +16,21 @@ class CrossPlotComparison(ComparisonPlot):
     other datasets.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """..."""
-        super(CrossPlotComparison, self).__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
 
     @property
     def compared_datasets(self):
         """..."""
         cv = self.compared_values[0]
         try:
-            data = self.comparison_data.xs(cv.name, level=self.comparison_level)
+            data=\
+                self.comparison_data.xs(
+                    cv.name,
+                    level=self.comparison_level)
             return [Record(data=data, label=cv.label)]
         except Exception as e:
             self.logger.error("""Could not get comparison data with
