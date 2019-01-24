@@ -57,7 +57,8 @@ class CrossPlotComparison(ComparisonPlot):
         xdata = self.compared_datasets[0].data
         xlabel = self.compared_datasets[0].label
         given = self.given
-        given_values = self.level_values(given) if given else self._data.index
+        #given_values = self.level_values(given) if given else self._data.index
+        given_values = self.level_values(given)
         def __get_row(data_frame, given_val):
             """..."""
             if given and isinstance(data_frame.index, pd.MultiIndex):

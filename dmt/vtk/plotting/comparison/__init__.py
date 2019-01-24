@@ -26,7 +26,8 @@ class ComparisonPlot(Plot):
                 "comparison_data", None)
         self._given_vars=\
             kwargs.get(
-                "given", None)
+                "given",
+                data.data.index.name)
         self._compared_values=\
             kwargs.get(
                 "compared_values", None)
@@ -45,7 +46,8 @@ class ComparisonPlot(Plot):
                     tuples=[("reference", i) for i in datasets.index],
                     names=["dataset", datasets.index.name])
         self._comparison_data= datasets
-        self._given_vars = given
+        if given: 
+            self._given_vars = given
         return self
 
     def comparing(self,
@@ -107,8 +109,10 @@ class ComparisonPlot(Plot):
     def comparison_level(self):
         """..."""
         if self._comparison_level is None:
-            raise ValueNotSetError(
-                "_comparison_level", self)
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "{}'s _comparison_level not set".format(self))
+            return "dataset"
         return self._comparison_level
     
     @property
@@ -124,11 +128,9 @@ class ComparisonPlot(Plot):
     @property
     def given(self):
         """self._given_vars may be an iterable."""
-        try:
-            return self._given_vars[0]
-        except IndexError :
-            return self._given_vars
-        return None
+        if isinstance(self._given_vars, (list, tuple)):
+            return self_given_vars[0]
+        return self._given_vars
 
     @property
     def given_variable_values(self):

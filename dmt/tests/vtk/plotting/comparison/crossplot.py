@@ -45,25 +45,33 @@ alternative_data=\
         index=index,
         columns=alternative_columns)
 test_cross_plot=\
-    CrossPlotComparison(
-        Record(
-            data=alternative_data,
-            label="alternative")
-    ).against(
-        reference_data
-    ).comparing(
-        "dataset"
-    ).for_given(
-        "type"
-    ).with_customization(
-        title="Test Cross Plot",
-        output_dir_path=os.path.join(
-            os.getcwd(),
-            "test_comparison_plots"))
+     CrossPlotComparison(
+         Record(
+             data=alternative_data,
+             label="alternative")
+     ).against(
+         reference_data
+     ).with_customization(
+         title="Test Cross Plot",
+         output_dir_path=os.path.join(
+             os.getcwd(),
+             "test_comparison_plots"))
+ 
+# test_cross_plot=\
+#     CrossPlotComparison(
+#         Record(
+#             data=alternative_data,
+#             label="alternative")
+#     ).against(
+#         reference_data
+#     ).comparing(
+#         "dataset"
+#     ).for_given(
+#         "type"
 plot_figure=\
-    test_cross_plot.plot(
-        save=False)
+     test_cross_plot.plot(
+         save=False)
 test_cross_plot.save(
-    plot_figure,
-    file_name="test_plot.png")
+     plot_figure,
+     file_name="test_plot.png")
 
