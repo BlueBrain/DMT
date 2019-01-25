@@ -134,38 +134,19 @@ class HippocampusAdapter:
 
         return data, mtypes
 
-    def get_syns_per_conn(self, circuit, nsample=10):
+    def get_syns_per_conn(self, circuit, pre_query, post_query,
+                          nsample=10):
 
-        mtypes = circuit.cells.mtypes
-        model_mean = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
-        model_std = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        # TODO make this use CircuitSpec to translate query
+        pre = circuit.cells.ids(group=pre_query,
+                                limit=nsample)
 
-        for pre_mtype in mtypes:
-            for post_mtype in mtypes:
-                pre = circuit.cells.ids(group={Cell.MTYPE: pre_mtype,
-                                               '$target': 'mc2_Column'},
-                                        limit=nsample)
-
-                post = circuit.cells.ids(group={Cell.MTYPE:  post_mtype})
-                data = circuit.stats.sample_pathway_synapse_count(nsample,
-                                                                  pre=pre,
-                                                                  post=post)
-                # only pre cells from cylinder
-
-                model_mean[post_mtype][pre_mtype] = data.mean()
-                model_std[post_mtype][pre_mtype] = data.std()
-
-        ###############################################
-        # TODO does this code actually do anything? ##
-        pre = circuit.cells.ids(group={Cell.MTYPE: 'SP_PC',
-                                       '$target': 'mc2_Column'})
-        post = circuit.cells.ids(group='SP_PC')
-        data = circuit.stats.sample_pathway_synapse_count(1000,
+        post = circuit.cells.ids(group=post_query)
+        data = circuit.stats.sample_pathway_synapse_count(nsample,
                                                           pre=pre,
                                                           post=post)
-        # only pre cells from cylinder# only pre cells from cylinder
-        #############################################
-        return model_mean, model_std
+
+        return data
 
     def get_number_connections(self, circuit):
 

@@ -34,7 +34,7 @@ circs = {
     # 'CircuitConfig_struct',
 
     "O1_20181102":
-    "/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20181102/CircuitConfig"
+    "/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20181102/CircuitConfig",
 
     # 'O1_20180821':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180821/CircuitConfig',
@@ -43,8 +43,8 @@ circs = {
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/'
     # 'O1/20180821/CircuitConfig_struct',
 
-    # 'CA1_20180506':
-    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
+    'CA1_20180506':
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
 
     # 'CA1_20180506_struct':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/'
@@ -76,3 +76,7 @@ def run_valid(validation, circuit):
 
 # test()
 run_valid(validations['ByLayerCellDensityValidation'], circs['O1_20181102'])
+run_valid(validations['SynsPerConnValidation'], circs['O1_20181102'])
+
+run_valid(validations['ByLayerCellDensityValidation'], circs['CA1_20180506'])
+run_valid(validations['SynsPerConnValidation'], circs['CA1_20180506'])
