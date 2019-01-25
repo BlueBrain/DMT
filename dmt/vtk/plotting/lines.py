@@ -33,9 +33,7 @@ class LinePlot(Plot):
             "{}".format(self._data))
 
         dataframe=\
-            self._data[self._label]\
-            if self._label in self._data\
-               else self._data
+            self.dataframe
         figure=\
             golden_figure(
                 height=self.height,
@@ -55,9 +53,9 @@ class LinePlot(Plot):
         plt.xlabel(
             self.xlabel,
             fontsize=20)
-        plt.xticks(
-            np.arange(dataframe.shape[0]),
-            dataframe.index)
+        # plt.xticks(
+        #     np.arange(dataframe.shape[0]),
+        #     dataframe.index)
         plt.ylabel(
             self.ylabel,
             fontsize=20)

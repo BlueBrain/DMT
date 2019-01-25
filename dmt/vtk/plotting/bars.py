@@ -21,12 +21,6 @@ class BarPlot(Plot):
             with_customization=None):
         """Make the bar plot.
         """
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "{} instance will plot data: ".format(
-                self.__class__.__name__),
-            "{}".format(self._data))
-
         dataframe=\
             self.dataframe
         figure=\

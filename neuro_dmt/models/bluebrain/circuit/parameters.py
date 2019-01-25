@@ -18,7 +18,7 @@ from neuro_dmt.measurement.parameter\
     import BrainCircuitSpatialParameter, Column
 
 
-class Mtype(ConditionedRandomVariate):
+class RandomMtype(ConditionedRandomVariate):
     """Mtype groups cell gids."""
     label = "mtype"
     value_type = str
@@ -88,19 +88,19 @@ class Mtype(ConditionedRandomVariate):
                 continue
 
 
-class PreMtype(Mtype):
+class RandomPreMtype(RandomMtype):
     """PreMtype is the same as Mtype except some labels..."""
     label = "pre_mtype"
     grouped_variable = Record(__type__=int, name="pre_gid")
 
 
-class PostMtype(Mtype):
+class RandomPostMtype(RandomMtype):
     """PostMtype is the same as Mtype except some labels..."""
     label = "post_mtype"
     grouped_variable = Record(__type__=int, name="post_gid")
 
 
-class Pathway(ConditionedRandomVariate):
+class RandomPathway(ConditionedRandomVariate):
     """Pathway groups mtype-->mtype connections."""
 
     label = "pathway"

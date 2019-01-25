@@ -7,6 +7,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
+import pandas as pd
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 from dmt.vtk.utils.utils import get_file_name_base
 from dmt.vtk.utils.logging import Logger, with_logging
@@ -42,14 +43,24 @@ class Plot(ABC):
         self._data_record= data
         self._data= data.data
         self._label= data.label
+
+        self._yvar=\
+            kwargs.get(
+                "yvar", None)
+        self._xvar=\
+            kwargs.get(
+                "xvar", None)
+        self._given=\
+            kwargs.get(
+                "given", {})
         self.title=\
             kwargs.get(
                 'title',
                 self.__class__.__name__)
-        self.xlabel=\
+        self._xlabel=\
             kwargs.get(
                 'xlabel', 'X')
-        self.ylabel=\
+        self._ylabel=\
             kwargs.get(
                 'ylabel', 'Y')
         self.output_dir_path=\
@@ -81,16 +92,81 @@ class Plot(ABC):
             *args, **kwargs):
         """Update customization to the plot."""
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "set plot customization {}: {}"\
+                .format(key, value))
+            if hasattr(self, key):
+                try:
+                    setattr(self, key, value)
+                except AttributeError as aerr:
+                    self.logger.alert(
+                        self.logger.get_source_info(),
+                        "Caught AttributeError: {}".format(aerr),
+                        "while trying to set attribute {}".format(key),
+                        "will try to set _{} instead ".format(key))
+                    setattr(self, "_{}".format(key), value)
         return self
+
+    @property
+    def xlabel(self):
+        """..."""
+        return self._xvar if self._xvar else self._xlabel
+
+    @property
+    def ylabel(self):
+        """..."""
+        return self._yvar if self._yvar else self._ylabel
 
     @property
     def dataframe(self):
         """..."""
-        return\
+        data_frame=\
             self._data[self._label]\
             if self._label in self._data\
                else self._data
+        if not isinstance(data_frame.index, pd.MultiIndex):
+            return data_frame
+        for level, value in self._given.items():
+            data_frame=\
+                data_frame.xs(
+                    value,
+                    level=level)
+        if isinstance(data_frame.index, pd.MultiIndex):
+            raise ValueError(
+                """In {} Insufficient conditions to reduce the MultiIndexed
+                data to a singly indexed dataframe for plotting."""\
+                .format(self))
+        return data_frame
+
+    def plotting(self,
+            quantity):
+        """Name of the quantity whose mean is plotted."""
+        self._yvar = quantity
+        return self
+
+    def with_xvar(self,
+            variable):
+        """The x-variable to plot against."""
+        self._xvar= variable
+        return self
+
+    def versus(self,
+            variable):
+        """set the xvar"""
+        return self.with_xvar(variable)
+            
+    def given(self,
+            **kwargs):
+        """The data frame provided as data to Plot (subclass)
+        may be a multi-indexed data-frame. For example a cell density
+        data-frame that provides mean and std of cell density by cortical
+        layer in several regions. This data-frame will be indexed by tuples
+        providing values of depth and region.
+        The x variable for plotting is set by the method 'versus', but
+        you will need to set the remaining index fields using 'given'."""
+        self._given = {k: v for k,v in kwargs.items()}
+        return self
 
     @abstractmethod
     def plot(self,
@@ -104,15 +180,18 @@ class Plot(ABC):
         file_name="report.png"):
         """..."""
         output_dir_path=\
-            output_dir_path if output_dir_path else self.output_dir_path
+            output_dir_path if output_dir_path\
+            else self.output_dir_path
         file_name=\
-            file_name if file_name else self.file_name
+            file_name if file_name\
+            else self.file_name
         if not os.path.exists(output_dir_path):
             os.makedirs(
                 output_dir_path)
         fname_base=\
             get_file_name_base(
-                file_name if file_name is not None else "report_plot")
+                file_name if file_name is not None\
+                else "report_plot")
         fname=\
             "{}.png".format(fname_base)
         output_file_path=\
@@ -129,3 +208,8 @@ class Plot(ABC):
         
         return\
             (output_file_path, fname)
+
+from dmt.vtk.plotting.bars\
+    import BarPlot
+from dmt.vtk.plotting.lines\
+    import LinePlot

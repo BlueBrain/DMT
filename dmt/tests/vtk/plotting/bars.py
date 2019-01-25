@@ -16,7 +16,9 @@ dataframe=\
     pd.DataFrame(
         dict(
             mean=[0.1, 0.2, 0.3, 0.4],
-            std=[0.01, 0.01, 0.02, 0.01]))
+            std=[0.01, 0.01, 0.02, 0.01]),
+        index=pd.Index(
+            ["L{}".format(i) for i in range(4)]))
 test_bar_plot=\
     BarPlot(
         Record(
@@ -67,3 +69,35 @@ summary_bar_plot=\
 summary_bar_plot.save(
     summary_bar_plot.plot(),
     file_name="test_summary_statistics_plot.png")
+
+multi_dataframe=\
+    pd.DataFrame(
+    {"mean": np.random.uniform(0, 1, 99),
+     "std":  np.random.uniform(0, 0.1, 99)},
+     index = pd.MultiIndex.from_tuples(
+         tuples=[(depth, subregion, region)
+                 for region in ["SSp"]
+                 for subregion in ["SSp-ll", "SSp-fl", "SSp-m"]
+                 for depth in np.linspace(0, 1, 33)],
+         names=("depth", "subregion", "region")))
+
+line_plotter=\
+    LinePlot(
+        Record(
+            data=multi_dataframe,
+            label="random_numbers")
+    ).plotting(
+        "density"
+    ).versus(
+        "depth"
+    ).given(
+        region="SSp",
+        subregion="SSp-ll"
+    ).with_customization(
+        title="Test plot MultiIndexed DataFrame",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_multi_dataframe_plot"))
+line_plotter.save(
+    line_plotter.plot(),
+    file_name="test_multi_dataframe.png")

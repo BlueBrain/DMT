@@ -129,7 +129,7 @@ class ComparisonPlot(Plot):
     def given(self):
         """self._given_vars may be an iterable."""
         if isinstance(self._given_vars, (list, tuple)):
-            return self_given_vars[0]
+            return self._given_vars[0]
         return self._given_vars
 
     @property

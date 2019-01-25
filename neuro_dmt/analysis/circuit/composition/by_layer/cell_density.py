@@ -62,7 +62,6 @@ class CellDensityAnalysis(
             """
             pass
 
-
     def get_measurement(self,
             circuit_model,
             *args, **kwargs):

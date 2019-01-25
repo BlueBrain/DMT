@@ -1,12 +1,12 @@
 import os
-from bluepy.v2.circuit\
-    import Circuit
 from dmt.vtk.measurement.condition\
     import Condition
+from dmt.vtk.plotting\
+    import BarPlot, LinePlot
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.measurement.parameter\
-    import AtlasRegion, CorticalLayer
+    import AtlasRegion, CorticalLayer, CorticalDepth
 from neuro_dmt.models.bluebrain.circuit.adapter\
     import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
@@ -43,21 +43,44 @@ random_pos=\
         condition=Condition([
             ("region", "SSp-ll"),
             ("depth", 0.1)]))
+# iso_cortex_layer_cell_density=\
+#     iso_adapter.get_cell_density(
+#         iso_circuit_model,
+#         spatial_parameters={
+#             AtlasRegion(values=["SSp-ll"]),
+#             CorticalLayer()})
+iso_cortex_depth_cell_density=\
+    iso_adapter.get_cell_density(
+        iso_circuit_model,
+        spatial_parameters={
+            AtlasRegion(values=["SSp-ll"]),
+            CorticalDepth()})
+iso_cortex_bar_plotter=\
+    BarPlot(
+        iso_cortex_depth_cell_density,
+        title="Iso Cortex SSp-ll Cell Density",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_iso_cortex_analysis"))
+iso_cortex_line_plotter=\
+    LinePlot(
+        iso_cortex_depth_cell_density
+    ).plotting(
+        "cell_density"
+    ).versus(
+        "depth"
+    ).given(
+        region="SSp-ll"
+    ).with_customization(
+        title="Iso Cortex SSp-ll Cell Density",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_iso_cortex_analysis"))
+iso_cortex_cell_density_plot=\
+    iso_cortex_line_plotter.plot()
+iso_cortex_line_plotter.save(
+    iso_cortex_cell_density_plot)
+
 ssp_ll_column=\
     iso_geometry.get_cortical_column(
         "SSp-ll")
-sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj64/circuits",
-        "O1.v6a/20171212/",
-        "CircuitConfig")
-sscx_circuit_model=\
-    get_sscx_fake_atlas_circuit_model(
-        sscx_circuit_config,
-        "rat")
-sscx_adapter=\
-    BlueBrainModelAdapter(
-        brain_region=brain_regions.sscx,
-        spatial_random_variate=RandomRegionOfInterest,
-        model_label="in-silico",
-        sample_size=20)
