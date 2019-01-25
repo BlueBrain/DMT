@@ -85,13 +85,13 @@ class Method(
 @with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
     """Make statistical measurements."""
-    random_variate\
-        = Field(
+    random_variate=\
+        Field(
             __name__ = "random_variate",
             __type__ = RandomVariate,
             __doc__  = """A random variate can be sampled.""")
-    sample_size\
-        = Field(
+    sample_size=\
+        Field(
             __name__="sample_size",
             __type__=int,
             __doc__="""Number of samples to be drawn
@@ -111,28 +111,42 @@ class StatisticalMeasurement:
             size=20,
             *args, **kwargs):
         """..."""
-        params\
-            = self.random_variate\
-                  .sample(
-                      size=size,
-                      *args, **kwargs)
+        params=\
+            self.random_variate\
+                .sample(
+                    size=size,
+                    *args, **kwargs)
         self.logger.debug(
+            self.logger.get_source_info(),
             "StatisticalMeasurement.sample(...) params index: {}"\
             .format(params.index))
-        data\
-            = [method(**row[1])
-               for row in params.iterrows()]
+
+        def _make_measurement(row):
+            """make a single measurement."""
+            if kwargs.get("debug", False):
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "make {}-th measurement".format(
+                        _make_measurement.counter))
+                _make_measurement.counter += 1
+            return method(**row[1])
+        _make_measurement.counter = 0
+
+        data=[
+            _make_measurement(row)
+            for row in params.iterrows()]
         if issubclass(method.return_type, float):
-            measurement\
-                = pd.DataFrame(
+            measurement=\
+                pd.DataFrame(
                     {method.label: data},
                     index=params.index)
         else:
-            measurement\
-                = pd.DataFrame(
+            measurement=\
+                pd.DataFrame(
                     data,
                     index=params.index)
         self.logger.debug(
+            self.logger.get_source_info(),
             "StatisticalMeasurement.sample(...) measurement.index: {}"\
             .format(
                 measurement.index))
@@ -146,13 +160,13 @@ class StatisticalMeasurement:
             kwargs["size"] = self.sample_size
         else:
             kwargs["size"] = kwargs["sample_size"]
-        data\
-            = summary_statistic(
+        data=\
+            summary_statistic(
                 self.sample(
                     method,
                     *args, **kwargs))
-        levels\
-            = data.index.names
+        levels=\
+            data.index.names
         if len(levels) == 1:
             return Record(
                 phenomenon=method.phenomenon,
@@ -169,6 +183,15 @@ class StatisticalMeasurement:
             units=method.units,
             parameter_groups=levels)
 
+    def get(self,
+            method,
+            *args, **kwargs):
+        """Make and get a measurement."""
+        return\
+            self.__call__(
+                method,
+                *args, **kwargs)
+    
 
 def method_description(measurement_method):
     """Description of the measurement's method.
@@ -187,14 +210,30 @@ def summary_statistic(measurement_sample,
     'measurement_columns'. Thus this method can accommodate more than one
     parameter columns in the measurement to be summarized, as well as it can
     summarize more than one measurement columns."""
-    aggregators = ["mean", "std"]
+    aggregators=\
+        ["mean", "std"]
     if not parameter_columns:
-        return measurement_sample.groupby(level=measurement_sample.index.names)\
-                                 .agg(aggregators)
+        return\
+            measurement_sample\
+            .groupby(
+                level=measurement_sample.index.names)\
+            .agg(
+                aggregators)
+    summary=\
+        measurement_sample\
+        .groupby(
+            parameter_columns)\
+        .agg(
+            aggregators)
+    measurement_columns=\
+        measurement_columns\
+        if measurement_columns\
+        else summary.columns.levels[0]
 
-    summary = measurement_sample.groupby(parameter_columns).agg(aggregators)
-    measurement_columns = measurement_columns if measurement_columns \
-                          else summary.columns.levels[0]
     if len(measurement_columns) == 1:
-        return summary[measurement_columns[0]]
-    return summary[measurement_columns]
+        return\
+            summary[
+                measurement_columns[0]]
+    return\
+        summary[
+            measurement_columns]

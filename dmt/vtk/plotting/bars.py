@@ -9,73 +9,51 @@ from dmt.vtk.plotting import golden_figure, Plot
 
 
 class BarPlot(Plot):
-    """Class to help plot bars."""
+    """Class to  plot bars."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """Initialize bar plot specific attributes."""
-        super(BarPlot, self).__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
 
-
-    def plot(self, *plotting_datasets, save=True):
+    def plot(self,
+            with_customization=None):
         """Make the bar plot.
-
-        Arguments
-        -----------------------------------------------------------------------
-        You may pass Records as the argument sequence (ArgSeq). Each of these
-        arguments must be a Record containing a dataframe as 'data', and a
-        string as 'label'. The label will be used to produce a legend.
-        plotting_datasets :: ArgSeq(Record(data :: DataFrame["mean", "std"],
-        ~                                  label :: String))
-        -----------------------------------------------------------------------
-
-        We assume that each data frame has the same order to its index. For
-        example, if plotting cell density by layer, each data-frame must then
-        have it's mean and stdev ordered either increasing, or decreasing, or
-        even a random order (as long as each data-frame is ordered the same
-        way).
-
-        Other information relevant for the plot must be initialized at class
-        creation.
         """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "{} instance will plot data: ".format(
+                self.__class__.__name__),
+            "{}".format(self._data))
 
-        fig = golden_figure(height=self.height, width=self.width)
-        nbar = len(plotting_datasets)
-        width = 1.0 / (1.0 + nbar)
-
-        #assume all data-frame indexes have the same order
-        xs = list(plotting_datasets[0].data.index)
-        x = np.arange(len(xs))
-        x0 = x - (nbar / 2) * width
-        
-        def _plot_index(i, df, label):
-            return plt.bar(x0 + index * width,
-                           df["mean"].values,
-                           width,
-                           color=self.colors[(index-1) % len(self.colors)],
-                           yerr=df["std"].values,
-                           label=label)
-
-        _plot_index(0, self._data, self._label)
-        index = 1
-        for pe in plotting_datasets:
-            df = pe.data.fillna(0.0)
-            a_plot = _plot_index(index, df, pe.label)
-            index += 1
-
-        plt.title(self.title, fontsize=24)
-        plt.xlabel(self.xlabel, fontsize=20)
-        plt.xticks(x - width / 2., xs)
-        plt.ylabel(self.ylabel, fontsize=20)
-
-        fontP = FontProperties()
-        fontP.set_size('small')
-        plt.legend(prop=fontP, loc=self.legend_loc)
-
-        if save:
-            return self.save(fig)
-
-        return fig
-
-
-
-
+        dataframe=\
+            self.dataframe
+        figure=\
+            golden_figure(
+                height=self.height,
+                width=self.width)
+        a_plot=\
+            plt.bar(
+                np.arange(dataframe.shape[0]),
+                dataframe["mean"].values,
+                color=self.colors[0],
+                yerr=dataframe["std"].values)
+        plt.title(
+            self.title,
+            fontsize=24)
+        plt.xlabel(
+            self.xlabel,
+            fontsize=20)
+        plt.xticks(
+            np.arange(dataframe.shape[0]),
+            dataframe.index)
+        plt.ylabel(
+            self.ylabel,
+            fontsize=20)
+        fontP=\
+            FontProperties()
+        plt.legend(
+            prop=fontP,
+            loc=self.legend_loc)
+        return figure

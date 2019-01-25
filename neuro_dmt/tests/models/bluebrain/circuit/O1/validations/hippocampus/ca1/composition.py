@@ -3,10 +3,14 @@ import sys
 import os
 import numpy as np
 import pandas as pd
-from dmt.vtk.plotting.comparison.barplot import BarPlotComparison
-from dmt.vtk.plotting.comparison.crossplot import CrossPlotComparison
-from dmt.vtk.utils.logging import Logger, with_logging
-from neuro_dmt.utils import brain_regions
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.logging\
+    import Logger, with_logging
+from dmt.vtk.plotting.bars\
+    import BarPlot
+from neuro_dmt.utils\
+    import brain_regions
 from neuro_dmt.measurement.parameter\
     import HippocampalLayerSLM_SR_Fused, HippocampalLayer, Column
 from neuro_dmt.models.bluebrain.circuit.adapter\
@@ -28,7 +32,7 @@ circuit_config_path\
     = os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj42/circuits",
         "O1",
-        "20180904",
+        "20180907",
         "CircuitConfig")
 
 
@@ -103,3 +107,14 @@ cell_composition_analysis=\
 cell_composition_measurement=\
     cell_composition_analysis.get_measurement(
         circuit_model)
+bar_plot=\
+    BarPlot(
+        cell_composition_measurement,
+        title="Hippocampus CA1 Cell Density Analysis",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_hippocampus_analysis"))
+bar_plot_figure=\
+    bar_plot.plot()
+bar_plot.save(
+    bar_plot_figure)

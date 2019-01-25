@@ -23,8 +23,8 @@ class RatSomatosensoryCortexCellDensityValidation(
             circuit_geometry,
             *args, **kwargs):
         """..."""
-        reference_data\
-            = RatSomatosensoryCortexCompositionData.get(
+        reference_data=\
+            RatSomatosensoryCortexCompositionData.get(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,

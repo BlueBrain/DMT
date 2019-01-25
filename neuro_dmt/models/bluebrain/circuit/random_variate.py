@@ -87,11 +87,12 @@ class RandomPosition(
             self.logger.get_source_info(),
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
-        return self.circuit_geometry\
-                   .random_position(
-                       condition,
-                       *args, **kwargs)
-
+        return\
+            self.circuit_geometry\
+                .random_position(
+                    condition,
+                    *args, **kwargs)
+    
     def row(self, condition, value):
         """..."""
         return pd.DataFrame(
@@ -163,7 +164,7 @@ class RandomRegionOfInterest(
         return Cuboid(
             position - half_box,
             position + half_box)
-
+    
     def row(self,
             condition,
             value):

@@ -36,10 +36,10 @@ class CoarseGrainedAtlasCircuitGeometry(
         """find the majority item in an array of ids.
         Post-process to return an int by default
         (method will be used to process region ids in an atlas.)"""
-        unique_counts\
-            = np.unique(
-                    item_array,
-                    return_counts=True)
+        unique_counts=\
+            np.unique(
+                item_array,
+                return_counts=True)
         return\
             post_process(
                 unique_counts[0][
@@ -57,14 +57,17 @@ class CoarseGrainedAtlasCircuitGeometry(
         if not factor:
             factor\
                 = self.coarse_graining_factor
-        new_dimension\
-            = factor * voxel_data.voxel_dimensions
-        data_dimension\
-            = voxel_data.raw.shape[voxel_data.ndim:]
-        new_shape\
-            = tuple(1 + np.array(voxel_data.shape) // factor) + data_dimension
-        raw_coarse_grained\
-            = np.zeros(shape=new_shape)
+        new_dimension=\
+            factor * voxel_data.voxel_dimensions
+        data_dimension=\
+            voxel_data.raw.shape[voxel_data.ndim:]
+        new_shape=\
+            tuple(
+                1 + np.array(voxel_data.shape) // factor
+            ) + data_dimension
+        raw_coarse_grained=\
+            np.zeros(
+                shape=new_shape)
         for i in range(new_shape[0]):
             for j in range(new_shape[1]):
                 for k in range(new_shape[2]):
@@ -85,10 +88,10 @@ class CoarseGrainedAtlasCircuitGeometry(
     def brain_region_voxels(self):
         """..."""
         if not self._brain_region_voxels:
-            self._brain_region_voxels\
-                = self.__coarse_grained(
+            self._brain_region_voxels=\
+                self.__coarse_grained(
                     voxel_data=self.atlas.load_data(
                         "brain_regions"),
                     aggregate=self.__majority_item)
-
-        return self._brain_region_voxels
+        return\
+            self._brain_region_voxels

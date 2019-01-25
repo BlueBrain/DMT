@@ -30,9 +30,9 @@ class Comparison:
             __type__=ReferenceData,
             __doc__="""If not provided, assume comparison does not use
             reference data""")
-    plotter_type=\
+    Plotter=\
         Field.Optional(
-            __name__="plotter_type",
+            __name__="Plotter",
             __typecheck__=Field.typecheck.subtype(ComparisonPlot),
             __doc__="""A subclass of {} to be plot comparison
             results.""".format(ComparisonPlot))

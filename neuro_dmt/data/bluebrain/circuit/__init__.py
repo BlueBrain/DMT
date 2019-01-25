@@ -58,14 +58,18 @@ class BlueBrainCircuitCompositionData(
             data_location,
             *args, **kwargs):
         """Data is loaded from self.data_location"""
-        self.data_location\
-            = data_location
+        self.data_location=\
+            data_location
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "initialize {}".format(self.__class__),
+            "with phenomenon {}".format(phenomenon),
+            "with data_location {}".format(data_location))
         super().__init__(
-            data=self._load_from_location(
-                self.get_data_location(
-                    phenomenon)),
+            *args,
+            data=self.get_data_location(phenomenon),
             phenomenon=phenomenon,
-            *args, **kwargs)
+            **kwargs)
         BlueBrainCircuitCompositionData.insert(self)
 
     @property
@@ -84,8 +88,8 @@ class BlueBrainCircuitCompositionData(
     def _load_from_object(self, data, *args, **kwargs):
         """..."""
         try:
-            return data.datasets
-            #return (data.datasets, data.primary)
+            return {"datasets": data.datasets,
+                    "primary": data.primary}
         except AttributeError as e:
             raise TypeError(
                 "Expected a 'Record' with fields 'datasets' and 'primary'\n"
@@ -107,7 +111,10 @@ class BlueBrainCircuitCompositionData(
         self.logger.alert(
             self.logger.get_source_info(),
             "Load data from location {}.".format(data_location))
-        return self.get_reference_datasets(data_location)
+
+        return self._load_from_object(
+            self.get_reference_datasets(data_location))
+
 
     @property
     def description(self):

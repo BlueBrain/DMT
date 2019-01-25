@@ -1,11 +1,20 @@
 """Compare model phenomena by layer."""
 from dmt.analysis.comparison\
     import Comparison
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.descriptor\
+    import Field, document_fields
+from dmt.vtk.plotting.comparison\
+    import ComparisonPlot
+from dmt.vtk.plotting.comparison.barplot\
+    import BarPlotComparison
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
-from dmt.vtk.utils.descriptor import Field, document_fields
-from neuro_dmt.analysis.circuit.composition.by_layer import\
-    ByLayerCompositionAnalysis,\
+from neuro_dmt.analysis.comparison.report.single_phenomenon\
+    import ComparisonReport
+from neuro_dmt.analysis.circuit.composition.by_layer\
+    import ByLayerCompositionAnalysis,\
     CellDensityAnalysis,\
     CellRatioAnalysis,\
     InhibitorySynapseDensityAnalysis,\
@@ -16,6 +25,13 @@ class ByLayerCompositionComparison(
         Comparison):
     """..."""
 
+    Plotter=\
+        Field.Optional(
+            __name__="Plotter",
+            __typecheck__=Field.typecheck.subtype(ComparisonPlot),
+            __default__=BarPlotComparison,
+            __doc__="""A subclass of {} to be plot comparison
+            results.""".format(ComparisonPlot))
     def __init__(self,
             phenomenon,
             *args, **kwargs):
@@ -43,29 +59,45 @@ class ByLayerCompositionComparison(
                 "Could not find attribute 'output_dir_path'.",
                 "\tAttributeError: {}".format(e))
         kwargs["title"]=\
-            name
+            model_measurement.label
         kwargs["xlabel"]=\
             model_measurement.parameter
         kwargs["ylabel"]=\
             "{} / [{}]".format(
-                "mean {}".format(phenomenon.name.lower()),
+                "mean {}".format(
+                    phenomenon.name.lower()),
                 model_measurement.units)
         kwargs.update(
             self.plot_customization)
         return\
-            self.plotter_type(
+            self.Plotter(
                 Record(
                     data=model_measurement.data,
                     label=model_measurement.label))\
-                .comparing(
-                    compared_quantity)\
                 .against(
                     self.reference_data_for_plotting)\
+                .comparing(
+                    compared_quantity)\
                 .for_given(
                     self.plotting_parameter)\
                 .with_customization(
                     **kwargs)\
                 .plot()
+
+    def get_report(self,
+            model_measurement):
+        """..."""
+        figure=\
+            self.plot(
+                model_measurement)
+        pval=\
+            self.pvalue(
+                model_measurement)
+        verdict=\
+            self.get_verdict(
+                pval)
+        return\
+            ComparisonReport
 
 
 class CellDensityComparison(

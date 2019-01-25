@@ -35,7 +35,6 @@ class SpatialCompositionAnalysis(
         should provide a 'Record' as specified below."""
 #       self.spatial_parameters = kwargs["spatial_parameters"]
         #self.p_value_threshold = kwargs.get("p_value_threshold", 0.05)
-        #self.plotter_type = kwargs["plotter_type"]
         self.output_dir_path\
             = kwargs.get(
                 "output_dir_path",

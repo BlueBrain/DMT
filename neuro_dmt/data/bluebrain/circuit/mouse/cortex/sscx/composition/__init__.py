@@ -39,6 +39,14 @@ class MouseSomatosensoryCortexCompositionData(
             *args, **kwargs)
 
     @classmethod
+    def get_available_data_keys(cls):
+        """A list of keys(labels) for available data."""
+        return ["cell_density",
+                "cell_ratio",
+                "inhibitory_synapse_density",
+                "synapse_density"]
+
+    @classmethod
     def get_available_data(cls, *args, **kwargs):
         """Get reference data by phenomenon.
 
@@ -59,20 +67,26 @@ class MouseSomatosensoryCortexCompositionData(
             cortex.sscx.composition.synapse_density\
             import MouseSomatosensoryCortexSynapseDensityData
 
-        cell_density\
-            = MouseSomatosensoryCortexCellDensityData(
-                *args, **kwargs)
-        cell_ratio\
-            = MouseSomatosensoryCortexCellRatioData(
-                *args, **kwargs)
-        inhibitory_synapse_density\
-            = MouseSomatosensoryCortexInhibitorySynapseDensityData(
-                *args, **kwargs)
-        synapse_density\
-            = MouseSomatosensoryCortexSynapseDensityData(
-                *args, **kwargs)
         return dict(
-            cell_density=cell_density,
-            cell_ratio=cell_ratio,
-            inhibitory_synapse_density=inhibitory_synapse_density,
-            synapse_density=synapse_density)
+            cell_density=MouseSomatosensoryCortexCellDensityData,
+            cell_ratio=MouseSomatosensoryCortexCellRatioData,
+            inhibitory_synapse_density=MouseSomatosensoryCortexInhibitorySynapseDensityData,
+            synapse_density=MouseSomatosensoryCortexSynapseDensityData)
+
+        # cell_density\
+        #     = MouseSomatosensoryCortexCellDensityData(
+        #         *args, **kwargs)
+        # cell_ratio\
+        #     = MouseSomatosensoryCortexCellRatioData(
+        #         *args, **kwargs)
+        # inhibitory_synapse_density\
+        #     = MouseSomatosensoryCortexInhibitorySynapseDensityData(
+        #         *args, **kwargs)
+        # synapse_density\
+        #     = MouseSomatosensoryCortexSynapseDensityData(
+        #         *args, **kwargs)
+        # return dict(
+        #     cell_density=cell_density,
+        #     cell_ratio=cell_ratio,
+        #     inhibitory_synapse_density=inhibitory_synapse_density,
+        #     synapse_density=synapse_density)

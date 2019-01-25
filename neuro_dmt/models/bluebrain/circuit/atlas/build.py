@@ -11,14 +11,16 @@ from dmt.vtk.utils.collections import Record
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.condition import Condition
 from neuro_dmt.utils import brain_regions
-from neuro_dmt.measurement.parameter import AtlasRegion
+from neuro_dmt.measurement.parameter import AtlasRegion, CorticalDepth
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.specialization\
     import CircuitSpecialization
-from neuro_dmt.models.bluebrain.circuit.geometry import \
+from neuro_dmt.models.bluebrain.circuit.geometry import\
     Cuboid, collect_sample, random_location
+from neuro_dmt.models.bluebrain.circuit.atlas.geometry import\
+    CorticalColumn
 
 
 class AtlasBasedCircuitSpecialization(
@@ -39,17 +41,16 @@ class AtlasBasedLayeredCircuitSpecialization(
     atlas based circuits that have layers. All such circuits must inherit this
     class so that we can update future (of 20181039) changes.
     We design these class so that the code here can be used even for fake
-    atlas O1 circuits."""
-
-    atlas_acronym_separator\
-        = Field(
+    atlas O1 circuits.
+    """
+    atlas_acronym_separator=\
+        Field(
             __name__="atlas_acronym_separator",
             __type__=str,
             __doc__="""Separates region label from that of the layers. Should
             work for cortical and hippocampal regional circuits.""")
-
-    representative_region\
-        = Field(
+    representative_region=\
+        Field(
             __name__="representative_region",
             __type__=str,
             __doc__="""Out of all (sub) regions modeled in the brain-circuit,
@@ -67,15 +68,15 @@ class AtlasBasedLayeredCircuitSpecialization(
         assumed here. Currently (20181030) we have observed these conventions
         in a Hippocampus circuit from 201809DD and the iso-cortex
         (under-development) atlas."""
-        layers\
-            = condition.get_value(
+        layers=\
+            condition.get_value(
                 Cell.LAYER)
-        region\
-            = condition.get_value(
+        region=\
+            condition.get_value(
                 Cell.REGION)
         if not region:
-            region\
-                = self.representative_region
+            region=\
+                self.representative_region
         if not layers:
             return [region]
         if not collections.check(layers):
@@ -97,28 +98,31 @@ class AtlasBasedLayeredCircuitSpecialization(
         """..."""
         return {
             region_id
-            for region_acronym in self.__get_atlas_region_acronyms(
-                    condition)
-            for region_id in hierarchy.collect(
-                    "acronym", region_acronym, "id")}
-
+            for region_acronym in self.__get_atlas_region_acronyms(condition)
+            for region_id in hierarchy.collect("acronym",region_acronym,"id")}
+                    
     @property
     def target(self):
         """..."""
         return self.representative_region
 
 
-
 class AtlasCircuitGeometry(
         CircuitGeometry):
     """Specify atlas circuit based attributes."""
-    label = "Atlas"
-
-    atlas\
-        = Field(
+    label=\
+        "Atlas"
+    atlas=\
+        Field(
             __name__="atlas",
             __type__=Atlas,
             __doc__="""Brain atlas used to build this circuit.""")
+    voxel_size=\
+        Field(
+            __name__="voxel_size",
+            __type__=float,
+            __default__=50.,
+            __doc__="""Size of a voxel in the atlas.""")
 
     def __init__(self,
             circuit,
@@ -127,14 +131,17 @@ class AtlasCircuitGeometry(
         if "atlas" not in kwargs:
             try:
                 kwargs["atlas"] = circuit.atlas
-            except AttributeError as e:
+            except Exception as e:
                 raise AttributeError(
                     """Atlas neither passed as a key-word argument,
                     nor available as a circuit instance {}'s attribute."""\
-                    .format(self))
+                    .format(self),
+                    "Exception: {}".format(e))
         self._hierarchy = None
-        self._brain_region_voxels = None
+        self._voxel_brain_region = None
+        self._region_mask = {}
         self._region_geometry = {}
+        self._cortical_columns = {}
         super().__init__(
             circuit,
             *args, **kwargs)
@@ -143,52 +150,62 @@ class AtlasCircuitGeometry(
     def hierarchy(self):
         """Hierarchy of brain regions in the atlas."""
         if not self._hierarchy:
-            self._hierarchy = self.atlas.load_hierarchy()
+            self._hierarchy=\
+                self.atlas.load_hierarchy()
         return self._hierarchy
 
+    @property
+    def region_map(self):
+        """Region map of the atlas."""
 
     @property
-    def brain_region_voxels(self):
+    def voxel_brain_region(self):
         """..."""
-        if not self._brain_region_voxels:
-            self._brain_region_voxels\
+        if not self._voxel_brain_region:
+            self._voxel_brain_region\
                 = self.atlas.load_data(
                     "brain_regions")
-        return self._brain_region_voxels
+        return self._voxel_brain_region
 
     def _get_region_geometry(self,
             condition=Condition([])):
-        """Compute geometry of a region."""
-        region\
-            = condition.get_value(
+        """Compute geometry of a region.
+        This method is used to compute a random column that spans
+        the entire circuit's cortical depth.
+        Current implementation is naive, assumes that the Y axis is along the
+        cortical depth.
+        """
+        region=\
+            condition.get_value(
                 Cell.REGION)
         if not region in self._region_geometry:
-            region_ids\
-                = self.circuit_specialization\
-                      .get_atlas_ids(
-                          self.hierarchy,
-                          condition=Condition([(Cell.REGION, region)]))
-            nx, ny, nz\
-                    = self.brain_region_voxels.shape
+            region_ids=\
+                self.circuit_specialization\
+                    .get_atlas_ids(
+                        self.hierarchy,
+                        condition=Condition([
+                            (Cell.REGION, region)]))
+            nx, ny, nz=\
+                    self.voxel_brain_region.shape
             self.logger.info(
                 self.logger.get_source_info(),
                 """build is_ids_voxel data of shape {}X{}X{}"""\
                 .format(nx, ny, nz))
 
-            region_bottom\
-                = np.finfo(float).max
-            region_top\
-                = np.finfo(float).min
+            region_bottom=\
+                np.finfo(float).max
+            region_top=\
+                np.finfo(float).min
 
             count = 0 #track iteration
             for i in range(nx):
                 for j in range(ny):
                     for k in range(nz):
-                        pos\
-                            = self.brain_region_voxels\
-                                  .indices_to_positions(
-                                      np.array([i,j,k]) )
-                        if self.brain_region_voxels.lookup(pos) in region_ids:
+                        pos=\
+                            self.voxel_brain_region\
+                                .indices_to_positions(
+                                    np.array([i,j,k]) )
+                        if self.voxel_brain_region.lookup(pos) in region_ids:
                             if pos[1] > region_top:
                                 region_top = pos[1]
                             if pos[1] < region_bottom:
@@ -207,9 +224,56 @@ class AtlasCircuitGeometry(
                     top=region_top)
         return self._region_geometry[region]
 
+    def get_region_mask(self,
+            region,
+            *args, **kwargs):
+        """Memoize region masks.
+        """
+        if region not in self._region_mask:
+            self._region_mask[region]=\
+                self.atlas.get_region_mask(
+                    region)
+        return\
+            self._region_mask[region]
+
+    def get_cortical_column(self,
+            region):
+        """Get CorticalColumn for region."""
+        if not region in self._cortical_columns:
+            self._cortical_columns[region]=\
+                CorticalColumn(
+                    atlas=self.atlas,
+                    voxel_size=self.voxel_size,
+                    region=region)
+        return self._cortical_columns[region]
+
+    def _random_position_by_depth(self,
+            condition,
+            *args, **kwargs):
+        """Get a random position, at a given depth (measured as a fraction)
+        in a brain (sub-)region.
+        Parameters
+        ------------------------------------------------------------------------
+        condition :: Condition #that should have a 'region'
+        ~                      #and a (single value of) 'depth'
+        """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get random position by depth",
+            "given region {}, depth {}".format(
+                condition.get_value(Cell.REGION),
+                condition.get_value(CorticalDepth.label)))
+        return\
+            self.voxel_brain_region\
+                .indices_to_positions(
+                    np.array(self\
+                             .get_cortical_column(
+                                 region=condition.get_value(Cell.REGION))
+                             .get_random_voxel(
+                                 condition.get_value(CorticalDepth.label))))
+    
     def random_position(self,
             condition=Condition([]),
-            offset=50.*np.ones(3),
             *args, **kwargs):
         """Get a random position in region given by "brain_region" under given
         'condition'. The parameter 'condition' will subset a region inside
@@ -225,13 +289,29 @@ class AtlasCircuitGeometry(
         self.logger.info(
             self.logger.get_source_info(),
             "Get random position from atlas based circuit geometry.",
-            """\tgiven: {}""".format(condition.value))
-        atlas_ids\
-            = self.circuit_specialization\
-                  .get_atlas_ids(
-                      self.hierarchy,
-                      condition)
-        if self.brain_region_voxels.count(atlas_ids) == 0:
+            """\tgiven:\n\t\t {}""".format(condition.value))
+
+        layers=\
+            condition.get_value(
+                Cell.LAYER)
+        depth=\
+            condition.get_value(
+                CorticalDepth.label)
+        if layers and depth:
+            raise ValueError(
+            """Both 'depth' and 'layer' set in condition to
+            compute random position. Please provide only one of these.""")
+        if depth:
+            return\
+                self._random_position_by_depth(
+                    condition,
+                    *args, **kwargs)
+        atlas_ids=\
+            self.circuit_specialization\
+                .get_atlas_ids(
+                    self.hierarchy,
+                    condition)
+        if self.voxel_brain_region.count(atlas_ids) == 0:
             self.logger.alert(
                 self.logger.get_source_info(),
                 """Ids for region in condition {} not represented
@@ -239,25 +319,21 @@ class AtlasCircuitGeometry(
             return None
 
         count = 0
-        while True:
-            random_voxel\
-                = self.brain_region_voxels\
-                      .indices_to_positions(
-                          np.array([
-                              np.random.randint(n)
-                              for n in self.brain_region_voxels.shape]))
-            if self.brain_region_voxels.lookup(random_voxel) in atlas_ids:
+        while count < 10000000: #10 million. Is that enough?
+            random_voxel=\
+                self.voxel_brain_region\
+                    .indices_to_positions(
+                        np.array([
+                            np.random.randint(n)
+                            for n in self.voxel_brain_region.shape]))
+            if self.voxel_brain_region.lookup(random_voxel) in atlas_ids:
                 return random_voxel
-            elif count == 10000000: #10 million. Is that enough?
-                self.logger.alert(
-                    self.logger.get_source_info(),
-                    """10 million voxels sampled, none had ids for the region
-                    requested in {}.""".format(condition.value))
-                break
-            else:
-                count += 1
-                continue
-            break
+            count += 1
+
+        self.logger.alert(
+            self.logger.get_source_info(),
+            """10 million voxels sampled, none had ids for the region
+            requested in {}.""".format(condition.value))
         return None
 
     def spanning_column_parameter(self,
@@ -265,10 +341,11 @@ class AtlasCircuitGeometry(
             *args, **kwargs):
         """Parameter with values that are columns through the
         requiested iso_cortex_regions"""
-        return AtlasRegion(
-            value_type=str,
-            values=regions,
-            *args, **kwargs)
+        return\
+            AtlasRegion(
+                value_type=str,
+                values=regions,
+                *args, **kwargs)
 
     def random_spanning_column(self,
             condition=Condition([(Cell.REGION, "SSp-ll")]),

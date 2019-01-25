@@ -64,30 +64,30 @@ class FakeAtlasCircuitGeometry(
             self.logger.get_source_info(),
             """Compute geometry in {} instance"""\
             .format(self.__class__.__name__))
-        central_column_ids\
-            = self.circuit_specialization\
-                  .get_atlas_ids(
-                      self.hierarchy)
+        central_column_ids=\
+            self.circuit_specialization\
+                .get_atlas_ids(
+                    self.hierarchy)
         self.logger.info(
             self.logger.get_source_info(),
             """central column region ids in atlas {}""".format(
                 central_column_ids))
-        is_ids_voxel\
-            = self.brain_region_voxels.with_data(
+        is_ids_voxel=\
+            self.voxel_brain_region.with_data(
                 np.in1d(
-                    self.brain_region_voxels.raw,
-                    list(central_column_ids)
-                ).reshape(
-                    self.brain_region_voxels.shape))
+                    self.voxel_brain_region.raw,
+                    list(central_column_ids))\
+                .reshape(
+                    self.voxel_brain_region.shape))
         nx, ny, nz\
-            = self.brain_region_voxels\
+            = self.voxel_brain_region\
                   .shape
         self.logger.info(
             self.logger.get_source_info(),
             "brain_region shape: {}".format(
-                self.brain_region_voxels.shape))
+                self.voxel_brain_region.shape))
         voxels\
-            = self.brain_region_voxels\
+            = self.voxel_brain_region\
                   .indices_to_positions(
                       np.array([
                           np.array([i,j,k])
@@ -102,7 +102,7 @@ class FakeAtlasCircuitGeometry(
             = np.array([
                 v for v in voxels
                 if is_ids_voxel.lookup(v)])
-                #if self.brain_region_voxels.lookup(v) in central_column_ids])
+                #if self.voxel_brain_region.lookup(v) in central_column_ids])
         self.logger.info(
             self.logger.get_source_info(),
             "central_column_voxels shape: {}".format(

@@ -22,7 +22,7 @@ class HippocampusCA1CompositionValidation:
         super().__init__(
             reference_data=reference_data,
             brain_region=brain_regions.ca1,
-            plotter_type=BarPlotComparison,
+            Plotter=BarPlotComparison,
             adapter=BlueBrainModelAdapter(
                 brain_region=brain_regions.hippocampus, #consider removing this
                 circuit_geometry=circuit_geometry,

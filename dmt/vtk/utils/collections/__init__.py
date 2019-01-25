@@ -47,6 +47,10 @@ class Record:
     def values(self):
         return (v for v in self.as_dict.values())
 
+    def keys(self):
+        """..."""
+        return self.as_dict.keys()
+
     def __contains__(self, key):
         """..."""
         return hasattr(self, key)

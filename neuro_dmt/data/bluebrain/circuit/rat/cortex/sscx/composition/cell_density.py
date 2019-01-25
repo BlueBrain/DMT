@@ -11,8 +11,10 @@ from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
 
 class RatSomatosensoryCortexCellDensityData(
         RatSomatosensoryCortexCompositionData):
-    """Somatosensory cortex cell density data for the Rat."""
-    def __init__(self, *args, **kwargs):
+    """Somatosensory cortex cell density data for the Rat.
+    """
+    def __init__(self,
+            *args, **kwargs):
         """..."""
         super().__init__(
             phenomenon=Phenomenon(
@@ -21,7 +23,8 @@ class RatSomatosensoryCortexCellDensityData(
                 group="composition"),
             *args, **kwargs)
 
-    def get_reference_datasets(self, reference_data_dir):
+    def get_reference_datasets(self,
+            reference_data_dir):
         """Available reference data to be used to validate cell density."""
         defelipe2002 = datasets.load(reference_data_dir, "DeFelipe2002")
         defelipe2011 = datasets.load(reference_data_dir, "DeFelipe2011")

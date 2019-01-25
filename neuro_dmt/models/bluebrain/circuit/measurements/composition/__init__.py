@@ -8,6 +8,7 @@ from dmt.vtk.utils.collections import Record
 from neuro_dmt.utils.cell_type import CellType
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
 
+
 class CompositionMeasurementMethod(
         measurement.Method):
     """Common attributes of composition measurement.Method"""
@@ -106,7 +107,7 @@ class InhibitorySynapseDensity(
             phenomenon=Phenomenon(
                 "inhibitor_synapse_density",
                 "Number of inhibitory synapses in a unit volume"),
-            units="1000/mm^3",
+            units="1e9/mm^3",
             return_type=float,
             *args, **kwargs)
 
@@ -115,16 +116,45 @@ class InhibitorySynapseDensity(
         """Count the number of inhibitory synapses within a
         region of interest (roi), and divides the number by the roi's volume.
         """
-        return self._helper.synapse_density(
-            region_of_interest,
-            scale_factor=1.e-9)["INH"]
+        return\
+            self._helper.synapse_density(
+                region_of_interest,
+                scale_factor=1.e-9)["INH"]
 
+class ExcitatorySynapseDensity(
+        CompositionMeasurementMethod):
+    """..."""
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            circuit,
+            phenomenon=Phenomenon(
+                "excitatory_synapse_density",
+                "Number of excitatory synapses in a unit volume"),
+            units="1e9/mm^3",
+            return_type=float,
+            *args, **kwargs)
+
+    def __call__(self,
+            region_of_interest):
+        """Count the number of excitatory synapses within a
+        region of interest (roi), and divide the number by the roi's volume.
+        """
+        return\
+            self._helper.synapse_density(
+                region_of_interest,
+                scale_factor=1.e-9)["EXC"]
 
 class ExtrinsicIntrinsicSynapseDensity(
         CompositionMeasurementMethod):
     """..."""
 
-    _spine_density_per_unit_length = Record(mean = 1.05, std = 0.35)
+    _spine_density_per_unit_length=\
+        Record(
+            mean = 1.05,
+            std = 0.35)
 
     def __init__(self,
             circuit,
@@ -136,7 +166,7 @@ class ExtrinsicIntrinsicSynapseDensity(
             phenomenon=Phenomenon(
                 "synapse_density",
                 "Number of synapses in a unit volume"),
-            units="1000/mm^3",
+            units="1e9/mm^3",
             return_type=float,
             *args, **kwargs)
 
@@ -148,11 +178,14 @@ class ExtrinsicIntrinsicSynapseDensity(
         length in the roi with the known synapse
         density per unit length.
         """
-        mean = self._spine_density_per_unit_length.mean
-        std  = self._spine_density_per_unit_length.std
-
-        return self._helper\
-                   .spine_count_density(
-                       region_of_interest,
-                       spine_density_per_unit_len_mean=mean,
-                       spine_density_per_unit_len_std=std)
+        mean=\
+            self._spine_density_per_unit_length.mean
+        std=\
+            self._spine_density_per_unit_length.std
+        return\
+            self._helper\
+                .spine_count_density(
+                    region_of_interest,
+                    spine_density_per_unit_len_mean=mean,
+                    spine_density_per_unit_len_std=std,
+                    scale_factor=1.e-9)

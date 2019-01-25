@@ -31,11 +31,8 @@ class BrainCircuitAnalysis(Analysis):
 
     def _get_output_dir(self):
         """..."""
-        animal_region_path\
-            = os.path.join(
+        return\
+            os.path.join(
+                super()._get_output_dir(),
                 self.animal,
                 self.brain_region.label)
-
-        return os.path.join(
-            super()._get_output_dir(),
-            animal_region_path)

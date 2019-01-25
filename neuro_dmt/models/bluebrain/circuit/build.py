@@ -17,25 +17,25 @@ class CircuitGeometry(
     """Geometry of a circuit! Dump all circuit build geometry 
     dependent method definitions here."""
 
-    circuit\
-        = Field(
+    circuit=\
+        Field(
             __name__="circuit",
             __type__=Circuit,
             __doc__="""The circuit that this geometry is about.""")
-    helper\
-        = Field(
+    helper=\
+        Field(
             __name__="helper",
             __type__=BlueBrainModelHelper,
             __doc__="""Provides methods for the circuit.""")
-    label\
-        = Field(
+    label=\
+        Field(
             __name__="label",
             __type__=str,
             __doc__="""A label for the circuit build geometry. Provide this
             is as a class-attribute.""",
             __examples__=["O1", "O1.v6a", "Atlas-based", "S1", "S1.v6a"])
-    circuit_specialization\
-        = Field(
+    circuit_specialization=\
+        Field(
             __name__="circuit_specialization",
             __type__=CircuitSpecialization,
             __doc__="""Provides circuit instance specific code.""")

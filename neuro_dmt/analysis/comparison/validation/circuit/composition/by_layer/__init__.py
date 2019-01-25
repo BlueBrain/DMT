@@ -16,8 +16,7 @@ from dmt.vtk.measurement.parameter.group\
     import ParameterGroup
 from neuro_dmt.analysis.comparison.circuit.composition.by_layer\
     import ByLayerCompositionComparison
-from neuro_dmt.analysis.comparison.validation.\
-    circuit.composition.by_layer.report\
+from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
     import ValidationReport
 from neuro_dmt.analysis.circuit.composition\
     import SpatialCompositionAnalysis
@@ -35,8 +34,8 @@ class ByLayerCompositionValidation(
     """Validation of a single circuit composition phenomenon.
     Validation is against reference data that provide experimental data
     as a function of layer. This base class may be used for validation
-    composition of any brain region that is composed of layers."""
-
+    composition of any brain region that is composed of layers.
+    """
     reference_data=\
         Field(
             __name__="reference_data",
@@ -68,7 +67,6 @@ class ByLayerCompositionValidation(
             is_fail=verdict == Verdict.FAIL,
             pvalue=pval,
             figure=figure)
-
 
 
 class CellDensityValidation(

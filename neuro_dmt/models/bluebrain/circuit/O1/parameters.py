@@ -9,8 +9,8 @@ class HyperColumn(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        values\
-            = kwargs.get(
+        values=\
+            kwargs.get(
                 "values", range(7))
         super().__init__(
             value_type=str,
@@ -18,10 +18,15 @@ class HyperColumn(
             label="$target",
             *args, **kwargs)
 
-def transform(instance, method_name, mapping):
+def transform(
+        instance,
+        method_name,
+        mapping):
     """..."""
-    modified_instance = copy.deepcopy(instance)
-    method = getattr(instance, method_name)
+    modified_instance=\
+        copy.deepcopy(instance)
+    method=\
+        getattr(instance, method_name)
 
     def modified_method(*args, **kwargs):
         """Modifed {}""".format(method.__doc__)
@@ -32,5 +37,9 @@ def transform(instance, method_name, mapping):
         else:
             return mapping(x)
 
-    setattr(modified_instance, method_name, modified_method)
-    return modified_instance
+    setattr(
+        modified_instance,
+        method_name,
+        modified_method)
+    return\
+        modified_instance

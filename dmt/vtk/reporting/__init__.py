@@ -1,43 +1,61 @@
 """Report the result of an analysis or a validation."""
 import os
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from dmt.vtk.utils.descriptor import is_field
+from dmt.vtk.utils.descriptor import is_field, WithFCA
 from dmt.vtk.utils.utils import get_file_name_base, timestamp
 from dmt.vtk.utils.logging import Logger
 
-class Report:
+class Report(
+        WithFCA):
     """Report base class.
-    A report may have fields (dmt.vtk.utils.descriptor.Field)"""
+    A report may have fields (dmt.vtk.utils.descriptor.Field)
+    """
     def __init__(self, *args, **kwargs):
         """Add attributes from kwargs to this report instance.
         The value of each report attribute in 'kwargs' must be a string."""
         #self.__dict__.update(kwargs)
         self.__report_attributes__ = kwargs.keys()
-        self.__report_dict__ = {}
-        for attr, value in self.__class__.__dict__.items():
-            if is_field(value):
-                try:
-                    value = kwargs[attr]
-                except:
-                    raise RequiredKeywordArgumentError(attr)
-                setattr(self, attr, value) #this will validate the value
-                self.__report_dict__[attr] = value #this will be a validated value!
+        self.__report_dict__ = {k: v for k, v in kwargs.items()}
+        # for attr, value in self.__class__.__dict__.items():
+        #     if is_field(value):
+        #         self.logger.debug(
+        #             self.logger.get_source_info(),
+        #             "Setting Report qttribute for {} with value {}".format(
+        #                 attr, value))
+        #         try:
+        #             value = kwargs[attr]
+        #         except:
+        #             raise RequiredKeywordArgumentError(attr)
+        #         setattr(self, attr, value) #this will validate the value
+        #         #self.__report_dict__[attr] = value #this will be a validated value!
+        #     else:
+        #         self.logger.debug(
+        #             self.logger.get_source_info(),
+        #             "Report Attribute {} is not a field.".format(attr))
+
+        super().__init__(
+            *args, **kwargs)
             
 
     @classmethod
     def update_doc(cls):
         """Add __doc__ of fields to that of this class"""
-        field_docs = "\n\nFields\n"
-        field_docs += 70 * "-" + "\n"
-        field_attrs = []
+        field_docs=\
+            "\n\nFields\n"
+        field_docs+=\
+            70 * "-" + "\n"
+        field_attrs=\
+            []
         for attr, value in cls.__dict__.items():
             if is_field(value):
                 field_attrs.append(attr)
                 field_docs += attr + "\n"
                 field_docs += "    type {}\n".format(value.__type__)
                 field_docs += "    {}\n".format(value.__doc__)
-        field_docs += 70 * "-" + "\n"
-        cls.__doc__ += field_docs
+        field_docs+=\
+            70 * "-" + "\n"
+        cls.__doc__+=\
+            field_docs
         return field_attrs
 
 

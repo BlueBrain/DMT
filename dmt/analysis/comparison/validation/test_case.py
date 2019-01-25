@@ -32,6 +32,12 @@ class ValidationTestCase:
     Mark all model measurements that validation needs
     with decorator '@adaptermethod', and use them like any other method.
     """
+    reference_data=\
+        Field(
+            __name__="reference_data",
+            __type__=ReferenceData,
+            __doc__="""A validation needs reference data to compare the
+            model against.""")
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -48,7 +54,11 @@ class ValidationTestCase:
                 "Validation test case {} does not use reference data"\
                 .format(self.__class__.__name__))
 
-        data = self._reference_data
+        data = self.reference_data.data
+
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "validation_data for reference data:\n {}".format(data))
 
         if not data:
             return pd.DataFrame()
@@ -56,13 +66,18 @@ class ValidationTestCase:
         if isinstance(data, pd.DataFrame):
             return data
 
-        if isinstance(data, (dict, Record,)):
+        if isinstance(data, dict):
             dataset_names=\
-                [k for k in data.keys()]
+                list(data.keys())
+
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "dataset names: {}".format(dataset_names))
+
             flattened_dataframe=\
-                flatten({
-                    n: data[n].data for n in dataset_names},
-                        names=["dataset"]
+                flatten(
+                    {n: data[n].data for n in dataset_names},
+                    names=["dataset"]
                 )[["mean", "std"]]
             return\
                 flattened_dataframe.set_index(
