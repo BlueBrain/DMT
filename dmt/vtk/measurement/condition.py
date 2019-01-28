@@ -13,14 +13,31 @@ class Condition:
             *args, **kwargs):
         """..."""
         self.__param_value_pairs\
-            = [(self.__get_label(param), value)
-               for param, value in param_value_pairs]
+            = sorted(
+                [(self.__get_label(param), value)
+                 for param, value in param_value_pairs],
+                key=lambda key_value: key_value[0])
         self.__record\
             = Record(
                 **{param: value
                    for param, value in self.__param_value_pairs})
         super().__init__(*args, **kwargs)
 
+
+    @property
+    def as_dict(self):
+        """..."""
+        return self.__record.as_dict
+
+    @property
+    def hash_id(self):
+        """dict does not use __hash___!"""
+        return self.__hash__()
+
+    def __hash__(self):
+        """Convert this Condition to a string and hash it."""
+        return hash(str(self.__param_value_pairs))
+    
     @classmethod
     def __get_label(cls, param):
         """..."""

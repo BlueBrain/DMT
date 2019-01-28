@@ -201,17 +201,20 @@ class ConnectionStrength(measurement.Method):
     def __init__(self, circuit):
         self._circuit = circuit
 
-    def __call__(self, cnxn):
+    def __call__(self, connection):
         """...Call Me...
 
         Parameters
         ------------------------------------------------------------------------
-        cnxn :: Tuple[pre_gid :: str, post_gid :: str]
+        connection :: Tuple[pre_gid :: str, post_gid :: str]
 
         Returns
         ------------------------------------------------------------------------
         int #number of synapses
         """
-        conn = self._circuit.connectome
-        return len(conn.pair_synapses(pre_gid=cnxn[0], post_gid=cnxn[1]))
+        return\
+            len(
+                self._circuit.connectome.pair_synapses(
+                    pre_gid=connection[0],
+                    post_gid=connection[1]))
 

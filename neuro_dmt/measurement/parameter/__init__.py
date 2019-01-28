@@ -68,6 +68,11 @@ class BrainCircuitSpatialParameter(
             .add_spatial_parameter(
                 self.__class__)
 
+class BrainCircuitConnectomeParameter(
+        BrainCircuitMeasurementParameter):
+    """A parameter to measure the brain's connect."""
+    pass
+    
 
 class LayerIndex(
         BrainCircuitSpatialParameter):
@@ -137,6 +142,7 @@ class CorticalLayer23Fused(
             values=[1, (2,3), 4, 5, 6],
             value_repr={1: "I", (2,3): "II/III", 4:"IV", 5: "V", 6: "VI"},
             *args, **kwargs)
+
 
 class CorticalLayer23Fused0(
         LayerIndex):
@@ -231,3 +237,6 @@ class AtlasRegion(
             super().__init__(
                 value_type=str,
                 *args, **kwargs)
+
+class Pathway(
+        BrainCircuitConnectomeParameter):

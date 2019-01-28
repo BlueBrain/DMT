@@ -12,7 +12,8 @@ from dmt.vtk.measurement.parameter.random\
     import ConditionedRandomVariate
 from dmt.vtk.utils.logging import Logger, with_logging
 from dmt.vtk.utils.descriptor import Field, WithFCA
-
+from neuro_dmt.models.bluebrain.circuit.circuit_model\
+    import BlueBrainCircuitModel
 from neuro_dmt.utils.brain_regions import BrainRegion
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
@@ -260,3 +261,57 @@ class RandomBoxCorners(
               value[1][0], value[1][1], value[1][2]]],
             columns=columns,
             index=condition.index)
+
+
+@with_logging(Logger.level.STUDY)
+class RandomCellVariate(
+        ConditionedRandomVariate):
+    """Generates random cell gids..."""
+
+    circuit_model=\
+        Field(
+            __name__="circuit_model",
+            __type__=BlueBrainCircuitModel,
+            __doc__="The circuit model in which to generate random cells.")
+
+    def __init__(self,
+            circuit_model,
+            condition_type=Record(),
+            *args, **kwargs):
+        """..."""
+
+        self.__gid_cache__ = {}
+        super().__init__(
+            circuit_model=circuit_model,
+            condition_type=condition_type,
+            *args, **kwargs)
+
+    def given(self,
+            *conditioning_vars):
+        """Set the condition type."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """RandomCellVariate with conditioning vars {}"""\
+            .format(conditioning_vars))
+        return super().given(
+            *conditioning_vars,
+            reset_condition_type=True)
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """...Call Me..."""
+        if not condition.hash_id in self.__gid_cache__:
+            circuit = self.circuit_model.bluepy_circuit
+            self.__gid_cache__[condition.hash_id]=\
+                   circuit.cells.get(
+                       condition.as_dict)
+        return np.random.choice(
+            self.__gid_cache__[condition.hash_id])
+
+    
+
+    
+
+
+

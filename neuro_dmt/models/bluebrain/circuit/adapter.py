@@ -51,7 +51,10 @@ from neuro_dmt.models.bluebrain.circuit.random_variate import\
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, collect_sample, random_location
 from neuro_dmt.models.bluebrain.circuit.measurements\
-    import composition
+    import composition as composition_measurements
+from neuro_dmt.models.bluebrain.circuit.measurements\
+    import connectome as connectome_measurements
+
 
 
 @interface.implementation(CellDensityValidation.AdapterInterface)
@@ -177,7 +180,7 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
-                method=composition.CellDensity(
+                method=composition_measurements.CellDensity(
                     circuit_model.bluepy_circuit,
                     by_property=by_property,
                     for_cell_type=for_cell_type,
@@ -186,6 +189,27 @@ class BlueBrainModelAdapter(
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
+    def get_synapse_count(self,
+            circuit_model,
+            connectome_parameters={},
+            for_pre_cell_type=Cell.Any,
+            for_post_cell_type=Cell.Any,
+            by_property=None,
+            *args, **kwargs):
+        """Count synapses in a circuit. The type of the connection
+        is specified by the arguments in the method call."""
+        return\
+            self.statistical_measurement(
+                circuit_model,
+                method=connectome_measurements.PairConnection(
+                    circuit_model.bluepy_circuit,
+                    by_property=by_property,
+                    for_pre_cell_type=for_pre_cell_type,
+                    for_post_cell_type=for_post_cell_type,
+                    *args, **kwargs)
+            )
+
+
     def get_cell_ratio(self,
             circuit_model,
             spatial_parameters={},
@@ -193,7 +217,7 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
-                method=composition.CellRatio(
+                method=composition_measurements.CellRatio(
                     circuit_model.bluepy_circuit),
                 circuit_model=circuit_model,
                 parameters=spatial_parameters,
@@ -206,7 +230,7 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
-                method=composition.InhibitorySynapseDensity(
+                method=composition_measurements.InhibitorySynapseDensity(
                     circuit_model.bluepy_circuit),
                 circuit_model=circuit_model,
                 parameters=spatial_parameters,
@@ -219,8 +243,9 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
-                method=composition.ExtrinsicIntrinsicSynapseDensity(
+                method=composition_measurements.ExtrinsicIntrinsicSynapseDensity(
                     circuit_model.bluepy_circuit),
                 circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
+

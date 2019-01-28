@@ -77,6 +77,11 @@ class BlueBrainCircuitModel(
         return\
             self._impl
 
+    @propery
+    def connectome(self):
+        """"..."""
+        raise NotImplementedError
+
 
 class O1CircuitModel(
         BlueBrainCircuitModel):
