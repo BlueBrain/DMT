@@ -364,7 +364,7 @@ class SynsPerConnValidation(Validation):
         model_std = []
         bio_mean = []
         bio_std = []
-        mtypes = circuit.cells.mtypes
+        mtypes = self.adapter.get_mtypes(circuit)
         for pre in mtypes:
             for post in mtypes:
                 nsyns_conn = self.adapter.get_syns_per_conn(
@@ -551,7 +551,7 @@ class SynsPerConnValidation(Validation):
         # return (filename1, filename2)
 
 
-class DivergenceValidation:
+class DivergenceValidation0:
 
     conn_exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
                          '/20180219/bioname/connections.txt'
@@ -1044,3 +1044,49 @@ class PCPCConnProbValidation:
                    + timestamp + '.png'
         fig.savefig(filename)
         return(filename)
+
+
+class DivergenceValidation(Validation):
+
+    bio_connections_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
+                         '/20180219/bioname/connections.txt'
+
+    bio_divergence_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                          '20180219/bioname/divergence.txt'
+
+    def __init__(self, adapter, syn_or_conn='conn'):
+        self.syn_or_conn = syn_or_conn
+        super().__init__(
+            adapter=adapter,
+            reference_data=[
+                ReferenceData(
+                    data=pd.read_csv(self.bio_connections_path,
+                                     delim_whitespace=True,
+                                     index_col=0, skiprows=1,
+                                     names=['exp_PC', 'exp_INT', 'exp_UN'])
+                    label="connections from cell by Sclass"),
+                ReferenceData(
+                    data=pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['exp_PC', 'exp_INT', 'exp_UN'])
+                    label="proportions of connections from EXC vs INH neurons")])
+
+    def get_measurement(self, circuit):
+        mtypes = circuit.cells.mtypes
+
+        div_mtype_to_mtype =\
+            self.adapter.get_diverging(self.syn_or_conn,
+                                       from='mtype', to="mtype")
+        div_sclass_to_sclass =\
+            self.adapter.get_diverging(self.syn_or_conn,
+                                       from='sclass', to='sclass')
+
+
+        return df
+
+    def plot(self, df):
+
+        ax = plt.subplots((3, 1))
+        # seaborn.heatmap(df.pivot(index='pre_sclass',
+        #                          column='post_sclass')['model_mean'], ax=ax[0])
+        df['

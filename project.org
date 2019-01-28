@@ -1089,3 +1089,10 @@
 ** TODO Simplify
 *** TODO use voxcell.RegionMap.find instead of hierarchy in CircuitSpecialization
 *** TODO remove CircuitSpecialization entirely?
+** TODO change the interaction with SpatialParameters
+   i.e. hide them behind the Adapter: 
+     the adapter recieves a string representative of the biological parameter
+     the SpatialParameter subclass corresponding to it is defined as a part
+     of the adaptor, and it maps the string to it to know what to apply.
+     this way, one is not required to implement SpatialParameters for one's own
+     Adapter to be usable for the validation
