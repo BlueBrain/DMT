@@ -144,7 +144,7 @@ class SSCxFakeAtlasSpecialization(
             = ''
         if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
             kwargs["brain_region"]\
-                = brain_regions.cortex
+                = brain_regions.isocortex
         super().__init__(
             *args, **kwargs)
 

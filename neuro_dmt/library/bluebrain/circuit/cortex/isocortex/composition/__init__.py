@@ -1,4 +1,4 @@
-"""Validation of the somatosensory-cortex composition."""
+"""Validation of the iso-cortex composition."""
 import numpy as np
 from dmt.vtk.plotting.comparison.barplot\
     import BarPlotComparison
@@ -7,9 +7,9 @@ from neuro_dmt.utils\
 from neuro_dmt.models.bluebrain.circuit.adapter\
     import BlueBrainModelAdapter
 
-class SomatosensoryCortexCompositionValidation:
-    """Mixin to provide common attributes 
-    for all somatosensory cortex composition validations."""
+class IsoCortexCompositionValidation:
+    """Mixin to provide common attributes
+    for all iso-cortex composition validations"""
 
     def __init__(self,
             reference_data,
@@ -19,7 +19,7 @@ class SomatosensoryCortexCompositionValidation:
         """..."""
         super().__init__(
             reference_data=reference_data,
-            brain_region=brain_regions.sscx,
+            brain_region=brain_regions.isocortex,
             adapter=BlueBrainModelAdapter(
                 sample_size=sample_size,
                 sampled_box_shape=sampled_box_shape,

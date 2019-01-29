@@ -100,8 +100,10 @@ class BlueBrainModelHelper:
     def get_segments(self,
             region_of_interest):
         """Get segments in a region."""
-        segidx\
-            = self._circuit.morph.spatial_index
+        segidx=\
+            self._circuit\
+                .morph\
+                .spatial_index
         if not segidx:
             raise ValueError(
                 "No spatial index for this circuit!")
@@ -192,23 +194,23 @@ class BlueBrainModelHelper:
         ------------------------------------------------------------------------
         roi :: bluepy.geometry.ROI or tuple(np.ndarray, np.ndarray)
         """
-        segment_dataframe\
-            = self.get_segments(
+        segment_dataframe= \
+            self.get_segments(
                 region_of_interest)
-        position1\
-            = segment_dataframe[[
+        position1= \
+            segment_dataframe[[
                 Segment.X1,
                 Segment.Y1,
                 Segment.Z1]]\
                 .values
-        position2\
-            = segment_dataframe[[
+        position2= \
+            segment_dataframe[[
                 Segment.X2,
                 Segment.Y2,
                 Segment.Z2]]\
                 .values
-        segment_dataframe['length']\
-            = np.sqrt(
+        segment_dataframe['length']= \
+            np.sqrt(
                 np.sum(
                     (position1 - position2)**2,
                     axis = 1) )
@@ -220,8 +222,8 @@ class BlueBrainModelHelper:
             return np.sum(
                 segment_dataframe.length[
                     segment_dataframe[
-                        Section.NEURITE_TYPE] == neurite_type]\
-                .values)
+                        Section.NEURITE_TYPE] == neurite_type
+                ].values)
                 
         if by is None:
             return pd.Series({
@@ -229,8 +231,8 @@ class BlueBrainModelHelper:
                     segment_dataframe,
                     neurite_type)
                 for neurite_type in (nm.AXON,
-                           nm.BASAL_DENDRITE,
-                           nm.APICAL_DENDRITE)})
+                                     nm.BASAL_DENDRITE,
+                                     nm.APICAL_DENDRITE)})
         if by == 'mtype':
             return self._aggregated_by_mtype(
                 segment_dataframe,
@@ -644,7 +646,8 @@ class BlueBrainModelHelper:
         scale_factor :: Double #can be used to set a unit of counting.
         ~                      #eg: 1000 spines, or 10^9 spines..."""
         segment_lengths=\
-            self.segment_lengths(region_of_interest)
+            self.segment_lengths(
+                region_of_interest)
         total_spine_length=\
             np.sum([
                 segment_lengths[neurite_type]

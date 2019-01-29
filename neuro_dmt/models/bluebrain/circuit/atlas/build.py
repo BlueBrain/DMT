@@ -247,6 +247,15 @@ class AtlasCircuitGeometry(
                     region=region)
         return self._cortical_columns[region]
 
+    def get_layer_depths(self,
+            region,
+            as_fractions=True):
+        """Get layer depths in a region.
+        This method will work for only those circuits that have layers."""
+        return\
+            self.get_cortical_column(region)\
+                .get_layer_depths(as_fractions=as_fractions)
+
     def _random_position_by_depth(self,
             condition,
             *args, **kwargs):

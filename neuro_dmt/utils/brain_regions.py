@@ -134,18 +134,35 @@ class BrainRegion(WithFCA, ABC):
         return [v for v in self.__known_brain_regions.values()]
 
 
-whole_brain = BrainRegion("Whole Brain", acronym=["WB"])
-
-cerebrum = BrainRegion("Cerebrum", acronym=["CH"])
-whole_brain.add(cerebrum)
-
-cortex = BrainRegion("Cortex", acronym=["CTX"])
-cerebrum.add(cortex)
-
-sscx = BrainRegion("Somatosensory Cortex", acronym=["SSCX"])
-cortex.add(sscx)
-
-hippocampus = BrainRegion("Hippocampus", acronym=["HIP"])
-cerebrum.add(hippocampus)
-
-ca1 = BrainRegion("Cornus Ammonis 1", acronym=["CA1"])
+whole_brain=\
+    BrainRegion(
+        "Whole Brain",
+        acronym=["WB"])
+cerebrum=\
+    BrainRegion(
+        "Cerebrum",
+        acronym=["CH"])
+whole_brain.add(
+    cerebrum)
+isocortex=\
+    BrainRegion(
+        "Isocortex",
+        acronym=["Isocortex"])
+cerebrum.add(
+    isocortex)
+sscx=\
+    BrainRegion(
+        "Somatosensory Cortex",
+        acronym=["SSCX"])
+isocortex.add(
+    sscx)
+hippocampus=\
+    BrainRegion(
+        "Hippocampus",
+        acronym=["HIP"])
+cerebrum.add(
+    hippocampus)
+ca1=\
+    BrainRegion(
+        "Cornus Ammonis 1",
+        acronym=["CA1"])

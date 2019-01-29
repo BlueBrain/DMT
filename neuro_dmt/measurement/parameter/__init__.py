@@ -120,7 +120,7 @@ class CorticalDepth(
             *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             value_type=float,
             values=list(np.linspace(0., 1., number_points)),
             *args, **kwargs)

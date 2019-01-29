@@ -120,6 +120,11 @@ class StatisticalMeasurement:
             self.logger.get_source_info(),
             "StatisticalMeasurement.sample(...) params index: {}"\
             .format(params.index))
+        if kwargs.get("debug", False):
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "will sample {} instances for each of {} param values".format(
+                    size, params.shape[0]))
 
         def _make_measurement(row):
             """make a single measurement."""

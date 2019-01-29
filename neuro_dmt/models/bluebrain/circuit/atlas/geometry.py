@@ -1,5 +1,6 @@
 """Parameters relevant for an atlas based circuit."""
 import numpy as np
+import pandas as pd
 from voxcell import VoxelData
 from voxcell.nexus.voxelbrain\
     import Atlas
@@ -11,6 +12,10 @@ from neuro_dmt.measurement.parameter\
 class CorticalColumn(
         WithFCA):
     """Provides a column like object in a brain region."""
+    depth_dataset=\
+        "[PH]y"
+    brain_region_dataset=\
+        "brain_regions"
     atlas=\
         Field(
             __name__="atlas",
@@ -31,12 +36,6 @@ class CorticalColumn(
                 np.ndarray),
             __doc__="""Brain region acronym for which to create
             this cortical column.""")
-    depth_dataset=\
-        Field(
-            __name__="depth_dataset",
-            __type__=str,
-            __default__="[PH]y",
-            __doc__="Name of the dataset corresponding to (cortical) depths.")
 
     def __init__(self,
             *args, **kwargs):
@@ -47,6 +46,8 @@ class CorticalColumn(
             None
         self._voxel_cortical_depth=\
             None
+        self._voxel_brain_region=\
+            None
         self._depths=\
             None
         self._voxel_ids=\
@@ -55,6 +56,8 @@ class CorticalColumn(
             np.nan
         self._top=\
             np.nan
+        self._layer_positions=\
+            None
         super().__init__(
             *args, **kwargs)
 
@@ -69,7 +72,7 @@ class CorticalColumn(
     @property
     def region_mask(self):
         """..."""
-        if not self._region_mask:
+        if self._region_mask is None:
             if isinstance(self.region, str):
                 self._region_mask=\
                     self.atlas.get_region_mask(
@@ -88,11 +91,71 @@ class CorticalColumn(
         """..."""
         if self._voxel_cortical_depth is None:
             self._voxel_cortical_depth=\
-                self.atlas.load_data(
-                    self.depth_dataset).raw + self.voxel_size / 2.
+                self.atlas.load_data(self.depth_dataset).raw\
+                + self.voxel_size / 2.
             self._voxel_cortical_depth[np.logical_not(self.region_mask)]=\
                 np.nan
         return self._voxel_cortical_depth
+
+    @property
+    def voxel_brain_region(self):
+        """Brain region (id) associated with each voxel."""
+        if self._voxel_brain_region is None:
+            self._voxel_brain_region=\
+                self.atlas.load_data(
+                    self.brain_region_dataset).raw
+            self._voxel_brain_region[np.logical_not(self.region_mask)]=\
+                0
+        return self._voxel_brain_region
+
+    @property
+    def voxel_layer_position(self):
+        """..."""
+
+    def get_layer_depths(self,
+            as_fractions=True):
+        """Positions of the layers in this column ---
+        Note
+        -------------------
+        This is a 'CorticalColumn', so we will assume that the atlas
+        is for a cortical circuit.
+        Return
+        -------------------
+        DataFrame[[layer, begin_mean, begin_std, end_mean, end_std]]"""
+
+        def _get(layer):
+            """..."""
+            voxel_positions=\
+                self.atlas\
+                    .load_data(
+                        "[PH]{}".format(layer))\
+                    .raw[self.region_mask]
+            lower_positions=\
+                voxel_positions[..., 0]
+            upper_positions=\
+                voxel_positions[..., 1]
+            return pd.Series({
+                "layer": layer,
+                "upper_mean": self.top - np.mean(upper_positions),
+                "upper_std":  np.std(upper_positions),
+                "lower_mean": self.top - np.mean(lower_positions),
+                "lower_std": np.std(lower_positions)})
+
+        if self._layer_positions is None:
+            self._layer_positions=\
+                pd.DataFrame([
+                    _get(layer) for layer in range(1, 7)])
+
+        if not as_fractions:
+            return self._layer_positions
+
+        thickness = self.top - self.bottom
+        return pd.DataFrame({
+            "layer": self._layer_positions.layer,
+            "upper_mean": self._layer_positions.upper_mean / thickness,
+            "upper_std": self._layer_positions.upper_std / thickness,
+            "lower_mean": self._layer_positions.lower_mean / thickness,
+            "lower_std": self._layer_positions.lower_std / thickness})
 
     @property
     def top(self):
