@@ -37,7 +37,7 @@ class Condition:
     def __hash__(self):
         """Convert this Condition to a string and hash it."""
         return hash(str(self.__param_value_pairs))
-    
+
     @classmethod
     def __get_label(cls, param):
         """..."""
@@ -92,13 +92,23 @@ class ConditionGenerator(
     """a minor extension."""
 
     def __init__(self, arg0, *args, **kwargs):
-        """..."""
-        self.__conditioning_variables\
-            = ({v.label: v for v in arg0}
-               if collections.check(arg0) else
-               dict([(arg0.label, arg0)] +
-                    [(arg.label, arg) for arg in args]))
-        super().__init__(arg0, *args, **kwargs)
+        """
+        Arguments
+        ---------------------
+        arg0 : either a 'Parameter' or a List[Parameter]
+        args : sequence of Parameters
+        ---------------------
+        If arg0 is a list, only this list's elements will be used, and
+        arg1 ignored.
+        """
+        self.__conditioning_variables=\
+            ({v.label: v for v in arg0}
+             if collections.check(arg0) else
+             dict([(arg0.label, arg0)] +
+                  [(arg.label, arg) for arg in args]))
+        super().__init__(
+            arg0,
+            *args, **kwargs)
             
     @property
     def conditioning_variables(self):

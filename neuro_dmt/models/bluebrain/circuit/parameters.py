@@ -88,9 +88,12 @@ class Mtype(
             *args, **kwargs)
 
 
-class Pathway(
+class MtypePathway(
         BrainCircuitMeasurementParameter):
-    """a pathway is pre-mtype to post-mtype"""
+    """A pathway is pre-cell-type to post-cell-type.
+    In our first implementation we will use mtype to define the cell types.
+    We can also implement a general 'Pathway' that would take an arbitrary type
+    to group cells into pre and post cells."""
 
     def __init__(self,
             circuit,

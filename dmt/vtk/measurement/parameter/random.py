@@ -74,8 +74,8 @@ class ConditionedRandomVariate(
         ------------------------------------------------------------------------
         label :: String
         """
-        self._conditions\
-            = conditions
+        self._conditions=\
+            conditions
         super().__init__(
             *args, **kwargs)
 
@@ -104,19 +104,19 @@ class ConditionedRandomVariate(
     def __with_condition_generator(self,
             condition_generator):
         """..."""
-        instance\
-            = copy.copy(self)
-        instance._conditions\
-            = condition_generator
+        instance=\
+            copy.copy(self)
+        instance._conditions=\
+            condition_generator
         return instance
 
     def __with_condition_type(self,
             condition_type):
         """..."""
-        instance\
-            = copy.copy(self)
-        instance.condition_type\
-            = condition_type
+        instance=\
+            copy.copy(self)
+        instance.condition_type= \
+            condition_type
         return instance
 
     def given(self,
@@ -139,11 +139,11 @@ class ConditionedRandomVariate(
                 "conditioning_vars{}"\
                 .format(conditioning_vars))
             if collections.check(conditioning_vars):
-                conditioning_vars\
-                    = tuple(v for v in conditioning_vars[0])
+                conditioning_vars=\
+                    tuple(v for v in conditioning_vars[0])
             else:
-                conditioning_vars\
-                    = (conditioning_vars[0],)
+                conditioning_vars=\
+                    (conditioning_vars[0],)
         self.logger.debug(
             self.logger.get_source_info(),
             "conditioning_vars: {}".format(conditioning_vars))
@@ -160,7 +160,6 @@ class ConditionedRandomVariate(
                     .format(variable.label,
                             variable.label,
                             self.__class__.__name__))
-                
             if not issubclass(variable.value_type,
                               self.condition_type.get(
                                   variable.label)):
@@ -169,9 +168,10 @@ class ConditionedRandomVariate(
                     in {} instance condition_type."""\
                     .format(variable.label,
                             self.__class__.__name__))
-        return self.__with_condition_generator(
-            ConditionGenerator(
-                conditioning_vars))
+        return\
+            self.__with_condition_generator(
+                ConditionGenerator(
+                    conditioning_vars))
 
     def conditioned_values(self,
             condition,

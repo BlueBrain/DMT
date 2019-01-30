@@ -168,7 +168,7 @@ class StatisticalMeasurement:
         data=\
             summary_statistic(
                 self.sample(
-                    method
+                    method,
                     *args, **kwargs))
         levels=\
             data.index.names

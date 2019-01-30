@@ -16,20 +16,22 @@ from neuro_dmt.library.bluebrain.circuit.models.sscx\
     import get_sscx_fake_atlas_circuit_model
 from neuro_dmt.models.bluebrain.circuit.parameters\
     import Mtype, Pathway
+from neuro_dmt.models.bluebrain.circuit.random_variate\
+    import RandomRegionOfInterest
 
 logger=\
     Logger(
         "Test develop random variates",
         level=Logger.level.DEVELOP)
-iso_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68/circuits",
-        "dev-large/20180904/",
-        "CircuitConfig")
-iso_circuit_model=\
-    get_iso_cortex_circuit_model(
-        iso_circuit_config,
-        "mouse")
+# iso_circuit_config=\
+#     os.path.join(
+#         "/gpfs/bbp.cscs.ch/project/proj68/circuits",
+#         "dev-large/20180904/",
+#         "CircuitConfig")
+# iso_circuit_model=\
+#     get_iso_cortex_circuit_model(
+#         iso_circuit_config,
+#         "mouse")
 sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64/circuits/",
@@ -50,4 +52,9 @@ pathways=\
         sscx_circuit,
         pre_mtypes=mtypes.values,
         post_mtypes=mtypes.values)
-
+bbadapter=\
+    BlueBrainModelAdapter(
+        brain_region=brain_regions.sscx,
+        spatial_random_variate=RandomRegionOfInterest,
+        model_label="in-silico",
+        sample_size=20)

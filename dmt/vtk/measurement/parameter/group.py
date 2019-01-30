@@ -46,9 +46,15 @@ class ParameterGroup:
             """..."""
             if not params:
                 return [[]]
-            head_tuples = [[(params[0].label, v)] for v in params[0].values]
-            tail_tuples = __get_tuple_values(params[1:])
-            return [h+t for h in head_tuples for t in tail_tuples]
+            head_tuples=[
+                [(params[0].label, v)]
+                for v in params[0].values]
+            tail_tuples=\
+                __get_tuple_values(
+                    params[1:])
+            return[
+                h+t for h in head_tuples
+                for t in tail_tuples]
 
         for param_values in __get_tuple_values(self.parameters):
             yield dict(param_values)

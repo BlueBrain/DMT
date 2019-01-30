@@ -139,7 +139,7 @@ class BlueBrainModelAdapter(
             self.filled(
                 StatisticalMeasurement(
                     random_variate=get_random_variate(
-                        circuit_model.geometry,
+                        circuit_model,
                         *args, **kwargs
                     ).given(
                         parameters),
@@ -199,7 +199,8 @@ class BlueBrainModelAdapter(
         """Count synapses in a circuit. The type of the connection
         is specified by the arguments in the method call."""
         if not parameters:
-            parameters= {Pathway(circuit_model.bluepy_circuit)}
+            parameters={
+                Pathway(circuit_model.bluepy_circuit)}
         return\
             self.statistical_measurement(
                 circuit_model,

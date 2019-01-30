@@ -26,14 +26,15 @@ from neuro_dmt.models.bluebrain.circuit.geometry\
 class RandomSpatialVariate(
         ConditionedRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
-    circuit_geometry = Field(
-        __name__="circuit_geometry",
-        __type__=CircuitGeometry,
-        __doc__="""Provides circuit build geometry specific attribute specializations.
-        Ideally we should be able to get this information from  'circuit'.""")
+    circuit_model=\
+        Field(
+            __name__="circuit_model",
+            __type__=BlueBrainCircuitModel,
+            __doc__="Blue brain circuit model to compute random variates for.")
+        
     
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             condition_type=Record(),
             *args, **kwargs):
         """...
@@ -41,11 +42,19 @@ class RandomSpatialVariate(
         ------------------------------------------------------------------------
         circuit :: bluepy.v2.Circuit,
         """
-        self.circuit_geometry\
-            = circuit_geometry
+        self.circuit_model\
+            = circuit_model
         super().__init__(
             condition_type=condition_type,
             *args, **kwargs)
+
+    @property
+    def circuit_geometry(self):
+        """Provides circuit build geometry specific attribute
+            specializations. Ideally we should be able to get this
+            information from  'circuit'.
+        """
+        return self.circuit_model.geometry
 
     def given(self,
             *conditioning_vars):
@@ -66,7 +75,7 @@ class RandomPosition(
     value_type = np.ndarray #dimension 3
 
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             offset=50.,
             *args, **kwargs):
         """...
@@ -77,7 +86,7 @@ class RandomPosition(
         """
         self.offset = offset
         super().__init__(
-            circuit_geometry,
+            circuit_model,
             *args, **kwargs)
 
     def __call__(self,
@@ -89,7 +98,7 @@ class RandomPosition(
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
         return\
-            self.circuit_geometry\
+            self.circuit_model\
                 .random_position(
                     condition,
                     *args, **kwargs)
@@ -108,12 +117,12 @@ class RandomCrossectionalPoint(
         RandomPosition):
     """..."""
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             offset=50.,
             *args, **kwargs):
         """..."""
         super().__init__(
-            circuit_geometry,
+            circuit_model,
             offset=offset,
             *args, **kwargs)
 
@@ -121,7 +130,7 @@ class RandomCrossectionalPoint(
             condition,
             *args, **kwargs):
         """..."""
-        return self.circuit_geometry\
+        return self.circuit_model\
                    .midplane_projection(
                        super().__call__(
                            condition,
@@ -136,18 +145,18 @@ class RandomRegionOfInterest(
     label = "region_of_interest"
 
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             sampled_box_shape=100.*np.ones(3),
             *args, **kwargs):
         """..."""
         self.sampled_box_shape = sampled_box_shape
         self.random_position\
             = RandomPosition(
-                circuit_geometry,
+                circuit_model,
                 offset=sampled_box_shape/2.,
                 *args, **kwargs)
         super().__init__(
-            circuit_geometry,
+            circuit_model,
             *args, **kwargs)
 
     def __call__(self,
@@ -187,14 +196,14 @@ class RandomSpanningColumnOfInterest(
     label = "region_of_interest" 
 
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             crossection=50.,
             *args, **kwargs):
         """..."""
         self.__crossection\
             = crossection
         super().__init__(
-            circuit_geometry,
+            circuit_model,
             *args, **kwargs)
 
     def __call__(self,
@@ -202,7 +211,7 @@ class RandomSpanningColumnOfInterest(
             *args, **kwargs):
         """Call Me"""
         return\
-            self.circuit_geometry\
+            self.circuit_model\
                 .random_spanning_column(
                     condition,
                     crossection=self.__crossection)
@@ -224,17 +233,17 @@ class RandomBoxCorners(
     value_type = tuple #length 2
     label = "box_corners"
     def __init__(self,
-            circuit_geometry,
+            circuit_model,
             sampled_box_shape=50.*np.ones(3),
             *args, **kwargs):
         """..."""
         self.random_region_of_interest\
             = RandomRegionOfInterest(
-                circuit_geometry,
+                circuit_model,
                 sampled_box_shape=sampled_box_shape,
                 *args, **kwargs)
         super().__init__(
-            circuit_geometry,
+            circuit_model,
             sampled_box_shape=sampled_box_shape,
             *args, **kwargs)
 
@@ -305,6 +314,86 @@ class RandomCellVariate(
         if not condition.hash_id in self.__gid_cache__:
             circuit = self.circuit_model.bluepy_circuit
             self.__gid_cache__[condition.hash_id]=\
+                   list(
+                       circuit\
+                       .cells\
+                       .get(condition.as_dict)\
+                       .index)
+        if "size" in kwargs:
+            return np.random.choice(
+                self.__gid_cache__[condition.hash_id],
+                kwargs["size"])
+        return np.random.choice(
+            self.__gid_cache__[condition.hash_id])
+
+    def row(self, condition, value):
+        """..."""
+        return pd.DataFrame(
+            [value],
+            columns=["gid"],
+            index=condition.index)
+
+
+class RandomConnectionVariate(
+        ConditionedRandomVariate):
+    """Generate random pair of cell gids..."""
+    value_type = tuple
+    label = "connection"
+    circuit_model=\
+        Field(
+            __name__="circuit_model",
+            __type__=BlueBrainCircuitModel,
+            __doc__="The circuit model in which to generate random cells.")
+
+    def __init__(self,
+            circuit_model,
+            condition_type=Record(),
+            *args, **kwargs):
+        """..."""
+        self.random_cell=\
+            RandomCellVariate(
+                circuit_model,
+                *args, **kwargs)
+        self.__conn_cache__ = {{}}
+        super().__init__(
+            circuit_model=circuit_model,
+            condition_type=condition_type,
+            *args, **kwargs)
+
+    def given(self,
+            *conditioning_vars):
+        """Set the condition type."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """RandomCellVariate with conditioning vars {}"""\
+            .format(conditioning_vars))
+        return super().given(
+            *conditioning_vars,
+            reset_condition_type=True)
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """...Call Me..."""
+        pre_cell_type=\
+            condition.get_value(
+                "pre_cell_type")
+        post_cell_type=\
+                condition.get_value(
+                    "post_cell_type")
+        post_hash_id=\
+            post_cell_type.hash_id
+                
+        if not pre_hash_id in self.__conn_cache__:
+            self.__conn_cache__[pre_hash_id]= {}
+
+        if not post_hash_id in self.__conn_cache__[pre_hash_id]:
+            self.__conn_cache__[pre_hash_id][post_hash_id]=\
+                
+
+        if not condition.hash_id in self.__gid_cache__:
+            circuit = self.circuit_model.bluepy_circuit
+            self.__conn_cache__[condition.hash_id]=\
                    list(circuit.cells\
                         .get(
                             condition.as_dict)\
@@ -322,3 +411,4 @@ class RandomCellVariate(
             [value],
             columns=["gid"],
             index=condition.index)
+
