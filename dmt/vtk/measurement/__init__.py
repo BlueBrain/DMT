@@ -58,7 +58,6 @@ class Method(
         __doc__="""Set this to the __call__ method's return. In our uses,
         we have returned 'float' or 'pandas.DataSeries'.""")
 
-
     @abstractmethod
     def __call__(self,
             **measurement_parameters):
@@ -168,7 +167,7 @@ class StatisticalMeasurement:
         data=\
             summary_statistic(
                 self.sample(
-                    method
+                    method,
                     *args, **kwargs))
         levels=\
             data.index.names

@@ -23,32 +23,41 @@ from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.phenomenon\
     import Phenomenon
-from dmt.vtk.author import\
-    Author
-from dmt.vtk.measurement import\
-    StatisticalMeasurement
-from dmt.vtk.utils.descriptor import\
-    Field, WithFCA
-from dmt.vtk.measurement.parameter.random import\
-    get_conditioned_random_variate
-from dmt.vtk.utils.logging import Logger, with_logging
-from neuro_dmt.utils.cell_type import CellType
+from dmt.vtk.author\
+     import Author
+from dmt.vtk.measurement\
+     import StatisticalMeasurement
+from dmt.vtk.utils.descriptor\
+     import Field\
+     ,      WithFCA
+from dmt.vtk.measurement.parameter.random\
+     import get_conditioned_random_variate
+from dmt.vtk.utils.logging\
+    import Logger\
+    ,      with_logging
+from neuro_dmt.utils.cell_type\
+    import CellType
 from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
-    import CellDensityValidation,\
-    CellRatioValidation,\
-    InhibitorySynapseDensityValidation,\
-    SynapseDensityValidation
-from neuro_dmt.utils.brain_regions import\
-    BrainRegion
-from neuro_dmt.models.bluebrain.circuit import\
-    geometry, cell_collection, utils, BlueBrainModelHelper
+    import CellDensityValidation\
+    ,      CellRatioValidation\
+    ,      InhibitorySynapseDensityValidation\
+    ,      SynapseDensityValidation
+from neuro_dmt.utils.brain_regions\
+    import BrainRegion
+from neuro_dmt.models.bluebrain.circuit\
+     import geometry\
+     ,      cell_collection\
+     ,      utils\
+     ,      BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import BlueBrainCircuitModel
 from neuro_dmt.models.bluebrain.circuit.random_variate\
-    import RandomSpatialVariate,\
-    RandomRegionOfInterest,\
-    RandomSpanningColumnOfInterest,\
-    RandomCellVariate
+    import RandomSpatialVariate\
+    ,      RandomRegionOfInterest\
+    ,      RandomSpanningColumnOfInterest\
+    ,      RandomCellVariate\
+    ,      RandomConnectionVariate\
+    ,      RandomPathwayConnectionVariate
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, collect_sample, random_location
 from neuro_dmt.models.bluebrain.circuit.measurements\
@@ -56,8 +65,10 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
 from neuro_dmt.models.bluebrain.circuit.measurements\
     import connectome as connectome_measurements
 from neuro_dmt.models.bluebrain.circuit.parameters\
-    import Mtype, Pathway
-
+    import Mtype\
+    ,      PreMtype\
+    ,      PostMtype\
+    ,      MtypePathway
 
 
 @interface.implementation(CellDensityValidation.AdapterInterface)
@@ -139,7 +150,7 @@ class BlueBrainModelAdapter(
             self.filled(
                 StatisticalMeasurement(
                     random_variate=get_random_variate(
-                        circuit_model.geometry,
+                        circuit_model,
                         *args, **kwargs
                     ).given(
                         parameters),
@@ -199,15 +210,20 @@ class BlueBrainModelAdapter(
         """Count synapses in a circuit. The type of the connection
         is specified by the arguments in the method call."""
         if not parameters:
-            parameters= {Pathway(circuit_model.bluepy_circuit)}
+             parameters={
+                 PreMtype(circuit_model.bluepy_circuit),
+                 PostMtype(circuit_model.bluepy_circuit)}
+            #parameters={
+            #    MtypePathway(circuit_model.bluepy_circuit)}
         return\
             self.statistical_measurement(
                 circuit_model,
                 method=connectome_measurements.PairConnection(
                     circuit_model.bluepy_circuit,
                     *args, **kwargs),
-                get_random_variate=RandomCellVariate,
-                parameters=parameters)
+                get_random_variate=RandomPathwayConnectionVariate,
+                parameters=parameters,
+                *args, **kwargs)
 
     def get_cell_ratio(self,
             circuit_model,

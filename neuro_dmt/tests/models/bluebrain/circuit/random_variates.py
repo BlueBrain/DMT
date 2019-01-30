@@ -8,8 +8,6 @@ from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.measurement.parameter\
     import AtlasRegion, CorticalLayer, CorticalDepth
-from neuro_dmt.models.bluebrain.circuit.adapter\
-    import BlueBrainModelAdapter
 from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
     import get_iso_cortex_circuit_model
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
