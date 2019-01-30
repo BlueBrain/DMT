@@ -59,22 +59,22 @@ for cell_gid in random_sscx_cell_gids:
      assert len(cell_mtypes) == 1
      assert cell_mtypes[0] == "L2_IPC"
 
-# random_iso_cell_gids=\
-#     take(
-#         100,
-#         RandomCellVariate(
-#             circuit_model=iso_circuit_model,
-#             conditions={
-#                 Condition([("mtype", "L2_IPC")])}))
+random_iso_cell_gids=\
+    take(
+        100,
+        RandomCellVariate(
+            circuit_model=iso_circuit_model,
+            conditions={
+                Condition([("mtype", "L2_IPC")])}))
 
-# for cell_gid in random_iso_cell_gids:
-#      cell_mtypes=\
-#          iso_circuit.cells\
-#                      .get(
-#                          cell_gid, properties=["mtype"])\
-#                      .values
-#      assert len(cell_mtypes) == 1
-#      assert cell_mtypes[0] == "L2_IPC"
+for cell_gid in random_iso_cell_gids:
+     cell_mtypes=\
+         iso_circuit.cells\
+                     .get(
+                         cell_gid, properties=["mtype"])\
+                     .values
+     assert len(cell_mtypes) == 1
+     assert cell_mtypes[0] == "L2_IPC"
 
 logger.success(
     logger.get_source_info(),

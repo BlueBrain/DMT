@@ -69,7 +69,7 @@ class PairConnection(measurement.Method):
         """..."""
         self._circuit = circuit
 
-    def __call__(self, pre_gid, post_gid):
+    def __call__(self, pre_post_gids):
         """...Call Me...
 
         Parameters
@@ -81,6 +81,8 @@ class PairConnection(measurement.Method):
         ------------------------------------------------------------------------
         bool #indicating if their is a connection
         """
+        pre_gid= pre_post_gids[0]
+        post_gid= pre_post_gids[1]
         conn = self._circuit.connectome
         return post_gid in conn.efferent_gids(pre_gid)
 
@@ -151,10 +153,12 @@ class PairSynapseCount(measurement.Method):
         """..."""
         self._circuit = circuit
 
-    def __call__(self, pre_gid, post_gid):
+    def __call__(self, pre_post_gids):
         """...Call Me..."""
         conn = self._circuit.connectome
-        return len(conn.pair_synapses(pre_gid=pre_gid, post_gid=post_gid))
+        return len(conn.pair_synapses(
+            pre_gid=pre_post_gids[0],
+            post_gid=pre_post_gids[1]))
 
 
 class SomaDistance(measurement.Method):
@@ -168,9 +172,9 @@ class SomaDistance(measurement.Method):
         """..."""
         self._circuit = circuit
 
-    def __call__(self, pre_gid, post_gid):
+    def __call__(self, pre_post_gids):
         """...Call Me..."""
-        poses = self._circuit.cells.positions([pre_gid, post_gid])
+        poses = self._circuit.cells.positions(pre_post_gids)
         return np.linalg.norm(poses.iloc[0] - poses.iloc[1])
 
 

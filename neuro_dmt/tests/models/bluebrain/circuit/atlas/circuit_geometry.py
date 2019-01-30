@@ -32,7 +32,7 @@ iso_circuit_model=\
         "mouse")
 iso_adapter=\
     BlueBrainModelAdapter(
-        brain_region=brain_regions.cortex,
+        brain_region=brain_regions.isocortex,
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)

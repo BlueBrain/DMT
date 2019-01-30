@@ -11,8 +11,6 @@ from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.utils.logging import Logger
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import CorticalLayer
-from neuro_dmt.models.bluebrain.circuit.parameters \
-    import PreMtype, PostMtype, Pathway
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
     import PairSynapseCount
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper

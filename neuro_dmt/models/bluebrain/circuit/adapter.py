@@ -44,16 +44,19 @@ from neuro_dmt.models.bluebrain.circuit import\
     geometry, cell_collection, utils, BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import BlueBrainCircuitModel
-from neuro_dmt.models.bluebrain.circuit.random_variate import\
-    RandomSpatialVariate,\
+from neuro_dmt.models.bluebrain.circuit.random_variate\
+    import RandomSpatialVariate,\
     RandomRegionOfInterest,\
-    RandomSpanningColumnOfInterest
+    RandomSpanningColumnOfInterest,\
+    RandomCellVariate
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, collect_sample, random_location
 from neuro_dmt.models.bluebrain.circuit.measurements\
     import composition as composition_measurements
 from neuro_dmt.models.bluebrain.circuit.measurements\
     import connectome as connectome_measurements
+from neuro_dmt.models.bluebrain.circuit.parameters\
+    import Mtype, Pathway
 
 
 
@@ -191,24 +194,20 @@ class BlueBrainModelAdapter(
 
     def get_synapse_count(self,
             circuit_model,
-            connectome_parameters={},
-            for_pre_cell_type=CellType.Any,
-            for_post_cell_type=CellType.Any,
-            by_property=None,
+            parameters={},
             *args, **kwargs):
         """Count synapses in a circuit. The type of the connection
         is specified by the arguments in the method call."""
-        # return\
-        #     self.statistical_measurement(
-        #         circuit_model,
-        #         method=connectome_measurements.PairConnection(
-        #             circuit_model.bluepy_circuit,
-        #             by_property=by_property,
-        #             for_pre_cell_type=for_pre_cell_type,
-        #             for_post_cell_type=for_post_cell_type,
-        #             *args, **kwargs))
-        raise NotImplementedError
-
+        if not parameters:
+            parameters= {Pathway(circuit_model.bluepy_circuit)}
+        return\
+            self.statistical_measurement(
+                circuit_model,
+                method=connectome_measurements.PairConnection(
+                    circuit_model.bluepy_circuit,
+                    *args, **kwargs),
+                get_random_variate=RandomCellVariate,
+                parameters=parameters)
 
     def get_cell_ratio(self,
             circuit_model,

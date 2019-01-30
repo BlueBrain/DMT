@@ -91,7 +91,7 @@ class LayerIndex(
         """..."""
         if "label" not in kwargs:
             super().__init__(
-                label="layer",
+                label=Cell.LAYER,
                 *args, **kwargs)
         else:
             super().__init__(
@@ -107,7 +107,7 @@ class CorticalLayer(
         """Default cortical layer will have int values 1, 2, 3, 4, 5, and 6.
         The user may override this initializer."""
         super().__init__(
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             value_type=int,
             values=[1, 2, 3, 4, 5, 6],
             value_repr={1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"},

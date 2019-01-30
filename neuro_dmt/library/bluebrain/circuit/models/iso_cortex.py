@@ -69,7 +69,7 @@ def get_iso_cortex_circuit_model(
     return\
         AtlasBasedCircuitModel(
             animal=animal,
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             geometry_type=IsoCortexAtlasBasedCircuitGeometry,
             circuit_config=circuit_config,
             atlas_path=atlas_path)
