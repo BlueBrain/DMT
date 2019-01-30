@@ -192,22 +192,22 @@ class BlueBrainModelAdapter(
     def get_synapse_count(self,
             circuit_model,
             connectome_parameters={},
-            for_pre_cell_type=Cell.Any,
-            for_post_cell_type=Cell.Any,
+            for_pre_cell_type=CellType.Any,
+            for_post_cell_type=CellType.Any,
             by_property=None,
             *args, **kwargs):
         """Count synapses in a circuit. The type of the connection
         is specified by the arguments in the method call."""
-        return\
-            self.statistical_measurement(
-                circuit_model,
-                method=connectome_measurements.PairConnection(
-                    circuit_model.bluepy_circuit,
-                    by_property=by_property,
-                    for_pre_cell_type=for_pre_cell_type,
-                    for_post_cell_type=for_post_cell_type,
-                    *args, **kwargs)
-            )
+        # return\
+        #     self.statistical_measurement(
+        #         circuit_model,
+        #         method=connectome_measurements.PairConnection(
+        #             circuit_model.bluepy_circuit,
+        #             by_property=by_property,
+        #             for_pre_cell_type=for_pre_cell_type,
+        #             for_post_cell_type=for_post_cell_type,
+        #             *args, **kwargs))
+        raise NotImplementedError
 
 
     def get_cell_ratio(self,

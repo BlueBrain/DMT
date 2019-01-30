@@ -3,6 +3,7 @@ random values."""
 
 from abc import ABC, abstractmethod
 import copy
+import numpy as np
 import pandas as pd
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.measurement.parameter import Parameter
@@ -56,11 +57,12 @@ class RandomVariate(
 class ConditionedRandomVariate(
         RandomVariate):
     """RandomVariate conditioned on other variables."""
-    condition_type = Field(
-        __name__="condition_type",
-        __type__=Record,
-        __doc__="""Record mapping field names to their types.""",
-        __examples__=[Record(layer=int, target=str)] )
+    condition_type=\
+        Field(
+            __name__="condition_type",
+            __type__=Record,
+            __doc__="""Record mapping field names to their types.""",
+            __examples__=[Record(layer=int, target=str)] )
 
     def __init__(self,
             conditions=None,
@@ -174,7 +176,7 @@ class ConditionedRandomVariate(
     def conditioned_values(self,
             condition,
             *args, **kwargs):
-        """Yield random values of this RandomVariate 
+        """Yield random values of this RandomVariate
         for given conditions."""
         while True:
             value = self(condition)
@@ -190,11 +192,16 @@ class ConditionedRandomVariate(
 
     def __iter__(self):
         """Iterate over me."""
+        if not self._conditions:
+            raise ValueError(
+                "Conditions not set for this {} instance"\
+                .format(self.__class__))
         while True:
             for condition in self._conditions:
-                yield Record(
-                    condition=condition.value,
-                    value=self(condition))
+                value = self.__call__(condition)
+                if value is None:
+                    break
+                yield value
         
     @abstractmethod
     def row(self,
@@ -216,8 +223,8 @@ class ConditionedRandomVariate(
             condition,
             size=20):
         """sample one"""
-        values\
-            = take(
+        values=\
+            take(
                 size,
                 self.conditioned_values(
                     condition))

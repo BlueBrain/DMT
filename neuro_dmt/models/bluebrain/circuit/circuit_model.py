@@ -77,7 +77,7 @@ class BlueBrainCircuitModel(
         return\
             self._impl
 
-    @propery
+    @property
     def connectome(self):
         """"..."""
         raise NotImplementedError

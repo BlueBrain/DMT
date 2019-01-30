@@ -12,21 +12,25 @@ class Logger:
     For lazy logging (that spits out it's contents when told to)
     use LazyLogger."""
 
-    level = Record(STUDY=0,
-                   TEST=0,
-                   DEBUG=1,#log everything
-                   DEVELOP=2,#no INFO
-                   PROD=3)#log only errors and assertions
+    level=\
+        Record(
+            STUDY=0,
+            TEST=0,
+            DEBUG=1,#log everything
+            DEVELOP=2,#no INFO
+            PROD=3)#log only errors and assertions
 
-    message_types = Record(funda=Funda,
-                           info=Info,
-                           note=Note,
-                           remark=Remark,
-                           debug=DebugInfo,
-                           warn=Alert,
-                           error=Error,
-                           assertion=Assertion)
-
+    message_types=\
+        Record(
+            funda=Funda,
+            info=Info,
+            note=Note,
+            remark=Remark,
+            debug=DebugInfo,
+            warn=Alert,
+            error=Error,
+            assertion=Assertion)
+    
 
     class Color(POD):
         HEADER = '\033[95m'
@@ -37,6 +41,7 @@ class Logger:
         ENDC = '\033[0m'
         BOLD = '\033[1m'
         UNDERLINE = '\033[4m'
+
 
     def with_color(color, msg):
         return color + msg + Logger.Color.ENDC if color else msg
@@ -59,12 +64,14 @@ class Logger:
             return s if len(s) >= 2 else ("0{}".format(s) if len(s) == 1 else "00")
 
         now = now if now else time.localtime()
-        return "[{}{}{}-{}:{}:{}]".format(two_char(now.tm_year),
-                                          two_char(now.tm_mon),
-                                          two_char(now.tm_mday),
-                                          two_char(now.tm_hour),
-                                          two_char(now.tm_min),
-                                          two_char(now.tm_sec))
+        return "[{}{}{}-{}:{}:{}]"\
+            .format(
+                two_char(now.tm_year),
+                two_char(now.tm_mon),
+                two_char(now.tm_mday),
+                two_char(now.tm_hour),
+                two_char(now.tm_min),
+                two_char(now.tm_sec))
 
     @staticmethod
     def err_print(*args, **kwargs):
@@ -78,25 +85,26 @@ class Logger:
                  file_name=None,
                  *args, **kwargs):
         """..."""
-        self._level = level if level is not None else Logger.level.PROD
-        self._client = client
-        self._name\
-            = client if isinstance(client, str) else (
-                name if name else "{}InstanceLogger".format(client.__name__)
-            )
-        self._in_file = (
+        self._level=\
+            level if level is not None else Logger.level.PROD
+        self._client=\
+            client
+        self._name=\
+            client if isinstance(client, str) else (
+                name if name else "{}InstanceLogger".format(client.__name__))
+        self._in_file=(
             None if (output_dir_path is None and file_name is None) else 
             os.path.join(
                 output_dir_path if output_dir_path else os.getcwd(),
-                file_name if file_name else ".".join(self._name.lower())
-            )
-        )
+                file_name if file_name else ".".join(self._name.lower())))
         if self._in_file:
             self._log_message(self._name)
 
-        self.__statistics = {mt.label: 0 for mt in self.message_types.values}
+        self.__statistics={
+            mt.label: 0 for mt in self.message_types.values}
         try:
-            super(Logger, self).__init__(*args, **kwargs)
+            super().__init__(
+                *args, **kwargs)
         except:
             pass
 

@@ -53,7 +53,7 @@ class RandomSpatialVariate(
         self.logger.debug(
             self.logger.get_source_info(),
             """RandomSpatialVariate with conditioning vars {}"""\
-            .format(conditioning_vars))
+            . ormat(conditioning_vars))
         return super().given(
             *conditioning_vars,
             reset_condition_type=True)
@@ -267,7 +267,8 @@ class RandomBoxCorners(
 class RandomCellVariate(
         ConditionedRandomVariate):
     """Generates random cell gids..."""
-
+    value_type = int
+    label = "gid"
     circuit_model=\
         Field(
             __name__="circuit_model",
@@ -304,14 +305,20 @@ class RandomCellVariate(
         if not condition.hash_id in self.__gid_cache__:
             circuit = self.circuit_model.bluepy_circuit
             self.__gid_cache__[condition.hash_id]=\
-                   circuit.cells.get(
-                       condition.as_dict)
+                   list(circuit.cells\
+                        .get(
+                            condition.as_dict)\
+                        .index)
+        if "size" in kwargs:
+            return np.random.choice(
+                self.__gid_cache__[condition.hash_id],
+                kwargs["size"])
         return np.random.choice(
             self.__gid_cache__[condition.hash_id])
 
-    
-
-    
-
-
-
+    def row(self, condition, value):
+        """..."""
+        return pd.DataFrame(
+            [value],
+            columns=["gid"],
+            index=condition.index)

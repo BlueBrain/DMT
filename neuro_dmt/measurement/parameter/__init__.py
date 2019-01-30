@@ -237,6 +237,3 @@ class AtlasRegion(
             super().__init__(
                 value_type=str,
                 *args, **kwargs)
-
-class Pathway(
-        BrainCircuitConnectomeParameter):
