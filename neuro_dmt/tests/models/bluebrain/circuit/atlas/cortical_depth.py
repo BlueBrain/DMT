@@ -78,4 +78,3 @@ cell_density_by_layer_plotter=\
 cell_density_by_layer_plotter.save(
     cell_density_by_layer_plotter.plot(),
     file_name="cell_density_by_cortical_depth.png")
-

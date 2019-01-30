@@ -3,8 +3,8 @@
 import os
 from neuro_dmt.library.bluebrain.circuit.cortex import\
     MeasureByCorticalLayer
-from neuro_dmt.library.bluebrain.circuit.cortex.sscx.composition import \
-    SomatosensoryCortexCompositionValidation
+from neuro_dmt.library.bluebrain.circuit.cortex.sscx.composition\
+    import SomatosensoryCortexCompositionValidation
 from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
     import CellDensityValidation,\
     CellRatioValidation,\
@@ -22,8 +22,7 @@ class RatSSCxCellDensityValidation(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.animal=\
-            "rat"
+        self.animal= "rat"
         reference_data=\
             RatSomatosensoryCortexCompositionData.get(
                 "cell_density")

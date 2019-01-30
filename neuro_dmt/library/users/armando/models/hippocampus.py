@@ -48,104 +48,76 @@ class HippocampusAdapter:
         return cell_fracs.groupby("mtype")\
                          .agg(["mean", "std"])["cell_fraction"]
 
-    def get_layer_composition(self, circuit):
+    def get_atlas_ids(self,
+            atlas,
+            column_index,
+            *layers):
         """..."""
-        atlas = circuit.atlas
-        brain_regions = atlas.load_data('brain_regions')
-        hierarchy = atlas.load_hierarchy()
-        labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
-        df = pd.DataFrame(index=labels, columns=np.arange(7))
-        scale = 1.e6
+        rmap = atlas.load_region_map()
+        if not layers:
+            query = "mc{}".format(column_index)
+            return rmap.find(query, 'acronym', with_descendants=True)
+        for layer in layers:
 
-        def __get_atlas_ids(
-                column_index,
-                *layers):
-            """..."""
-            if not layers:
-                return hierarchy.collect(
-                    "acronym", "mc{}".format(column_index), "id")
             return {
                 id for layer in layers
-                for id in hierarchy.collect(
-                        "acronym", "mc{};{}".format(column_index, layer), "id")}
+                for id in rmap.find("mc{};{}".format(column_index, layer),
+                                'acronym', with_descendants=True)}
 
-        def __get_cell_density(
+    def circuit_regions(self, circuit):
+        """why are we passing circuit again?"""
+        return range(7)
+
+    def get_cell_density(self,
+                         circuit,
                 column_index,
                 layers=[],
                 cell_type={}):
-            """..."""
-            column_atlas_ids\
-                = __get_atlas_ids(column_index)
-            column_cell_query\
+        """..."""
+        brain_regions = circuit.atlas.load_data("brain_regions")
+        column_atlas_ids\
+            = self.get_atlas_ids(circuit.atlas, column_index)
+
+        column_cell_query\
                 = {k: v for k, v in cell_type.items()}
-            column_cell_query.update({
-                Cell.REGION: "@mc{}.*".format(column_index)})
-            column_cells\
-                = circuit.cells.ids(column_cell_query)
-            if not layers:
-                return (1.e6 *
-                        len(column_cells) /
-                        brain_regions.volume(column_atlas_ids))
-            layers_atlas_ids\
-                = __get_atlas_ids(column_index, *layers)
+        column_cell_query.update({
+            Cell.REGION: "@mc{}.*".format(column_index)})
+        column_cells\
+            = circuit.cells.ids(column_cell_query)
 
-            def __layer_cell_query(layer):
-                """..."""
-                layer_cell_query\
-                    = {k: v for k, v in cell_type.items()}
-                layer_cell_query.update({
-                    "layer": layer})
-                return layer_cell_query
+        if not layers:
+            return (1.e6 *
+                    len(column_cells) /
+                    brain_regions.volume(column_atlas_ids))
 
-            layers_cells\
-                = [gid for layer in layers
-                   for gid in circuit.cells.ids(
-                           __layer_cell_query(
-                               layer))]
-            column_layer_atlas_ids\
-                = column_atlas_ids.intersection(
-                    layers_atlas_ids)
-            column_layer_cells\
-                = np.intersect1d(
-                    column_cells,
-                    layers_cells)
-            return(1.e6 *
-                   len(column_layer_cells) /
-                   brain_regions.volume(
-                       column_layer_atlas_ids))
+        layers_atlas_ids\
+            = self.get_atlas_ids(circuit.atlas, column_index, *layers)
 
-        def __get_cell_density_array(
-                layers=[],
-                cell_type={}):
+        def __layer_cell_query(layer):
             """..."""
-            return np.array([
-                __get_cell_density(
-                    column_index,
-                    layers=layers,
-                    cell_type=cell_type)
-                for column_index in range(7)])
+            layer_cell_query\
+                = {k: v for k, v in cell_type.items()}
+            layer_cell_query.update({
+                "layer": layer})
+            return layer_cell_query
 
-        cell_densities\
-            = pd.DataFrame(
-                data={"cell_density": np.concatenate([
-                    __get_cell_density_array(),
-                    __get_cell_density_array(
-                        layers=["SLM", "SR"]),
-                    __get_cell_density_array(
-                        layers=["SP"]),
-                    __get_cell_density_array(
-                        layers=["SP"],
-                        cell_type={Cell.MORPH_CLASS: "PYR"}),
-                    __get_cell_density_array(
-                        layers=["SO"])])},
-                index=pd.MultiIndex.from_tuples(
-                    [(column_index, layer_label)
-                     for layer_label in ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
-                     for column_index in range(7)],
-                    names=["column", "region"]))
+        layers_cells\
+            = [gid for layer in layers
+               for gid in circuit.cells.ids(
+                       __layer_cell_query(
+                           layer))]
+        column_layer_atlas_ids\
+            = column_atlas_ids.intersection(
+                layers_atlas_ids)
+        column_layer_cells\
+            = np.intersect1d(
+                column_cells,
+                layers_cells)
+        return(1.e6 *
+           len(column_layer_cells) /
+               brain_regions.volume(
+                   column_layer_atlas_ids))
 
-        return cell_densities.groupby("region")\
-                             .agg(["mean", "std"])["cell_density"]
 
     def get_bouton_density(self, circuit, sample):
         """get bouton density"""
@@ -162,38 +134,19 @@ class HippocampusAdapter:
 
         return data, mtypes
 
-    def get_syns_per_conn(self, circuit, nsample=10):
+    def get_syns_per_conn(self, circuit, pre_query, post_query,
+                          nsample=10):
 
-        mtypes = circuit.cells.mtypes
-        model_mean = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
-        model_std = pd.DataFrame(index=mtypes, columns=mtypes, dtype=float)
+        # TODO make this use CircuitSpec to translate query
+        pre = circuit.cells.ids(group=pre_query,
+                                limit=nsample)
 
-        for pre_mtype in mtypes:
-            for post_mtype in mtypes:
-                pre = circuit.cells.ids(group={Cell.MTYPE: pre_mtype,
-                                               '$target': 'mc2_Column'},
-                                        limit=nsample)
-
-                post = circuit.cells.ids(group={Cell.MTYPE:  post_mtype})
-                data = circuit.stats.sample_pathway_synapse_count(nsample,
-                                                                  pre=pre,
-                                                                  post=post)
-                # only pre cells from cylinder
-
-                model_mean[post_mtype][pre_mtype] = data.mean()
-                model_std[post_mtype][pre_mtype] = data.std()
-
-        ###############################################
-        # TODO does this code actually do anything? ##
-        pre = circuit.cells.ids(group={Cell.MTYPE: 'SP_PC',
-                                       '$target': 'mc2_Column'})
-        post = circuit.cells.ids(group='SP_PC')
-        data = circuit.stats.sample_pathway_synapse_count(1000,
+        post = circuit.cells.ids(group=post_query)
+        data = circuit.stats.sample_pathway_synapse_count(nsample,
                                                           pre=pre,
                                                           post=post)
-        # only pre cells from cylinder# only pre cells from cylinder
-        #############################################
-        return model_mean, model_std
+
+        return data
 
     def get_number_connections(self, circuit):
 

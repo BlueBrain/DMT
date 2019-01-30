@@ -1,6 +1,5 @@
 """Test develop cell density validation."""
 import os
-from voxcell.nexus.voxelbrain import LocalAtlas
 from dmt.vtk.utils.logging\
     import Logger
 from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
