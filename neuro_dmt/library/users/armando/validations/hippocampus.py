@@ -4,14 +4,54 @@ import time
 import yaml
 import pandas as pd
 import numpy as np
+import scipy
 import matplotlib.pyplot as plt
-from dmt.model.interface import Interface
-
-import seaborn
-from dmt.vtk.plotting import golden_figure
 from matplotlib.colors import SymLogNorm
-from bluepy.v2.enums import Synapse
+from bluepy.v2.enums import Synapse, Cell
 from PyPDF2 import PdfFileMerger, PdfFileReader
+import seaborn
+
+from dmt.vtk.plotting import golden_figure
+from dmt.model.interface import Interface
+from dmt.analysis.comparison import Comparison
+from dmt.analysis.comparison.validation.test_case import ValidationTestCase
+from dmt.analysis import OfSinglePhenomenon
+from dmt.data import ReferenceData
+from dmt.vtk.utils.collections import Record
+from dmt.vtk.phenomenon import Phenomenon
+from dmt.vtk.judgment.verdict import Verdict
+
+from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
+from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
+    import ValidationReport
+
+
+class Validation(
+        ValidationTestCase,
+        Comparison,
+        OfSinglePhenomenon,
+        BrainCircuitAnalysis):
+    """a mixin of these four"""
+    def get_report(self,
+                   model_measurement):
+        """Create a report."""
+        figure = self.plot(model_measurement)
+        pval = self.pvalue(model_measurement)
+        verdict = self.get_verdict(pval)
+        return ValidationReport(
+            phenomenon=self.phenomenon,
+            author=self.author,
+            caption=self.get_caption(model_measurement),
+            reference_datasets=dict(armando=Record(uri="somwhere", label="armando", citation="???", what="what?")),
+            is_pass=verdict == Verdict.PASS,
+            is_fail=verdict == Verdict.FAIL,
+            pvalue=pval,
+            figure=figure)
+
+
+output_dir_path=os.path.join(
+    os.path.expanduser("~"),
+    "reports")
 
 
 class MtypeCellDensityValidation:
@@ -108,37 +148,95 @@ class MtypeCellDensityValidation:
         return filename
 
 
-class ByLayerCellDensityValidation:
+class ByLayerCellDensityValidation(Validation):
 
     def __init__(self, adapter, *args, **kwargs):
         """..."""
-        self.adapter = adapter
         self.reference_data\
-            = pd.DataFrame(
-                data={"mean": [35.2, 1.9, 272.4, 264, 11.3],
-                      "sem": [0.5, 0.3, 14.3, 14.6, 0.9]},
-                index=pd.Index(['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']))
+            = ReferenceData(
+                data=pd.DataFrame(
+                    data={"mean": [35.2, 1.9, 272.4, 264, 11.3],
+                          "sem": [0.5, 0.3, 14.3, 14.6, 0.9]},
+                    index=pd.Index(['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO'])),
+                description="Armando's hippocampus CA1 cell densities",
+                uri="somwhere")
+        super().__init__(
+            phenomenon=Phenomenon("cell_density", description="cell density"),
+            animal="rat",
+            output_dir_path=output_dir_path,
+            adapter=adapter,
+            *args, **kwargs)
 
     class AdapterInterface(Interface):
 
-        def get_layer_composition(self, circuit):
+        def get_cell_density(self, circuit, region, layers, cell_type):
             pass
 
-    def __call__(self, circuit):
-        composition = self.adapter.get_layer_composition(circuit)
-        filename = self.plot(composition)
-        sys.stdout.write("figure saved at {}\n".format(filename))
+        def circuit_regions(self, circuit):
+            pass
+
+    def get_label(self):
+        return "cell density"
+
+    def get_measurement(self, circuit):
+
+        def get_layer_composition(circuit):
+            """..."""
+            layer_labels = ['CA1', 'SLM-SR', 'SP', 'PC in SP', 'SO']
+            scale = 1.e6
+
+            def __get_cell_density_array(
+                    layers=[],
+                    cell_type={}):
+                """..."""
+                return np.array([
+                    self.adapter.get_cell_density(
+                        circuit,
+                        region,
+                        layers=layers,
+                        cell_type=cell_type)
+                    for region in self.adapter.circuit_regions(circuit)])
+
+            cell_densities\
+                = pd.DataFrame(
+                    data={"cell_density": np.concatenate([
+                        __get_cell_density_array(),
+                        __get_cell_density_array(
+                            layers=["SLM", "SR"]),
+                        __get_cell_density_array(
+                            layers=["SP"]),
+                        __get_cell_density_array(
+                            layers=["SP"],
+                            cell_type={Cell.MORPH_CLASS: "PYR"}),
+                        __get_cell_density_array(
+                            layers=["SO"])])},
+                    index=pd.MultiIndex.from_tuples(
+                        [(region, layer_label)
+                         for layer_label in layer_labels
+                         for region in self.adapter.circuit_regions(circuit)],
+                        names=["column", "region"]))
+
+            return cell_densities.groupby("region")\
+                                 .agg(["mean", "std"])["cell_density"]
+        composition = get_layer_composition(circuit)
+        return Record(data=composition,
+                      label="in-silico cell density",
+                      method="armando's by-layer and cell type densities")
+
+
+
 
     def plot(self, composition):
+        composition = composition.data
         fig, ax = plt.subplots()
 
-        ind = np.arange(self.reference_data.shape[0])
+        ind = np.arange(self.reference_data.data.shape[0])
         width = 0.35
-        labels = self.reference_data.index
+        labels = self.reference_data.data.index
         s1 = ax.bar(ind, composition.loc[labels]['mean'],
                     width, yerr=composition.loc[labels]['std'].values)
-        s2 = ax.bar(ind + width, self.reference_data["mean"], width,
-                    yerr=self.reference_data["sem"])
+        s2 = ax.bar(ind + width, self.reference_data.data["mean"], width,
+                    yerr=self.reference_data.data["sem"])
 
         ax.set_ylabel('density (10^3/mm^3)')
         ax.set_title('Neuron density')
@@ -147,18 +245,7 @@ class ByLayerCellDensityValidation:
 
         ax.legend((s1[0], s2[0]), ('Model', 'Experiment'))
 
-        report_path\
-            = os.path.join(
-                os.path.dirname(__file__),
-                "reports")
-        if not os.path.exists(report_path):
-            os.makedirs(report_path)
-        filename\
-            = os.path.join(
-                report_path,
-                "layer_density_validation_{}.png".format(time.time()))
-        plt.savefig(filename)
-        return filename
+        return fig
 
 
 class BoutonDensityValidation:
@@ -238,140 +325,233 @@ class BoutonDensityValidation:
         return filename
 
 
-class SynsPerConnValidation():
+class SynsPerConnValidation(Validation):
     """validate number of synapses per connection"""
 
     bio_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180219/'\
                'bioname/nsyn_per_connection_20180125.tsv'
 
     def __init__(self, adapter):
-        self.adapter = adapter
-        pass
+        super().__init__(adapter=adapter,
+                         reference_data=ReferenceData(
+                             data=pd.read_csv(
+                                 self.bio_path, skiprows=1,
+                                 names=['pre', 'post', 'bio_mean', 'bio_std'],
+                                 usecols=[0, 1, 2, 3], delim_whitespace=True)),
+                         phenomenon=Phenomenon(
+                             'synapses per connection',
+                             'the number of synapses for'
+                             'each connection between cells'),
+                         animal='rat',
+                         output_dir_path=output_dir_path)
+        # NOTE: is 'animal' really a property of a validation?
+        # NOTE: it strikes me as a property of the model and data
+        # I guess it is uniform for any validation, just not
+        # necessarily for any comparison
 
-    def __call__(self, circuit):
-        df = pd.read_csv(self.bio_path, skiprows=1,
-                         names=['pre', 'post', 'bio_mean', 'bio_std'],
-                         usecols=[0, 1, 2, 3], delim_whitespace=True)
-        model_mean, model_std = self.adapter.get_syns_per_conn(circuit)
-        df['model_mean'] = np.NAN
-        df['model_std'] = np.NAN
-        for idx in df.index:
-            pre = df.loc[idx, 'pre']
-            post = df.loc[idx, 'post']
-            df.loc[idx, 'model_mean'] = model_mean[post][pre]
-            df.loc[idx, 'model_std'] = model_std[post][pre]
+    def get_label(self):
+        # we can make this general practice?
+        return self.__doc__
 
-        filenames = self.plot(df, model_mean, model_std)
+    # NOTE: this whole 'primary dataset' thing is both limiting and complicating
+    # NOTE: is phenomenon really necessary?
+    # NOTE: I think I've done this inelegantly
+    def get_measurement(self, circuit):
+        df = self.reference_data.data
+        pre_mtypes = []
+        post_mtypes = []
+        model_mean = []
+        model_std = []
+        bio_mean = []
+        bio_std = []
+        mtypes = self.adapter.get_mtypes(circuit)
+        for pre in mtypes:
+            for post in mtypes:
+                nsyns_conn = self.adapter.get_syns_per_conn(
+                    circuit,
+                    {Cell.REGION: "@mc2.*", Cell.MTYPE: pre},
+                    {Cell.MTYPE: post})
 
-        sys.stdout.write("figure saved at {}\n".format(filenames))
+                model_mean.append(np.mean(nsyns_conn))
+                model_std.append(np.std(nsyns_conn))
+                mask = np.logical_and(df['pre'] == pre, df['post'] == post)
+                if np.any(mask):
+                    bm = df[mask]['bio_mean'].values[0]
+                    bs = df[mask]['bio_std'].values[0]
+                else:
+                    bm = np.nan
+                    bs = np.nan
+                bio_mean.append(bm)
+                bio_std.append(bs)
+                pre_mtypes.append(pre)
+                post_mtypes.append(post)
 
-        return
+        newdf = pd.DataFrame(
+            {'pre_mtype': pre_mtypes, 'post_mtype': post_mtypes,
+             'model_mean': model_mean, 'model_std': model_std,
+             'bio_mean': bio_mean, 'bio_std': bio_std})
+        # what does method represent?
+        return Record(data=newdf,
+                      label='model',
+                      method='???')
 
     class AdapterInterface(Interface):
 
-        def get_syns_per_conn(self, circuit):
+        def get_syns_per_conn(self, pre_query, post_query):
             pass
 
-    def plot(self, df, model_mean, model_std):
-
+    def plot(self, data_record):
+        """
+        makes a heatplot out of model mean
+        and a crossplot of model mean/std and data mean/stdev
+        """
+        df = data_record.data
         # put both plots in A4 page
         plt.close('all')
         fig, axs = plt.subplots(2, 1, figsize=(8.27, 11.69))
 
         fig.suptitle('synapses per connection', fontsize=16)
 
-        seaborn.heatmap(model_mean, ax=axs[0])
+        seaborn.heatmap(df.pivot(index='pre_mtype',
+                                 columns='post_mtype')['model_mean'],
+                        ax=axs[0])
         axs[0].set_xlabel('post mtype')
         axs[0].set_ylabel('pre mtype')
 
         x = df['model_mean'].values
         y = df['bio_mean'].values
-        l = np.linspace(0, max(x.max(), y.max()), 50)
+
+        xerr = df['model_std'].values
+        yerr = df['bio_std'].values
+
         axs[1].plot(x, y, 'o')
         axs[1].errorbar(x, y,
-                        xerr=df['model_std'].values, yerr=df['bio_std'].values,
+                        xerr=xerr, yerr=yerr,
                         fmt='o', ecolor='g', capthick=2)
-        axs[1].plot(l, l, 'k--')
+        maximum = max(max(x + xerr), max(y + yerr))
+        axs[1].plot((0, maximum), (0, maximum), 'k--')
         axs[1].set_xlabel('Model (#)')
         axs[1].set_ylabel('Experiment (#)')
 
         fig.tight_layout()
 
         plt.subplots_adjust(hspace=0.4, top=0.92)
+        return fig
+        # report_path\
+        #     = os.path.join(
+        #         os.path.dirname(__file__),
+        #         "reports")
 
-        report_path\
-            = os.path.join(
-                os.path.dirname(__file__),
-                "reports")
+        # filename1\
+        #     = os.path.join(
+        #         report_path,
+        #         "syns_per_conn_validation{}.pdf".format(time.time()))
+# class ByCclassSynsPerConnValidation(Validation):
 
-        filename1\
-            = os.path.join(
-                report_path,
-                "syns_per_conn_validation{}.pdf".format(time.time()))
+#     def __init__(self, adapter):
+#         super().__init__(adapter=adapter,
+#                         reference_data=ReferenceData(
+#                             data=pd.read_csv(
+#                                 self.bio_path, skiprows=1,
+#                                 names=['pre', 'post', 'bio_mean', 'bio_std'],
+#                                 usecols=[0, 1, 2, 3], delim_whitespace=True)),
+#                         phenomenon=Phenomenon(
+#                             'synapses per connection',
+#                             'the number of synapses for'
+#                             'each connection between cells'),
+#                          animal='rat',
+#                          output_dir_path=output_dir_path)
 
-        plt.savefig(filename1)
+#     def get_measurement(self, circuit):
+#         """..."""
+#         # we should only compare to the ref. data mtypes
+#         pre_mtypes = self.reference_data.data['pre']
+#         post_mtypes = self.reference_data.data['post']
 
-        def conn_class(pre, post):
-            if (pre=='SP_PC')&(post=='SP_PC'):
-                return 'ee'
-            if (pre=='SP_PC')&(post!='SP_PC'):
-                return 'ei'
-            if (pre!='SP_PC')&(post=='SP_PC'):
-                return 'ie'
-            else:
-                return 'ii'
+#         pre_sclasses = {'INH': set(pre_mtypes) - set('SP_PC'),
+#                         'EXC': 'SP_PC'}
+#         post_sclasses = {'INH': set(post_mtypes) - set('SP_PC'),
+#                          'EXC': 'SP_PC'}
 
-        df['connection_class'] = [conn_class(pre, post)
-                                  for pre, post in zip(df['pre'].values,
-                                                       df['post'].values)]
+#         conn_classes = []
+#         model_means = []
+#         model_stds = []
+#         data_means = []
+#         data_stds = []
+#         for pre_sclass, pre_mtypes in pre_sclasses.items():
+#             for post_sclass, post_mtypes in post_sclasses.items():
+#                 conn_classes.append((pre_sclass[0] + post_sclass[0])
+#                                     .lower())
+#                 nsyns_conn = self.adapter.get_syns_per_conn(
+#                     circuit,
+#                     # NOTE: why restrict to mc2?
+#                     {Cell.MTYPE: pre_mtypes, Cell.REGION: "@mc2.*"},
+#                     {Cell.MTYPE: post_mtypes})
+#                 model_means.append(np.mean(nsyns_conn))
+#                 model_stds.append(np.std(nsyns_conn))
+#                 datapoints
 
-        plt.close('')
-        fig, ax = plt.subplots()
+        # def conn_class(pre, post):
+        #     if (pre=='SP_PC')&(post=='SP_PC'):
+        #         return 'ee'
+        #     if (pre=='SP_PC')&(post!='SP_PC'):
+        #         return 'ei'
+        #     if (pre!='SP_PC')&(post=='SP_PC'):
+        #         return 'ie'
+        #     else:
+        #         return 'ii'
 
-        x = df['model_mean'].values
-        y = df['bio_mean'].values
-        l = np.linspace(0, max(x.max(), y.max()), 50)
-        ax.plot(l, l, 'k--', label='diagonal')
+        # df['connection_class'] = [conn_class(pre, post)
+        #                           for pre, post in zip(df['pre'].values,
+        #                                                df['post'].values)]
 
-        x_ee = df[df['connection_class']=='ee']['model_mean'].values
-        y_ee = df[df['connection_class']=='ee']['bio_mean'].values
-        ax.plot(x_ee, y_ee, 'ro', label='EE')
+        # plt.close('')
+        # fig, ax = plt.subplots()
 
-        x_ei = df[df['connection_class']=='ei']['model_mean'].values
-        y_ei = df[df['connection_class']=='ei']['bio_mean'].values
-        ax.plot(x_ei, y_ei, 'go', label='EI')
+        # x = df['model_mean'].values
+        # y = df['bio_mean'].values
+        # l = np.linspace(0, max(x.max(), y.max()), 50)
+        # ax.plot(l, l, 'k--', label='diagonal')
 
-        x_ie = df[df['connection_class']=='ie']['model_mean'].values
-        y_ie = df[df['connection_class']=='ie']['bio_mean'].values
-        ax.plot(x_ie, y_ie, 'bo', label='IE')
+        # x_ee = df[df['connection_class']=='ee']['model_mean'].values
+        # y_ee = df[df['connection_class']=='ee']['bio_mean'].values
+        # ax.plot(x_ee, y_ee, 'ro', label='EE')
 
-        x_ii = df[df['connection_class']=='ii']['model_mean'].values
-        y_ii = df[df['connection_class']=='ii']['bio_mean'].values
-        ax.plot(x_ii, y_ii, 'mo', label='II')
+        # x_ei = df[df['connection_class']=='ei']['model_mean'].values
+        # y_ei = df[df['connection_class']=='ei']['bio_mean'].values
+        # ax.plot(x_ei, y_ei, 'go', label='EI')
 
-        m,b = np.polyfit(x, y, 1)
-        x_fit = np.arange(0, x.max(), 1)
-        y_fit = m*x_fit + b
-        ax.plot(x_fit, y_fit, 'r', label='fit')
+        # x_ie = df[df['connection_class']=='ie']['model_mean'].values
+        # y_ie = df[df['connection_class']=='ie']['bio_mean'].values
+        # ax.plot(x_ie, y_ie, 'bo', label='IE')
 
-        ax.legend(loc=2)
+        # x_ii = df[df['connection_class']=='ii']['model_mean'].values
+        # y_ii = df[df['connection_class']=='ii']['bio_mean'].values
+        # ax.plot(x_ii, y_ii, 'mo', label='II')
 
-        fig.suptitle('Number of appositions per connection')
+        # m,b = np.polyfit(x, y, 1)
+        # x_fit = np.arange(0, x.max(), 1)
+        # y_fit = m*x_fit + b
+        # ax.plot(x_fit, y_fit, 'r', label='fit')
 
-        ax.set_xlabel('Structural circuit (#)')
-        ax.set_ylabel('Bio data (#)')
+        # ax.legend(loc=2)
 
-        filename2\
-            = os.path.join(
-                report_path,
-                "apps_per_conn_classes_fitting{}.pdf".format(time.time()))
+        # fig.suptitle('Number of appositions per connection')
 
-        fig.savefig(filename2)
+        # ax.set_xlabel('Structural circuit (#)')
+        # ax.set_ylabel('Bio data (#)')
 
-        return (filename1, filename2)
+        # filename2\
+        #     = os.path.join(
+        #         report_path,
+        #         "apps_per_conn_classes_fitting{}.pdf".format(time.time()))
+
+        # fig.savefig(filename2)
+
+        # return (filename1, filename2)
 
 
-class DivergenceValidation:
+class DivergenceValidation0:
 
     conn_exp_data_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
                          '/20180219/bioname/connections.txt'
@@ -864,3 +1044,49 @@ class PCPCConnProbValidation:
                    + timestamp + '.png'
         fig.savefig(filename)
         return(filename)
+
+
+class DivergenceValidation(Validation):
+
+    bio_connections_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1'\
+                         '/20180219/bioname/connections.txt'
+
+    bio_divergence_path = '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/'\
+                          '20180219/bioname/divergence.txt'
+
+    def __init__(self, adapter, syn_or_conn='conn'):
+        self.syn_or_conn = syn_or_conn
+        super().__init__(
+            adapter=adapter,
+            reference_data=[
+                ReferenceData(
+                    data=pd.read_csv(self.bio_connections_path,
+                                     delim_whitespace=True,
+                                     index_col=0, skiprows=1,
+                                     names=['exp_PC', 'exp_INT', 'exp_UN'])
+                    label="connections from cell by Sclass"),
+                ReferenceData(
+                    data=pd.read_csv(self.exp_data_path, delim_whitespace=True,
+                               index_col=0, skiprows=1,
+                               names=['exp_PC', 'exp_INT', 'exp_UN'])
+                    label="proportions of connections from EXC vs INH neurons")])
+
+    def get_measurement(self, circuit):
+        mtypes = circuit.cells.mtypes
+
+        div_mtype_to_mtype =\
+            self.adapter.get_diverging(self.syn_or_conn,
+                                       from='mtype', to="mtype")
+        div_sclass_to_sclass =\
+            self.adapter.get_diverging(self.syn_or_conn,
+                                       from='sclass', to='sclass')
+
+
+        return df
+
+    def plot(self, df):
+
+        ax = plt.subplots((3, 1))
+        # seaborn.heatmap(df.pivot(index='pre_sclass',
+        #                          column='post_sclass')['model_mean'], ax=ax[0])
+        df['

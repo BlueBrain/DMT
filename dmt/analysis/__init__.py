@@ -108,7 +108,8 @@ class Analysis(WithFCA, AIBase):
         """Get a label for the measurement validated."""
         pass
 
-    def __call__(self, model, *args, **kwargs):
+    def __call__(self, model, save_report=False,
+                 *args, **kwargs):
         """An Analysis is a callable.
         In the concrete Analysis implementation,
         the first argument must be the model to be analyzed,
@@ -122,7 +123,7 @@ class Analysis(WithFCA, AIBase):
         model_measurement = self.get_measurement(model, *args, **kwargs)
         report = self.get_report(model_measurement)
 
-        if kwargs.get('save_report', False):
+        if save_report:
             try:
                 fname = self.report_file_name
             except AttributeError as e:

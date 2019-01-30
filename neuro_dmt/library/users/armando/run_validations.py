@@ -26,12 +26,15 @@ dpaths = {validations_module.MtypeCellDensityValidation:
               "data", "Armando2018_by_mtype.tsv")}
 
 circs = {
-    'O1_20180904':
-    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig',
+    # 'O1_20180904':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/CircuitConfig',
 
-    'O1_20180904_struct':
-    '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/'
-    'CircuitConfig_struct',
+    # 'O1_20180904_struct':
+    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180904/'
+    # 'CircuitConfig_struct',
+
+    "O1_20181102":
+    "/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20181102/CircuitConfig",
 
     # 'O1_20180821':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180821/CircuitConfig',
@@ -40,8 +43,8 @@ circs = {
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/'
     # 'O1/20180821/CircuitConfig_struct',
 
-    # 'CA1_20180506':
-    # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
+    'CA1_20180506':
+    '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180506/CircuitConfig',
 
     # 'CA1_20180506_struct':
     # '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/'
@@ -58,17 +61,22 @@ def run_valid(validation, circuit):
         kwargs["data_path"] = dpaths[validation]
         print("using data: ", dpaths[validation])
     valid = validation(**kwargs)
-    return valid(circuit)
+    return valid(circuit, save_report=True)
 
 
-def test():
-    for n, v in validations.items():
-        for name, cpath in circs.items():
+# def test():
+#     for n, v in validations.items():
+#         for name, cpath in circs.items():
 
-            print('------------',
-                  '\nrunning:', n, "for", name)
-            run_valid(v, cpath)
-            print('------------\n\n')
+#             print('------------',
+#                   '\nrunning:', n, "for", name)
+#             run_valid(v, cpath)
+#             print('------------\n\n')
 
 
-test()
+# test()
+run_valid(validations['ByLayerCellDensityValidation'], circs['O1_20181102'])
+run_valid(validations['SynsPerConnValidation'], circs['O1_20181102'])
+
+run_valid(validations['ByLayerCellDensityValidation'], circs['CA1_20180506'])
+run_valid(validations['SynsPerConnValidation'], circs['CA1_20180506'])
