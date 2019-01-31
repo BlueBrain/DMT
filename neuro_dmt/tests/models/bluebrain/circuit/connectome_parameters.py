@@ -28,8 +28,8 @@ from neuro_dmt.models.bluebrain.circuit.measurements.connectome\
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest\
     ,      RandomCellVariate\
-    ,      RandomConnectionVariate
-
+    ,      RandomConnectionVariate\
+    ,      RandomPathwayConnectionVariate
 
 logger=\
     Logger(
@@ -91,3 +91,10 @@ cnxn_measurement=\
         ).given({
             pre_mtype,
             post_mtype}))
+pcnxn_measurement=\
+    StatisticalMeasurement(
+        random_variate=RandomPathwayConnectionVariate(
+            sscx_circuit_model
+        ).given({
+            pathway}))
+

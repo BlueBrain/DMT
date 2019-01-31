@@ -221,7 +221,7 @@ class BlueBrainModelAdapter(
                 method=connectome_measurements.PairConnection(
                     circuit_model.bluepy_circuit,
                     *args, **kwargs),
-                get_random_variate=RandomPathwayConnectionVariate,
+                get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
                 *args, **kwargs)
 

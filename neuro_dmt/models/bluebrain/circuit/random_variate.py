@@ -41,14 +41,6 @@ class CircuitPropertyRandomVariate(
             __name__="circuit_model",
             __type__=BlueBrainCircuitModel,
             __doc__="Blue brain circuit model to compute random variates for.")
-    columns=\
-        Field(
-            __name__="columns",
-            __type__=type,
-            __typecheck__=Field.typecheck.either(list, pd.Index),
-            __doc__="""Columns of the dataframe generated
-            by this random variate""")
-
     def __init__(self,
             circuit_model,
             *args, **kwargs):
@@ -62,11 +54,10 @@ class CircuitPropertyRandomVariate(
         super().__init__(
             *args, **kwargs)
 
-
 class RandomSpatialVariate(
         CircuitPropertyRandomVariate):
     """Generator of random values, for a (blue) brain circuit."""
-        
+
     def __init__(self,
             circuit_model,
             *args, **kwargs):
@@ -107,6 +98,9 @@ class RandomPosition(
         self.offset = offset
         super().__init__(
             circuit_model,
+            columns=pd.Index(
+                ["X", "Y", "Z"],
+                name="axis"),
             *args, **kwargs)
 
     def __call__(self,
@@ -122,15 +116,6 @@ class RandomPosition(
                 .random_position(
                     condition,
                     *args, **kwargs)
-
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [[value[0], value[1], value[2]]],
-            columns=pd.Index(
-                ["X", "Y", "Z"],
-                name="axis"),
-            index=condition.index)
 
 
 class RandomCrossectionalPoint(
@@ -177,6 +162,7 @@ class RandomRegionOfInterest(
                 *args, **kwargs)
         super().__init__(
             circuit_model,
+            columns=[self.label],
             *args, **kwargs)
 
     def __call__(self,
@@ -195,15 +181,6 @@ class RandomRegionOfInterest(
             position - half_box,
             position + half_box)
     
-    def row(self,
-            condition,
-            value):
-        """..."""
-        return pd.DataFrame(
-            [value],
-            columns=[self.label],
-            index=condition.index)
-
 
 class RandomSpanningColumnOfInterest(
         RandomSpatialVariate):
@@ -224,6 +201,7 @@ class RandomSpanningColumnOfInterest(
             = crossection
         super().__init__(
             circuit_model,
+            columns=[self.label],
             *args, **kwargs)
 
     def __call__(self,
@@ -236,22 +214,13 @@ class RandomSpanningColumnOfInterest(
                     condition,
                     crossection=self.__crossection)
 
-    def row(self,
-            condition,
-            value):
-        """..."""
-        return\
-            pd.DataFrame(
-                [value],
-                columns=[self.label],
-                index=condition.index)
-    
 
 class RandomBoxCorners(
         RandomSpatialVariate):
     """..."""
     value_type = tuple #length 2
     label = "box_corners"
+
     def __init__(self,
             circuit_model,
             sampled_box_shape=50.*np.ones(3),
@@ -264,6 +233,14 @@ class RandomBoxCorners(
                 *args, **kwargs)
         super().__init__(
             circuit_model,
+            columns=pd.MultiIndex.from_tuples(
+                [("lower_corner", "X"),
+                 ("lower_corner", "Y"),
+                 ("lower_corner", "Z"),
+                 ("upper_corner", "X"),
+                 ("upper_corner", "Y"),
+                 ("upper_corner", "Z")],
+                names=["box_corners", "axis"]),
             sampled_box_shape=sampled_box_shape,
             *args, **kwargs)
 
@@ -271,25 +248,11 @@ class RandomBoxCorners(
             condition,
             *args, **kwargs):
         """"..."""
-        return\
+        lower_corner, upper_corner=\
             self.random_region_of_interest(
                 condition,
                 *args, **kwargs).bbox
-
-    def row(self,
-            condition,
-            value):
-        """..."""
-        columns\
-            = pd.MultiIndex.from_tuples(
-                [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
-                 ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
-                names=["box_corners", "axis"])
-        return pd.DataFrame(
-            [[value[0][0], value[0][1], value[0][2],
-              value[1][0], value[1][1], value[1][2]]],
-            columns=columns,
-            index=condition.index)
+        return list(lower_corner) + list(upper_corner)
 
 
 @with_logging(Logger.level.STUDY)
@@ -313,6 +276,7 @@ class RandomCellVariate(
         super().__init__(
             circuit_model=circuit_model,
             reset_condition_type=True,
+            columns=["gid"],
             *args, **kwargs)
 
     def __call__(self,
@@ -331,12 +295,6 @@ class RandomCellVariate(
         return np.random.choice(
             self.__gid_cache__[condition.hash_id])
 
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [value],
-            columns=["gid"],
-            index=condition.index)
 
 class RandomConnectionVariate(
         CircuitPropertyRandomVariate):
@@ -355,6 +313,7 @@ class RandomConnectionVariate(
         super().__init__(
             circuit_model,
             reset_condition_type=True,
+            columns=["pre_gid", "post_gid"],
             *args, **kwargs)
 
     def __call__(self,
@@ -375,19 +334,6 @@ class RandomConnectionVariate(
                 Condition([
                     ("mtype", post_mtype) ])))
 
-    def row(self, condition, value):
-        """...
-        """
-        pre_mtype=\
-            condition.get_value(
-                "pre_mtype")
-        post_mtype=\
-            condition.get_value(
-                "post_mtype")
-        return pd.DataFrame(
-            [value],
-            columns=["pre_gid", "post_gid"],
-            index=condiion.index)
 
 class RandomPathwayConnectionVariate(
         CircuitPropertyRandomVariate):
@@ -413,6 +359,7 @@ class RandomPathwayConnectionVariate(
         super().__init__(
             circuit_model=circuit_model,
             reset_condition_type=False,
+            columns=["pre_gid", "post_gid"],
             *args, **kwargs)
 
     def __call__(self,
@@ -429,14 +376,3 @@ class RandomPathwayConnectionVariate(
             self.random_post_cell(
                  Condition([
                     ("mtype", pathway[1])])))
-
-    def row(self, condition, value):
-        """..."""
-        pathway=\
-            condition.get_value(
-                "mtype_pathway")
-        return pd.DataFrame(
-            [value],
-            columns=["pre_gid", "post_gid"],
-            index=condition.index )
-

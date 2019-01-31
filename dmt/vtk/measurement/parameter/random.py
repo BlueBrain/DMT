@@ -76,6 +76,12 @@ class ConditionedRandomVariate(
             the condition type used with the random variate. However, a value
             of False constrains the random variate to accept the type set
             at initialization.""")
+    columns=\
+        Field(
+            __name__="columns",
+            __typecheck__=Field.typecheck.either(list, pd.Index),
+            __doc__="""Columns of the dataframe generated
+            by this random variate""")
 
     def __init__(self,
             conditions=None,
@@ -219,12 +225,15 @@ class ConditionedRandomVariate(
                     break
                 yield value
         
-    @abstractmethod
     def row(self,
-            condition,
-            value):
-        """convert a value into a dataframe row."""
-        pass
+        condition,
+        value):
+        """..."""
+        return pd.DataFrame(
+            [value],
+            columns=self.columns,
+            index=condition.index)
+
 
     def kwargs(self,
             condition,
