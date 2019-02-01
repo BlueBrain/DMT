@@ -32,6 +32,7 @@ class ByLayerCompositionComparison(
             __default__=BarPlotComparison,
             __doc__="""A subclass of {} to be plot comparison
             results.""".format(ComparisonPlot))
+
     def __init__(self,
             phenomenon,
             *args, **kwargs):

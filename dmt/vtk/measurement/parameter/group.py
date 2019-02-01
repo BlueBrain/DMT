@@ -23,7 +23,6 @@ class ParameterGroup:
             arg0 if isinstance(arg0, collections.Iterable)
             else (arg0,) + args)
         
-
     @property
     def parameters(self):
         """..."""

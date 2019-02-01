@@ -22,16 +22,19 @@ from neuro_dmt.measurement.parameter\
 from dmt.vtk.measurement.parameter.random\
     import ConditionedRandomVariate
 from dmt.vtk.utils.logging\
-    import Logger, with_logging
+    import Logger\
+    ,      with_logging
 from dmt.vtk.utils.descriptor\
-    import Field, WithFCA
+    import Field\
+    ,      WithFCA
 from neuro_dmt.models.bluebrain.circuit\
     import BlueBrainModelHelper
 from neuro_dmt.models.bluebrain.circuit.geometry\
-    import \
-    Cuboid,  random_location
+    import  Cuboid\
+    ,      random_location
 from neuro_dmt.measurement.parameter\
-    import BrainCircuitSpatialParameter, Column
+    import BrainCircuitSpatialParameter\
+    ,      BrainCircuitConnectomeParameter
 
 class CircuitDefined:
     """Mixin with objects whose 'values' depend on the circuit.
@@ -50,7 +53,7 @@ class CircuitDefined:
             *args, **kwargs)
 
 class Mtype(
-        BrainCircuitMeasurementParameter):
+        BrainCircuitConnectomeParameter):
     """mtypes in a circuit."""
 
     @classmethod
@@ -106,7 +109,7 @@ class PostMtype(
 
 
 class MtypePathway(
-        BrainCircuitMeasurementParameter):
+        BrainCircuitConnectomeParameter):
     """A pathway is pre-cell-type to post-cell-type.
     In our first implementation we will use mtype to define the cell types.
     We can also implement a general 'Pathway' that would take an arbitrary type

@@ -40,6 +40,7 @@ class Comparison:
         Field.Optional(
             __name__="plot_customization",
             __type__=dict,
+            __default__={},
             __doc__="A dict containing customization of the plot.")
 
 

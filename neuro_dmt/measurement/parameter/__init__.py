@@ -71,7 +71,12 @@ class BrainCircuitSpatialParameter(
 class BrainCircuitConnectomeParameter(
         BrainCircuitMeasurementParameter):
     """A parameter to measure the brain's connect."""
-    pass
+
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            *args, **kwargs)
     
 
 class LayerIndex(
