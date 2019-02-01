@@ -1,5 +1,7 @@
 """Test develop random variates for the circuit."""
 import os
+from dmt.vtk.measurement\
+     import StatisticalMeasurement
 from dmt.vtk.measurement.condition\
     import Condition
 from dmt.vtk.utils.logging import Logger
@@ -14,6 +16,8 @@ from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
     import get_iso_cortex_circuit_model
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
    import get_sscx_fake_atlas_circuit_model
+from neuro_dmt.models.bluebrain.circuit.adapter\
+     import BlueBrainModelAdapter
 from neuro_dmt.models.bluebrain.circuit.parameters\
      import Mtype\
      ,      PreMtype\
@@ -24,12 +28,26 @@ from neuro_dmt.models.bluebrain.circuit.random_variate\
     ,      RandomConnectionVariate\
     ,      RandomPathwayConnectionVariate\
     ,      RandomPosition\
-    ,      RandomBoxCorners
+    ,      RandomBoxCorners\
+    ,      RandomRegionOfInterest
+from neuro_dmt.models.bluebrain.circuit.measurements.connectome\
+     import PairConnection\
+     ,      PairSynapseCount\
+     ,      AfferentConnectionCount\
+     ,      EfferentConnectionCount\
+     ,      ConnectionStrength\
+     ,      SomaDistance
 
 logger=\
     Logger(
         "Test develop random variates",
         level=Logger.level.DEVELOP)
+bbadapter=\
+    BlueBrainModelAdapter(
+        brain_region=brain_regions.sscx,
+        spatial_random_variate=RandomRegionOfInterest,
+        model_label="in-silico",
+        sample_size=20)
 iso_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj68/circuits",
@@ -90,16 +108,16 @@ for cell_gid in random_iso_cell_gids:
 
 mtype=\
     Mtype(
-        sscx_circuit,
-        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+         sscx_circuit,
+         values=["L4_TPC", "L2_TPC:A", "L3_TPC:A", "FOO"])
 pre_mtype=\
     PreMtype(
         sscx_circuit,
-        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+         values=mtype.values)
 post_mtype=\
     PostMtype(
-        sscx_circuit,
-        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+         sscx_circuit,
+         values=mtype.values)
 pathway=\
     MtypePathway(
         sscx_circuit,
@@ -149,6 +167,58 @@ rboxes_take=\
 rboxes=\
      random_box_corners.sample(
           size=10)
+
+logger.info(
+     logger.get_source_info(),
+     "define some statistical measurements")
+conn_measurement=\
+     StatisticalMeasurement(
+          random_variate=RandomConnectionVariate(
+               sscx_circuit_model
+          ).given(
+               {pre_mtype, post_mtype}))
+pre_post_mtype_connections=\
+     conn_measurement.get(
+          method=PairConnection(
+               circuit=sscx_circuit),
+          sample_size=10,
+          debug=True)
+pre_post_mtype_connections_filled=\
+     bbadapter.filled(
+          pre_post_mtype_connections,
+          by={pre_mtype, post_mtype})
+pconn_measurement=\
+     StatisticalMeasurement(
+          random_variate=RandomPathwayConnectionVariate(
+               sscx_circuit_model
+          ).given(
+               {pathway}))
+pathway_connections=\
+     pconn_measurement.get(
+          method=PairConnection(
+               circuit=sscx_circuit),
+          sample_size=10,
+          debug=True)
+pathway_connections_filled=\
+     bbadapter.filled(
+          pathway_connections,
+          by={pathway})
+cell_group_measurement=\
+     StatisticalMeasurement(
+          random_variate=RandomCellVariate(
+               sscx_circuit_model
+          ).given(
+               {mtype}))
+afferent_counts=\
+     cell_group_measurement.get(
+          method=AfferentConnectionCount(
+               circuit=sscx_circuit),
+          sample_size=10,
+          debug=True)
+afferent_counts_filled=\
+     bbadapter.filled(
+          afferent_counts,
+          by={mtype})
 logger.success(
     logger.get_source_info(),
     "All tests passed!")

@@ -74,7 +74,3 @@ def get_cell_density(
            len(column_layer_cells) /
            brain_regions.volume(
                column_layer_atlas_ids))
-
- 
-
-

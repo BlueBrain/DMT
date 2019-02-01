@@ -24,7 +24,12 @@ from neuro_dmt.models.bluebrain.circuit.parameters\
     ,      PostMtype\
     ,      MtypePathway
 from neuro_dmt.models.bluebrain.circuit.measurements.connectome\
-    import *
+    import PairConnection\
+    ,      PairSynapseCount\
+    ,      AfferentConnectionCount\
+    ,      EfferentConnectionCount\
+    ,      ConnectionStrength\
+    ,      SomaDistance
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest\
     ,      RandomCellVariate\
@@ -97,4 +102,10 @@ pcnxn_measurement=\
             sscx_circuit_model
         ).given({
             pathway}))
-
+pcnxns=\
+    bbadapter.filled(
+        pcnxn_measurement.get(
+            method=ConnectionStrength(circuit=sscx_circuit),
+            sample_size=20),
+        by={pathway})
+        

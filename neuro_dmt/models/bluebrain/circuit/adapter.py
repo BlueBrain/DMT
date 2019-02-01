@@ -35,6 +35,8 @@ from dmt.vtk.measurement.parameter.random\
 from dmt.vtk.utils.logging\
     import Logger\
     ,      with_logging
+from neuro_dmt.utils.enums\
+    import Direction
 from neuro_dmt.utils.cell_type\
     import CellType
 from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
@@ -203,28 +205,6 @@ class BlueBrainModelAdapter(
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
-    def get_synapse_count(self,
-            circuit_model,
-            parameters={},
-            *args, **kwargs):
-        """Count synapses in a circuit. The type of the connection
-        is specified by the arguments in the method call."""
-        if not parameters:
-             parameters={
-                 PreMtype(circuit_model.bluepy_circuit),
-                 PostMtype(circuit_model.bluepy_circuit)}
-            #parameters={
-            #    MtypePathway(circuit_model.bluepy_circuit)}
-        return\
-            self.statistical_measurement(
-                circuit_model,
-                method=connectome_measurements.PairConnection(
-                    circuit_model.bluepy_circuit,
-                    *args, **kwargs),
-                get_random_variate=RandomConnectionVariate,
-                parameters=parameters,
-                *args, **kwargs)
-
     def get_cell_ratio(self,
             circuit_model,
             spatial_parameters={},
@@ -275,5 +255,150 @@ class BlueBrainModelAdapter(
                     circuit_model.bluepy_circuit),
                 circuit_model=circuit_model,
                 parameters=spatial_parameters,
+                *args, **kwargs)
+
+    def pathway_measurement(self,
+            get_measurement_method,
+            circuit_model,
+            parameters={},
+            *args, **kwargs):
+        """Meassure (mtype --> mtype) pathways."""
+        if not parameters:
+             parameters=[
+                 PreMtype(circuit_model.bluepy_circuit),
+                 PostMtype(circuit_model.bluepy_circuit)]
+        return\
+            self.statistical_measurement(
+                circuit_model,
+                method=get_measurement_method(
+                    circuit=circuit_model.bluepy_circuit,
+                    *args, **kwargs),
+                get_random_variate=RandomConnectionVariate,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_pathway_synapse_count(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Count synapses in a circuit. The type of the connection
+        is specified by the arguments in the method call."""
+        return\
+            self.pathway_measurement(
+                connectome_measurements.PairSynapseCount,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_pathway_connection_strength(self,
+            circuit_model,
+            parameters={},
+            *args, **kwargs):
+        """Measure the strength of connections in a (mtype->mtype) pathway."""
+        return\
+            self.pathway_measurement(
+                connectome_measurements.ConnectionStrength,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_pathway_connection_count(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Get statistical summary of the number of connections in a
+        (mtype --> mtype) pathway."""
+        return\
+            self.pathway_measurement(
+                connectome_measurements.PairConnection,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_pathway_soma_distance(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Get a statistical summary of the distance between cell somas."""
+        return\
+            self.pathway_measurement(
+                connectome_measurements.SomaDistance,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_pathway_interbouton_interval(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Get a statistical summary of interbouton intervals"""
+        return\
+            self.pathway_measurement(
+                connectome_measurements.InterboutonInterval,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def cell_group_measurement(self,
+            get_measurement_method,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Make (statistical) measurements of cell groups in a circuit."""
+        if not parameters:
+            parameters = [
+                Mtype(circuit_model.bluepy_circuit)]
+        return\
+            self.statistical_measurement(
+                circuit_model,
+                method=get_measurement_method(
+                    circuit=circuit_model.bluepy_circuit,
+                    *args, **kwargs),
+                get_random_variate=RandomCellVariate,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_cell_connection_count(
+            circuit_model,
+            connection_type=Direction.IN,
+            parameters=[],
+            *args, **kwargs):
+        """Statistical summary of Afferent or Efferent connection count
+        of cells in a group, specified by 'parameters'"""
+        if connection_type not in {Direction.IN, Direction.OUT}:
+            raise ValueError(
+                "Unknown connection type {}".format(connection_type),
+                "Please set connection_type to one of:\n\t 1.{}\n\t 2.{}"\
+                .format(Direction.IN, Direction.OUT))
+        method=\
+            connectome_measurements.AfferentConnectionCount\
+            if connection_type == Direction.IN else\
+               connectome_measurements.EfferentConnectionCount
+        return\
+            self.cell_group_measurement(
+                method,
+                circuit_model,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_cell_synapse_count(
+            circuit_model,
+            connection_type=Direction.IN,
+            parameters=[]):
+        """..."""
+        if connection_type not in {Direction.IN, Direction.OUT}:
+            raise ValueError(
+                "Unknown connection type {}".format(connection_type),
+                "Please set connection_type to one of:\n\t 1.{}\n\t 2.{}"\
+                .format(Direction.IN, Direction.OUT))
+        method=\
+            connectome_measurements.AfferentSynapseCount\
+            if connection_type == Direction.IN else\
+               connectome_measurements.EfferentSynapseCount
+        return\
+            self.cell_group_measurement(
+                method,
+                cirucit_model,
+                parameters=parameters,
                 *args, **kwargs)
 

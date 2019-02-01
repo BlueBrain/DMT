@@ -101,11 +101,8 @@ class PairConnection(
         ------------------------------------------------------------------------
         bool #indicating if their is a connection
         """
-        post_gids_pre=\
-            self.conn\
-                .efferent_gids(
-                    pre_gid)
-        return post_gid in post_gids_pre
+        return\
+            post_gid in self.conn.efferent_gids(pre_gid)
 
 class AfferentSynapseCount(
         ConnectomeMeasurementMethod):
@@ -130,7 +127,8 @@ class AfferentSynapseCount(
         ------------------------------------------------------------------------
         int
         """
-        return len(self.conn.afferent_synapses(gid))
+        return\
+            len(self.conn.afferent_synapses(gid))
 
 
 class EfferentSynapseCount(
@@ -156,7 +154,8 @@ class EfferentSynapseCount(
         ------------------------------------------------------------------------
         int
         """
-        return len(self.conn.efferent_synapses(gid))
+        return\
+            len(self.conn.efferent_synapses(gid))
 
 
 class PairSynapseCount(
@@ -171,10 +170,11 @@ class PairSynapseCount(
     
     def __call__(self, pre_gid, post_gid):
         """...Call Me..."""
-        return len(
-            self.conn.pair_synapses(
-                pre_gid=pre_gid,
-                post_gid=post_gid))
+        return\
+            len(
+                self.conn.pair_synapses(
+                    pre_gid=pre_gid,
+                    post_gid=post_gid))
 
 
 class SomaDistance(
@@ -186,7 +186,7 @@ class SomaDistance(
             "Soma distance",
             "Distance between soma bodies of a connection.")
     units= "um^3"
-        
+
     def __call__(self, pre_gid, post_gid):
         """...Call Me..."""
         positions=\
@@ -194,8 +194,9 @@ class SomaDistance(
                 .positions([
                     pre_gid,
                     post_gid])
-        return np.linalg.norm(
-            positions.loc[pre_gid] - positions.loc[post_gid])
+        return\
+            np.linalg.norm(
+                positions.loc[pre_gid] - positions.loc[post_gid])
 
 
 class InterboutonInterval(
@@ -210,11 +211,12 @@ class InterboutonInterval(
         
     def __call__(self, gid):
         """...Call Me..."""
-        return 1. / self._circuit.stats.bouton_density(gid)
+        return\
+            1. / self._circuit.stats.bouton_density(gid)
 
 
 class ConnectionStrength(
-        ConnectomeMeasurementMethod):
+        PairSynapseCount):
     """Number of synapses in a cell --> cell connection."""
 
     label= "in-silico"
@@ -223,22 +225,3 @@ class ConnectionStrength(
             "Connection strength",
             "Number of synapses between cells in a connection.")
     units= "Count"
-        
-    def __call__(self, pre_gid, post_gid):
-        """...Call Me...
-
-        Parameters
-        ------------------------------------------------------------------------
-        pre_gid :: int #gid of the pre synaptic cell
-        post_gid :: int #gid of the post synaptic cell
-
-        Returns
-        ------------------------------------------------------------------------
-        int #number of synapses
-        """
-        return\
-            len(
-                self.conn.pair_synapses(
-                    pre_gid=pre_gid,
-                    post_gid=post_gid))
-
