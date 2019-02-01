@@ -2,40 +2,47 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Cell
-from bluepy.geometry.roi import ROI as RegionOfInterest
-from dmt.vtk.utils.collections import *
-from dmt.vtk.measurement.parameter import Parameter
+from bluepy.v2.enums\
+    import Cell
+from bluepy.geometry.roi\
+    import ROI as RegionOfInterest
+from dmt.vtk.utils.collections\
+    import *
+from dmt.vtk.measurement.condition\
+    import Condition
+from dmt.vtk.measurement.parameter\
+    import Parameter
 from dmt.vtk.measurement.parameter.finite\
     import FiniteValuedParameter
 from dmt.vtk.measurement.parameter.random\
     import ConditionedRandomVariate
-from dmt.vtk.utils.logging import Logger, with_logging
-from dmt.vtk.utils.descriptor import Field, WithFCA
+from dmt.vtk.utils.logging\
+    import Logger, with_logging
+from dmt.vtk.utils.descriptor\
+    import Field, WithFCA
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import BlueBrainCircuitModel
-from neuro_dmt.utils.brain_regions import BrainRegion
+from neuro_dmt.utils.brain_regions\
+    import BrainRegion
 from neuro_dmt.models.bluebrain.circuit.build\
     import CircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import  Cuboid,  random_location
-   
 
 
 @with_logging(Logger.level.STUDY)
-class RandomSpatialVariate(
+class CircuitPropertyRandomVariate(
         ConditionedRandomVariate):
-    """Generator of random values, for a (blue) brain circuit."""
+    """A random variate that returns values for a circuit property,
+    such as it's cell's gids, or positions in the circuit's physical space."""
+    
     circuit_model=\
         Field(
             __name__="circuit_model",
             __type__=BlueBrainCircuitModel,
             __doc__="Blue brain circuit model to compute random variates for.")
-        
-    
     def __init__(self,
             circuit_model,
-            condition_type=Record(),
             *args, **kwargs):
         """...
         Parameters
@@ -45,7 +52,23 @@ class RandomSpatialVariate(
         self.circuit_model\
             = circuit_model
         super().__init__(
-            condition_type=condition_type,
+            *args, **kwargs)
+
+class RandomSpatialVariate(
+        CircuitPropertyRandomVariate):
+    """Generator of random values, for a (blue) brain circuit."""
+
+    def __init__(self,
+            circuit_model,
+            *args, **kwargs):
+        """Initialize Me
+        Parameters
+        ------------------------------------------------------------------------
+        circuit :: bluepy.v2.Circuit,
+        """
+        super().__init__(
+            circuit_model,
+            reset_condition_type=True,
             *args, **kwargs)
 
     @property
@@ -55,18 +78,6 @@ class RandomSpatialVariate(
             information from  'circuit'.
         """
         return self.circuit_model.geometry
-
-    def given(self,
-            *conditioning_vars):
-        """Set the condition type."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """RandomSpatialVariate with conditioning vars {}"""\
-            . ormat(conditioning_vars))
-        return super().given(
-            *conditioning_vars,
-            reset_condition_type=True)
-
 
 class RandomPosition(
         RandomSpatialVariate):
@@ -87,6 +98,9 @@ class RandomPosition(
         self.offset = offset
         super().__init__(
             circuit_model,
+            columns=pd.Index(
+                ["X", "Y", "Z"],
+                name="axis"),
             *args, **kwargs)
 
     def __call__(self,
@@ -98,19 +112,10 @@ class RandomPosition(
             """generate RandomPosition with condition {}"""\
             .format(condition.value))
         return\
-            self.circuit_model\
+            self.circuit_geometry\
                 .random_position(
                     condition,
                     *args, **kwargs)
-    
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [[value[0], value[1], value[2]]],
-            columns=pd.Index(
-                ["X", "Y", "Z"],
-                name="axis"),
-            index=condition.index)
 
 
 class RandomCrossectionalPoint(
@@ -157,6 +162,7 @@ class RandomRegionOfInterest(
                 *args, **kwargs)
         super().__init__(
             circuit_model,
+            columns=[self.label],
             *args, **kwargs)
 
     def __call__(self,
@@ -175,15 +181,6 @@ class RandomRegionOfInterest(
             position - half_box,
             position + half_box)
     
-    def row(self,
-            condition,
-            value):
-        """..."""
-        return pd.DataFrame(
-            [value],
-            columns=[self.label],
-            index=condition.index)
-
 
 class RandomSpanningColumnOfInterest(
         RandomSpatialVariate):
@@ -204,6 +201,7 @@ class RandomSpanningColumnOfInterest(
             = crossection
         super().__init__(
             circuit_model,
+            columns=[self.label],
             *args, **kwargs)
 
     def __call__(self,
@@ -216,22 +214,13 @@ class RandomSpanningColumnOfInterest(
                     condition,
                     crossection=self.__crossection)
 
-    def row(self,
-            condition,
-            value):
-        """..."""
-        return\
-            pd.DataFrame(
-                [value],
-                columns=[self.label],
-                index=condition.index)
-    
 
 class RandomBoxCorners(
         RandomSpatialVariate):
     """..."""
     value_type = tuple #length 2
     label = "box_corners"
+
     def __init__(self,
             circuit_model,
             sampled_box_shape=50.*np.ones(3),
@@ -244,6 +233,14 @@ class RandomBoxCorners(
                 *args, **kwargs)
         super().__init__(
             circuit_model,
+            columns=pd.MultiIndex.from_tuples(
+                [("lower_corner", "X"),
+                 ("lower_corner", "Y"),
+                 ("lower_corner", "Z"),
+                 ("upper_corner", "X"),
+                 ("upper_corner", "Y"),
+                 ("upper_corner", "Z")],
+                names=["box_corners", "axis"]),
             sampled_box_shape=sampled_box_shape,
             *args, **kwargs)
 
@@ -251,30 +248,16 @@ class RandomBoxCorners(
             condition,
             *args, **kwargs):
         """"..."""
-        return\
+        lower_corner, upper_corner=\
             self.random_region_of_interest(
                 condition,
                 *args, **kwargs).bbox
-
-    def row(self,
-            condition,
-            value):
-        """..."""
-        columns\
-            = pd.MultiIndex.from_tuples(
-                [("p0", "X"), ("p0", "Y"), ("p0", "Z"),
-                 ("p1", "X"), ("p1", "Y"), ("p1", "Z")],
-                names=["box_corners", "axis"])
-        return pd.DataFrame(
-            [[value[0][0], value[0][1], value[0][2],
-              value[1][0], value[1][1], value[1][2]]],
-            columns=columns,
-            index=condition.index)
+        return list(lower_corner) + list(upper_corner)
 
 
 @with_logging(Logger.level.STUDY)
 class RandomCellVariate(
-        ConditionedRandomVariate):
+        CircuitPropertyRandomVariate):
     """Generates random cell gids..."""
     value_type = int
     label = "gid"
@@ -286,39 +269,25 @@ class RandomCellVariate(
 
     def __init__(self,
             circuit_model,
-            condition_type=Record(),
             *args, **kwargs):
         """..."""
 
         self.__gid_cache__ = {}
         super().__init__(
             circuit_model=circuit_model,
-            condition_type=condition_type,
+            reset_condition_type=True,
+            columns=["gid"],
             *args, **kwargs)
-
-    def given(self,
-            *conditioning_vars):
-        """Set the condition type."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """RandomCellVariate with conditioning vars {}"""\
-            .format(conditioning_vars))
-        return super().given(
-            *conditioning_vars,
-            reset_condition_type=True)
 
     def __call__(self,
             condition,
             *args, **kwargs):
         """...Call Me..."""
         if not condition.hash_id in self.__gid_cache__:
-            circuit = self.circuit_model.bluepy_circuit
             self.__gid_cache__[condition.hash_id]=\
-                   list(
-                       circuit\
-                       .cells\
-                       .get(condition.as_dict)\
-                       .index)
+                self.circuit_model\
+                    .get_cell_group(
+                        condition.as_dict)
         if "size" in kwargs:
             return np.random.choice(
                 self.__gid_cache__[condition.hash_id],
@@ -326,89 +295,84 @@ class RandomCellVariate(
         return np.random.choice(
             self.__gid_cache__[condition.hash_id])
 
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [value],
-            columns=["gid"],
-            index=condition.index)
-
 
 class RandomConnectionVariate(
-        ConditionedRandomVariate):
+        CircuitPropertyRandomVariate):
     """Generate random pair of cell gids..."""
-    value_type = tuple
     label = "connection"
-    circuit_model=\
-        Field(
-            __name__="circuit_model",
-            __type__=BlueBrainCircuitModel,
-            __doc__="The circuit model in which to generate random cells.")
+    value_type = tuple
 
     def __init__(self,
             circuit_model,
-            condition_type=Record(),
             *args, **kwargs):
-        """..."""
+        """Initialize Me"""
         self.random_cell=\
             RandomCellVariate(
                 circuit_model,
                 *args, **kwargs)
-        self.__conn_cache__ = {{}}
         super().__init__(
-            circuit_model=circuit_model,
-            condition_type=condition_type,
+            circuit_model,
+            reset_condition_type=True,
+            columns=["pre_gid", "post_gid"],
             *args, **kwargs)
 
-    def given(self,
-            *conditioning_vars):
-        """Set the condition type."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """RandomCellVariate with conditioning vars {}"""\
-            .format(conditioning_vars))
-        return super().given(
-            *conditioning_vars,
-            reset_condition_type=True)
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """Call Me"""
+        pre_mtype=\
+            condition.get_value(
+                "pre_mtype")
+        post_mtype=\
+            condition.get_value(
+                "post_mtype")
+        return (
+            self.random_cell(
+                Condition([
+                    ("mtype", pre_mtype)])),
+            self.random_cell(
+                Condition([
+                    ("mtype", post_mtype) ])))
+
+
+class RandomPathwayConnectionVariate(
+        CircuitPropertyRandomVariate):
+    """Generate random pair of cell gids..."""
+    label = "connection"
+    value_type = tuple
+    condition_type=\
+        Record(mtype_pathway=tuple) #(int, int)
+
+    def __init__(self,
+            circuit_model,
+            *args, **kwargs):
+        """..."""
+        self.random_pre_cell=\
+            RandomCellVariate(
+                circuit_model,
+                *args, **kwargs)
+        self.random_post_cell=\
+            RandomCellVariate(
+                circuit_model,
+                *args, **kwargs)
+        #self.__conn_cache__ = {}
+        super().__init__(
+            circuit_model=circuit_model,
+            reset_condition_type=False,
+            columns=["pre_gid", "post_gid"],
+            *args, **kwargs)
 
     def __call__(self,
             condition,
             *args, **kwargs):
         """...Call Me..."""
-        pre_cell_type=\
+        pathway=\
             condition.get_value(
-                "pre_cell_type")
-        post_cell_type=\
-                condition.get_value(
-                    "post_cell_type")
-        post_hash_id=\
-            post_cell_type.hash_id
-                
-        if not pre_hash_id in self.__conn_cache__:
-            self.__conn_cache__[pre_hash_id]= {}
-
-        if not post_hash_id in self.__conn_cache__[pre_hash_id]:
-            self.__conn_cache__[pre_hash_id][post_hash_id]=\
-                
-
-        if not condition.hash_id in self.__gid_cache__:
-            circuit = self.circuit_model.bluepy_circuit
-            self.__conn_cache__[condition.hash_id]=\
-                   list(circuit.cells\
-                        .get(
-                            condition.as_dict)\
-                        .index)
-        if "size" in kwargs:
-            return np.random.choice(
-                self.__gid_cache__[condition.hash_id],
-                kwargs["size"])
-        return np.random.choice(
-            self.__gid_cache__[condition.hash_id])
-
-    def row(self, condition, value):
-        """..."""
-        return pd.DataFrame(
-            [value],
-            columns=["gid"],
-            index=condition.index)
-
+                "mtype_pathway")
+        return (
+            self.random_pre_cell(
+                Condition([
+                    ("mtype", pathway[0])])),
+            self.random_post_cell(
+                 Condition([
+                    ("mtype", pathway[1])])))

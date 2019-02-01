@@ -12,17 +12,21 @@ class Condition:
             param_value_pairs,
             *args, **kwargs):
         """..."""
-        self.__param_value_pairs\
-            = sorted(
-                [(self.__get_label(param), value)
-                 for param, value in param_value_pairs],
-                key=lambda key_value: key_value[0])
-        self.__record\
-            = Record(
+        self.__param_value_pairs=\
+            [(self.__get_label(param), value)
+             for param, value in param_value_pairs]
+        self.__record=\
+            Record(
                 **{param: value
                    for param, value in self.__param_value_pairs})
         super().__init__(*args, **kwargs)
 
+    @property
+    def sorted_param_value_pairs(self):
+        """..."""
+        return sorted(
+            self.__param_value_pairs,
+            key=lambda key_value: key_value[0])
 
     @property
     def as_dict(self):
@@ -36,7 +40,7 @@ class Condition:
 
     def __hash__(self):
         """Convert this Condition to a string and hash it."""
-        return hash(str(self.__param_value_pairs))
+        return hash(str(self.sorted_param_value_pairs))
 
     @classmethod
     def __get_label(cls, param):
@@ -50,16 +54,14 @@ class Condition:
         """..."""
         return self.__get_label(key) in self.__record
 
-    def specifies(self, parameter):
-        """Does condition specify a value for parameter 'key'?"""
-
     @property
     def value(self):
         """..."""
         return self.__record
 
     def get_value(self, label):
-        """..."""
+        """Get value of this condition for the given label.
+        """
         return self.__record.get(label)
 
     @property
@@ -70,8 +72,8 @@ class Condition:
     @property
     def index(self):
         """A Pandas Index object."""
-        return pd.MultiIndex.from_tuples([
-            tuple(value for _, value in self.__param_value_pairs)],
+        return pd.MultiIndex.from_tuples(
+            [tuple(value for _, value in self.__param_value_pairs)],
             names=[param for param, _ in self.__param_value_pairs])
 
     def is_valid(self, value):
@@ -133,12 +135,19 @@ class ConditionGenerator(
         """..."""
         if not conditions:
             conditions = self
+
         def __tuple(condition):
             """..."""
-            return size * tuple(condition.value.get(variable.label)
-                                for variable in self.conditioning_variables)
-        return pd.MultiIndex.from_tuples([__tuple(c) for c in conditions],
-                                         names=self.labels)
+            return size *\
+                tuple(
+                    condition.value.get(
+                        variable.label)
+                    for variable in self.conditioning_variables)
+        return\
+            pd.MultiIndex\
+              .from_tuples(
+                  [__tuple(c) for c in conditions],
+                  names=self.labels)
 
 
 def get_conditions(arg0, *args):

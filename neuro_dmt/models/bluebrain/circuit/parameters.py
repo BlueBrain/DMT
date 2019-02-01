@@ -88,6 +88,23 @@ class Mtype(
             *args, **kwargs)
 
 
+class PreMtype(
+        Mtype):
+    """Mtype specialized to be a synaptic connection's pre-mtype.
+    This will allow the code using this parameter to infer it's label
+    to be 'pre-mtype' instead of 'mtype'."""
+
+    label= "pre_mtype"
+
+class PostMtype(
+        Mtype):
+    """Mtype specialized to be a synaptic connection's post-mtype.
+    This will allow the code using this parameter to infer it's label
+    to be 'post-mtype' instead of 'mtype'."""
+
+    label= "post_mtype"
+
+
 class MtypePathway(
         BrainCircuitMeasurementParameter):
     """A pathway is pre-cell-type to post-cell-type.
@@ -100,17 +117,35 @@ class MtypePathway(
             *args, **kwargs):
         """..."""
         pre_mtypes=\
-            Mtype.validated_mtypes(
+            PreMtype.validated_mtypes(
                 circuit,
                 kwargs.get("pre_mtypes", []))
         post_mtypes=\
-            Mtype.validated_mtypes(
+            PostMtype.validated_mtypes(
                 circuit,
                 kwargs.get("post_mtypes", []))
         super().__init__(
-            label="pathway",
+            label="mtype_pathway",
             value_type=tuple,
             values=[(pre, post)
                     for pre in pre_mtypes
                     for post in post_mtypes])
 
+    def filled(self,
+            dataframe,
+            sorted=True,
+            ascending=True,
+            with_index_renamed=True):
+        """Override the method in superclass FiniteValuedParameter,
+        to change the dataframe's index."""
+        dataframe=\
+            super().filled(
+                dataframe,
+                sorted=sorted,
+                ascending=ascending,
+                with_index_renamed=with_index_renamed)
+        dataframe.index=\
+            pd.MultiIndex.from_tuples(
+                dataframe.index.values,
+                names=["pre_mtype", "post_mtype"])
+        return dataframe

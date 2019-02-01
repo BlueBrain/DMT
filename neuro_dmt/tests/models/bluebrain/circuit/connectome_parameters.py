@@ -1,9 +1,13 @@
 """Test develop connectome parameters"""
 import os
+from dmt.vtk.utils.logging\
+    import Logger
+from dmt.vtk.utils.collections\
+    import take
+from dmt.vtk.measurement\
+    import StatisticalMeasurement
 from dmt.vtk.measurement.condition\
     import Condition
-from dmt.vtk.utils.logging import Logger
-from dmt.vtk.utils.collections import take
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.measurement.parameter\
@@ -15,9 +19,17 @@ from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
     import get_sscx_fake_atlas_circuit_model
 from neuro_dmt.models.bluebrain.circuit.parameters\
-    import Mtype, Pathway
+    import Mtype\
+    ,      PreMtype\
+    ,      PostMtype\
+    ,      MtypePathway
+from neuro_dmt.models.bluebrain.circuit.measurements.connectome\
+    import *
 from neuro_dmt.models.bluebrain.circuit.random_variate\
-    import RandomRegionOfInterest
+    import RandomRegionOfInterest\
+    ,      RandomCellVariate\
+    ,      RandomConnectionVariate\
+    ,      RandomPathwayConnectionVariate
 
 logger=\
     Logger(
@@ -43,18 +55,46 @@ sscx_circuit_model=\
         "rat")
 sscx_circuit=\
     sscx_circuit_model.circuit
-mtypes=\
+mtype=\
     Mtype(
         sscx_circuit,
         values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
-pathways=\
-    Pathway(
+pre_mtype=\
+    PreMtype(
         sscx_circuit,
-        pre_mtypes=mtypes.values,
-        post_mtypes=mtypes.values)
+        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+post_mtype=\
+    PostMtype(
+        sscx_circuit,
+        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+pathway=\
+    MtypePathway(
+        sscx_circuit,
+        pre_mtypes=mtype.values,
+        post_mtypes=mtype.values)
 bbadapter=\
     BlueBrainModelAdapter(
         brain_region=brain_regions.sscx,
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)
+cell_gid_measurement=\
+    StatisticalMeasurement(
+        random_variate=RandomCellVariate(
+            sscx_circuit_model
+        ).given({
+            mtype}))
+cnxn_measurement=\
+    StatisticalMeasurement(
+        random_variate=RandomConnectionVariate(
+            sscx_circuit_model
+        ).given({
+            pre_mtype,
+            post_mtype}))
+pcnxn_measurement=\
+    StatisticalMeasurement(
+        random_variate=RandomPathwayConnectionVariate(
+            sscx_circuit_model
+        ).given({
+            pathway}))
+

@@ -83,6 +83,32 @@ class BlueBrainCircuitModel(
         raise NotImplementedError
 
 
+    def get_cell_group(self,
+            cell_group):
+        """This call will be forwarded to bluepy.
+        Arguments
+        --------------
+        cell_group :: dict that accepted by bluepy.circuit.cell
+        --------------
+        Return
+        --------------
+        List[GIDs]
+
+        Implementation Note
+        --------------------
+        We can add a validation to check that 'cell_group' has
+        keys acceptable to bluepy.circuit.cells.get, and allow
+        filtering out of invalid keys."""
+        return\
+            list(self\
+                 .bluepy_circuit\
+                 .cells\
+                 .get(
+                     cell_group,
+                     properties=[]
+                 ).index)
+
+
 class O1CircuitModel(
         BlueBrainCircuitModel):
     """..."""

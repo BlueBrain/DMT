@@ -102,13 +102,17 @@ class FiniteValuedParameter(
         """
         return np.random.choice(self.values, n)
 
-    def sorted(self, dataframe, ascending=True):
+    def sorted(self,
+            dataframe,
+            ascending=True):
         """dataframe sorted by index that is this Parameter"""
         from dmt.vtk.utils.pandas import sorted
         return sorted(dataframe, order=lambda v: self.value_order[v],
                       level=self.label, ascending=ascending)
         
-    def repr_index(self, dataframe, ascending=True):
+    def repr_index(self,
+            dataframe,
+            ascending=True):
         """Rename the index of a dataframe."""
         if isinstance(dataframe.index, pd.MultiIndex):
             #not tested yet
@@ -125,8 +129,8 @@ class FiniteValuedParameter(
         return dataframe.set_index(new_index)
 
     def _filled_multi_index(self,
-                dataframe,
-                *args, **kwargs):
+            dataframe,
+            *args, **kwargs):
         """fill in a multi indexed dataframe."""
         index = dataframe.index
         assert(isinstance(index, pd.MultiIndex))
@@ -147,9 +151,11 @@ class FiniteValuedParameter(
             keys=df_values + missing_values,
             names=[self.label])
 
-    def filled(self, dataframe,
-               sorted=True, ascending=True,
-               with_index_renamed=True):
+    def filled(self,
+            dataframe,
+            sorted=True,
+            ascending=True,
+            with_index_renamed=True):
         """Filled and sorted Dataframe by index,
         which is of the type of this Parameter."""
         self.logger.debug("measurement has an index of type {}"\
@@ -168,10 +174,13 @@ class FiniteValuedParameter(
         IndexType = type(dataframe.index)
         missing = list(set(self.values) - set(dataframe.index))
         self.logger.debug("missing values in the index {}".format(missing))
-        missing_df = pd.DataFrame(len(missing) * [[0., 0.]],
-                                  index=IndexType(missing,
-                                                  name=dataframe.index.name),
-                                  columns=dataframe.columns)
+        missing_df=\
+            pd.DataFrame(
+                len(missing) * [[0., 0.]],
+                index=IndexType(
+                    missing,
+                    name=dataframe.index.name),
+                columns=dataframe.columns)
         self.logger.debug("missing data frame {}".format(missing_df))
         self.logger.debug("dataframe measured {}".format(dataframe))
         full_df = pd.concat([dataframe, missing_df])

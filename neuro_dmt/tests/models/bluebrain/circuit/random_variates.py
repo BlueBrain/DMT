@@ -7,13 +7,24 @@ from dmt.vtk.utils.collections import take
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.measurement.parameter\
-    import AtlasRegion, CorticalLayer, CorticalDepth
+    import AtlasRegion\
+    ,      CorticalLayer\
+    ,      CorticalDepth
 from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
     import get_iso_cortex_circuit_model
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
-    import get_sscx_fake_atlas_circuit_model
+   import get_sscx_fake_atlas_circuit_model
+from neuro_dmt.models.bluebrain.circuit.parameters\
+     import Mtype\
+     ,      PreMtype\
+     ,      PostMtype\
+     ,      MtypePathway
 from neuro_dmt.models.bluebrain.circuit.random_variate\
-    import RandomCellVariate
+    import RandomCellVariate\
+    ,      RandomConnectionVariate\
+    ,      RandomPathwayConnectionVariate\
+    ,      RandomPosition\
+    ,      RandomBoxCorners
 
 logger=\
     Logger(
@@ -28,6 +39,8 @@ iso_circuit_model=\
     get_iso_cortex_circuit_model(
         iso_circuit_config,
         "mouse")
+iso_circuit=\
+     iso_circuit_model.bluepy_circuit
 sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64/circuits/",
@@ -42,7 +55,7 @@ sscx_circuit=\
     sscx_circuit_model.bluepy_circuit
 random_sscx_cell_gids=\
     take(
-        100,
+        10,
         RandomCellVariate(
             circuit_model=sscx_circuit_model,
             conditions={
@@ -57,9 +70,10 @@ for cell_gid in random_sscx_cell_gids:
      assert len(cell_mtypes) == 1
      assert cell_mtypes[0] == "L2_IPC"
 
+
 random_iso_cell_gids=\
     take(
-        100,
+        10,
         RandomCellVariate(
             circuit_model=iso_circuit_model,
             conditions={
@@ -74,6 +88,67 @@ for cell_gid in random_iso_cell_gids:
      assert len(cell_mtypes) == 1
      assert cell_mtypes[0] == "L2_IPC"
 
+mtype=\
+    Mtype(
+        sscx_circuit,
+        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+pre_mtype=\
+    PreMtype(
+        sscx_circuit,
+        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+post_mtype=\
+    PostMtype(
+        sscx_circuit,
+        values=["L2_IPC", "L2_TPC:A", "L23_TPC", "FOO"])
+pathway=\
+    MtypePathway(
+        sscx_circuit,
+        pre_mtypes=mtype.values,
+        post_mtypes=mtype.values)
+
+random_connection=\
+     RandomConnectionVariate(
+          circuit_model=sscx_circuit_model
+     ).given(
+          {pre_mtype, post_mtype})
+rcons=\
+     random_connection.sample(size=10)
+random_pathway_connection=\
+     RandomPathwayConnectionVariate(
+          circuit_model=sscx_circuit_model
+     ).given(
+          {pathway})
+rpcons=\
+     random_pathway_connection.sample(size=10)
+sscx_atlas_region=\
+     AtlasRegion(
+          values=["mc2_Column"])
+cortical_layer=\
+     CorticalLayer()
+random_position=\
+     RandomPosition(
+          circuit_model=sscx_circuit_model
+     ).given(
+          {sscx_atlas_region, cortical_layer})
+rposes_take=\
+     take(
+          10,
+          random_position)
+rposes=\
+     random_position.sample(
+          size=10)
+random_box_corners=\
+     RandomBoxCorners(
+          circuit_model=sscx_circuit_model
+     ).given(
+          {sscx_atlas_region, cortical_layer})
+rboxes_take=\
+     take(
+          10,
+          random_box_corners)
+rboxes=\
+     random_box_corners.sample(
+          size=10)
 logger.success(
     logger.get_source_info(),
     "All tests passed!")
