@@ -11,7 +11,7 @@ from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
     InhibitorySynapseDensityValidation,\
     SynapseDensityValidation
 from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
-    import MouseSomatosensoryCortexCompositionData
+    import MouseSSCxCompositionData
 
 class MouseSSCxCellDensityValidation(
         SomatosensoryCortexCompositionValidation,
@@ -24,7 +24,7 @@ class MouseSSCxCellDensityValidation(
         """..."""
         self.animal = "mouse"
         reference_data\
-            = MouseSomatosensoryCortexCompositionData.get(
+            = MouseSSCxCompositionData.get(
                 "cell_density")
         super().__init__(
             reference_data=reference_data,
@@ -41,7 +41,7 @@ class MouseSSCxCellRatioValidation(
         """..."""
         self.animal = "mouse"
         reference_data\
-            = MouseSomatosensoryCortexCompositionData.get(
+            = MouseSSCxCompositionData.get(
                 "cell_ratio")
         super().__init__(
             reference_data=reference_data,
@@ -59,7 +59,7 @@ class MouseSSCxInhibitorySynapseDensityValidation(
         """..."""
         self.animal = "mouse"
         reference_data\
-            = MouseSomatosensoryCortexCompositionData.get(
+            = MouseSSCxCompositionData.get(
                 "inhibitory_synapse_density")
         super().__init__(
             reference_data=reference_data,
@@ -77,7 +77,7 @@ class MouseSSCxSynapseDensityValidation(
         """..."""
         self.animal = "mouse"
         reference_data\
-            = MouseSomatosensoryCortexCompositionData.get(
+            = MouseSSCxCompositionData.get(
                 "synapse_density")
         super().__init__(
             reference_data=reference_data,

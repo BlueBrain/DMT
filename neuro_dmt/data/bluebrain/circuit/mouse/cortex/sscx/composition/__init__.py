@@ -3,24 +3,37 @@
 import os
 import numpy as np
 import pandas as pd
-from dmt.vtk.phenomenon import Phenomenon
-from dmt.vtk.utils.collections import Record
-from dmt.vtk.measurement.parameter.group import ParameterGroup
-from neuro_dmt.measurement.parameter import CorticalLayer
+from dmt.vtk.phenomenon\
+    import Phenomenon
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.descriptor\
+    import Field
+from dmt.vtk.measurement.parameter.group\
+    import ParameterGroup
+from neuro_dmt.measurement.parameter\
+    import CorticalLayer
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
-    import SomatosensoryCortexCompositionData
+    import SSCxCompositionData
 
-class MouseSomatosensoryCortexCompositionData(
-        SomatosensoryCortexCompositionData):
+class MouseSSCxCompositionData(
+        SSCxCompositionData):
     """..."""
 
+    data_location=\
+        Field(
+            __name__ = "data_location",
+            __type__ = str,
+            __doc__ = """This should be the directory where composition data is
+            located, under which individual files contain measurement data of a
+            single phenomenon.""",
+            __default__ = os.path.join(
+                "/gpfs/bbp.cscs.ch/home/sood",
+                "work/validations/dmt",
+                "examples/datasets/cortex/sscx/mouse/composition"))
     def __init__(self,
-                phenomenon,
-                data_location = os.path.join(
-                    "/gpfs/bbp.cscs.ch/home/sood",
-                    "work/validations/dmt",
-                    "examples/datasets/cortex/sscx/mouse"),
-                *args, **kwargs):
+            phenomenon,
+            *args, **kwargs):
         """
         Parameters
         ------------------------------------------------------------------------
@@ -32,10 +45,10 @@ class MouseSomatosensoryCortexCompositionData(
         out to be a location under this (dmt) project directory. We should
         change this by a relative path using a global variable pointing to this
         project directory."""
+
         super().__init__(
             animal="mouse",
             phenomenon=phenomenon,
-            data_location=data_location,
             *args, **kwargs)
 
     @classmethod
@@ -56,22 +69,22 @@ class MouseSomatosensoryCortexCompositionData(
 
         from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.cell_density\
-            import MouseSomatosensoryCortexCellDensityData
+            import MouseSSCxCellDensityData
         from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.cell_ratio\
-            import MouseSomatosensoryCortexCellRatioData
+            import MouseSSCxCellRatioData
         from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.inhibitory_synapse_density\
-            import  MouseSomatosensoryCortexInhibitorySynapseDensityData
+            import  MouseSSCxInhibitorySynapseDensityData
         from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.synapse_density\
-            import MouseSomatosensoryCortexSynapseDensityData
+            import MouseSSCxSynapseDensityData
 
         return dict(
-            cell_density=MouseSomatosensoryCortexCellDensityData,
-            cell_ratio=MouseSomatosensoryCortexCellRatioData,
-            inhibitory_synapse_density=MouseSomatosensoryCortexInhibitorySynapseDensityData,
-            synapse_density=MouseSomatosensoryCortexSynapseDensityData)
+            cell_density=MouseSSCxCellDensityData,
+            cell_ratio=MouseSSCxCellRatioData,
+            inhibitory_synapse_density=MouseSSCxInhibitorySynapseDensityData,
+            synapse_density=MouseSSCxSynapseDensityData)
 
         # cell_density\
         #     = MouseSomatosensoryCortexCellDensityData(

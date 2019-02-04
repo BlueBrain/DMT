@@ -1,13 +1,13 @@
 
 import os
-import dmt.vtk.datasets as datasets
+import dmt.vtk.utils.datasets as datasets
 from dmt.vtk.phenomenon import Phenomenon
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
-    import MouseSomatosensoryCortexCompositionData
+    import MouseSSCxCompositionData
 
-class MouseSomatosensoryCortexSynapseDensityData(
-        MouseSomatosensoryCortexCompositionData):
+class MouseSSCxSynapseDensityData(
+        MouseSSCxCompositionData):
     """..."""
 
     def __init__(self, *args, **kwargs):

@@ -5,6 +5,8 @@ import pandas as pd
 from dmt.data import ReferenceData
 from dmt.vtk.utils.descriptor import Field
 from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
+
 
 class MultiReferenceData(
         ReferenceData):
@@ -29,17 +31,19 @@ class MultiReferenceData(
     #         represented as a Record.""")
 
     def __init__(self,
-            data,
+            data=None,
             *args, **kwargs):
         """..."""
+        if not data:
+            raise Exception(
+                "initializer argument data cannot be None.")
         self.logger.info(
             self.logger.get_source_info(),
             "initialize {} instance with kwargs".format(
                 self.__class__.__name__),
             *["\t{}: {}".format(k, v) for k, v in kwargs.items()] )
-
-        data_and_primary=\
-            self.load(data)
+        data_and_primary= self.load(data)
+            
         self.logger.debug(
             self.logger.get_source_info(),
             "data and primary should be a dictionary: \n {}".format(

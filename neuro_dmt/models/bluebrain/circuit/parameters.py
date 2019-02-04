@@ -36,15 +36,17 @@ from neuro_dmt.measurement.parameter\
     import BrainCircuitSpatialParameter\
     ,      BrainCircuitConnectomeParameter
 
-class CircuitDefined:
+class CircuitModelDependent:
     """Mixin with objects whose 'values' depend on the circuit.
-    For example mtypes depend on the circuit."""
+    For example mtypes depend on the circuit.
+    """
     circuit=\
-        Field(
+        Field.Optional(
             __name__="circuit",
             __type__=Circuit,
             __doc__="""Circuit instance from which this parameter values
-            should be read.""")
+            should be read. We set this Field to optional, expecting the user
+            to invoke the 'for_circuit' method provided below.""")
 
     def __init__(self,
             *args, **kwargs):
@@ -52,7 +54,17 @@ class CircuitDefined:
         super().__init__(
             *args, **kwargs)
 
+    def for_circuit(self,
+            circuit):
+        """..."""
+        return self.__class__(
+            circuit=circuit,
+            label=self.label,
+            values=self.values)
+
+
 class Mtype(
+        CircuitModelDependent,
         BrainCircuitConnectomeParameter):
     """mtypes in a circuit."""
 
@@ -77,38 +89,26 @@ class Mtype(
                      mtypes))
 
     def __init__(self,
-            circuit,
+            circuit=None,
+            values=[],
+            label=Cell.MTYPE,
             *args, **kwargs):
         """..."""
-        kwargs["values"]=\
-            self.validated_mtypes(
-                circuit,
-                kwargs.get("values", []))
-        if "value_type" not in kwargs:
-            kwargs["value_type"] = str
+        if circuit is not None:
+            values=\
+                self.validated_mtypes(
+                    circuit,
+                    values)
         super().__init__(
-            label=Cell.MTYPE,
+            circuit=circuit,
+            label=label,
+            value_type=str,
+            values=values,
             *args, **kwargs)
 
 
-class PreMtype(
-        Mtype):
-    """Mtype specialized to be a synaptic connection's pre-mtype.
-    This will allow the code using this parameter to infer it's label
-    to be 'pre-mtype' instead of 'mtype'."""
-
-    label= "pre_mtype"
-
-class PostMtype(
-        Mtype):
-    """Mtype specialized to be a synaptic connection's post-mtype.
-    This will allow the code using this parameter to infer it's label
-    to be 'post-mtype' instead of 'mtype'."""
-
-    label= "post_mtype"
-
-
 class MtypePathway(
+        CircuitModelDependent,
         BrainCircuitConnectomeParameter):
     """A pathway is pre-cell-type to post-cell-type.
     In our first implementation we will use mtype to define the cell types.
@@ -116,23 +116,57 @@ class MtypePathway(
     to group cells into pre and post cells."""
 
     def __init__(self,
-            circuit,
+            circuit=None,
             *args, **kwargs):
         """..."""
         pre_mtypes=\
-            PreMtype.validated_mtypes(
-                circuit,
-                kwargs.get("pre_mtypes", []))
+            kwargs.get(
+                "pre_mtypes",
+                [])
         post_mtypes=\
-            PostMtype.validated_mtypes(
-                circuit,
-                kwargs.get("post_mtypes", []))
+            kwargs.get(
+                "post_mtypes",
+                [])
+        if circuit is not None:
+            pre_mtypes=\
+                Mtype.validated_mtypes(
+                    circuit,
+                    pre_mtypes)
+            post_mtypes=\
+                Mtype.validated_mtypes(
+                    circuit,
+                    post_mtypes)
+        values=[
+            (pre, post)
+            for pre in pre_mtypes
+            for post in post_mtypes]
+
         super().__init__(
             label="mtype_pathway",
             value_type=tuple,
-            values=[(pre, post)
-                    for pre in pre_mtypes
-                    for post in post_mtypes])
+            values=values)
+
+    @classmethod
+    def for_circuit(cls,
+            circuit):
+        """MtypePathway instance for a given circuit."""
+        return cls(circuit=circuit)
+
+    def get_values(self,
+            circuit):
+        """Get values for the provided circuit."""
+        pre_mtypes=\
+            PreMtype.validated_mtypes(
+                circuit,
+                [pre_mtype for pre_mtype, _ in self.values]) 
+        post_mtypes=\
+            PostMtype.validated_mtypes(
+                circuit,
+                [post_mtype for _, post_mtype in self.values])
+        return[
+            (pre, post)
+            for pre in pre_mtypes
+            for post in post_mtypes]
 
     def filled(self,
             dataframe,

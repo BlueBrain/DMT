@@ -3,14 +3,17 @@ at the Blue Brain Project."""
 
 import os
 import numpy as np
-from dmt.vtk.phenomenon import Phenomenon
-import dmt.vtk.datasets as datasets
-from dmt.vtk.utils.collections import Record
+from dmt.vtk.phenomenon\
+    import Phenomenon
+import dmt.vtk.utils.datasets as datasets
+from dmt.vtk.utils.collections\
+    import Record
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
-    import RatSomatosensoryCortexCompositionData
+    import RatSSCxCompositionData
 
-class RatSomatosensoryCortexCellDensityData(
-        RatSomatosensoryCortexCompositionData):
+
+class RatSSCxCellDensityData(
+        RatSSCxCompositionData):
     """Somatosensory cortex cell density data for the Rat.
     """
     def __init__(self,

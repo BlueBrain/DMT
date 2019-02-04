@@ -114,7 +114,6 @@ class Field:
                 instance,
                 value)
 
-
     def assert_validity(self,
             instance,
             value):
@@ -242,8 +241,8 @@ class Field:
                         Field.logger.get_source_info(),
                         """Get element type for argument {}"""\
                         .format(elem_type_arg))
-                    elem_type\
-                        = Field.typecheck.get_type(
+                    elem_type=\
+                        Field.typecheck.get_type(
                             instance,
                             elem_type_arg)
                     Field.logger.debug(
@@ -252,7 +251,7 @@ class Field:
                     for element in candidate_attr_value:
                         if not isinstance(element, elem_type):
                             raise TypeError(
-                                """element {} of a collection field of 
+                                """element '{}' of a collection field of 
                                 {} instance does not type-check {}"""\
                                 .format(element,
                                         instance.__class__.__name__,

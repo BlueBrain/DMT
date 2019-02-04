@@ -1,7 +1,5 @@
 """Validation of the somatosensory-cortex composition."""
 import numpy as np
-from dmt.vtk.plotting.comparison.barplot\
-    import BarPlotComparison
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.models.bluebrain.circuit.adapter\

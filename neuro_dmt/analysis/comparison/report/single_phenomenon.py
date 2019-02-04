@@ -14,8 +14,7 @@ from dmt.vtk.utils\
     import utils
 from dmt.vtk.utils.logging\
     import Logger, with_logging
-from neuro_dmt.analysis.report.single_phenomenon\
-    import AnalysisReport
+
 
 @with_logging(
     Logger.level.STUDY)

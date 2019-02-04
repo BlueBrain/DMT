@@ -1,23 +1,22 @@
 """Circuit composition data for the Somatosensory cortex.
 """
-from abc import ABC, abstractmethod
 from sys import stderr
 import os
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.collections import Record
-from dmt.vtk.measurement.parameter.group import ParameterGroup
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.utils import brain_regions
 from neuro_dmt.measurement.parameter import CorticalLayer
 from neuro_dmt.data.bluebrain.circuit.cortex import CortexCompositionData
 
 
-class SomatosensoryCortexCompositionData(
+class SSCxCompositionData(
         CortexCompositionData):
     """Base class for Blue Brain Project Circuit Composition Data.
     """
     _available_data = []
+
     def __init__(self,
             animal,
             phenomenon,
@@ -63,17 +62,6 @@ class SomatosensoryCortexCompositionData(
              'std': scale_factor * stdevs})\
                  .set_index(label)
                      
-    def get_data_location(self,
-            phenomenon, 
-            directory=None):
-        """..."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "get data location for pheno {}".format(phenomenon))
-        return os.path.join(
-            self.data_location if not directory else directory,
-            phenomenon.label)
-
     @classmethod
     def get_available_data(cls):
         """Get available data

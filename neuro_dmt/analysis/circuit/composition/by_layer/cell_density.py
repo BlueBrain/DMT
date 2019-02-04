@@ -9,7 +9,7 @@ class CellDensityAnalysis(
         ByLayerCompositionAnalysis):
     """Cell density validation is a 'unit' test case for a circuit model.
     Cell density is a spatial composition phenomenon.
-    We assume that all measurements are made by region in the brain,
+    We assume that all measurements are made by layer in the brain,
     and require that from measurements made on the circuit model."""
 
     def __init__(self, *args, **kwargs):
@@ -41,7 +41,7 @@ class CellDensityAnalysis(
                 spatial_parameters):
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
-            adapt a circuit model to the requirements of this validation.
+            adapt a circuit model to the requirements of this analysis.
             
             Parameters
             --------------------------------------------------------------------
@@ -65,7 +65,7 @@ class CellDensityAnalysis(
     def get_measurement(self,
             circuit_model,
             *args, **kwargs):
-        """Get measurement of the phenomenon validated."""
+        """Get measurement of the phenomenon analyzed."""
         return self.adapter\
                    .get_cell_density(
                        circuit_model,

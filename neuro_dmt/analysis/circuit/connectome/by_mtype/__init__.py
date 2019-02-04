@@ -24,3 +24,7 @@ class ByMtypeConnectomeAnalysis(
         super().__init__(
             phenomenon,
             *args, **kwargs)
+
+
+from neuro_dmt.analysis.circuit.connectome.by_mtype.synapse_count\
+    import PairSynapseCountAnalysis

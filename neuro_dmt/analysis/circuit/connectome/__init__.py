@@ -10,29 +10,30 @@ from neuro_dmt.measurement.parameter\
     import BrainCircuitConnectomeParameter
 from neuro_dmt.models.bluebrain.circuit.parameters\
     import Mtype\
-    ,      PreMtype\
-    ,      PostMtype
 
 
 class ConnectomeAnalysis(
         BrainCircuitAnalysis):
     """Analyze a single connectome phenomenon."""
+
     pathway_parameters=\
         Field(
-            __name__="pathway_parameters",
-            __typecheck__=Field.typecheck.collection(
+            __name__ = "pathway_parameters",
+            __typecheck__ = Field.typecheck.collection(
                 BrainCircuitConnectomeParameter),
-            __doc__="""To measure pathway properties of a circuit connectome
-            you will need to specify how the pathway is defined.""",
-            __default__=[PreMtype, PostMtype])
+            __doc__ = """A connectome phenomenon must be measured as a
+            function of either cell-type (for example mtype) or a
+            cell-type --> cell-type pathway. Most often we will use mtype
+            as cell-type.""")
     cell_group_parameters=\
         Field(
-            __name__="cell_group_parameters",
-            __typecheck__=Field.typecheck.collection(
+            __name__ = "cell_group_parameters",
+            __typecheck__ = Field.typecheck.collection(
                 BrainCircuitConnectomeParameter),
-            __doc__="""Parameters to measure groups of cell in the circuit.""",
-            __default=[Mtype])
-
+            __doc__ = """A connectome phenomenon must be measured as a
+            function of either cell-type (for example mtype) or a
+            cell-type --> cell-type pathway. Most often we will use mtype
+            as cell-type.""")
     def __init__(self,
             *args, **kwargs):
         """Initialize Me"""

@@ -1,1 +1,1 @@
-"""Common code for all SSCx data."""
+"""Common code for all SSCx analyses."""

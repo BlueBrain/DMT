@@ -143,3 +143,8 @@ class ComparisonPlot(Plot):
         return[
             str(v) for v in self.level_values(self.given)]
                
+
+from dmt.vtk.plotting.comparison.barplot\
+    import BarPlotComparison
+from dmt.vtk.plotting.comparison.crossplot\
+    import CrossPlotComparison

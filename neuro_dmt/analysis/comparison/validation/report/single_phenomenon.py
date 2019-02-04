@@ -39,7 +39,9 @@ class ValidationReport(
             __doc__ = """List of metadata, one element for each dataset used 
             by the validation. Please take a look at documentation of the
             validation.""")
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self,
+            *args, **kwargs):
         """initialize!"""
         self.logger.debug(
             self.logger.get_source_info(),

@@ -1,7 +1,13 @@
 """..."""
-from dmt.vtk.utils.descriptor import Field, WithFCA
+from dmt.vtk.utils.descriptor\
+    import Field\
+    ,      WithFCA
 from neuro_dmt.measurement.parameter\
-    import LayerIndex, CorticalLayer, HippocampalLayer
+    import LayerIndex\
+    ,      CorticalLayer\
+    ,      HippocampalLayer
+from neuro_dmt.models.bluebrain.circuit.parameters\
+    import Mtype
 
 
 class MeasureByCorticalLayer:
@@ -37,3 +43,15 @@ class MeasureByHippocampalLayer:
     def plotting_parameter(self):
         """This is a hack."""
         return HippocampalLayer()
+
+
+class MeasureByMtype:
+    """Mixin for analyses of"""
+    def __init__(self,
+            *args, **kwargs):
+        self.pathway_parameters=\
+            [Mtype(label="pre_mtype"), Mtype(label="post_mtype")]
+        self.cell_group_parameters=\
+            Mtype()
+
+        

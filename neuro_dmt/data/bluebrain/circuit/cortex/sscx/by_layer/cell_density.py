@@ -1,7 +1,7 @@
 """By layer cell density data."""
 import numpy as np
 import pandas as pd
-import dmt.vtk.datasets as datasets
+import dmt.vtk.utils.datasets as datasets
 
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.data.circuit.composition.cortex.sscx.by_layer \

@@ -22,7 +22,7 @@ class SpatialCompositionAnalysis(
             __doc__ = """A composition phenomenon must be measured as a 
             function of location in the brain --- spatial_parameters represent 
             these locations. For example, you may want cell density as a 
-            function o f'CorticalLayer'.""")
+            function of 'CorticalLayer'.""")
     
     def __init__(self,
             *args, **kwargs):

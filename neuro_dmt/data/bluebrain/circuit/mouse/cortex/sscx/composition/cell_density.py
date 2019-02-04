@@ -2,14 +2,16 @@
 import os
 import numpy as np
 from dmt.vtk.phenomenon import Phenomenon
-import dmt.vtk.datasets as datasets
+import dmt.vtk.utils.datasets as datasets
 from dmt.vtk.utils.collections import Record
 from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
-    import MouseSomatosensoryCortexCompositionData
+    import MouseSSCxCompositionData
 
-class MouseSomatosensoryCortexCellDensityData(
-        MouseSomatosensoryCortexCompositionData):
-    """Somatosensory cortex cell density data for the Rat."""
+
+class MouseSSCxCellDensityData(
+        MouseSSCxCompositionData):
+    """Somatosensory cortex cell density data for the Rat.
+    """
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
@@ -19,24 +21,25 @@ class MouseSomatosensoryCortexCellDensityData(
                 group="composition"),
             *args, **kwargs)
 
-    def get_reference_datasets(self, reference_data_dir):
+    def get_reference_datasets(self,
+            reference_data_dir):
         """...."""
-        keller2018\
-            = datasets.load(
+        keller2018=\
+            datasets.load(
                 reference_data_dir,
                 "Keller2018Feb14")
-        defelipe2017\
-            = datasets.load(
+        defelipe2017=\
+            datasets.load(
                 reference_data_dir,
                 "DeFelipe2014Rat")
-        df2017Densities\
-            = np.vstack([
+        df2017Densities=\
+            np.vstack([
                 ckt["densities"]
                 for ckt in defelipe2017.circuits.values()])
-        defelipe2017.density_means\
-            = np.mean(df2017Densities, axis=0)
-        defelipe2017.density_stds\
-            = np.std(df2017Densities, axis=0)
+        defelipe2017.density_means=\
+            np.mean(df2017Densities, axis=0)
+        defelipe2017.density_stds=\
+            np.std(df2017Densities, axis=0)
 
         return Record(
             primary=keller2018.short_name,

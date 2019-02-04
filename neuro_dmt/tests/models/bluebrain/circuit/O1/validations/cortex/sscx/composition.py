@@ -2,9 +2,9 @@
 import os
 from dmt.vtk.utils.logging\
     import Logger
-from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx.composition\
+from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx\
     import validations as rat_validations
-from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx.composition\
+from neuro_dmt.library.bluebrain.circuit.mouse.cortex.sscx\
     import validations as mouse_validations
 from neuro_dmt.utils\
     import brain_regions
@@ -76,6 +76,7 @@ logger=\
 
 def run(
     animal,
+    validation_category,
     validation_name,
     circuit_geometry="O1",
     output_dir_path=os.getcwd()):
@@ -85,6 +86,7 @@ def run(
         "Will run validation {}".format(validation_name))
     validation=\
         get_validations[animal].get(
+            validation_category,
             validation_name,
             output_dir_path=output_dir_path)
     logger.info(

@@ -24,6 +24,12 @@ available\
             "/gpfs/bbp.cscs.ch/project/proj64/circuits",
              "O1.v6a", "20171212", "CircuitConfig")},
         {"brain_region": brain_regions.sscx,
+         "animal": "Rat",
+         "geometry": "O1.v6",
+         "circuit_config": os.path.join(
+            "/gpfs/bbp.cscs.ch/project/proj64/circuits",
+             "O1.v6a", "20181207", "CircuitConfig")},
+        {"brain_region": brain_regions.sscx,
          "animal": "Mouse",
          "geometry": "O1.v6",
          "circuit_config": os.path.join(

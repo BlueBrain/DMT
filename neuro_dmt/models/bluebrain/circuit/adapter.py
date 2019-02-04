@@ -68,8 +68,6 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
     import connectome as connectome_measurements
 from neuro_dmt.models.bluebrain.circuit.parameters\
     import Mtype\
-    ,      PreMtype\
-    ,      PostMtype\
     ,      MtypePathway
 
 
@@ -265,8 +263,12 @@ class BlueBrainModelAdapter(
         """Meassure (mtype --> mtype) pathways."""
         if not parameters:
              parameters=[
-                 PreMtype(circuit_model.bluepy_circuit),
-                 PostMtype(circuit_model.bluepy_circuit)]
+                 Mtype(
+                     circuit=circuit_model.bluepy_circuit,
+                     label="pre_mtype"),
+                 Mtype(
+                     circuit=circuit_model.bluepy_circuit,
+                     label="post_mtype")]
         return\
             self.statistical_measurement(
                 circuit_model,
