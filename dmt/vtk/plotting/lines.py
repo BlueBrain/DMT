@@ -33,11 +33,11 @@ class LinePlot(Plot):
             "{}".format(self._data))
 
         dataframe=\
-            self.dataframe
+            self.get_dataframe()
         figure=\
             golden_figure(
-                height=self.height,
-                width=self.width)
+                height=self._height,
+                width=self._width)
         axes=\
             figure.add_subplot(
                 111)
@@ -48,16 +48,16 @@ class LinePlot(Plot):
                yerr=dataframe['std'].values,
                fmt=self.colors[0] + self.line_point_types[0])
         plt.title(
-            self.title,
+            self._title,
             fontsize=24)
         plt.xlabel(
-            self.xlabel,
+            self._xlabel,
             fontsize=20)
         # plt.xticks(
         #     np.arange(dataframe.shape[0]),
         #     dataframe.index)
         plt.ylabel(
-            self.ylabel,
+            self._ylabel,
             fontsize=20)
         fontP=\
             FontProperties()

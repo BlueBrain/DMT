@@ -5,8 +5,12 @@ from dmt.vtk.measurement\
      import StatisticalMeasurement
 from dmt.vtk.measurement.condition\
     import Condition
-from dmt.vtk.utils.logging import Logger
-from dmt.vtk.utils.collections import take
+from dmt.vtk.utils.logging\
+    import Logger
+from dmt.vtk.utils.collections\
+    import take
+from dmt.vtk.plotting\
+    import HeatMap
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.measurement.parameter\
@@ -166,10 +170,15 @@ class TestConnectomeAnalysis:
     def run(self,
         *args, **kwargs):
         """..."""
-        syn_count_report=\
-            self.syn_count_analysis(
-                self.circuit_model,
-                *args, **kwargs)
+        syn_count_measurement=\
+            self.syn_count_analysis\
+                .get_measurement(
+                    self._circuit_model,
+                    *args, **kwargs)
+        HeatMap(
+            Record(
+                data=syn_count_measurement.data,
+                label=syn_count_measurement.label))
             
         
 logger.success(

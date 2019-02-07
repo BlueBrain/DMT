@@ -2,15 +2,23 @@
 from abc import ABC, abstractmethod
 import os
 import numpy as np
+import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import pylab
-from matplotlib.font_manager import FontProperties
-import pandas as pd
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from dmt.vtk.utils.utils import get_file_name_base
-from dmt.vtk.utils.logging import Logger, with_logging
+from matplotlib\
+    import pylab
+from matplotlib.font_manager\
+    import FontProperties
+from dmt.vtk.utils.exceptions\
+    import RequiredKeywordArgumentError
+from dmt.vtk.utils.utils\
+    import get_file_name_base
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.logging\
+    import Logger\
+    ,      with_logging
 
 def golden_figure(width=None, height=None):
     """A figure with golden ration as it's aspect ratio,
@@ -35,14 +43,17 @@ class Plot(ABC):
     the interface explosed by all concrete implementations of Plot."""
 
     def __init__(self,
-            data,
+            measurement,
             *args, **kwargs):
         """Initialize attributes that are common to all
         Plot concrete implementations.
         """
-        self._data_record= data
-        self._data= data.data
-        self._label= data.label
+        self._data_record=\
+            Record(
+                data=measurement.data,
+                label=measurement.label)
+        self._data= self._data_record.data
+        self._label= self._data_record.label
 
         self._yvar=\
             kwargs.get(
@@ -53,40 +64,63 @@ class Plot(ABC):
         self._given=\
             kwargs.get(
                 "given", {})
-        self.title=\
-            kwargs.get(
-                'title',
-                self.__class__.__name__)
-        self._xlabel=\
-            kwargs.get(
-                'xlabel', 'X')
-        self._ylabel=\
-            kwargs.get(
-                'ylabel', 'Y')
-        self.output_dir_path=\
+        self._output_dir_path=\
             os.path.join(
                 kwargs.get(
                     "output_dir_path",
                     os.getcwd()),
                 "report")
-        self.legend_loc=\
-            kwargs.get(
-                'legend_loc',
-                'upper left')
-        self.height=\
-            kwargs.get(
-                'height', 10)
-        self.width=\
-            kwargs.get(
-                'width', None)
-        self.colors=\
-            kwargs.get(
-                'colors',
-                ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
-        self.file_name=\
+        self._file_name=\
             kwargs.get(
                 "file_name",
                 "report")
+        self.set_customization(
+            measurement)
+
+    def set_customization(self,
+            measurement,
+            *args, **kwargs):
+        """Extract plotting customization from a measurement."""
+        try:
+            self._title=\
+                measurement.label
+        except AttributeError:
+            self_title=\
+                kwargs.get(
+                    "title", self.__class__.__name__)
+        try:
+            self._xlabel=\
+                measurement.parameter
+        except AttributeError:
+            self._xlabel=\
+                kwargs.get("xlabel", "X")
+        try:
+            self._ylabel=\
+                "{} / [{}]".format(
+                    "mean {}".format(
+                        measurement.phenomenon.name.lower()),
+                    measurement.units) 
+        except AttributeError:
+            self._ylabel=\
+                kwargs.get("ylabel", "Y")
+
+        self._legend_loc=\
+            kwargs.get(
+                'legend_loc',
+                'upper left')
+        self._height=\
+            kwargs.get(
+                'height', 10)
+        self._width=\
+            kwargs.get(
+                'width', None)
+        self._colors=\
+            kwargs.get(
+                'colors',
+                ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
+
+
+
 
     def with_customization(self,
             *args, **kwargs):
@@ -118,8 +152,8 @@ class Plot(ABC):
         """..."""
         return self._yvar if self._yvar else self._ylabel
 
-    @property
-    def dataframe(self):
+    def get_dataframe(self,
+            allow_multi_indexed=False):
         """..."""
         data_frame=\
             self._data[self._label]\
@@ -132,11 +166,16 @@ class Plot(ABC):
                 data_frame.xs(
                     value,
                     level=level)
+            
+        if allow_multi_indexed:
+            return data_frame
+
         if isinstance(data_frame.index, pd.MultiIndex):
             raise ValueError(
                 """In {} Insufficient conditions to reduce the MultiIndexed
                 data to a singly indexed dataframe for plotting."""\
                 .format(self))
+
         return data_frame
 
     def plotting(self,
@@ -213,3 +252,5 @@ from dmt.vtk.plotting.bars\
     import BarPlot
 from dmt.vtk.plotting.lines\
     import LinePlot
+from dmt.vtk.plotting.heatmap\
+    import HeatMap

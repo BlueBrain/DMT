@@ -59,7 +59,10 @@ class BrainCircuitAnalysis(
     def add_plot_customization(self,
             model_measurement,
             *args, **kwargs):
-        """..."""
+        """This is a default method to add customization
+        for a provided model measurement. It applies to data that
+        are singly indexed, and cannot be used for plots that use
+        multiply indexed data such as a heatmap."""
         try:
             kwargs['output_dir_path']= \
                 self.output_dir_path
@@ -68,9 +71,13 @@ class BrainCircuitAnalysis(
                 self.logger.get_source_info(),
                 "Could not find an attribute",
                 "\tAttributeError: {}".format(e))
+        name=\
+            model_measurement.phenomenon.name
         kwargs.update(
             dict(
-                title = name,
+                title = "{} {}".format(
+                    model_measurement.label,
+                    name),
                 xlabel = model_measurement.parameter,
                 ylabel = "{} / [{}]".format(
                     "mean {}".format(name.lower()),
@@ -87,9 +94,7 @@ class BrainCircuitAnalysis(
         In that case this method can be overridden."""
         return\
             self.Plotter(
-                Record(
-                    data=model_measurement.data,
-                    label=model_measurement.label))\
+                model_measurement)\
                 .with_customization(
                     self.add_plot_customization(
                         model_measurement,

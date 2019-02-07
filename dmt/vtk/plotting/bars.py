@@ -22,11 +22,11 @@ class BarPlot(Plot):
         """Make the bar plot.
         """
         dataframe=\
-            self.dataframe
+            self.get_dataframe()
         figure=\
             golden_figure(
-                height=self.height,
-                width=self.width)
+                height=self._height,
+                width=self._width)
         a_plot=\
             plt.bar(
                 np.arange(dataframe.shape[0]),
@@ -34,20 +34,20 @@ class BarPlot(Plot):
                 color=self.colors[0],
                 yerr=dataframe["std"].values)
         plt.title(
-            self.title,
+            self._title,
             fontsize=24)
         plt.xlabel(
-            self.xlabel,
+            self._xlabel,
             fontsize=20)
         plt.xticks(
             np.arange(dataframe.shape[0]),
             dataframe.index)
         plt.ylabel(
-            self.ylabel,
+            self._ylabel,
             fontsize=20)
         fontP=\
             FontProperties()
         plt.legend(
             prop=fontP,
-            loc=self.legend_loc)
+            loc=self._legend_loc)
         return figure

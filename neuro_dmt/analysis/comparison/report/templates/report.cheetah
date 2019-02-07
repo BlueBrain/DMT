@@ -1,0 +1,28 @@
+<html>
+  <body>
+
+    <h1>$phenomenon Comparison</h1>
+    <h2> Author <h2>
+    <h3> $author_name</h3>
+    <h3> Affiliation:  $author_affiliation</h3>
+    <br>
+    <img src="./$image_name" alt="apologies.png"/>
+    <br>
+    <p>$caption</p>
+
+    <h1>Status</h1>
+    <p>
+      #if $is_pass:
+      <font color="#00FF00">PASSED</font>
+      #else if $is_fail:
+      <font color="#FF0000">FAILED</font>
+      #else
+      <font color="0000FF">INCONCLUSIVE></font>
+      #end if
+      <br>
+      p-value: p=$pvalue
+    </p>
+
+  </body
+</html>
+

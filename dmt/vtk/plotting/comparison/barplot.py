@@ -63,8 +63,8 @@ class BarPlotComparison(
                 "Empty comparison data.")
         figure=\
             golden_figure(
-                height=self.height,
-                width=self.width)
+                height=self._height,
+                width=self._width)
         number_bars=\
             1 + len(compared_values)
         width=\
@@ -83,13 +83,13 @@ class BarPlotComparison(
                     x0 + index * width,
                     df["mean"].values,
                     width,
-                    color=self.colors[(index-1) % len(self.colors)],
+                    color=self._colors[(index-1) % len(self._colors)],
                     yerr=df["std"].values,
                     label=label)
         index = 1
         _plot_index(
             index,
-            self.dataframe,
+            self.get_dataframe(),
             self._label)
         for data_label, data_frame in self.compared_datasets:
             index += 1
@@ -100,16 +100,16 @@ class BarPlotComparison(
                     data_label)
 
         plt.title(
-            self.title,
+            self._title,
             fontsize=24)
         plt.xlabel(
-            self.xlabel,
+            self._xlabel,
             fontsize=20)
         plt.xticks(
             x - width / 2.,
             xs)
         plt.ylabel(
-            self.ylabel,
+            self._ylabel,
             fontsize=20)
         fontP=\
             FontProperties()
@@ -117,5 +117,5 @@ class BarPlotComparison(
             "small")
         plt.legend(
             prop=fontP,
-            loc=self.legend_loc)
+            loc=self._legend_loc)
         return figure
