@@ -13,7 +13,7 @@ from dmt.vtk.utils.collections\
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.connectome\
     import SSCxConnectomeData
 
-class RatSSCXConnectomeData(
+class RatSSCxConnectomeData(
         SSCxConnectomeData):
     """..."""
 
@@ -27,8 +27,7 @@ class RatSSCXConnectomeData(
             __default__ = os.path.join(
                 "/gpfs/bbp.cscs.ch/home/sood",
                 "work/validations/dmt",
-                "examples/datasets/cortex/sscx/rat/connectome",
-                phenomenon.label))
+                "examples/datasets/cortex/sscx/rat/connectome"))
 
     def __init__(self,
             phenomenon,
@@ -49,7 +48,7 @@ class RatSSCXConnectomeData(
     def get_available_data(cls):
         """..."""
         from neuro_dmt.data.bluebrain.circuit.rat.\
-            cortex.sscx.connectome.pathway_synapse_count\
+            cortex.sscx.connectome.pair_synapse_count\
             import RatSSCxPairSynapseCountData
 
         return {

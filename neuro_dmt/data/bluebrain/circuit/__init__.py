@@ -140,7 +140,9 @@ class BlueBrainCircuitData(
             phenomenon.label)
 
     @abstractmethod
-    def get(self, phenomenon):
+    def get(self,
+            phenomenon,
+            *args, **kwargs):
         """Get data for a given phenomenon."""
         return NotImplementedError("Implement this method.")
 
@@ -179,9 +181,9 @@ class BlueBrainCircuitConnectomeData(
             to the author of a model / data adapter.""",
             __examples__= [
                 [Mtype(label="pre_mtype"), Mtype(label="post_mtype")]])
-    cell_group__parameters=\
+    cell_group_parameters=\
         Field(
-            __name__ = "cell_group__parameters",
+            __name__ = "cell_group_parameters",
             __typecheck__ = Field.typecheck.collection(
                 BrainCircuitConnectomeParameter),
             __doc__ = """A connectome phenomenon must be measured as a function

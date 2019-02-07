@@ -24,11 +24,10 @@ class SSCxCompositionData(
         """..."""
         self.primary_spatial_parameter\
             = CorticalLayer()
-        self.spatial_parameters\
-            = {CorticalLayer()}
         super().__init__(
             phenomenon,
             animal=animal,
+            spatial_parameters=[CorticalLayer()],
             brain_region=brain_regions.sscx,
             *args, **kwargs)
 
