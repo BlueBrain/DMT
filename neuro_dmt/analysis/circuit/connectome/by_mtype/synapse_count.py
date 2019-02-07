@@ -59,6 +59,15 @@ class PairSynapseCountAnalysis(
             """
             pass
 
+    def plot(self,
+            model_measurement,
+            *args, **kwargs):
+        """We implement a plot method here while we develop ConnectomeAnalysis.
+        Once all wrinkles have been smoothed, we will abstract this plot to
+        a vtk.plotting."""
+
+
+
 
     def get_measurement(self,
             circuit_model,
@@ -68,4 +77,4 @@ class PairSynapseCountAnalysis(
             self.adapter\
                 .get_pathway_synapse_count(
                     circuit_model,
-                    parameters=kwargs.get("pathway_parameters", []))
+                    parameters=self.pathway_parameters)

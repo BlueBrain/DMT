@@ -53,7 +53,7 @@ class CrossPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         fig = golden_figure(height=self.height, width=self.width)
-        ydata = self.dataframe
+        ydata = self.get_dataframe()
         xdata = self.compared_datasets[0].data
         xlabel = self.compared_datasets[0].label
         given = self.given

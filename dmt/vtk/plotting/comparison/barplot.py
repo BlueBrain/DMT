@@ -89,7 +89,7 @@ class BarPlotComparison(
         index = 1
         _plot_index(
             index,
-            self.dataframe,
+            self.get_dataframe(),
             self._label)
         for data_label, data_frame in self.compared_datasets:
             index += 1

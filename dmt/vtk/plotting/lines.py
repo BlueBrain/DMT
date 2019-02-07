@@ -33,7 +33,7 @@ class LinePlot(Plot):
             "{}".format(self._data))
 
         dataframe=\
-            self.dataframe
+            self.get_dataframe()
         figure=\
             golden_figure(
                 height=self.height,
