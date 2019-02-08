@@ -2,15 +2,23 @@
 from abc import ABC, abstractmethod
 import os
 import numpy as np
+import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from matplotlib import pylab
-from matplotlib.font_manager import FontProperties
-import pandas as pd
-from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from dmt.vtk.utils.utils import get_file_name_base
-from dmt.vtk.utils.logging import Logger, with_logging
+from matplotlib\
+    import pylab
+from matplotlib.font_manager\
+    import FontProperties
+from dmt.vtk.utils.exceptions\
+    import RequiredKeywordArgumentError
+from dmt.vtk.utils.utils\
+    import get_file_name_base
+from dmt.vtk.utils.collections\
+    import Record
+from dmt.vtk.utils.logging\
+    import Logger\
+    ,      with_logging
 
 def golden_figure(width=None, height=None):
     """A figure with golden ration as it's aspect ratio,
@@ -43,9 +51,9 @@ class Plot(ABC):
         self._data_record=\
             Record(
                 data=measurement.data,
-                labelmeasurement.label)
-        self._data= data_record.data
-        self._label= data_record.label
+                label=measurement.label)
+        self._data= self._data_record.data
+        self._label= self._data_record.label
 
         self._yvar=\
             kwargs.get(
@@ -89,8 +97,9 @@ class Plot(ABC):
         try:
             self._ylabel=\
                 "{} / [{}]".format(
-                    "mean {}".format(measurement.phenomenon.name.lower()),
-                    measurement.units) ))
+                    "mean {}".format(
+                        measurement.phenomenon.name.lower()),
+                    measurement.units) 
         except AttributeError:
             self._ylabel=\
                 kwargs.get("ylabel", "Y")

@@ -37,7 +37,7 @@ class HeatMap(Plot):
             if not isinstance(dataframe.index, pd.MultiIndex):
                 raise ValueError(
                     "Plot dataframe is not a multi-indexed.")
-            if not len(dataframe.index) == 2:
+            if not len(dataframe.index.names) == 2:
                 raise ValueError(
                     "Plot dataframe's index has more than 2 levels:\n {}"\
                     .format(dataframe.index))
@@ -49,22 +49,22 @@ class HeatMap(Plot):
     @property
     def matrix(self):
         """To make a heat-map we need a matrix."""
-        index_values = self._index_values
-        dataframe = self.get_dataframe(allow_multi_indexed=True)
-        np.array(
-            [[dataframe.loc[(x, y)]["mean"]
-              for x in index_values]
-             for y in index_values])
+        dataframe=\
+            self.get_dataframe(
+                allow_multi_indexed=True)
+        return\
+            np.array(
+                [[dataframe.loc[(x, y)]["mean"]
+                  for x in self.index_values]
+                 for y in self.index_values])
 
     def plot(self,
-            with_customization=None):
+            with_customization={}):
         """..."""
-        dataframe=\
-            self.dataframe
         figure=\
             golden_figure(
-                heigh=self.height,
-                width=self.width)
+                height=self._height,
+                width=self._width)
         axes=\
             figure.add_axes(
                 [0.075, 0.125, 0.9, 0.8])
@@ -99,6 +99,4 @@ class HeatMap(Plot):
         colorbar=\
             plt.colorbar(
                 image)
-        plt.label(
-            label if label else "Heat Map")
         return figure

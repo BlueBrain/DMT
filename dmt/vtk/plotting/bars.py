@@ -25,8 +25,8 @@ class BarPlot(Plot):
             self.get_dataframe()
         figure=\
             golden_figure(
-                height=self.height,
-                width=self.width)
+                height=self._height,
+                width=self._width)
         a_plot=\
             plt.bar(
                 np.arange(dataframe.shape[0]),

@@ -94,7 +94,7 @@ class BrainCircuitAnalysis(
         In that case this method can be overridden."""
         return\
             self.Plotter(
-                model_measurement,
+                model_measurement)\
                 .with_customization(
                     self.add_plot_customization(
                         model_measurement,

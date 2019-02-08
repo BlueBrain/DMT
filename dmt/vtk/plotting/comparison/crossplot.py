@@ -88,8 +88,8 @@ class CrossPlotComparison(ComparisonPlot):
         max_val = max(xmax, ymax)
         plt.plot([min_val, max_val], [min_val, max_val], "-")
 
-        plt.title(self.title, fontsize=24)
-        plt.ylabel(self._label, fontsize=20)
+        plt.title(self._title, fontsize=24)
+        plt.ylabel(self._ylabel, fontsize=20)
         plt.xlabel(xlabel, fontsize=20)
 
         fontP = FontProperties()
