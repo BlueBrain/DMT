@@ -22,7 +22,7 @@ class BarPlot(Plot):
         """Make the bar plot.
         """
         dataframe=\
-            self.get_dataframe()
+            self.get_plotting_dataframe()
         figure=\
             golden_figure(
                 height=self._height,
@@ -31,7 +31,7 @@ class BarPlot(Plot):
             plt.bar(
                 np.arange(dataframe.shape[0]),
                 dataframe["mean"].values,
-                color=self.colors[0],
+                color=self._colors[0],
                 yerr=dataframe["std"].values)
         plt.title(
             self._title,

@@ -26,14 +26,14 @@ class LinePlot(Plot):
         """Make the line plot.
         """
 
-        self.logger.debug(
-            self.logger.get_source_info(),
+        self._logger.debug(
+            self._logger.get_source_info(),
             "{} instance will plot data: ".format(
                 self.__class__.__name__),
             "{}".format(self._data))
 
         dataframe=\
-            self.get_dataframe()
+            self.get_plotting_dataframe()
         figure=\
             golden_figure(
                 height=self._height,
@@ -46,7 +46,7 @@ class LinePlot(Plot):
                dataframe.index,
                dataframe['mean'].values,
                yerr=dataframe['std'].values,
-               fmt=self.colors[0] + self.line_point_types[0])
+               fmt=self._colors[0] + self.line_point_types[0])
         plt.title(
             self._title,
             fontsize=24)
@@ -63,5 +63,5 @@ class LinePlot(Plot):
             FontProperties()
         plt.legend(
             prop=fontP,
-            loc=self.legend_loc)
+            loc=self._legend_loc)
         return figure

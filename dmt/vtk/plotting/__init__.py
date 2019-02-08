@@ -36,25 +36,45 @@ def golden_figure(width=None, height=None):
     return fig
 
 
-@with_logging(Logger.level.STUDY)
 class Plot(ABC):
-    """Base class for classes that will plot data.
-    All common plotting code will be listed here, as well as
-    the interface explosed by all concrete implementations of Plot."""
-
+    """Base class that will plot the results of a measurement.
+    All common plotting code will be listed here, some methods will
+    have default implementations that base-classes may override,
+    and the interface explosed by all concrete implementations of Plot
+    will be specified here.
+    """
     def __init__(self,
             measurement,
+            analyzed_quantity="",
+            logger_level= Logger.level.PROD,
             *args, **kwargs):
-        """Initialize attributes that are common to all
-        Plot concrete implementations.
-        """
-        self._data_record=\
-            Record(
-                data=measurement.data,
-                label=measurement.label)
-        self._data= self._data_record.data
-        self._label= self._data_record.label
+        """Initialize attributes that are common to all Plot concrete
+        implementations.
 
+        Parameters
+        --------------------
+        measurement :: Record[ data  :: DataFrame # may have more fields than
+        ~                    , label :: String ]  # data and label.
+        label       :: String #Optional
+        ~
+        """
+        self._measurement=\
+            measurement
+        self._data=\
+            self._measurement.data
+        self._analyzed_quantity=\
+            analyzed_quantity\
+            if analyzed_quantity else\
+               self._measurement.label
+        self._output_dir_path=\
+            os.path.join(
+                kwargs.get(
+                    "output_dir_path",
+                    os.getcwd()),
+                "report")
+        self._file_name=\
+            kwargs.get(
+                "file_name", "report")
         self._yvar=\
             kwargs.get(
                 "yvar", None)
@@ -64,30 +84,22 @@ class Plot(ABC):
         self._given=\
             kwargs.get(
                 "given", {})
-        self._output_dir_path=\
-            os.path.join(
-                kwargs.get(
-                    "output_dir_path",
-                    os.getcwd()),
-                "report")
-        self._file_name=\
-            kwargs.get(
-                "file_name",
-                "report")
         self.set_customization(
             measurement)
+        self._logger=\
+            Logger(self)
 
     def set_customization(self,
             measurement,
             *args, **kwargs):
         """Extract plotting customization from a measurement."""
-        try:
-            self._title=\
-                measurement.label
-        except AttributeError:
-            self_title=\
+        self._title=\
+            getattr(
+                measurement,
+                "label",
                 kwargs.get(
-                    "title", self.__class__.__name__)
+                    "title",
+                    self.__class__.__name__))
         try:
             self._xlabel=\
                 measurement.parameter
@@ -119,23 +131,20 @@ class Plot(ABC):
                 'colors',
                 ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'])
 
-
-
-
     def with_customization(self,
             *args, **kwargs):
         """Update customization to the plot."""
         for key, value in kwargs.items():
-            self.logger.debug(
-                self.logger.get_source_info(),
+            self._logger.debug(
+                self._logger.get_source_info(),
                 "set plot customization {}: {}"\
                 .format(key, value))
             if hasattr(self, key):
                 try:
                     setattr(self, key, value)
                 except AttributeError as aerr:
-                    self.logger.alert(
-                        self.logger.get_source_info(),
+                    self._logger.alert(
+                        self._logger.get_source_info(),
                         "Caught AttributeError: {}".format(aerr),
                         "while trying to set attribute {}".format(key),
                         "will try to set _{} instead ".format(key))
@@ -152,31 +161,44 @@ class Plot(ABC):
         """..."""
         return self._yvar if self._yvar else self._ylabel
 
-    def get_dataframe(self,
+    def get_plotting_dataframe(self,
+            measurement=None,
             allow_multi_indexed=False):
-        """..."""
-        data_frame=\
-            self._data[self._label]\
-            if self._label in self._data\
-               else self._data
-        if not isinstance(data_frame.index, pd.MultiIndex):
-            return data_frame
+        """Extract a simplified dataframe from the measurement,
+        that contains only the data that will be plotted.
+        """
+        measurement=\
+            measurement\
+            if measurement is not None else\
+               self._measurement
+        if not isinstance(measurement.data.columns, pd.MultiIndex):
+            dataframe=\
+                measurement.data
+        else:
+            try:
+                dataframe=\
+                    measurement.data[
+                        self._analyzed_quantity]
+            except KeyError as e:
+                self._logger.error(
+                    self._logger.get_source_info(),
+                    "Expected {} not found in dataframe columns"\
+                    .format(self._yvar))
+                raise e
+        if not isinstance(dataframe.index, pd.MultiIndex):
+            return dataframe
         for level, value in self._given.items():
-            data_frame=\
-                data_frame.xs(
+            dataframe=\
+                dataframe.xs(
                     value,
                     level=level)
-            
         if allow_multi_indexed:
-            return data_frame
-
-        if isinstance(data_frame.index, pd.MultiIndex):
+            return dataframe
+        if isinstance(dataframe.index, pd.MultiIndex):
             raise ValueError(
-                """In {} Insufficient conditions to reduce the MultiIndexed
-                data to a singly indexed dataframe for plotting."""\
-                .format(self))
-
-        return data_frame
+            """Insufficient conditions to reduce the multi-index {}
+            of the measurement dataframe""".format(dataframe.index))
+        return dataframe
 
     def plotting(self,
             quantity):
@@ -204,7 +226,8 @@ class Plot(ABC):
         providing values of depth and region.
         The x variable for plotting is set by the method 'versus', but
         you will need to set the remaining index fields using 'given'."""
-        self._given = {k: v for k,v in kwargs.items()}
+        self._given={
+            k: v for k,v in kwargs.items()}
         return self
 
     @abstractmethod
@@ -220,7 +243,7 @@ class Plot(ABC):
         """..."""
         output_dir_path=\
             output_dir_path if output_dir_path\
-            else self.output_dir_path
+            else self._output_dir_path
         file_name=\
             file_name if file_name\
             else self.file_name
@@ -237,8 +260,8 @@ class Plot(ABC):
             os.path.join(
                 output_dir_path,
                 fname)
-        self.logger.info(
-            self.logger.get_source_info(),
+        self._logger.info(
+            self._logger.get_source_info(),
             "Generating {}".format(output_file_path))
 
         figure.savefig(

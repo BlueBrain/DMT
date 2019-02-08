@@ -91,7 +91,7 @@ class Logger:
             client
         self._name=\
             client if isinstance(client, str) else (
-                name if name else "{}InstanceLogger".format(client.__name__))
+                name if name else str(client))
         self._in_file=(
             None if (output_dir_path is None and file_name is None) else 
             os.path.join(

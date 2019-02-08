@@ -150,7 +150,8 @@ logger.info(
 class TestConnectomeAnalysis:
     """Test values of Connectome Analysis sub-classes."""
     def __init__(self,
-            circuit_model=sscx_circuit_model):
+            circuit_model=sscx_circuit_model,
+            mtype_values=[]):
         """..."""
         self._circuit_model=\
             circuit_model
@@ -160,13 +161,39 @@ class TestConnectomeAnalysis:
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico",
             sample_size=20)
+        pre_mtype_parameter=\
+            Mtype(
+                circuit=sscx_circuit,
+                label="pre_mtype",
+                values=mtype_values)\
+                if mtype_values else\
+                   Mtype(
+                       circuit=sscx_circuit,
+                       label="pre_mtype")
+        post_mtype_parameter=\
+            Mtype(
+                circuit=sscx_circuit,
+                label="post_mtype",
+                values=mtype_values)\
+                if mtype_values else\
+                   Mtype(
+                       circuit=sscx_circuit,
+                       label="post_mtype")
+        logger.info(
+            logger.get_source_info(),
+            """Analyzing pathways from {} pre mtypes
+            to {} post mtypes""".format(
+                len(pre_mtype_parameter.values),
+                len(post_mtype_parameter.values)))
         self.syn_count_analysis=\
             PairSynapseCountAnalysis(
                 adapter=self._adapter,
                 animal=circuit_model.animal,
                 cell_group_parameters=[mtype],
-                pathway_parameters=[pre_mtype, post_mtype])
-
+                pathway_parameters=[
+                    pre_mtype_parameter,
+                    post_mtype_parameter])
+                    
     def run(self,
         *args, **kwargs):
         """..."""

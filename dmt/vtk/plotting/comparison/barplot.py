@@ -41,9 +41,9 @@ class BarPlotComparison(
         ~                      
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
-        #self.logger.source_info()
-        self.logger.debug(
-            self.logger.get_source_info(),
+        #self._logger.source_info()
+        self._logger.debug(
+            self._logger.get_source_info(),
             "{} instance will plot compare data: ".format(
                 self.__class__.__name__),
             "{}".format(self._data),
@@ -89,8 +89,8 @@ class BarPlotComparison(
         index = 1
         _plot_index(
             index,
-            self.get_dataframe(),
-            self._label)
+            self.get_plotting_dataframe(),
+            self._analyzed_quantity)
         for data_label, data_frame in self.compared_datasets:
             index += 1
             a_plot=\
@@ -98,7 +98,6 @@ class BarPlotComparison(
                     index,
                     data_frame,
                     data_label)
-
         plt.title(
             self._title,
             fontsize=24)

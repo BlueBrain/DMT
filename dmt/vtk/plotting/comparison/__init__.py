@@ -109,8 +109,8 @@ class ComparisonPlot(Plot):
     def comparison_level(self):
         """..."""
         if self._comparison_level is None:
-            self.logger.alert(
-                self.logger.get_source_info(),
+            self._logger.alert(
+                self._logger.get_source_info(),
                 "{}'s _comparison_level not set".format(self))
             return "dataset"
         return self._comparison_level

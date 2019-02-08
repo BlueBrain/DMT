@@ -30,7 +30,7 @@ class BrainCircuitAnalysis(
             __type__=str,
             __doc__="""Animal for which the circuit was built. This will help
             organize reporting.""")
-        
+
     def __init__(self,
             *args, **kwargs):
         """..."""

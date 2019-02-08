@@ -33,8 +33,8 @@ class CrossPlotComparison(ComparisonPlot):
                     level=self.comparison_level)
             return [Record(data=data, label=cv.label)]
         except Exception as e:
-            self.logger.error(
-                self.logger.get_source_info(),
+            self._logger.error(
+                self._logger.get_source_info(),
                 """Could not get comparison data with
                 name and level. Exception {}""".format(e))
 
@@ -53,7 +53,7 @@ class CrossPlotComparison(ComparisonPlot):
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
         fig = golden_figure(height=self.height, width=self.width)
-        ydata = self.get_dataframe()
+        ydata = self.get_plotting_dataframe()
         xdata = self.compared_datasets[0].data
         xlabel = self.compared_datasets[0].label
         given = self.given
@@ -66,8 +66,8 @@ class CrossPlotComparison(ComparisonPlot):
 
             return data_frame.loc[given_val]
 
-        # self.logger.info(
-        #     self.logger.get_source_info(),
+        # self._logger.info(
+        #     self._logger.get_source_info(),
         #     *["for given {}\n xdata: {} \n ydata: {}"\
         #        .format(v, __get_row(xdata, v), __get_row(ydata, v))
         #        for v in self.given_variable_values])

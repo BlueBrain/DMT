@@ -20,9 +20,32 @@ class HeatMap(Plot):
         """..."""
         self._index_values=\
             None
+        self._dataframe = None
+        self._matrix    = None
         super().__init__(
             *args, **kwargs)
 
+    @property
+    def dataframe(self):
+        """We need dataframe in HeatMap in several places,
+        so this property computes and saves the plotting dataframe."""
+        if self._dataframe is None:
+            self._dataframe=\
+                self.get_plotting_dataframe(
+                    allow_multi_indexed=True)
+        return self._dataframe
+
+    def set_customization(self,
+            measurement,
+            *args, **kwargs):
+        """x and y labels will be specialized for heatmaps"""
+        super().set_customization(
+            measurement,
+            *args, **kwargs)
+        self._xlabel=\
+            self.dataframe.index.names[0]
+        self._ylabel=\
+            self.dataframe.index.names[1]
 
     @property
     def index_values(self):
@@ -32,7 +55,7 @@ class HeatMap(Plot):
         For example, the index may be (pre_mtype, post_mtype)."""
         if not self._index_values:
             dataframe=\
-                self.get_dataframe(
+                self.get_plotting_dataframe(
                     allow_multi_indexed=True)
             if not isinstance(dataframe.index, pd.MultiIndex):
                 raise ValueError(
@@ -46,17 +69,30 @@ class HeatMap(Plot):
 
         return self._index_values
 
+    def _get_value(self,
+            x, y,
+            column="mean"):
+        """Get value for index (x, y)."""
+        return\
+            self.dataframe.loc[(x, y)][column]\
+            if (x,y) in self.dataframe.index else\
+               np.nan
+
     @property
     def matrix(self):
         """To make a heat-map we need a matrix."""
-        dataframe=\
-            self.get_dataframe(
-                allow_multi_indexed=True)
-        return\
-            np.array(
-                [[dataframe.loc[(x, y)]["mean"]
-                  for x in self.index_values]
-                 for y in self.index_values])
+        if self._matrix is None:
+            self._matrix=\
+                np.array(
+                    [[self._get_value(x, y, column="mean")
+                      for x in self.index_values]
+                     for y in self.index_values])
+        return self._matrix
+
+    def get_color_limits(self,
+            use_logscale=False):
+        """..."""
+        return (np.min(self.matrix), np.max(self.matrix))
 
     def plot(self,
             with_customization={}):
@@ -76,12 +112,16 @@ class HeatMap(Plot):
             self._index_values
         n_data_points=\
             len(index_values)
+        axes.set_xlabel(
+            self._xlabel)
         axes.set_xticks(
             range(n_data_points))
         axes.set_xticklabels(
             index_values,
             rotation="vertical",
             size="xx-small")
+        axes.set_ylabel(
+            self._ylabel)
         axes.set_yticks(
             range(n_data_points))
         axes.set_yticklabels(
@@ -90,9 +130,9 @@ class HeatMap(Plot):
         color_limits=\
             with_customization.get(
                 "color_limits",
-                getattr(self,
-                    "color_limits",
-                    (0, np.log10(0.05))))
+                self.get_color_limits(
+                    use_logscale=with_customization.get(
+                        "use_logscale", False)))
         image.set_clim(
             color_limits[0],
             color_limits[1])
