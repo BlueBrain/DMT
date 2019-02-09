@@ -8,7 +8,8 @@ from dmt.vtk.measurement.condition\
 from dmt.vtk.utils.logging\
     import Logger
 from dmt.vtk.utils.collections\
-    import take
+    import Record\
+    ,      take
 from dmt.vtk.plotting\
     import HeatMap
 from neuro_dmt.utils\
@@ -147,6 +148,11 @@ logger.info(
     "test (Analysis) class SynapseCount")
 
 
+layer_mtypes=\
+    {l: [m for m in sscx_circuit.cells.mtypes
+         if l in m]
+     for l in ["L{}".format(i) for i in range(1, 7)]}
+
 class TestConnectomeAnalysis:
     """Test values of Connectome Analysis sub-classes."""
     def __init__(self,
@@ -189,7 +195,6 @@ class TestConnectomeAnalysis:
             PairSynapseCountAnalysis(
                 adapter=self._adapter,
                 animal=circuit_model.animal,
-                cell_group_parameters=[mtype],
                 pathway_parameters=[
                     pre_mtype_parameter,
                     post_mtype_parameter])
@@ -202,10 +207,14 @@ class TestConnectomeAnalysis:
                 .get_measurement(
                     self._circuit_model,
                     *args, **kwargs)
-        HeatMap(
-            Record(
-                data=syn_count_measurement.data,
-                label=syn_count_measurement.label))
+        heatmap=\
+            HeatMap(
+                Record(
+                    data=syn_count_measurement.data,
+                    label=syn_count_measurement.label))
+        heatmap.save(
+            heatmap.plot(),
+            file_name="syn_count_heatmap.png")
             
         
 logger.success(

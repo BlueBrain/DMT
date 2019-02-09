@@ -58,6 +58,8 @@ class Plot(ABC):
         label       :: String #Optional
         ~
         """
+        self._logger=\
+            Logger(self)
         self._measurement=\
             measurement
         self._data=\
@@ -86,8 +88,6 @@ class Plot(ABC):
                 "given", {})
         self.set_customization(
             measurement)
-        self._logger=\
-            Logger(self)
 
     def set_customization(self,
             measurement,

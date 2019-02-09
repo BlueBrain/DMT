@@ -8,6 +8,9 @@ from dmt.vtk.utils.descriptor\
     import  Field, document_fields
 from dmt.vtk.measurement.parameter.group\
     import ParameterGroup
+from dmt.vtk.plotting\
+    import Plot\
+    ,      BarPlot
 from neuro_dmt.analysis.circuit.composition\
     import SpatialCompositionAnalysis
 from neuro_dmt.analysis.report.single_phenomenon\
@@ -19,6 +22,13 @@ class ByLayerCompositionAnalysis(
         OfSinglePhenomenon,
         SpatialCompositionAnalysis):
     """..."""
+    Plotter=\
+        Field(
+            __name__ = "Plotter",
+            __typecheck__ = Field.typecheck.subtype(Plot),
+            __default__ = BarPlot,
+            __doc__ = """A subclass of {} to comparison results.""".format(
+                Plot))
 
     def __init__(self,
             phenomenon,

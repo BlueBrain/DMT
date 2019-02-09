@@ -4,10 +4,11 @@ from dmt.model.interface\
 from dmt.vtk.phenomenon\
     import Phenomenon
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
-    import ByMtypeConnectomeAnalysis
+    import ByMtypePathwayConnectomeAnalysis
+
 
 class PairSynapseCountAnalysis(
-        ByMtypeConnectomeAnalysis):
+        ByMtypePathwayConnectomeAnalysis):
     """Analyze synapse count by mtype --> mtype pathway."""
 
     def __init__(self,
@@ -58,15 +59,6 @@ class PairSynapseCountAnalysis(
             ~   method :: String #describe how synapse counts were computed]
             """
             pass
-
-    def plot(self,
-            model_measurement,
-            *args, **kwargs):
-        """We implement a plot method here while we develop ConnectomeAnalysis.
-        Once all wrinkles have been smoothed, we will abstract this plot to
-        a vtk.plotting."""
-
-
 
 
     def get_measurement(self,
