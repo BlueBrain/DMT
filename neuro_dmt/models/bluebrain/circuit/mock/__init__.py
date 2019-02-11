@@ -8,18 +8,35 @@ from dmt.vtk.utils\
 from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.utils.descriptor\
-    import Field
+    import Field\
+    ,      WithFCA
 from neuro_dmt.models.bluebrain.circuit.mock.synapse\
     import MockSynapse
 
-class MockCells:
+cell_properties=[
+    Cell.ID,
+    Cell.LAYER,
+    Cell.MTYPE,
+    Cell.MORPHOLOGY,
+    Cell.MORPH_CLASS,
+    Cell.ME_COMBO,
+    Cell.REGION,
+    Cell.X,
+    Cell.Y,
+    Cell.Z,
+    Cell.SYNAPSE_CLASS]
+
+
+class MockCells(
+        WithFCA):
     """Mock of Circuit Cells"""
 
     number_cells=\
         Field(
             __name__ = "number_cells",
             __type__ = int,
-            __doc__ = "Number of cells in the circuit")
+            __doc__ = "Number of cells in the circuit",
+            __default__ = 2000)
     layers=\
         Field(
             __name__ = "layers",
@@ -43,7 +60,7 @@ class MockCells:
         Field(
             __name__ = "mtype_classes",
             __type__ = list,
-            __default__ = ["PC", "MC", "BTC", "TPC"].
+            __default__ = ["PC", "MC", "BTC", "TPC"],
             __doc__ = "List of biological sounding mtype suffixes.")
     regions=\
         Field(
@@ -67,21 +84,21 @@ class MockCells:
 
     def _random_layer(self):
         """..."""
-        return np._random_choice(
-            self._layers)
+        return np.random.choice(
+            self.layers)
 
     def _random_morphclass(self,
             mtype):
         """..."""
         return\
-            np._random.choice(
+            np.random.choice(
                 ["PYR", "INT"])
 
     def _random_synapse_class(self,
             mtype):
         """..."""
         return\
-            np._random.choice(
+            np.random.choice(
                 ["EXC", "INH"])
 
     def _random_morphology(self,
@@ -89,21 +106,21 @@ class MockCells:
         """..."""
         return "mtype_{}_morphology_{}".format(
             mtype,
-            np._random.choice(range(1000)))
+            np.random.choice(range(1000)))
             
     def _random_mtype(self,
             layer):
         """..."""
         return\
             "L{}".format(
-                np._random.choice(
-                    self._possible_mtype_classes))
+                np.random.choice(
+                    self.mtype_classes))
     
     def _random_etype(self):
         """..."""
         return\
-            np._random.choice(
-                self._possible_etypes)
+            np.random.choice(
+                self.etypes)
 
     def _random_me_combo(self,
             mtype,
@@ -114,33 +131,32 @@ class MockCells:
     def _random_region(self):
         """..."""
         return\
-            np._random.choice(
-                self._possible_regions)
+            np.random.choice(
+                self.regions)
 
     def _random_X(self):
         """..."""
         return\
-            np._random.uniform(
-                self._xmin, self._xmax)
+            np.random.uniform(
+                0., self.dimensions[0])
 
     def _random_Y(self):
         """..."""
         return\
-            np._random.uniform(
-                self._ymin, self._ymax)
+            np.random.uniform(
+                0., self.dimensions[1])
 
     def _random_Z(self):
         """..."""
         return\
-            np._random.uniform(
-                self._zmin, self._zmax)
+            np.random.uniform(
+                0., self.dimensions[2])
 
     def positions(self,
             cell_gids):
         """..."""
         if not collections.check(cell_gids):
             cell_gids = [cell_gids]
-
 
     def _get_cell(self,
             gid):
@@ -149,6 +165,8 @@ class MockCells:
             self._random_layer()
         mtype=\
             self._random_mtype(layer)
+        etype=\
+            self._random_etype()
         return\
             pd.Series({
                 Cell.ID: gid,
@@ -158,9 +176,9 @@ class MockCells:
                 Cell.MORPH_CLASS: self._random_morphclass(mtype),
                 Cell.ME_COMBO: self._random_me_combo(mtype, etype),
                 Cell.REGION: self._random_region(),
-                Cell.X: self._random_x(),
-                Cell.Y: self._random_y(),
-                Cell.Z: self._random_z(),
+                Cell.X: self._random_X(),
+                Cell.Y: self._random_Y(),
+                Cell.Z: self._random_Z(),
                 Cell.SYNAPSE_CLASS: self._random_synapse_class(mtype)})
 
     def _populate(self):
@@ -172,11 +190,11 @@ class MockCells:
 
     def get(self,
             cell_group,
-            properties=[]):
+            properties=cell_properties):
         """Cell group will be disregarded,
         in the first implementation."""
 
-        if not self._cells:
+        if self._cells is None:
             self._populate()
 
         cells =  self._cells[properties]
@@ -246,7 +264,7 @@ class MockConnectome:
     def _connect(self):
         """Wire up the connectome"""
         self._efferent_gids=[
-            np._random.choice(
+            np.random.choice(
                 self.all_gids,
                 self.get_number_neighbors())
             for _ in self.all_gids] 
@@ -265,7 +283,7 @@ class MockConnectome:
             """..."""
             return[
                 MockSynapse(pre_gid, post_gid, index)
-                for index in np._random.choice(
+                for index in np.random.choice(
                         self.max_number_connection_synapses)]
 
         self._pair_synapses=[
@@ -368,17 +386,21 @@ class MockCircuit:
             circuit_config,
             *args, **kwargs):
         """Nothing to initialize in a mock circuit."""
-        pass
+        self._cells=\
+            MockCells()
+        self._conn=\
+            MockConnectome(
+                number_cells=self._cells.number_cells)
 
     @property
     def cells(self):
         """..."""
-        return MockCells()
+        return self._cells
 
     @property
     def connectome(self):
         """..."""
-        return MockConnectome()
+        return self._conn
 
     @property
     def morph(self):
