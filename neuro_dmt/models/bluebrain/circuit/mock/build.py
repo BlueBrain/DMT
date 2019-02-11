@@ -1,6 +1,8 @@
 """Build geometry of a mock circuit."""
 
 import numpy as np
+from dmt.vtk.utils.descriptor\
+    import Field
 from neuro_dmt.models.bluebrain.circuit.specialization\
     import CircuitSpecialization
 from neuro_dmt.models.bluebrain.circuit.build\

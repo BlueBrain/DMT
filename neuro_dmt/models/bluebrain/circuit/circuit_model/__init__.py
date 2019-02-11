@@ -22,7 +22,7 @@ class BlueBrainCircuitModel(
     circuit_config=\
         Field(
             __name__ = "circuit_config",
-            __type_ = str,
+            __type__ = str,
             __doc__ = """Path tot he circuit config that can be loaded as a
             bluepy circuit.""")
     geometry_type=\
@@ -100,9 +100,9 @@ class BlueBrainCircuitModel(
                     ).index)
 
 
-from o1_circuit_model\
+from neuro_dmt.models.bluebrain.circuit.circuit_model.o1_circuit_model\
     import O1CircuitModel
-from atlas_based_circuit_model\
+from neuro_dmt.models.bluebrain.circuit.circuit_model.atlas_based_circuit_model\
     import AtlasBasedCircuitModel\
     ,      FakeAtlasBasedCircuitModel
 

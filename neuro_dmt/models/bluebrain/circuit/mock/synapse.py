@@ -17,10 +17,10 @@ class MockSynapse:
         pre_cell :: pandas Series (or dict)
         post_cell :: pandas Series (or dict)
         """
-        self._pre_gid=\
-            pre_cell["gid"]
-        self._post_gid=\
-            post_cell["gid"]
+        self._pre_cell=\
+            pre_cell
+        self._post_cell=\
+            post_cell
         self._index=\
             index
         self._axonal_delay=\
@@ -32,12 +32,12 @@ class MockSynapse:
     @property
     def pre_gid(self):
         """..."""
-        return self._pre_gid
+        return self._pre_cell.gid
 
     @property
     def post_gid(self):
         """..."""
-        return self._post_gid
+        return self._post_cell.gid
 
     @property
     def axonal_delay(self):

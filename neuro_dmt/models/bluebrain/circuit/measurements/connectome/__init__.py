@@ -169,7 +169,8 @@ class PairSynapseCount(
             "Number of synapses between two cells.")
     units= "Count"
     
-    def __call__(self, pre_gid, post_gid):
+    def __call__(self,
+            pre_gid, post_gid):
         """...Call Me..."""
         return\
             len(
@@ -226,3 +227,12 @@ class ConnectionStrength(
             "Connection strength",
             "Number of synapses between cells in a connection.")
     units= "Count"
+
+    def __call__(self,
+            pre_gid, post_gid):
+        """...Call Me..."""
+        return\
+            len(
+                self.conn.pair_synapses(
+                    pre_gid=pre_gid,
+                    post_gid=post_gid))

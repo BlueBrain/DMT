@@ -3,16 +3,39 @@ import numpy as np
 import pandas as pd
 from bluepy.v2.enums\
     import Cell
+from dmt.vtk.utils.logging\
+    import Logger
 from dmt.vtk.utils\
     import collections
 from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.utils.descriptor\
-    import Field
+    import Field\
+    ,      WithFCA
 from neuro_dmt.models.bluebrain.circuit.mock.synapse\
     import MockSynapse
 
-class MockCells:
+logger=\
+    Logger(
+        __file__,
+        level=Logger.level.DEBUG)
+
+cell_properties=[
+    Cell.ID,
+    Cell.LAYER,
+    Cell.MTYPE,
+    Cell.MORPHOLOGY,
+    Cell.MORPH_CLASS,
+    Cell.ME_COMBO,
+    Cell.REGION,
+    Cell.X,
+    Cell.Y,
+    Cell.Z,
+    Cell.SYNAPSE_CLASS]
+
+
+class MockCells(
+        WithFCA):
     """Mock of Circuit Cells"""
 
     number_cells=\
@@ -43,7 +66,7 @@ class MockCells:
         Field(
             __name__ = "mtype_classes",
             __type__ = list,
-            __default__ = ["PC", "MC", "BTC", "TPC"].
+            __default__ = ["PC", "MC", "BTC", "TPC"],
             __doc__ = "List of biological sounding mtype suffixes.")
     regions=\
         Field(
@@ -67,21 +90,21 @@ class MockCells:
 
     def _random_layer(self):
         """..."""
-        return np._random_choice(
-            self._layers)
+        return np.random.choice(
+            self.layers)
 
     def _random_morphclass(self,
             mtype):
         """..."""
         return\
-            np._random.choice(
+            np.random.choice(
                 ["PYR", "INT"])
 
     def _random_synapse_class(self,
             mtype):
         """..."""
         return\
-            np._random.choice(
+            np.random.choice(
                 ["EXC", "INH"])
 
     def _random_morphology(self,
@@ -89,21 +112,21 @@ class MockCells:
         """..."""
         return "mtype_{}_morphology_{}".format(
             mtype,
-            np._random.choice(range(1000)))
+            np.random.choice(range(1000)))
             
     def _random_mtype(self,
             layer):
         """..."""
         return\
             "L{}".format(
-                np._random.choice(
-                    self._possible_mtype_classes))
+                np.random.choice(
+                    self.mtype_classes))
     
     def _random_etype(self):
         """..."""
         return\
-            np._random.choice(
-                self._possible_etypes)
+            np.random.choice(
+                self.etypes)
 
     def _random_me_combo(self,
             mtype,
@@ -114,33 +137,26 @@ class MockCells:
     def _random_region(self):
         """..."""
         return\
-            np._random.choice(
-                self._possible_regions)
+            np.random.choice(
+                self.regions)
 
     def _random_X(self):
         """..."""
         return\
-            np._random.uniform(
-                self._xmin, self._xmax)
+            np.random.uniform(
+                0., self.dimensions[0])
 
     def _random_Y(self):
         """..."""
         return\
-            np._random.uniform(
-                self._ymin, self._ymax)
+            np.random.uniform(
+                0., self.dimensions[1])
 
     def _random_Z(self):
         """..."""
         return\
-            np._random.uniform(
-                self._zmin, self._zmax)
-
-    def positions(self,
-            cell_gids):
-        """..."""
-        if not collections.check(cell_gids):
-            cell_gids = [cell_gids]
-
+            np.random.uniform(
+                0., self.dimensions[2])
 
     def _get_cell(self,
             gid):
@@ -149,6 +165,8 @@ class MockCells:
             self._random_layer()
         mtype=\
             self._random_mtype(layer)
+        etype=\
+            self._random_etype()
         return\
             pd.Series({
                 Cell.ID: gid,
@@ -158,9 +176,9 @@ class MockCells:
                 Cell.MORPH_CLASS: self._random_morphclass(mtype),
                 Cell.ME_COMBO: self._random_me_combo(mtype, etype),
                 Cell.REGION: self._random_region(),
-                Cell.X: self._random_x(),
-                Cell.Y: self._random_y(),
-                Cell.Z: self._random_z(),
+                Cell.X: self._random_X(),
+                Cell.Y: self._random_Y(),
+                Cell.Z: self._random_Z(),
                 Cell.SYNAPSE_CLASS: self._random_synapse_class(mtype)})
 
     def _populate(self):
@@ -171,12 +189,12 @@ class MockCells:
                 for gid in self.all_gids])
 
     def get(self,
-            cell_group,
-            properties=[]):
+            cell_group={},
+            properties=cell_properties):
         """Cell group will be disregarded,
         in the first implementation."""
 
-        if not self._cells:
+        if self._cells is None:
             self._populate()
 
         cells =  self._cells[properties]
@@ -190,29 +208,30 @@ class MockCells:
         return cells
 
     def positions(self,
-            cell_group):
+            cell_gids):
         """_random positions"""
-        return self.get(
-            cell_group, 
-            properties = [Cell.X, Cell.Y, Cell.Z])
+        if not collections.check(cell_gids):
+            cell_gids = [cell_gids]
+        return\
+            self._cells.loc[
+                cell_gids][
+                    [Cell.X, Cell.Y, Cell.Z]]
 
 
-class MockConnectome:
+class MockConnectome(
+        WithFCA):
     """A _random connectome, wired up as a directed ER graph"""
-    number_cells=\
+    circuit_cells=\
         Field(
             __name__ = "circuit_cells",
-            __type__ = int,
-            __doc__  = """Number of cells in the circuit.
-            This value will be used to wire up a _random connectome.
-            Should be larger than 'mean_connectivity' (default 1000)""",
-            __default__ = 2000)
+            __type__ = pd.DataFrame,
+            __doc__ = """Cells to be connected by this connectome.""")
     mean_connectivity=\
         Field(
             __name__ = "mean_connectivity",
             __type__ = int,
             __doc__ = """Mean number of connections of a cell.""",
-            __default__ = 1000)
+            __default__ = 100)
     max_number_connection_synapses=\
         Field(
             __name__ = "max_number_connection_synapses",
@@ -226,10 +245,16 @@ class MockConnectome:
         """..."""
         self._efferent_gids= []
         self._afferent_gids= []
-            
+
         self._pair_synapses= []
         self._afferent_synapses = []
         self._efferent_synapses = []
+
+        super().__init__(
+            *args, **kwargs)
+
+        self.number_cells=\
+            self.circuit_cells.shape[0]
 
     def _check_gid(self,
             gid):
@@ -244,15 +269,17 @@ class MockConnectome:
         return range(self.number_cells)
 
     def _connect(self):
-        """Wire up the connectome"""
+        """Wire up the connectome.
+        """
         self._efferent_gids=[
-            np._random.choice(
+            list(np.random.choice(
                 self.all_gids,
-                self.get_number_neighbors())
+                self._get_number_neighbors(),
+                replace=False))
             for _ in self.all_gids] 
 
-        self._afferent_gids=[
-            [] for _ in self.all_gids]
+        self._afferent_gids=\
+            [[] for _ in self.all_gids]
 
         for pre_gid in self.all_gids:
             for post_gid in self._efferent_gids[pre_gid]:
@@ -263,29 +290,35 @@ class MockConnectome:
                 pre_gid,
                 post_gid):
             """..."""
+            pre_cell=\
+                self.circuit_cells.loc[pre_gid]
+            assert\
+                pre_cell.gid == pre_gid
+            post_cell=\
+                self.circuit_cells.loc[post_gid]
+            assert\
+                post_cell.gid == post_gid
             return[
-                MockSynapse(pre_gid, post_gid, index)
-                for index in np._random.choice(
-                        self.max_number_connection_synapses)]
-
+                MockSynapse(pre_cell, post_cell, index)
+                for index in range(
+                        np.random.choice(
+                            range(
+                                self.max_number_connection_synapses)))]
+        
         self._pair_synapses=[
             {post_gid: __random_connection_synapses(pre_gid, post_gid)
              for post_gid in self._efferent_gids[pre_gid]}
             for pre_gid in self.all_gids]
 
-        self._afferent_synapses=\
-            self.number_cells * []
-        self._efferent_synapses=\
-            self.number_cells * []
+        self._efferent_synapses=[
+            synapse for pre_gid in self.all_gids
+            for post_gid in self._efferent_gids[pre_gid]
+            for synapse in self._pair_synapses[pre_gid][post_gid]]
 
-        for pre_gid in self.all_gids:
-            for post_gid in self.all_gids:
-                self._afferent_synapses[post_gid]+=\
-                    self._pair_synapses[pre_gid][post_gid]
-                self._efferent_synapses[pre_gid]+=\
-                    self._pair_synapses[pre_gid][post_gid]
-
-
+        self._afferent_synapses=[
+            synapse for post_gid in self.all_gids
+            for pre_gid in self._afferent_gids[post_gid]
+            for synapse in self._pair_synapses[pre_gid][post_gid]]
 
     def efferent_gids(self,
             pre_gid):
@@ -316,7 +349,10 @@ class MockConnectome:
         if not self._pair_synapses:
             self._connect()
 
-        return self._pair_synapses[pre_gid][post_gid]
+        try:
+            return self._pair_synapses[pre_gid][post_gid]
+        except KeyError:
+            return 0
 
     def efferent_synapses(self,
             pre_gid):
@@ -347,9 +383,8 @@ class MockConnectome:
         N = float(self.mean_connectivity)
         dN = np.sqrt(N)
         return int(
-            np._random.uniform(
+            np.random.uniform(
                 N - dN, N + dN))
-
 
 
 class MockStats:
@@ -361,24 +396,43 @@ class MockStats:
         return np.random.uniform(0., 1.)
 
 
-class MockCircuit:
+class MockCircuit(
+        WithFCA):
     """A mock of a bluepy circuit."""
+
+    number_cells=\
+        Field(
+            __name__ = "number_cells",
+            __type__ = int,
+            __doc__ = "Number of cells in the circuit",
+            __default__ = 200)
 
     def __init__(self,
             circuit_config,
             *args, **kwargs):
         """Nothing to initialize in a mock circuit."""
-        pass
+
+        super().__init__(
+            *args, **kwargs)
+
+        self._cells=\
+            MockCells(
+                number_cells = self.number_cells,
+                *args, **kwargs)
+        self._conn=\
+            MockConnectome(
+                circuit_cells=self._cells.get(),
+                *args, **kwargs)
 
     @property
     def cells(self):
         """..."""
-        return MockCells()
+        return self._cells
 
     @property
     def connectome(self):
         """..."""
-        return MockConnectome()
+        return self._conn
 
     @property
     def morph(self):
