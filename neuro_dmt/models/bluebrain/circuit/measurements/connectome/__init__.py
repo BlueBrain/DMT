@@ -104,6 +104,7 @@ class PairConnection(
         return\
             post_gid in self.conn.efferent_gids(pre_gid)
 
+
 class AfferentSynapseCount(
         ConnectomeMeasurementMethod):
     """Number of synapses coming into a cell,

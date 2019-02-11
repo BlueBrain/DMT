@@ -37,31 +37,31 @@ class BlueBrainModelHelper:
             "initialize {} instance with kwargs:".format(self.__class__),
             *["key: {}, arg: {}\n".format(k, v) for k, v in kwargs.items()])
         
-        self._circuit\
-            = kwargs.get(
+        self._circuit=\
+            kwargs.get(
                 'circuit',
                 None)
 
         if self._circuit is None:
-            circuit_config\
-                = kwargs.get(
+            circuit_config=\
+                kwargs.get(
                     'circuit_config',
                     None)
             if circuit_config is None:
                 raise RequiredKeywordArgumentError(
                     "Either circuit or circuit_config")
-            self._circuit\
-                = Circuit(circuit_config)
-        self._cells\
-            = self._circuit.cells
+            self._circuit=\
+                Circuit(circuit_config)
+        self._cells=\
+            self._circuit.cells
         try:
-            self._conn\
-                = self._circuit.connectome
+            self._conn=\
+                self._circuit.connectome
         except bluepy.exceptions.BluePyError:
             sys.stderr.write(
                 '\nWarning: circuit does not have connectome\n')
-            self._conn\
-                = None
+            self._conn=\
+                None
         try:
             super().__init__(
                 *args, **kwargs)
@@ -88,8 +88,8 @@ class BlueBrainModelHelper:
                         .format(type(target)))
             return cell_query
 
-        cell_positions\
-            = self._cells.positions(
+        cell_positions=\
+            self._cells.positions(
                 with_target(
                     cell_query))
         if cell_positions.shape[0] > 0: 

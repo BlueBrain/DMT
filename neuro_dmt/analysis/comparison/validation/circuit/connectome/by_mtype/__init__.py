@@ -20,6 +20,7 @@ class ByMtypeConnectomeValidation(
     function of mtype."""
     pass
 
+
 class PairSynapseCountValidation(
         ByMtypeConnectomeValidation,
         PairSynapseCountAnalysis):

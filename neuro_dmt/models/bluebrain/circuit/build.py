@@ -21,7 +21,7 @@ class CircuitGeometry(
         Field(
             __name__="circuit",
             __type__=Circuit,
-            __doc__="""The circuit that this geometry is about.""")
+            __doc__="""The circuit that this geometry is for.""")
     helper=\
         Field(
             __name__="helper",
@@ -75,3 +75,15 @@ class CircuitGeometry(
         this spatial parameter Column depends on the (geometric) build of the
         circuit."""
         pass
+
+
+from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
+    import FakeAtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.atlas.build\
+    import AtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.O1.build\
+    import O1CircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.mock.build\
+    import MockCircuitSpecialization\
+    ,      MockCircuitGeometry
+

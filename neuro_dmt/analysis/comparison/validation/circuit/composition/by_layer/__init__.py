@@ -29,11 +29,13 @@ class ByLayerCompositionValidation(
     """
     pass
 
+
 class CellDensityValidation(
         ByLayerCompositionValidation,
         CellDensityAnalysis):
     """..."""
     pass
+
 
 class CellRatioValidation(
         ByLayerCompositionValidation,
@@ -41,11 +43,13 @@ class CellRatioValidation(
     """..."""
     pass
 
+
 class InhibitorySynapseDensityValidation(
         ByLayerCompositionValidation,
         InhibitorySynapseDensityAnalysis):
     """..."""
     pass
+
 
 class SynapseDensityValidation(
         ByLayerCompositionValidation,

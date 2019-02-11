@@ -52,8 +52,8 @@ class CellDensity(
     def __call__(self,
             region_of_interest):
         """Number of cells in a unit volume, [1000/mm^3]"""
-        cell_counts\
-            =  self._helper.get_cell_counts(
+        cell_counts=\
+            self._helper.get_cell_counts(
                 region_of_interest,
                 by_cell_property=self._property,
                 for_given_cell_type=self._cell_type)
