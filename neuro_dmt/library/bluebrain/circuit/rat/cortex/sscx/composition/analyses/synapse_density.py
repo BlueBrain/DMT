@@ -59,7 +59,6 @@ def run_analysis(
             circuit_config[circuit_release_date],
             "rat",
             atlas_path=atlas_path[circuit_release_date])
-
     synapse_density_by_depth=\
         sscx_adapter.get_synapse_density(
             sscx_circuit_model,

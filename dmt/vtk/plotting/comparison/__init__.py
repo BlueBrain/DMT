@@ -45,7 +45,8 @@ class ComparisonPlot(Plot):
                 pd.MultiIndex.from_tuples(
                     tuples=[("reference", i) for i in datasets.index],
                     names=["dataset", datasets.index.name])
-        self._comparison_data= datasets
+        self._comparison_data=\
+            datasets
         if given: 
             self._given_vars = given
         return self

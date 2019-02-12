@@ -6,6 +6,8 @@ from neuro_dmt.library.bluebrain.circuit.mouse.cortex.isocortex\
     import validations as mouse_validations
 from neuro_dmt.utils\
     import brain_regions
+from neuro_dmt.measurement.parameter\
+    import AtlasRegion, CorticalLayer
 from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
     import get_iso_cortex_circuit_model
 
@@ -50,6 +52,9 @@ def run(
             validation_category,
             validation_name,
             output_dir_path=output_dir_path)
+    validation.spatial_parameters=\
+        {AtlasRegion(values=[region]),
+         CorticalLayer()}
     logger.info(
         logger.get_source_info(),
         "validation type {}".format(

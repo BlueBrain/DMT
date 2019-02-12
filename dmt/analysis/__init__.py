@@ -116,8 +116,10 @@ class Analysis(WithFCA, AIBase):
             self.analysis_type)
 
     @abstractmethod
-    def get_report(self, *args, **kwargs):
-        """..."""
+    def get_report(self,
+            model_measurement,
+            *args, **kwargs):
+        """Create a report for model_measurement"""
         pass
 
     @abstractmethod

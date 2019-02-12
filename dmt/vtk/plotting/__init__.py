@@ -196,8 +196,8 @@ class Plot(ABC):
             return dataframe
         if isinstance(dataframe.index, pd.MultiIndex):
             raise ValueError(
-            """Insufficient conditions to reduce the multi-index {}
-            of the measurement dataframe""".format(dataframe.index))
+                """Insufficient conditions to reduce the multi-index {}
+                of the measurement dataframe""".format(dataframe.index))
         return dataframe
 
     def plotting(self,
