@@ -352,7 +352,7 @@ class MockConnectome(
         try:
             return self._pair_synapses[pre_gid][post_gid]
         except KeyError:
-            return 0
+            return []
 
     def efferent_synapses(self,
             pre_gid):
