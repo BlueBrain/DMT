@@ -47,10 +47,11 @@ class MouseIsocortexCellRatioValidation(
         self.animal= "mouse"
         reference_data=\
             ValidationReferenceData.get(
-                "cell_mouseio")
+                "cell_ratio")
         super().__init__(
             reference_data=reference_data,
             *args, **kwargs)
+
 
 class MouseIsocortexSynapseDensityValidation(
         IsoCortexCompositionValidation,

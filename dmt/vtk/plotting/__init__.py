@@ -196,8 +196,8 @@ class Plot(ABC):
             return dataframe
         if isinstance(dataframe.index, pd.MultiIndex):
             raise ValueError(
-            """Insufficient conditions to reduce the multi-index {}
-            of the measurement dataframe""".format(dataframe.index))
+                """Insufficient conditions to reduce the multi-index {}
+                of the measurement dataframe""".format(dataframe.index))
         return dataframe
 
     def plotting(self,
@@ -216,7 +216,7 @@ class Plot(ABC):
             variable):
         """set the xvar"""
         return self.with_xvar(variable)
-            
+
     def given(self,
             **kwargs):
         """The data frame provided as data to Plot (subclass)

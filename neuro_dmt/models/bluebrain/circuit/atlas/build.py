@@ -100,6 +100,9 @@ class AtlasBasedLayeredCircuitSpecialization(
             condition=\
                 Condition(
                     [(Cell.REGION, self.representative_region)])
+        if not Cell.REGION in condition:
+            condition=\
+                condition.plus([(Cell.REGION, self.representative_region)])
         return {
             region_id
             for region_acronym in self.__get_atlas_region_acronyms(condition)

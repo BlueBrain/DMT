@@ -1,6 +1,7 @@
 """Comparison of circuit phenomena between two models,
 or experiment and model."""
 
+import pandas as pd
 from dmt.analysis.comparison\
     import Comparison
 from dmt.vtk.utils.collections\
@@ -53,8 +54,13 @@ class CircuitPhenomenonComparison(
                 "\tAttributeError: {}".format(e))
         kwargs["title"]=\
             model_measurement.label
-        kwargs["xlabel"]=\
-            model_measurement.parameter
+        plotting_param=\
+            self.plotting_parameter.label
+        if isinstance(model_measurement.data.index, pd.MultiIndex):
+            assert\
+                plotting_param in model_measurement.data.index.names
+        # kwargs["xlabel"]=\
+        #     plotting_param
         kwargs["ylabel"]=\
             "{} / [{}]".format(
                 "mean {}".format(
@@ -68,11 +74,12 @@ class CircuitPhenomenonComparison(
                     data=model_measurement.data,
                     label=model_measurement.label))\
                 .against(
-                    self.reference_data_for_plotting)\
-                .comparing(
-                    compared_quantity)\
-                .for_given(
-                    self.plotting_parameter)\
+                    self.reference_data_for_plotting,
+                    comparing=compared_quantity)\
+                .plotting(
+                    phenomenon.label)\
+                .versus(
+                    self.plotting_parameter.label)\
                 .with_customization(
                     **kwargs)\
                 .plot()
