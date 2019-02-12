@@ -34,6 +34,11 @@ class Condition:
         return self.__record.as_dict
 
     @property
+    def is_empty(self):
+        """..."""
+        return len(self.sorted_param_value_pairs)
+
+    @property
     def hash_id(self):
         """dict does not use __hash___!"""
         return self.__hash__()

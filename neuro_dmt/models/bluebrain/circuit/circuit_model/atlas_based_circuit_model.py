@@ -1,5 +1,7 @@
 """Blue brain circuit models based on an Atlas."""
 
+from bluepy.v2.circuit\
+    import Circuit
 from voxcell.nexus.voxelbrain\
     import LocalAtlas
 from dmt.vtk.utils.descriptor\

@@ -96,6 +96,10 @@ class AtlasBasedLayeredCircuitSpecialization(
             hierarchy,
             condition=Condition([])):
         """..."""
+        if condition.is_empty:
+            condition=\
+                Condition(
+                    [(Cell.REGION, self.representative_region)])
         return {
             region_id
             for region_acronym in self.__get_atlas_region_acronyms(condition)
@@ -321,10 +325,12 @@ class AtlasCircuitGeometry(
                     self.hierarchy,
                     condition)
         if self.voxel_brain_region.count(atlas_ids) == 0:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                """Ids for region in condition {} not represented
-                in voxel data.""".format(condition.value))
+            raise\
+                Exception(
+                    """No voxels for Atlas ids {} computed for {}"""\
+                    .format(
+                        atlas_ids,
+                        condition.value))
             return None
 
         count = 0

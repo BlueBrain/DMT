@@ -14,11 +14,11 @@ class IsoCortexAtlasSpecialization(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        if "brain_region" not in kwargs: #if there, it should be a cortex sub-region, eg SSCx
+        if "brain_region" not in kwargs: 
             kwargs["brain_region"]=\
-                brain_regions.cortex
+                brain_regions.isocortex
         self.atlas_acronym_separator=\
-            '' #empty string, i.e. no separator
+            "" #empty string, i.e. no separator
         self.representative_region=\
             "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
         super().__init__(

@@ -64,6 +64,16 @@ class BlueBrainCircuitModel(
         return self.bluepy_circuit
 
     @property
+    def geometry(self):
+        """..."""
+        if not self._geometry:
+            self._geometry=\
+                self.geometry_type(
+                    self.circuit)
+        return\
+            self._geometry
+
+    @property
     def connectome(self):
         """..."""
         try:
