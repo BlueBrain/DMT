@@ -1,5 +1,5 @@
 """Test validations of composition of atlas based circuits of the SSCx."""
-import is
+import os
 from dmt.vtk.utils.logging\
     import Logger
 from neuro_dmt.library.bluebrain.circuit.rat.cortex.sscx\

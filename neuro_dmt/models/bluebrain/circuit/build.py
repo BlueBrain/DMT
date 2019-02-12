@@ -77,13 +77,3 @@ class CircuitGeometry(
         pass
 
 
-from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
-    import FakeAtlasCircuitGeometry
-from neuro_dmt.models.bluebrain.circuit.atlas.build\
-    import AtlasCircuitGeometry
-from neuro_dmt.models.bluebrain.circuit.O1.build\
-    import O1CircuitGeometry
-from neuro_dmt.models.bluebrain.circuit.mock.build\
-    import MockCircuitSpecialization\
-    ,      MockCircuitGeometry
-

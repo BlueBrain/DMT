@@ -4,9 +4,10 @@ from voxcell.nexus.voxelbrain\
     import LocalAtlas
 from dmt.vtk.utils.descriptor\
     import Field
-from neuro_dmt.models.bluebrain.circuit.build\
-    import FakeAtlasCircuitGeometry\
-    ,      AtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.atlas.build\
+    import AtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.atlas.fake.build\
+    import  FakeAtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.circuit_model\
     import BlueBrainCircuitModel
 

@@ -19,10 +19,10 @@ from neuro_dmt.measurement.parameter\
     import Column
 from neuro_dmt.models.bluebrain.circuit.O1.build import \
     O1CircuitGeometry
-from neuro_dmt.models.bluebrain.circuit.atlas.build import\
-    AtlasBasedLayeredCircuitSpecialization,\
-    AtlasBasedCircuitSpecialization,\
-    AtlasCircuitGeometry
+from neuro_dmt.models.bluebrain.circuit.atlas.build\
+    import AtlasBasedLayeredCircuitSpecialization\
+    ,      AtlasBasedCircuitSpecialization\
+    ,      AtlasCircuitGeometry
 from neuro_dmt.models.bluebrain.circuit.geometry\
     import Cuboid, random_location
 
