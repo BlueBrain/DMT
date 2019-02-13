@@ -90,13 +90,15 @@ iso_circuit_model=\
 iso_circuit=\
      iso_circuit_model.bluepy_circuit
 
+
 class TestCompositionAnalysis:
 
     """Test behavior of Composition Analysis subclasses"""
     def __init__(self,
             circuit_model=iso_circuit_model,
-            sample_size=20,
+            sample_size=100,
             sampled_box_shape=50. * np.ones(3),
+            regions=["SSp-ll"],
             *args, **kwargs):
         """"..."""
         self._circuit_model=\
@@ -109,7 +111,7 @@ class TestCompositionAnalysis:
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico")
         self._measurement_parameters=[
-            AtlasRegion(values=["SSp-ll", "MOp"]),
+            AtlasRegion(values=regions),
             CorticalLayer()]
         
     AnalysisType=dict(

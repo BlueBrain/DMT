@@ -16,7 +16,7 @@ class TestCompositionValidation(
         TestCompositionAnalysis):
     """Test behavior of Composition Validation subclasses"""
 
-    ValidatationType=dict(
+    ValidationType=dict(
         cell_density=CellDensityValidation,
         cell_ratio=CellRatioValidation,
         inh_syn_density=InhibitorySynapseDensityValidation,
@@ -27,7 +27,8 @@ class TestCompositionValidation(
             *args, **kwargs):
         """..."""
         return self.ValidationType[phenomenon](
-            adapter = self.adapter,
+            phenomenon=phenomenon,
+            adapter = self._adapter,
             animal  = self._circuit_model.animal,
             measurement_parameters = self._measurement_parameters,
             spatial_parameters = self._measurement_parameters,

@@ -88,7 +88,8 @@ class CircuitPhenomenonComparison(
                 .versus(
                     self.plotting_parameter.label)\
                 .given(
-                    self.measurement_parameter_values)\
+                    **self._for_given_parameter_values(
+                        **kwargs))\
                 .with_customization(
                     **kwargs)\
                 .plot()
