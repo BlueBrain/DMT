@@ -177,6 +177,8 @@ class RandomRegionOfInterest(
             = self.random_position(
                 condition,
                 *args, **kwargs)
+        if position is None:
+            return None
         return Cuboid(
             position - half_box,
             position + half_box)
@@ -248,10 +250,14 @@ class RandomBoxCorners(
             condition,
             *args, **kwargs):
         """"..."""
-        lower_corner, upper_corner=\
+        region_of_interest=\
             self.random_region_of_interest(
                 condition,
-                *args, **kwargs).bbox
+                *args, **kwargs)
+        if region_of_interest is None:
+            return None
+        lower_corner, upper_corner=\
+            region_of_interest.bbox
         return list(lower_corner) + list(upper_corner)
 
 

@@ -14,8 +14,6 @@ import pandas as pd
 from dmt.analysis import OfSinglePhenomenon
 from dmt.data import ReferenceData
 from dmt.vtk.utils.collections import Record
-#from dmt.analysis.comparison import Comparison
-#from dmt.analysis import Analysis
 from dmt.vtk.utils.pandas import flatten
 from dmt.vtk.plotting.comparison import ComparisonPlot
 from dmt.vtk.judgment.verdict import Verdict

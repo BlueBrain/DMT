@@ -62,7 +62,7 @@ class AtlasBasedLayeredCircuitSpecialization(
         super().__init__(
             *args, **kwargs)
 
-    def __get_atlas_region_acronyms(self,
+    def _get_atlas_region_acronyms(self,
             condition):
         """We assume that the atlas paths will continue to follow conventions
         assumed here. Currently (20181030) we have observed these conventions
@@ -103,9 +103,15 @@ class AtlasBasedLayeredCircuitSpecialization(
         if not Cell.REGION in condition:
             condition=\
                 condition.plus([(Cell.REGION, self.representative_region)])
+        acronyms=\
+            self._get_atlas_region_acronyms(condition)
+        # self.logger.debug(
+        #     self.logger.get_source_info(),
+        #     """for condition {}""".format(condition.as_dict),
+        #    """get atlas ids, for acronym {}""".format(acronyms))
         return {
             region_id
-            for region_acronym in self.__get_atlas_region_acronyms(condition)
+            for region_acronym in acronyms
             for region_id in hierarchy.collect("acronym",region_acronym,"id")}
                     
     @property
@@ -328,12 +334,12 @@ class AtlasCircuitGeometry(
                     self.hierarchy,
                     condition)
         if self.voxel_brain_region.count(atlas_ids) == 0:
-            raise\
-                Exception(
-                    """No voxels for Atlas ids {} computed for {}"""\
-                    .format(
-                        atlas_ids,
-                        condition.value))
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """No voxels for Atlas ids {} computed for {}"""\
+                .format(
+                    atlas_ids,
+                    condition.value))
             return None
 
         count = 0

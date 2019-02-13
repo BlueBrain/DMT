@@ -2,14 +2,16 @@
 or experiment and model."""
 
 import pandas as pd
-from dmt.analysis.comparison\
-    import Comparison
 from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.utils.descriptor\
     import Field
+from dmt.vtk.measurement.parameter\
+    import Parameter
 from dmt.vtk.plotting.comparison\
     import ComparisonPlot
+from dmt.analysis.comparison\
+    import Comparison
 from neuro_dmt.analysis.comparison.report.single_phenomenon\
     import ComparisonReport
 
@@ -20,7 +22,7 @@ class CircuitPhenomenonComparison(
     a model and another model or experiment.
     """
     measurement_parameters=\
-        Field.Optional(
+        Field(
             __name__="measurement_parameters",
             __typecheck__=Field.typecheck.collection(Parameter),
             __doc__="""Parameters used to measure the phenomenon""")
@@ -85,6 +87,8 @@ class CircuitPhenomenonComparison(
                     phenomenon.label)\
                 .versus(
                     self.plotting_parameter.label)\
+                .given(
+                    self.measurement_parameter_values)\
                 .with_customization(
                     **kwargs)\
                 .plot()

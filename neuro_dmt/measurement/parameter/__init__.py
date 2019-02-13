@@ -142,7 +142,7 @@ class CorticalLayer23Fused(
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             value_type=int,
             values=[1, (2,3), 4, 5, 6],
             value_repr={1: "I", (2,3): "II/III", 4:"IV", 5: "V", 6: "VI"},
@@ -156,7 +156,7 @@ class CorticalLayer23Fused0(
     def __init__(self, *args, **kwargs):
         """..."""
         super().__init__(
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             value_type=str,
             values=["L1", "L23", "L4", "L5", "L6"],
             value_repr={"L1": "I", "L23": "II/III", 
@@ -173,11 +173,28 @@ class CorticalLayer5abSplit(
         """..."""
         super().__init__(
             value_type=str,
-            brain_region=brain_regions.cortex,
+            brain_region=brain_regions.isocortex,
             values=["L1", "L2", "L3", "L4", "L5a", "L5b", "L6"],
             value_repr={"L1": "I", "L2": "II", "L3": "III",
                         "L4": "IV", "L5a": "Va", "L5b": "Vb", "L6": "VI"},
             *args, **kwargs)
+
+
+class CorticalLayer6abSplit(
+        LayerIndex):
+    """Represents cortical layers when layer 6 is split into 6a, and 6b."""
+
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            value_type=str,
+            brain_region=brain_regions.isocortex,
+            values=["1", "2", "3", "4", "5", "6b", "6b"],
+            value_repr={"1": "I", "2": "II", "3": "III",
+                        "4": "IV", "5": "V", "6a": "VIa", "6b": "VIb"},
+            *args, **kwargs)
+
 
 
 class HippocampalLayer(

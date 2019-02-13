@@ -234,7 +234,6 @@ class ConditionedRandomVariate(
             columns=self.columns,
             index=condition.index)
 
-
     def kwargs(self,
             condition,
             *args, **kwargs):
@@ -253,9 +252,17 @@ class ConditionedRandomVariate(
                 size,
                 self.conditioned_values(
                     condition))
-        return pd.concat([
+        df_list=[
             self.row(condition, value)
-            for value in values])
+            for value in values]
+        if len(df_list) == 0:
+            return\
+                pd.DataFrame(
+                    [],
+                    columns=self.columns)
+        return\
+            pd.concat(
+                df_list)
                           
     def sample(self,
             conditions=None,

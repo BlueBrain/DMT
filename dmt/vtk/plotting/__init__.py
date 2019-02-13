@@ -210,6 +210,13 @@ class Plot(ABC):
             variable):
         """The x-variable to plot against."""
         self._xvar= variable
+        try:
+            self._xlabel=\
+                getattr(variable,
+                        "label",
+                        str(variable))
+        except:
+            pass
         return self
 
     def versus(self,

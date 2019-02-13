@@ -15,6 +15,8 @@ from dmt.vtk.utils.descriptor\
     ,      document_fields
 from dmt.vtk.phenomenon\
     import Phenomenon
+from dmt.vtk.measurement.parameter\
+    import Parameter
 from dmt.vtk.reporting\
     import Report
 from dmt.vtk.utils.logging\
@@ -65,6 +67,17 @@ class Analysis(WithFCA, AIBase):
             __name__="phenomena",
             __typecheck__=Field.typecheck.collection(Phenomenon),
             __doc__="Phenomena analyzed.")
+    measurement_parameters=\
+        Field.Optional(
+            __name__="measurement_parameters",
+            __typecheck__=Field.typecheck.collection(Parameter),
+            __doc__="""Parameters used to measure the phenomenon""")
+    plotting_parameter=\
+        Field.Optional(
+            __name__="plotting_parameter",
+            __type__=Parameter,
+            __doc__="""Parameter that measurement data will be plotted
+            against.""")
     author=\
         Field(
             __name__="author",
@@ -132,8 +145,10 @@ class Analysis(WithFCA, AIBase):
         """Get a label for the measurement validated."""
         pass
 
-    def __call__(self, model, save_report=False,
-                 *args, **kwargs):
+    def __call__(self,
+            model,
+            save_report=False,
+            *args, **kwargs):
         """An Analysis is a callable.
         In the concrete Analysis implementation,
         the first argument must be the model to be analyzed,
@@ -144,9 +159,14 @@ class Analysis(WithFCA, AIBase):
         get_measurement and get_report.
         Or override.
         """
-        model_measurement = self.get_measurement(model, *args, **kwargs)
-        report = self.get_report(model_measurement)
-
+        model_measurement=\
+            self.get_measurement(
+                model,
+                *args, **kwargs)
+        report=\
+            self.get_report(
+                model_measurement,
+                *args, **kwargs)
         if save_report:
             try:
                 fname = self.report_file_name
@@ -196,7 +216,9 @@ class OfSinglePhenomenon:
         except AttributeError:
             return group_label_path
 
-    def get_caption(self, model_measurement):
+    def get_caption(self,
+            model_measurement,
+            *args, **kwargs):
         """Caption that will be shown below the validation plot.
 
         Implementation Notes
@@ -215,10 +237,20 @@ class OfSinglePhenomenon:
         ~                           data :: DataFrame["region", "mean", "std"],
         ~                           method :: String #how measurement was made.])
         """
-        return "{} is plotted. {}\n Method: {}"\
-            .format(self.phenomenon.title,
-                    self.phenomenon.description,
-                    model_measurement.method)
+        given_parameter_values=\
+            "" if len(kwargs) == 0 else\
+            "For " + ','.join([
+                "{} {}".format(parameter, value)
+                for parameter, value in kwargs.items()])
+        return\
+            """
+            {} is plotted.
+            Method: {}.
+            {}"""\
+            .format(
+                self.phenomenon.title,
+                model_measurement.method,
+                given_parameter_values)
 
 
 class OfMultiPhenomena:

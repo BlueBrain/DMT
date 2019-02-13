@@ -35,7 +35,7 @@ class AnalysisReport(
             __doc__  = """Phenomenon that was validated / analyzed.""")
     figure=\
         Field.Optional(
-            __name__="plot",
+            __name__="figure",
             __type__=object,
             __doc__="A plot figure")
     caption=\
@@ -96,7 +96,7 @@ class AnalysisReport(
         plot_file_path=\
             os.path.join(
                 output_dir_path,
-            plot_file_name)
+                plot_file_name)
 
         self.logger.debug(
             self.logger.get_source_info(),

@@ -141,6 +141,10 @@ class FiniteValuedParameter(
         if len(missing_values) == 0:
             return dataframe
 
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """fill multi indexed dataframe missing values""",
+            """data frame: {}""".format(dataframe))
         cols = dataframe.columns
         dfs = [dataframe.xs(v, level=self.label) for v in missing_values]
         mdf = 0.0 * (dfs[0].copy())

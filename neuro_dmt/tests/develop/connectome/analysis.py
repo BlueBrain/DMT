@@ -166,7 +166,7 @@ class TestConnectomeAnalysis:
                 brain_region=brain_regions.sscx,
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico",
-            sample_size=20)
+                sample_size=20)
         pre_mtype_parameter=\
             Mtype(
                 circuit=sscx_circuit,

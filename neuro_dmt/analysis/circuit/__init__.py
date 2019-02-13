@@ -46,12 +46,6 @@ class BrainCircuitAnalysis(
                 self.animal,
                 self.brain_region.label)
 
-    @property
-    def plotting_parameter(self):
-        """Implement this method if your Analysis plots data"""
-        raise NotImplementedError(
-            "Please provide this method to make your plots.")
-    
     def get_label(self, model):
         """Get a label for the circuit model. Will be useful in reporting"""
         return self.adapter.get_label(model)
@@ -86,32 +80,57 @@ class BrainCircuitAnalysis(
             self.plot_customization)
         return kwargs
 
+    def _for_given_parameter_values(self,
+            **kwargs):
+        return {
+            parameter.label: kwargs[parameter.label]
+            for parameter in self.measurement_parameters
+            if (parameter.label != self.plotting_parameter.label 
+                and parameter.label in kwargs)}
+
     def plot(self,
             model_measurement,
             *args, **kwargs):
         """Plot the data.
         This a default method --- a subclass may have special needs to plot.
-        In that case this method can be overridden."""
-        return\
-            self.Plotter(
+        In that case this method can be overridden.
+
+        Note
+        -----------
+        Assuming that this Analysis will be for a single-phenomenon,
+        we used 'model_measurement.phenomenon' to determine what will
+        be plotted along the y-axis.
+        """
+        return self\
+            .Plotter(
                 model_measurement)\
-                .with_customization(
-                    self.add_plot_customization(
-                        model_measurement,
-                        **kwargs))\
-                .plot()
+            .plotting(
+                model_measurement.phenomenon.label)\
+            .versus(self.\
+                plotting_parameter.label)\
+            .given(
+                **self._for_given_parameter_values(
+                    **kwargs))\
+            .with_customization(
+                **kwargs)\
+            .plot()
 
     def get_report(self,
-            model_measurement):
+            model_measurement,
+            *args, **kwargs):
         """Create a report.
         A default method is provided here."""
         figure=\
             self.plot(
-                model_measurement)
+                model_measurement,
+                *args, **kwargs)
         return\
             self.ReportType(
                 phenomenon=self.phenomenon,
                 author=self.author,
                 figure=figure,
-                caption=self.get_caption(model_measurement))
+                caption=self.get_caption(
+                    model_measurement,
+                    **self._for_given_parameter_values(
+                        **kwargs)))
 

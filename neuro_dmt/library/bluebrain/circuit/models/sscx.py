@@ -147,10 +147,11 @@ class SSCxAtlasSpecialization(
     is a list containing locations of circuit configurations."""
 
     def __init__(self,
+            representative_region="S1HL",
             *args, **kwargs):
         """Initialize me"""
         self.representative_region=\
-            "S1HL"
+            representative_region
         self.atlas_acronym_separator=\
             ""
         if "brain_region" not in kwargs:
@@ -225,6 +226,7 @@ def get_sscx_atlas_circuit_model(
             geometry_type=SSCxAtlasCircuitGeometry,
             circuit_config=circuit_config,
             atlas_path=atlas_path)
+
 
 class SSCxFakeAtlasSpecialization(
         SSCxAtlasSpecialization):

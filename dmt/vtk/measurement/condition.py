@@ -36,7 +36,7 @@ class Condition:
     @property
     def is_empty(self):
         """..."""
-        return len(self.sorted_param_value_pairs)
+        return len(self.sorted_param_value_pairs) == 0
 
     @property
     def hash_id(self):

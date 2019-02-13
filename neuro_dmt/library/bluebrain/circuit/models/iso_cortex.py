@@ -1,5 +1,9 @@
 """iso cortex models"""
 
+from bluepy.v2.enums\
+    import Cell
+from dmt.vtk.utils\
+    import collections
 from neuro_dmt.utils\
     import brain_regions
 from neuro_dmt.models.bluebrain.circuit.atlas.build\
@@ -24,6 +28,49 @@ class IsoCortexAtlasSpecialization(
         super().__init__(
             *args, **kwargs)
 
+    def _get_atlas_region_acronyms(self,
+            condition):
+        """Isocortex circuit's atlas (circa 20190212)
+        distinguishes layers 6a and 6b, but the circuit does not."""
+        layers=\
+            condition.get_value(
+                Cell.LAYER)
+        region=\
+            condition.get_value(
+                Cell.REGION)
+        if not region:
+            region=\
+                self.representative_region
+        if not layers:
+            return [region]
+        if not collections.check(layers):
+            if layers == 6:
+                return [
+                    "{}{}{}".format(
+                        region,
+                        self.atlas_acronym_separator,
+                        "6a"),
+                    "{}{}{}".format(
+                        region,
+                        self.atlas_acronym_separator,
+                        "6b")]
+            else:
+                return [
+                    "{}{}{}".format(
+                        region,
+                        self.atlas_acronym_separator,
+                        layers)]
+        if 6 in layers:
+            layers=\
+                [str(layer) for layer in layers if layer != 6] + ["6a", "6b"]
+
+        return [
+            "{}{}{}".format(
+                region,
+                self.atlas_acronym_separator,
+                layer)
+            for layer in layers]
+         
     def get_spanning_column_parameter(self,
             regions=["SSp-ll"]):
         """..."""
