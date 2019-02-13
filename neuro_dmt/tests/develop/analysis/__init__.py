@@ -117,7 +117,7 @@ class TestCompositionAnalysis:
     AnalysisType=dict(
         cell_density=CellDensityAnalysis,
         cell_ratio=CellRatioAnalysis,
-        inh_syn_density=InhibitorySynapseDensityAnalysis,
+        inhibitory_synapse_density=InhibitorySynapseDensityAnalysis,
         syn_density=SynapseDensityAnalysis)
 
     def get_instance(self,

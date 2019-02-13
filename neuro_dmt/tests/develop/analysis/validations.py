@@ -19,7 +19,7 @@ class TestCompositionValidation(
     ValidationType=dict(
         cell_density=CellDensityValidation,
         cell_ratio=CellRatioValidation,
-        inh_syn_density=InhibitorySynapseDensityValidation,
+        inhibitory_synapse_density=InhibitorySynapseDensityValidation,
         syn_density=SynapseDensityValidation)
 
     def get_instance(self,
