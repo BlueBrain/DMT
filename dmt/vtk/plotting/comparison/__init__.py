@@ -9,7 +9,7 @@ from dmt.vtk.measurement.parameter import Parameter
 class ComparisonPlot(Plot):
     """Abstract base class for Specialized Plot for a comparison."""
     def __init__(self,
-            data,
+            measurement,
             *args, **kwargs):
         """Will compare data 'data'.
 
@@ -27,17 +27,17 @@ class ComparisonPlot(Plot):
         self._given_vars=\
             kwargs.get(
                 "given",
-                data.data.index.name)
+                measurement.data.index.name)
         self._compared_values=\
             kwargs.get(
                 "compared_values", None)
         super().__init__(
-            data,
+            measurement,
             *args, **kwargs)
 
     def against(self,
             datasets,
-            given=()):
+            comparing="dataset"):
         """Compare data against..."""
         if not isinstance(datasets.index, pd.MultiIndex):
             assert isinstance(datasets.index, pd.Index)
@@ -47,48 +47,39 @@ class ComparisonPlot(Plot):
                     names=["dataset", datasets.index.name])
         self._comparison_data=\
             datasets
-        if given: 
-            self._given_vars = given
+        self._comparison_level=\
+            comparing
         return self
 
-    def comparing(self,
-            level):
-        """..."""
-        if self._comparison_data is None:
-            raise Exception(
-                """{}'s comparison_data (reference data to compare against)
-                not set.""".format(self.__class__))
-        self._comparison_level = level
-        return self
-
-    def for_given(self,
-            *given):
+    def with_xvar(self,
+            variable):
         """..."""
         if self._comparison_level is None:
             raise Exception(
                 "{}'s comparison_level not specified."\
-                .format(self.__class__))
-        for g in given:
-            g_label=\
-                getattr(g, "label", g)
-            if g_label not in self._data.index.names:
-                raise Exception(
-                    """Label of the 'given' var '{}' is not in {}'s data's index.
-                    Please choose from {}."""\
+                .format(
+                    self.__class__))
+        variable_label=\
+            getattr(variable, "label", variable)
+        if variable_label not in self._data.index.names:
+            raise\
+                Exception(
+                    """Label of the 'given' var '{}' is
+                    not in {}'s data's index.  Please choose from {}."""\
                     .format(
-                        g_label, self,
+                        variable_label, self,
                         self._data.index.names))
-            if g_label not in self._comparison_data.index.names:
-                raise Exception(
+        if variable_label not in self._comparison_data.index.names:
+            raise\
+                Exception(
                     """Label of the 'given' var '{}' is not in {}'s
-                     comparison_data's index. Please choose from {}."""\
+                    comparison_data's index. Please choose from {}."""\
                     .format(
-                        g_label, self,
+                        variable_label, self,
                         self._comparison_data.index.names))
-        return\
-            self.against(
-                self._comparison_data,
-                given=given)
+
+        self._xvar = variable_label
+        return self
 
     def level_values(self,
             level=None):
@@ -127,22 +118,15 @@ class ComparisonPlot(Plot):
                     self.comparison_level)]
 
     @property
-    def given(self):
-        """self._given_vars may be an iterable."""
-        if isinstance(self._given_vars, (list, tuple)):
-            return self._given_vars[0]
-        return self._given_vars
-
-    @property
-    def given_variable_values(self):
+    def xvar_values(self):
         """Values of the 'given' vars that will be plotted."""
-        if isinstance(self.given, Parameter):
-            g = self.given.label
-            return (
-                self._data.index if not g else
-                [self.given.repr(v) for v in self.level_values(g)])
+        if isinstance(self._xvar, Parameter):
+            g = self._xvar.label
+            return\
+                self._data.index if not g else\
+                [self._xvar.repr(v) for v in self.level_values(g)]
         return[
-            str(v) for v in self.level_values(self.given)]
+            str(v) for v in self.level_values(self._xvar)]
                
 
 from dmt.vtk.plotting.comparison.barplot\

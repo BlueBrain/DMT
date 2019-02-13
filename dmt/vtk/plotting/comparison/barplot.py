@@ -70,7 +70,7 @@ class BarPlotComparison(
         width=\
             1.0 / (1.0 + number_bars)
         xs=\
-            self.given_variable_values
+            self.xvar_values
         x=\
             np.arange(len(xs))
         x0=\
@@ -89,7 +89,8 @@ class BarPlotComparison(
         index = 1
         _plot_index(
             index,
-            self.get_plotting_dataframe(),
+            self.get_plotting_dataframe(
+                allow_multi_indexed=True),
             self._analyzed_quantity)
         for data_label, data_frame in self.compared_datasets:
             index += 1

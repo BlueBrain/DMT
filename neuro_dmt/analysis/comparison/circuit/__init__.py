@@ -19,6 +19,11 @@ class CircuitPhenomenonComparison(
     """Mixin to define comparison of a circuit phenomenon between
     a model and another model or experiment.
     """
+    measurement_parameters=\
+        Field.Optional(
+            __name__="measurement_parameters",
+            __typecheck__=Field.typecheck.collection(Parameter),
+            __doc__="""Parameters used to measure the phenomenon""")
     Plotter=\
         Field(
             __name__ = "Plotter",
@@ -56,11 +61,11 @@ class CircuitPhenomenonComparison(
             model_measurement.label
         plotting_param=\
             self.plotting_parameter.label
-        kwargs["xlabel"]=\
-            plotting_param
         if isinstance(model_measurement.data.index, pd.MultiIndex):
             assert\
                 plotting_param in model_measurement.data.index.names
+        # kwargs["xlabel"]=\
+        #     plotting_param
         kwargs["ylabel"]=\
             "{} / [{}]".format(
                 "mean {}".format(
@@ -74,11 +79,12 @@ class CircuitPhenomenonComparison(
                     data=model_measurement.data,
                     label=model_measurement.label))\
                 .against(
-                    self.reference_data_for_plotting)\
-                .comparing(
-                    compared_quantity)\
-                .for_given(
-                    self.plotting_parameter)\
+                    self.reference_data_for_plotting,
+                    comparing=compared_quantity)\
+                .plotting(
+                    phenomenon.label)\
+                .versus(
+                    self.plotting_parameter.label)\
                 .with_customization(
                     **kwargs)\
                 .plot()

@@ -216,7 +216,7 @@ class Plot(ABC):
             variable):
         """set the xvar"""
         return self.with_xvar(variable)
-            
+
     def given(self,
             **kwargs):
         """The data frame provided as data to Plot (subclass)
