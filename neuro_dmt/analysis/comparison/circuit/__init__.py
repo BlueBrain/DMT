@@ -95,7 +95,8 @@ class CircuitPhenomenonComparison(
                 .plot()
 
     def get_report(self,
-            model_measurement):
+            model_measurement,
+            *args, **kwargs):
         """..."""
         figure=\
             self.plot(

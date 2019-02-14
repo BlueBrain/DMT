@@ -120,8 +120,9 @@ class FiniteValuedParameter(
             assert(self.label not in dataframe.index.names)
             
             keys = self.ordered_values
-            return flatten([dataframe.xs(k, level=self.label) for k in keys],
-                           keys=[self.repr(k) for k in keys], names=[self.label])
+            return\
+                flatten([dataframe.xs(k, level=self.label) for k in keys],
+                        keys=[self.repr(k) for k in keys], names=[self.label])
 
         assert dataframe.index.name == self.label
         new_index = pd.Index([self.repr(i) for i in dataframe.index],
@@ -130,30 +131,47 @@ class FiniteValuedParameter(
 
     def _filled_multi_index(self,
             dataframe,
+            with_value=np.nan,
             *args, **kwargs):
         """fill in a multi indexed dataframe."""
-        index = dataframe.index
-        assert(isinstance(index, pd.MultiIndex))
-        assert(self.label in dataframe.index.names)
+        index=\
+            dataframe.index
+        assert\
+            isinstance(index, pd.MultiIndex)
+        assert\
+            self.label in dataframe.index.names
 
-        df_values = level_values(dataframe, level=self.label)
-        missing_values = list(set(self.values) - set(df_values))
-        if len(missing_values) == 0:
-            return dataframe
+        present_values=\
+            level_values(dataframe, level=self.label)
+        if len(present_values) == 0:
+            raise ValueError(
+                "Cannot fill an empty dataframe: {}."\
+                .format(dataframe))
+        missing_values=\
+            list(set(self.values) - set(present_values))
+#        if len(missing_values) == 0:
+#            return dataframe
 
         self.logger.debug(
             self.logger.get_source_info(),
-            """fill multi indexed dataframe missing values""",
-            """data frame: {}""".format(dataframe))
-        cols = dataframe.columns
-        dfs = [dataframe.xs(v, level=self.label) for v in missing_values]
-        mdf = 0.0 * (dfs[0].copy())
+            """fill multi indexed dataframe""",
+            """data frame: {}""".format(dataframe),
+            "missing values {}".format(missing_values))
 
-        missing_dfs = len(missing) * [mdf.copy()]
-        return pd.concat(
-            dfs + missing_dfs,
-            keys=df_values + missing_values,
-            names=[self.label])
+        columns=\
+            dataframe.columns
+        present_rows=[
+            dataframe.xs(v, level=self.label)
+            for v in present_values]
+        missing_rows=\
+            [with_value * present_rows[0]
+             for _ in missing_values]
+        return\
+            pd.concat(
+                present_rows + missing_rows,
+                keys=present_values + missing_values,
+                names=[self.label])\
+              .sort_index()
 
     def filled(self,
             dataframe,

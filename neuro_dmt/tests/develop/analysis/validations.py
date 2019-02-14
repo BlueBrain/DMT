@@ -22,17 +22,35 @@ class TestCompositionValidation(
         inhibitory_synapse_density=InhibitorySynapseDensityValidation,
         syn_density=SynapseDensityValidation)
 
+    @classmethod
+    def get_validation_type(cls,
+            phenomenon):
+        """..."""
+        return cls.ValidationType[phenomenon]
+
     def get_instance(self,
             phenomenon,
+            circuit_regions=None,
             *args, **kwargs):
         """..."""
-        return self.ValidationType[phenomenon](
-            phenomenon=phenomenon,
-            adapter = self._adapter,
-            animal  = self._circuit_model.animal,
-            measurement_parameters = self._measurement_parameters,
-            spatial_parameters = self._measurement_parameters,
-            plotting_parameter = CorticalLayer(),
-            reference_data = ValidationReferenceData.get(phenomenon),
-            *args, **kwargs)
+        circuit_regions=\
+            circuit_regions if circuit_regions\
+            else self._circuit_regions
+        AnalysisType=\
+            self.get_analysis_type(
+                phenomenon)
+        return\
+            self.ValidationType[phenomenon](
+                phenomenon=phenomenon,
+                adapter=self._adapter,
+                animal=self._circuit_model.animal,
+                measurement_parameters=[
+                    circuit_regions,
+                    CorticalLayer()],
+                spatial_parameters=[
+                    circuit_regions,
+                    CorticalLayer()],
+                plotting_parameter=CorticalLayer(),
+                reference_data=ValidationReferenceData.get(phenomenon),
+                *args, **kwargs)
                

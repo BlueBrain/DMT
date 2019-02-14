@@ -29,9 +29,9 @@ class MeasureByCorticalLayer:
 
 class MeasureByHippocampalLayer:
     """Mixin for validations of phenomena that are measured
-    by hippocampal layer."""
+    by hippocampa layer."""
 
-    def __init__(self,
+    def __init__(self
             *args, **kwargs):
         """..."""
         self.spatial_parameters=\

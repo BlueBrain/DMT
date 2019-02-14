@@ -145,6 +145,26 @@ class Analysis(WithFCA, AIBase):
         """Get a label for the measurement validated."""
         pass
 
+    def save_report(self,
+            report,
+            output_dir=""):
+        """..."""
+        try:
+            fname = self.report_file_name
+        except AttributeError as e:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """Did not find attibute 'report_file_name' in {} instance"""\
+                .format(self.__class__.__name__),
+                "\t AttributeError: {}".format(e))
+            fname = "report.html"
+            
+        return report.save(
+            output_dir_path=os.path.join(
+                self._get_output_dir(),
+                output_dir),
+            report_file_name=fname)
+
     def __call__(self,
             model,
             save_report=False,
@@ -168,22 +188,9 @@ class Analysis(WithFCA, AIBase):
                 model_measurement,
                 *args, **kwargs)
         if save_report:
-            try:
-                fname = self.report_file_name
-            except AttributeError as e:
-                self.logger.alert(
-                    self.logger.get_source_info(),
-                    """Did not find attibute 'report_file_name' in {} instance"""\
-                    .format(self.__class__.__name__),
-                    "\t AttributeError: {}".format(e))
-                fname = "report.html"
-
-            report.save(
-                output_dir_path=self._get_output_dir(),
-                report_file_name=fname)
-
+            self.save_report(
+                report)
         return report
-
 
 
 class OfSinglePhenomenon:
