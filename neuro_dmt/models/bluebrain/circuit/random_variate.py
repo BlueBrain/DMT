@@ -117,6 +117,12 @@ class RandomPosition(
                     condition,
                     *args, **kwargs)
 
+    @property
+    def sampling_method(self):
+        """describe the method used to generate random positions."""
+        return\
+            "random positions generated in a circuit, for a given condition"
+        
 
 class RandomCrossectionalPoint(
         RandomPosition):
@@ -183,6 +189,14 @@ class RandomRegionOfInterest(
             position - half_box,
             position + half_box)
     
+    @property
+    def sampling_method(self):
+        """describe the method used to generate random regions of interest"""
+        return\
+            """Cuboids of shape {} were generated around a position
+            sampled randomly inside a circuit as specified by a condition.
+            """.format(
+                self.sampled_box_shape)
 
 class RandomSpanningColumnOfInterest(
         RandomSpatialVariate):

@@ -59,7 +59,8 @@ class ComparisonReport(
     caption=\
         Field(
             __name__="caption",
-            __type__=str,
+            __type__=list,
+            __typecheck__=Field.typecheck.collection(str),
             __doc__="Caption to go with the plot")
     is_pass=\
         Field(

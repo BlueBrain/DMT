@@ -54,6 +54,11 @@ class RandomVariate(
             isinstance(value, self.value_type))
         return str(value)
 
+    @abstractmethod
+    def sampling_method():
+        """describe the sampling method."""
+        raise NotImplementedError()
+
 
 class ConditionedRandomVariate(
         RandomVariate):

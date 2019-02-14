@@ -17,6 +17,10 @@ from dmt.vtk.measurement.parameter.random \
     import RandomVariate, ConditionedRandomVariate
 from dmt.vtk.utils.logging import with_logging, Logger
     
+log=\
+    Logger(
+        __file__,
+        level=Logger.level.DEBUG)
 
 class Measurement:
     """Contains the result of measuring something,
@@ -182,7 +186,9 @@ class StatisticalMeasurement:
         return Record(
             phenomenon=method.phenomenon,
             label=method.label,
-            method=method_description(method),
+            sampling_method=self.random_variate.sampling_method,
+            sample_size=kwargs["size"],
+            measurement_method=method_description(method),
             data=data,
             units=method.units,
             parameter_groups=levels)
@@ -206,6 +212,7 @@ def method_description(measurement_method):
     """
     return measurement_method.__call__.__doc__
 
+
 def summary_statistic(measurement_sample,
                       parameter_columns=[],
                       measurement_columns=[]):
@@ -217,6 +224,9 @@ def summary_statistic(measurement_sample,
     aggregators=\
         ["mean", "std"]
     if not parameter_columns:
+        log.debug(
+            log.get_source_info(),
+            "get summary statistic for {}".format(measurement_sample))
         return\
             measurement_sample\
             .groupby(

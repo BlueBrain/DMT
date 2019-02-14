@@ -8,10 +8,17 @@
     <br>
     <img src="./$image_name" alt="apologies.png"/>
     <br>
-    <p>$caption</p>
 
-    <h1>Datasets</h1>
+    <h2>Caption</h2>
+    <ul>
+      #for $line in $caption
+      <li>
+        <p>$line</p>
+      </li>
+      #end for
+    </ul>
 
+    <h2>Datasets</h2>
     <ul>
       #for $k, $d in $reference_datasets.items()
       <li><a href="$d.uri">[$d.label]</a> -$d.citation<br>

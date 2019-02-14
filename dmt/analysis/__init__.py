@@ -238,27 +238,28 @@ class OfSinglePhenomenon:
 
         Parameters
         ------------------------------------------------------------------------
-        model_measurement :: Record(phenomenon :: Phenomenon#that was measured,
-        ~                           label :: String,#used to label the measureemnt
-        ~                           region_label :: String,#for regions measured
-        ~                           data :: DataFrame["region", "mean", "std"],
-        ~                           method :: String #how measurement was made.])
+        model_measurement :: Record[
+        ~    phenomenon :: Phenomenon#that was measured,
+        ~    label :: String,#used to label the measureemnt
+        ~    region_label :: String,#for regions measured
+        ~    data :: DataFrame["region", "mean", "std"],
+        ~    method :: String #how measurement was made.]
         """
         given_parameter_values=\
             "" if len(kwargs) == 0 else\
             "For " + ','.join([
                 "{} {}".format(parameter, value)
                 for parameter, value in kwargs.items()])
-        return\
-            """
-            {} is plotted.
-            Method: {}.
-            {}"""\
-            .format(
-                self.phenomenon.title,
-                model_measurement.method,
-                given_parameter_values)
-
+        return[
+            "{} is plotted.".format(
+                self.phenomenon.title),
+            "Measurement method: {}".format(
+                model_measurement.measurement_method),
+            "Sampling method: {}".format(
+                model_measurement.sampling_method),
+            "Number samples: {}".format(
+                model_measurement.sample_size),
+            given_parameter_values]
 
 class OfMultiPhenomena:
     """Mixin multi phenomena into an analysis or validation."""
