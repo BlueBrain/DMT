@@ -203,6 +203,19 @@ class BlueBrainModelAdapter(
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
+    def get_mtype_cell_density(self,
+                circuit_model,
+                spatial_parameters=[],
+                *args, **kwargs):
+        """..."""
+        return\
+            self.get_cell_density(
+                circuit_model,
+                spatial_parameters=spatial_parameters,
+                by_property=Cell.MTYPE,
+                *args, **kwargs)
+
+
     def get_cell_ratio(self,
             circuit_model,
             spatial_parameters=[],

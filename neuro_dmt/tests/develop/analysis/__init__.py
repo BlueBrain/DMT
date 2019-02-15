@@ -33,7 +33,8 @@ from neuro_dmt.analysis.circuit.composition.by_layer\
     import CellDensityAnalysis\
     ,      CellRatioAnalysis\
     ,      InhibitorySynapseDensityAnalysis\
-    ,      SynapseDensityAnalysis
+    ,      SynapseDensityAnalysis\
+    ,      MtypeCellDensityAnalysis
  
 
 logger=\
@@ -101,7 +102,8 @@ class TestCompositionAnalysis:
         cell_density=CellDensityAnalysis,
         cell_ratio=CellRatioAnalysis,
         inhibitory_synapse_density=InhibitorySynapseDensityAnalysis,
-        syn_density=SynapseDensityAnalysis)
+        synapse_density=SynapseDensityAnalysis,
+        mtype_cell_density=MtypeCellDensityAnalysis)
     
     def __init__(self,
             circuit_model=iso_circuit_model,

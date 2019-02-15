@@ -20,7 +20,7 @@ class TestCompositionValidation(
         cell_density=CellDensityValidation,
         cell_ratio=CellRatioValidation,
         inhibitory_synapse_density=InhibitorySynapseDensityValidation,
-        syn_density=SynapseDensityValidation)
+        synapse_density=SynapseDensityValidation)
 
     @classmethod
     def get_validation_type(cls,

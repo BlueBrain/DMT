@@ -60,3 +60,5 @@ from neuro_dmt.analysis.circuit.composition.by_layer.synapse_density\
     import SynapseDensityAnalysis
 from neuro_dmt.analysis.circuit.composition.by_layer.soma_volume_fraction\
     import SomaVolumeFractionAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.mtype_cell_density\
+    import MtypeCellDensityAnalysis

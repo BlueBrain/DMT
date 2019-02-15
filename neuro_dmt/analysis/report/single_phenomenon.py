@@ -45,7 +45,9 @@ class AnalysisReport(
             __typecheck__=Field.typecheck.collection(str),
             __doc__ = "Caption to go with the plot.")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            default_template="report.cheetah",
+            *args, **kwargs):
         """initialize!"""
         if "template" in kwargs:
             self.template\
@@ -57,7 +59,7 @@ class AnalysisReport(
                     os.path.join(
                         os.path.dirname(__file__),
                         "templates",
-                        "report.cheetah") )
+                        default_template) )
             with open(template_loc, 'r') as template_file:
                 self.template=\
                     template_file.read()
@@ -146,3 +148,98 @@ class AnalysisReport(
                 output_dir_path,
                 file_name_base)
 
+
+class AnalysisMultiFigureReport(
+        AnalysisReport):
+    """For analysis that produce multiple figures."""
+    figure=\
+        Field.Optional(
+            __name__="figure",
+            __type__=dict,
+            __doc__="""A dict mapping label to figure""")
+
+    def __init__(self,
+            *args, **kwargs):
+        """Initialize Me"""
+        super().__init__(
+            default_template="multi_report.cheetah",
+            *args, **kwargs)
+
+
+    def save(self,
+            output_dir_path=None,
+            report_file_name="report.html"):
+        """..."""
+        output_dir_path=\
+            self.get_output_location(
+                output_dir_path=output_dir_path)
+        file_name_base=\
+            get_file_name_base(
+                report_file_name)
+
+        def __plot_file_name(
+                figure_label):
+            """..."""
+            return os.path.join(
+                "{}_{}.png".format(
+                    file_name_base,
+                    figure_label))
+        
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "Saving report to {} ".format(report_file_path))
+
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Generating {}".format(plot_file_path))
+
+        for figure_label, figure in self.figure.items():
+            figure.savefig(
+                os.path.join(
+                    output_dir_path,
+                    __plot_file_name(figure_label)))
+                        
+        try:
+            tempalte_dict=\
+                self.__report_dict__
+            template_dict.update(dict(
+                image_names=[
+                    __plot_file_name(figure_name)
+                    for figure_name in self.figure.keys()],
+                phenomenon=self.phenomenon.name,
+                author_name=self.auther.name,
+                author_affiliation=self.authoer.affiliation))
+            self.logger(
+                self.logger.get_source_info(),
+                "create a template with dict {}".format(template_dict))
+            report_template=\
+                Template(
+                    self.template,
+                    searchList=template_dict)
+            try:
+                report_html=\
+                    str(report_template)
+            except Exception as ex_html:
+                raise Exception(
+                    """WARNING !!! While generating html : {}.\n"""\
+                    .format(ex_html))
+
+            with open(report_file, 'w') as f:
+                f.write(report_html)
+
+            return report_file_path
+
+        except Exception as ex:
+            self.logger.alert(
+                self.logger.get_source_info(),
+            """WARNING!!! While loading the template {}.
+            Will proceed to save a text report""".format(ex))
+
+            return self._save_default(
+                output_dir_path,
+                file_name_base)
+
+
+                    
+
+    

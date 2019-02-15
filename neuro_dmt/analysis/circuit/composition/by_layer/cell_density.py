@@ -42,17 +42,19 @@ class CellDensityAnalysis(
             """Get volume density of (neuronal) cells in a circuit.
             This method must be defined for the model adapter class that will
             adapt a circuit model to the requirements of this analysis.
-            
+
             Parameters
             --------------------------------------------------------------------
             circuit_model :: ModelCircuit
-            spatial_parameter :: SpatialParameter #that cell density be measured for
+            spatial_parameter :: SpatialParameter # that cell density is to be
+            ~ # measured by, eg layer, multiple parameters can b used, for
+            ~ # example for cell densities by cortical region and layer.
+            ~ # Such a call should return a dataframe with a MultiIndex.
             
             Returns
             --------------------------------------------------------------------
             Record(phenomenon :: Phenomenon, #that was measured
-            ~      region_label :: String, #label for regions in data
-            ~      data :: DataFrame["region", "mean", "std"],
+            ~      data :: DataFrame["mean", "std"],
             ~      method :: String)
 
             Example
@@ -65,9 +67,9 @@ class CellDensityAnalysis(
     def get_measurement(self,
             circuit_model,
             *args, **kwargs):
-        """Get measurement of the phenomenon analyzed."""
-        return self.adapter\
-                   .get_cell_density(
-                       circuit_model,
-                       spatial_parameters=self.spatial_parameters)
-
+        """Get measurement of the cell density."""
+        return\
+            self.adapter\
+                .get_cell_density(
+                    circuit_model,
+                    spatial_parameters=self.spatial_parameters)
