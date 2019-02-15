@@ -1,6 +1,8 @@
 """Analysis of mtype cell densities by layer."""
 from dmt.model.interface import Interface
 from dmt.vtk.phenomenon import Phenomenon
+from neuro_dmt.analysis.report.single_phenomenon\
+    import AnalysisMultiFigureReport
 from neuro_dmt.analysis.circuit.composition.by_layer\
     import ByLayerCompositionAnalysis
 
@@ -17,6 +19,7 @@ class MtypeCellDensityAnalysis(
                 "Mtype Cell Density",
                 "Count of cells of a given mtype in a unit volume.",
                 group="composition"),
+            ReportType=AnalysisMultiFigureReport,
             *args, **kwargs)
 
     class AdapterInterface(
@@ -83,24 +86,27 @@ class MtypeCellDensityAnalysis(
             model_measurement.phenomenon.label
         title_common=\
             model_measurement.phenomenon.name
-        for label in measurement_labels:
-            label_plot=\
+
+        def __get_plot(column_label):
+            """..."""
+            return\
                 self.Plotter(
-                    model_measurement.data[label])\
+                    model_measurement)\
+                    .analyzing(
+                        column_label)\
                     .plotting(
-                        model_measurement.phenomenon.label)\
+                        self.plotting_parameter.label)\
                     .versus(
                         self.plotting_parameter.label)\
                     .given(
                         **self._for_given_parameter_values(
                             **kwargs))\
                     .with_customization(
-                        title="{} {}".format(label, title_common),
+                        title="{} {}".format(column_label, title_common),
                         **kwargs)\
                     .plot()
 
-    def get_report(
-            model_measurement,
-            *args, **kwargs):
-        """Create a multi-figure report."""
+        return{
+            label: __get_plot(label)
+            for label in measurement_labels}
 

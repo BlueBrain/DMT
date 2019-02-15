@@ -16,6 +16,8 @@ from neuro_dmt.analysis.circuit.composition.by_layer \
     ,      SynapseDensityAnalysis
 from neuro_dmt.analysis.comparison.validation.circuit\
     import CircuitPhenomenonValidationTestCase
+from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
+    import ValidationReport
 
 
 @document_fields
@@ -27,7 +29,13 @@ class ByLayerCompositionValidation(
     as a function of layer. This base class may be used for validation
     composition of any brain region that is composed of layers.
     """
-    pass
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            ReportType=ValidationReport,
+            *args, **kwargs)
+
 
 
 class CellDensityValidation(

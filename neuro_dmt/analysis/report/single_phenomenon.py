@@ -18,7 +18,7 @@ class AnalysisReport(
     affiliation, and the status of the validation.
 
     Notes
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Associated Cheetah template must be placed  in a directory named templates
     in the same directory as this file."""
 
@@ -73,7 +73,7 @@ class AnalysisReport(
         """Save report to disc, as an html.
 
         Parameters
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         output_dir_path :: String #directory where report artefacts should go
         report_file_name :: String #name of the file to use for this report
 
@@ -90,12 +90,12 @@ class AnalysisReport(
                 report_file_name)
         report_file_name= \
             file_name_base + ".html"
-        plot_file_name= \
-            file_name_base + ".png"
         report_file_path=\
             os.path.join(
                 output_dir_path,
                 report_file_name)
+        plot_file_name= \
+            file_name_base + ".png"
         plot_file_path=\
             os.path.join(
                 output_dir_path,
@@ -176,6 +176,15 @@ class AnalysisMultiFigureReport(
         file_name_base=\
             get_file_name_base(
                 report_file_name)
+        report_file_name= \
+            file_name_base + ".html"
+        report_file_path=\
+            os.path.join(
+                output_dir_path,
+                report_file_name)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "Saving report to {} ".format(report_file_path))
 
         def __plot_file_name(
                 figure_label):
@@ -185,31 +194,28 @@ class AnalysisMultiFigureReport(
                     file_name_base,
                     figure_label))
         
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "Saving report to {} ".format(report_file_path))
-
-        self.logger.info(
-            self.logger.get_source_info(),
-            "Generating {}".format(plot_file_path))
-
         for figure_label, figure in self.figure.items():
-            figure.savefig(
+            plot_file_path=\
                 os.path.join(
                     output_dir_path,
-                    __plot_file_name(figure_label)))
-                        
+                    __plot_file_name(figure_label))
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Generating {}".format(
+                    plot_file_path))
+            figure.savefig(
+                plot_file_path)
         try:
-            tempalte_dict=\
+            template_dict=\
                 self.__report_dict__
             template_dict.update(dict(
                 image_names=[
                     __plot_file_name(figure_name)
                     for figure_name in self.figure.keys()],
                 phenomenon=self.phenomenon.name,
-                author_name=self.auther.name,
-                author_affiliation=self.authoer.affiliation))
-            self.logger(
+                author_name=self.author.name,
+                author_affiliation=self.author.affiliation))
+            self.logger.debug(
                 self.logger.get_source_info(),
                 "create a template with dict {}".format(template_dict))
             report_template=\
@@ -224,7 +230,7 @@ class AnalysisMultiFigureReport(
                     """WARNING !!! While generating html : {}.\n"""\
                     .format(ex_html))
 
-            with open(report_file, 'w') as f:
+            with open(report_file_path, 'w') as f:
                 f.write(report_html)
 
             return report_file_path
