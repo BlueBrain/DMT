@@ -163,7 +163,7 @@ class BlueBrainModelAdapter(
     def spatial_measurement(self,
             method,
             circuit_model,
-            parameters={},
+            parameters=[],
             *args, **kwargs):
         """..."""
         if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
@@ -209,12 +209,13 @@ class BlueBrainModelAdapter(
                 *args, **kwargs):
         """..."""
         return\
-            self.get_cell_density(
-                circuit_model,
-                spatial_parameters=spatial_parameters,
-                by_property=Cell.MTYPE,
+            self.spatial_measurement(
+                method=composition_measurements.MtypeCellDensity(
+                    circuit_model.bluepy_circuit,
+                    *args, **kwargs),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
                 *args, **kwargs)
-
 
     def get_cell_ratio(self,
             circuit_model,

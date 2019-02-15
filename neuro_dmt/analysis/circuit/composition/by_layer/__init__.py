@@ -34,9 +34,11 @@ class ByLayerCompositionAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
     @property

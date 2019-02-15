@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
-from dmt.vtk.plotting import golden_figure, Plot
+from dmt.vtk.plotting import golden_figure, Plot, MultiPlot
 
 
 
@@ -51,3 +51,16 @@ class BarPlot(Plot):
             prop=fontP,
             loc=self._legend_loc)
         return figure
+
+
+class MultiBarPlot(
+        MultiPlot):
+    """plot several bar plots"""
+    def __init__(self,
+            measurement,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            measurement,
+            BasePlotType=BarPlot)
+

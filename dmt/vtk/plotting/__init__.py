@@ -19,6 +19,9 @@ from dmt.vtk.utils.collections\
 from dmt.vtk.utils.logging\
     import Logger\
     ,      with_logging
+from dmt.vtk.utils.descriptor\
+    import Field\
+    ,      WithFCA
 
 def golden_figure(width=None, height=None):
     """A figure with golden ration as it's aspect ratio,
@@ -59,7 +62,9 @@ class Plot(ABC):
         ~
         """
         self._logger=\
-            Logger(self)
+            Logger(
+                self,
+                level=Logger.level.DEBUG)
         self._measurement=\
             measurement
         self._data=\
@@ -139,6 +144,8 @@ class Plot(ABC):
                 self._logger.get_source_info(),
                 "set plot customization {}: {}"\
                 .format(key, value))
+            _key=\
+                "_{}".format(key)
             if hasattr(self, key):
                 try:
                     setattr(self, key, value)
@@ -146,9 +153,21 @@ class Plot(ABC):
                     self._logger.alert(
                         self._logger.get_source_info(),
                         "Caught AttributeError: {}".format(aerr),
-                        "while trying to set attribute {}".format(key),
-                        "will try to set _{} instead ".format(key))
-                    setattr(self, "_{}".format(key), value)
+                        "while trying to set attribute {}".format(key))
+
+            elif hasattr(self, _key):
+                try:
+                    setattr(self, _key, value)
+                except AttributeError as aerr:
+                    self._logger.alert(
+                        self._logger.get_source_info(),
+                        "Caught AttributeError: {}".format(aerr),
+                        "while trying to set attribute {}".format(_key))
+            else:
+                self._logger.alert(
+                    self._logger.get_source_info(),
+                    "Neither {} nor {} are attributes ".format(key, _key))
+
         return self
 
     @property
@@ -160,6 +179,15 @@ class Plot(ABC):
     def ylabel(self):
         """..."""
         return self._yvar if self._yvar else self._ylabel
+
+    def analyzing(self,
+            analyzed_quantity):
+        """..."""
+        assert\
+            analyzed_quantity in self._data
+        self._analyzed_quantity=\
+            analyzed_quantity
+        return self
 
     def get_plotting_dataframe(self,
             measurement=None,
@@ -277,6 +305,124 @@ class Plot(ABC):
         
         return\
             (output_file_path, fname)
+
+
+class MultiPlot(
+        WithFCA):
+    """A plot composed of many."""
+    BasePlotType=\
+        Field(
+            __name__="BasePlotType",
+            __type__=type,
+            __typecheck__=Field.typecheck.subtype(Plot),
+            __doc__="type of the individual plots.")
+
+    def __init__(self,
+            measurement,
+            *args, **kwargs):
+        """..."""
+        self._measurement=\
+            measurement
+        self._yvar= "Y"
+        self._xvar= "X"
+        self._given_parameter_values={}
+        self._customization={}
+        super().__init__(
+            *args, **kwargs)
+
+    def plotting(self,
+            yvar):
+        """..."""
+        self._yvar= yvar
+        return self
+
+    def versus(self,
+            xvar):
+        """..."""
+        self._xvar= xvar
+        return self
+
+    def given(self,
+            **kwargs):
+        self._given_parameter_values={
+            k: v for k,v in kwargs.items()}
+        return self
+
+    def with_customization(self,
+            **kwargs):
+        """..."""
+        self._customization=\
+            kwargs
+        return self
+
+    def plot(self,
+             **kwargs):
+        """..."""
+        measurement_labels=\
+            self._measurement.data.columns.levels[0]
+        yvar=\
+            self._measurement.phenomenon.label
+        title_common=\
+            self._measurement.phenomenon.name
+
+        def __get_plot(column_label):
+            """..."""
+            return\
+                self.BasePlotType(
+                    self._measurement)\
+                    .analyzing(
+                        column_label)\
+                    .plotting(
+                        self._yvar)\
+                    .versus(
+                        self._xvar)\
+                    .given(
+                        **self._given_parameter_values)\
+                    .with_customization(
+                        title="{} {}".format(column_label, title_common),
+                        **kwargs)\
+                    .plot()
+
+        return{
+            label: __get_plot(label)
+            for label in measurement_labels}
+
+    def save(self,
+            figures,
+            output_dir_path=None,
+            **kwargs):
+        """..."""
+        measurement_labels=\
+            self._measurement.data.columns.levels[0]
+        yvar=\
+            self._measurement.phenomenon.label
+        title_common=\
+            self._measurement.phenomenon.name
+
+        def __save_plot(figure_label, figure):
+            """..."""
+            return\
+                self.BasePlotType(
+                    self._measurement)\
+                    .analyzing(
+                        figure_label)\
+                    .plotting(
+                        self._yvar)\
+                    .versus(
+                        self._xvar)\
+                    .given(
+                        **self._given_parameter_values)\
+                    .with_customization(
+                        title="{} {}".format(figure_label, title_common),
+                        **kwargs)\
+                    .save(
+                        figure,
+                        output_dir_path=output_dir_path,
+                        file_name="{}_report.png".format(figure_label))
+        return{
+            figure_label: __save_plot(figure_label, figure)
+            for figure_label, figure in figures.items()}
+
 
 from dmt.vtk.plotting.bars\
     import BarPlot

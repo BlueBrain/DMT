@@ -34,7 +34,12 @@ class BrainCircuitAnalysis(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        #self.brain_region = kwargs["brain_region"]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Create a {} with report type {}"""\
+            .format(
+                self.__class__.__name__,
+                kwargs["ReportType"]))
         super().__init__(
             *args, **kwargs)
 
@@ -106,8 +111,8 @@ class BrainCircuitAnalysis(
                 model_measurement)\
             .plotting(
                 model_measurement.phenomenon.label)\
-            .versus(self.\
-                plotting_parameter.label)\
+            .versus(
+                self.plotting_parameter.label)\
             .given(
                 **self._for_given_parameter_values(
                     **kwargs))\

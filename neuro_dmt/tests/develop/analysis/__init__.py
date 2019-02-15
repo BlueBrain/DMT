@@ -108,7 +108,7 @@ class TestCompositionAnalysis:
     def __init__(self,
             circuit_model=iso_circuit_model,
             sample_size=100,
-            sampled_box_shape=25. * np.ones(3),
+            sampled_box_shape=50. * np.ones(3),
             regions=["SSp-ll"],
             *args, **kwargs):
         """"..."""
@@ -179,7 +179,7 @@ class TestCompositionAnalysis:
         return\
             region in index.levels[index.names.index(Cell.REGION)]
 
-    def _append_measurment(self,
+    def _append_measurement(self,
             measurement):
         """..."""
         phenomenon=\
@@ -212,7 +212,6 @@ class TestCompositionAnalysis:
             .append(report_path)
         return self._reports
 
-
     def get_report(self,
             phenomenon,
             region="SSp-ll",
@@ -236,7 +235,7 @@ class TestCompositionAnalysis:
                 analysis.get_measurement(
                     self._circuit_model,
                     *args, **kwargs)
-            self._append_measurment(
+            self._append_measurement(
                 measurement)
             logger.debug(
                 logger.get_source_info(),
