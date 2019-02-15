@@ -187,7 +187,7 @@ class BlueBrainModelAdapter(
     
     def get_cell_density(self,
             circuit_model,
-            spatial_parameters={},
+            spatial_parameters=[],
             by_property=None,
             for_cell_type=CellType.Any,
             *args, **kwargs):
@@ -205,7 +205,7 @@ class BlueBrainModelAdapter(
 
     def get_cell_ratio(self,
             circuit_model,
-            spatial_parameters={},
+            spatial_parameters=[],
             *args, **kwargs):
         """..."""
         return\
@@ -218,7 +218,7 @@ class BlueBrainModelAdapter(
 
     def get_inhibitory_synapse_density(self,
             circuit_model,
-            spatial_parameters={},
+            spatial_parameters=[],
             *args, **kwargs):
         """..."""
         return\
@@ -231,7 +231,7 @@ class BlueBrainModelAdapter(
 
     def get_excitatory_synapse_density(self,
             circuit_model,
-            spatial_parameters={},
+            spatial_parameters=[],
             *args, **kwargs):
         """..."""
         return\
@@ -244,7 +244,7 @@ class BlueBrainModelAdapter(
 
     def get_synapse_density(self,
             circuit_model,
-            spatial_parameters={},
+            spatial_parameters=[],
             *args, **kwargs):
         """..."""
         return\

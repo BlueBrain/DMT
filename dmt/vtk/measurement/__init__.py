@@ -180,6 +180,9 @@ class StatisticalMeasurement:
                 phenomenon=method.phenomenon,
                 label=method.label,
                 method=method_description(method),
+                sampling_method=self.random_variate.sampling_method,
+                sample_size=kwargs["size"],
+                measurement_method=method_description(method),
                 data=data,
                 units=method.units,
                 parameter=levels[0])
