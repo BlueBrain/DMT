@@ -23,14 +23,10 @@ class MouseSSCxCompositionData(
     data_location=\
         Field(
             __name__ = "data_location",
-            __type__ = str,
+            __type__ = dict,
             __doc__ = """This should be the directory where composition data is
             located, under which individual files contain measurement data of a
-            single phenomenon.""",
-            __default__ = os.path.join(
-                "/gpfs/bbp.cscs.ch/home/sood",
-                "work/validations/dmt",
-                "examples/datasets/cortex/sscx/mouse/composition"))
+            single phenomenon.""")
     def __init__(self,
             phenomenon,
             *args, **kwargs):

@@ -80,41 +80,47 @@ class BlueBrainCircuitData(
         return self.phenomenon.label
 
     @abstractmethod
-    def get_reference_datasets(self, data_location):
+    def get_reference_datasets(self,
+            data_location):
         """..."""
         raise NotImplementedError(
             """Implement get_reference_datasets
             for your concrete implementation.""")
 
-    def _load_from_object(self, data, *args, **kwargs):
+    def _load_from_object(self,
+            data,
+            *args, **kwargs):
         """..."""
         try:
-            return {"datasets": data.datasets,
-                    "primary": data.primary}
+            return {"datasets"\
+                    : data.datasets,
+                    "primary"\
+                    : data.primary}
         except AttributeError as e:
             raise TypeError(
                 "Expected a 'Record' with fields 'datasets' and 'primary'\n"
                 "\t\t Caught AttributeError {}\n".format(e))
 
-    def _load_from_location(self, data_location):
-        """Load data from a location
-        We provide a default implementation that makes a trivial check.
-        The concrete implementation needs to complete this implementation only
-        if data will be loaded from a location.
-        """
-        if not self._is_location(data_location):
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "Cannot load data from argument 'data_location' {}"
-                .format(data_location))
-            return None
+    # def _load_from_location(self,
+    #         data_location):
+    #     """Load data from a location
+    #     We provide a default implementation that makes a trivial check.
+    #     The concrete implementation needs to complete this implementation only
+    #     if data will be loaded from a location.
+    #     """
+    #     if not self._is_location(data_location):
+    #         self.logger.alert(
+    #             self.logger.get_source_info(),
+    #             "Cannot load data from argument 'data_location' {}"
+    #             .format(data_location))
+    #         return None
 
-        self.logger.alert(
-            self.logger.get_source_info(),
-            "Load data from location {}.".format(data_location))
+    #     self.logger.alert(
+    #         self.logger.get_source_info(),
+    #         "Load data from location {}.".format(data_location))
 
-        return self._load_from_object(
-            self.get_reference_datasets(data_location))
+    #     return self._load_from_object(
+    #         self.get_reference_datasets(data_location))
 
     @property
     def description(self):
@@ -135,9 +141,10 @@ class BlueBrainCircuitData(
         self.logger.debug(
             self.logger.get_source_info(),
             "get data location for pheno {}".format(phenomenon))
-        return os.path.join(
-            self.data_location if not directory else directory,
-            phenomenon.label)
+        return self.data_location
+        # return os.path.join(
+        #     self.data_location if not directory else directory,
+        #     phenomenon.label)
 
     @abstractmethod
     def get(self,

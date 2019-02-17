@@ -13,25 +13,25 @@ def load_file(fpath, load):
     with open(fpath) as f:
         return Record(**load(f))
 
-def load_yaml(dpath, reference):
+def load_yaml(dpath, file_name):
     """
     Load YAML dataset by name.
     @param dpath:     path to the directory where the data sit.
     @param reference: name of the dataset
     @return: python dict
     """
-    return load_file(os.path.join(dpath, reference + ".yaml"), yaml.load)
+    return load_file(os.path.join(dpath, file_name + ".yaml"), yaml.load)
 
-def load_json(dpath, reference):
+def load_json(dpath, file_name):
     """
     Load JSON dataset by name.
     @param dpath:     path to the directory where the data sit.
     @param reference: name of the dataset
     @return: python dict
     """
-    return load_file(dpath, reference + ".json", json.load)
+    return load_file(dpath, file_name + ".json", json.load)
 
-def load(dpath, reference, dtype="YAML"):
+def load(dpath, file_name, dtype="YAML"):
     """
     Load dataset by name. The dataset file may be either YAML or JSON.
     @param dpath:     path to the directory where the data sit.
@@ -40,9 +40,11 @@ def load(dpath, reference, dtype="YAML"):
     @return: python dict
     """
 
-    if dtype.lower() == "yaml": return load_yaml(dpath, reference)
-    elif dtype.lower() == "json": return load_json(dpath, reference)
-    else: raise ValueError("datasets of type " + dtype + " unknown / unimplemented")
+    if dtype.lower() == "yaml": return load_yaml(dpath, file_name)
+    elif dtype.lower() == "json": return load_json(dpath, file_name)
+    else:
+        raise ValueError(
+            "datasets of type " + dtype + " unknown / unimplemented")
 
 
 

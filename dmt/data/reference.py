@@ -1,10 +1,13 @@
 """..."""
 
-from abc import abstractmethod
 import pandas as pd
-from dmt.data import ReferenceData
-from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.utils.collections import Record
+from dmt.data\
+    import ReferenceData
+from dmt.vtk.utils.descriptor\
+    import Field
+from dmt.vtk.utils.collections\
+    import Record\
+    ,      take
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 
@@ -13,9 +16,10 @@ class MultiReferenceData(
     """Reference data with multiple datasets, one of which will be primary"""
     
     primary=\
-        Field.Optional(
-        __name__="primary",
-            __typecheck__=Field.typecheck.either(str, pd.DataFrame),
+        Field(
+            __name__="primary",
+            __type__=str,
+            #__typecheck__=Field.typecheck.either(str, pd.DataFrame),
             __doc__="""If this ReferenceData holds more than one dataset, 
             then you may choose a primary dataset out of your multiple 
             datasets. If this field is set to a string, then its value 
@@ -42,16 +46,62 @@ class MultiReferenceData(
             "initialize {} instance with kwargs".format(
                 self.__class__.__name__),
             *["\t{}: {}".format(k, v) for k, v in kwargs.items()] )
-        data_and_primary= self.load(data)
+        datasets = self.load(data)
             
         self.logger.debug(
             self.logger.get_source_info(),
-            "data and primary should be a dictionary: \n {}".format(
-                data_and_primary))
+            "datasets loaded: {}".format(datasets))
         super().__init__(
-            data=data_and_primary["datasets"],
-            primary=data_and_primary["primary"],
+            data=datasets,
             *args, **kwargs)
+
+        def _is_location(self,
+            data_value):
+            """...
+            'data_value' will be passed as a keyword argument to '__init__'.
+            For now we assume that 'data_value' is location of data if and only if
+            it is a string. The user may override this method to accommodate their
+            data locations.
+            """
+            if super()._is_location(data_value):
+                return True
+            if isinstance(data_value, list) and len(data_value) > 0:
+                if super()._is.location(data_value[0]):
+                    return True
+                return False
+    
+    def _load_from_location(self,
+            data_locations):
+        """...
+        Arguments
+        ---------------
+        data_location :: dict{label: location}
+        """
+        self.logger.info(
+            self.logger.get_source_info(),
+            """load_from_location in {}""".format(__file__))
+        if not isinstance(data_locations, dict):
+            raise ValueError(
+                "A MultiReferenceData requires a dict of data locations.")
+        if len(data_locations) == 0:
+            raise ValueError(
+                "No locations in dict data_location: {}"\
+                .format(data_location))
+        if not isinstance(list(take(1, data_locations.values()))[0], str):
+            raise ValueError(
+                """A MultiReferenceData requires a dict{str: str}
+                that maps dataset label --> dataset location.""")
+        return{
+            label: self._load_one_from_location(
+                label, location)
+            for label, location in data_locations.items()}
+        # return self._load_from_object(
+        #     Record(
+        #         datasets={
+        #             label: self._load_one_from_location(
+        #                 label, location)
+        #             for label, location in data_locations.items()},
+        #         primary=self.primary))
 
     def get_dataset(self,
             dataset_name):
