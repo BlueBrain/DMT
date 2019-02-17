@@ -98,13 +98,17 @@ class Plot(ABC):
             measurement,
             *args, **kwargs):
         """Extract plotting customization from a measurement."""
-        self._title=\
-            getattr(
-                measurement,
-                "label",
-                kwargs.get(
-                    "title",
-                    self.__class__.__name__))
+        try:
+            self._title=\
+                measurement.phenomenon.name
+        except:
+            self._title=\
+                getattr(
+                    measurement,
+                    "label",
+                    kwargs.get(
+                        "title",
+                        self.__class__.__name__))
         try:
             self._xlabel=\
                 measurement.parameter
@@ -144,8 +148,6 @@ class Plot(ABC):
                 self._logger.get_source_info(),
                 "set plot customization {}: {}"\
                 .format(key, value))
-            _key=\
-                "_{}".format(key)
             if hasattr(self, key):
                 try:
                     setattr(self, key, value)
@@ -155,20 +157,31 @@ class Plot(ABC):
                         "Caught AttributeError: {}".format(aerr),
                         "while trying to set attribute {}".format(key))
 
-            elif hasattr(self, _key):
-                try:
-                    setattr(self, _key, value)
-                except AttributeError as aerr:
-                    self._logger.alert(
-                        self._logger.get_source_info(),
-                        "Caught AttributeError: {}".format(aerr),
-                        "while trying to set attribute {}".format(_key))
-            else:
-                self._logger.alert(
-                    self._logger.get_source_info(),
-                    "Neither {} nor {} are attributes ".format(key, _key))
+                    _key=\
+                        "_{}".format(key)
+                    if hasattr(self, _key):
+                        self._logger.debug(
+                            self._logger.get_source_info(),
+                            "instead, try to set {}".format(_key))
+                        try:
+                            setattr(self, _key, value)
+                        except AttributeError as aerr:
+                            self._logger.alert(
+                                self._logger.get_source_info(),
+                                "Caught AttributeError: {}".format(aerr),
+                                "while trying to set attribute {}"\
+                                .format(_key))
+                            self._logger.alert(
+                                self._logger.get_source_info(),
+                                "Neither {} nor {} are attributes "\
+                                .format(key, _key))
 
         return self
+
+    @property
+    def title(self):
+        """..."""
+        return self._title
 
     @property
     def xlabel(self):
@@ -307,7 +320,81 @@ class Plot(ABC):
             (output_file_path, fname)
 
 
+
 class MultiPlot(
+        Plot):
+    """Plot several plots (of the same kind),
+    in separate figures."""
+    BasePlotType=\
+        Field(
+            __name__="BasePlotType",
+            __type__=type,
+            __typecheck__=Field.typecheck.subtype(Plot),
+            __doc__="type of the individual plots.")
+
+    def __init__(self,
+            measurement,
+            *args, **kwargs):
+        """..."""
+        self._measurement_labels=\
+            measurement.data.columns.levels[0]
+        self._yvar=\
+            measurement.phenomenon.label
+        self._title_common=\
+            measurement.phenomenon.name
+        super().__init__(
+            measurement,
+            *args, **kwargs)
+        self.base_plotter=\
+            self.BasePlotType(
+                self._measurement)
+
+    def get_yvar(self, column_label):
+        """..."""
+        return "{}_{}".format(
+            column_label,
+            self._yvar)
+
+    def plot(self,
+            *args, **kwargs):
+        """..."""
+        def __get_plot(column_label):
+            """..."""
+            return self\
+                .base_plotter\
+                .analyzing(
+                    column_label)\
+                .plotting(
+                    self._yvar)\
+                .versus(
+                    self._xvar)\
+                .given(
+                    **self._given)\
+                .with_customization(
+                    title="{} {}".format(
+                        column_label,
+                        self._title_common),
+                    **kwargs)\
+                .plot()
+
+        return {
+            label: __get_plot(label)
+            for label in self._measurement_labels}
+
+    def save(self,
+            figures,
+            output_dir_path=None,
+            *args, **kwargs):
+        """Save figures in the dict figures,
+        each in its own file!"""
+        return{
+            figure_label: self.base_plotter.save(
+                figure,
+                output_dir_path=output_dir_path,
+                file_name="{}_report.png".format(figure_label))
+            for figure_label, figure in figures.items()}
+                    
+class MultiFigure(
         WithFCA):
     """A plot composed of many."""
     BasePlotType=\

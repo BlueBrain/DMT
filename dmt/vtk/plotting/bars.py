@@ -34,16 +34,16 @@ class BarPlot(Plot):
                 color=self._colors[0],
                 yerr=dataframe["std"].values)
         plt.title(
-            self._title,
+            self.title,
             fontsize=24)
         plt.xlabel(
-            self._xlabel,
+            self.xlabel,
             fontsize=20)
         plt.xticks(
             np.arange(dataframe.shape[0]),
             dataframe.index)
         plt.ylabel(
-            self._ylabel,
+            self.ylabel,
             fontsize=20)
         fontP=\
             FontProperties()
@@ -55,12 +55,17 @@ class BarPlot(Plot):
 
 class MultiBarPlot(
         MultiPlot):
-    """plot several bar plots"""
-    def __init__(self,
-            measurement,
-            *args, **kwargs):
-        """..."""
-        super().__init__(
-            measurement,
-            BasePlotType=BarPlot)
+    """Multiple bar plots"""
+    BasePlotType= BarPlot
+
+# class MultiBarPlot(
+#         MultiPlot):
+#     """plot several bar plots"""
+#     def __init__(self,
+#             measurement,
+#             *args, **kwargs):
+#         """..."""
+#         super().__init__(
+#             measurement,
+#             BasePlotType=BarPlot)
 
