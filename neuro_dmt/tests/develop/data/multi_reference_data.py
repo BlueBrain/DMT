@@ -7,6 +7,8 @@ from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
     import MouseSSCxCompositionData
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
     import RatSSCxCompositionData
+from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome\
+    import RatSSCxConnectomeData
 
 log=\
     Logger(
@@ -55,9 +57,6 @@ except Exception as exception:
     exceptions.append(
         {"traceback": traceback.format_exc(),
          "exception": exception})
-log.success(
-    log.get_source_info(),
-    """mouse inhibitory synapse density data loaded""")
 try:
     mouse_synapse_density_data=\
         MouseSSCxCompositionData.get(
@@ -115,9 +114,6 @@ except Exception as exception:
     exceptions.append(
         {"traceback": traceback.format_exc(),
          "exception": exception})
-log.success(
-    log.get_source_info(),
-    """mouse inhibitory synapse density data loaded""")
 try:
     rat_synapse_density_data=\
         RatSSCxCompositionData.get(
@@ -132,6 +128,21 @@ except Exception as exception:
     exceptions.append(
         {"traceback": traceback.format_exc(),
          "exception": exception})
+try:
+    rat_pair_synapse_count_data=\
+        RatSSCxConnectomeData.get(
+            "pair_synapse_count")
+    assert\
+        rat_pair_synapse_count_data is not None
+except Exception as exception:
+    log.failure(
+        log.get_source_info(),
+        """could not load pair synapse count data""",
+        """Exception {}""".format(exception))
+    exceptions.append(
+        {"traceback": traceback.format_exc(),
+         "exception": exception})
+
 
 if len(exceptions):
     log.failure(

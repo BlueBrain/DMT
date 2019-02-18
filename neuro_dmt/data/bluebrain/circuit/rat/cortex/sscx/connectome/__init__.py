@@ -20,14 +20,9 @@ class RatSSCxConnectomeData(
     data_location=\
         Field.Optional(
             __name__ = "data_location",
-            __type__ = str,
-            __doc__ = """This should be the directory where composition data is
-            located, under which individual files contain measurement data of a
-            single phenomenon.""",
-            __default__ = os.path.join(
-                "/gpfs/bbp.cscs.ch/home/sood",
-                "work/validations/dmt",
-                "examples/datasets/cortex/sscx/rat/connectome"))
+            __type__ = dict,
+            __typecheck__=Field.typecheck.mapping(str, str),
+            __doc__="A dict{str: str} that maps dataset label to its location")
 
     def __init__(self,
             phenomenon,

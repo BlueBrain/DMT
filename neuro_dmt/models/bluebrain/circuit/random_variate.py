@@ -203,7 +203,7 @@ class RandomRegionOfInterest(
             sampled randomly inside a circuit for specified {}.
             """.format(
                 " X ".join( str(x) for x in self.sampled_box_shape),
-                ','.join(self.condition_type.fields))
+                ", ".join(self.condition_type.fields))
 
 
 class RandomSpanningColumnOfInterest(

@@ -9,8 +9,17 @@ from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.phenomenon\
     import Phenomenon
+from dmt.data\
+    import ReferenceData
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome\
     import RatSSCxConnectomeData
+
+data_path=\
+    os.path.join(
+        "/gpfs/bbp.cscs.ch/home/sood",
+        "work/validations/dmt",
+        "examples/datasets/cortex/sscx/rat/connectome",
+        "pair_synapse_count")
 
 class RatSSCxPairSynapseCountData(
         RatSSCxConnectomeData):
@@ -18,12 +27,26 @@ class RatSSCxPairSynapseCountData(
     def __init__(self,
             *args, **kwargs):
         """..."""
+        reference_datasets=\
+            self.get_reference_datasets(
+                data_path)
         super().__init__(
             phenomenon = Phenomenon(
                 "Pair Synapse Count",
                 "Count of synapses between a pair of cells.",
                 group="connectome"),
+            data_location=self.get_data_location(data_path),
+            datasets=reference_datasets.datasets,
+            primary=reference_datasets.primary,
             *args, **kwargs)
+
+    def get_data_location(self,
+            reference_data_dir):
+        """..."""
+        return\
+            {"michael_reimann_2017": os.path.join(
+                data_path,
+                "2017-11-17_nsyn_SS_with_v6_mtypes.pickle")}
 
     def get_reference_datasets(self,
             reference_data_dir):
@@ -34,6 +57,7 @@ class RatSSCxPairSynapseCountData(
                 "2017-11-17_nsyn_SS_with_v6_mtypes.pickle")
         with open(data_2017_path, "rb") as file_2017:
             data_raw, data_read = pickle.load(file_2017)
+
         for k, v in data_raw.items():
             data_read[k] = (np.mean(v), np.std(v), len(v))
 
@@ -51,10 +75,12 @@ class RatSSCxPairSynapseCountData(
         return Record(
             primary=mr2017,
             datasets={
-                mr2017: Record(
-                    label = mr2017,
-                    uri = data_2017_path,
-                    citation = "Curated by Michael Reimann, BBP, EPFL",
-                    what = "Ask Michael Reimann",
-                    data = dataframe)})
+                mr2017: ReferenceData(
+                    data=Record(
+                        label = mr2017,
+                        uri = data_2017_path,
+                        citation = "Curated by Michael Reimann, BBP, EPFL",
+                        what = "Ask Michael Reimann",
+                        data = dataframe),
+                    description="Ask Michael Reimann")})
             
