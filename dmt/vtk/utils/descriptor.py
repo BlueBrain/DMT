@@ -280,8 +280,8 @@ class Field:
                 for key, val in candidate_attr_value.items():
                     if not isinstance(key, key_type):
                         raise TypeError(
-                            """key '{}' of a mapping field of '{}' instance
-                            does not type-check '{}"""
+                            "key '{}' of a mapping field of '{}' instance \
+                            does not type-check '{}"
                             .format(key, 
                                     instance.__class__.__name__,
                                     key_type.__name__)

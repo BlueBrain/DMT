@@ -19,15 +19,8 @@ class RatSSCxCompositionData(
     data_location=\
         Field(
             __name__ = "data_location",
-            __type__ = str,
-            __doc__ = """This should be the directory where composition data is
-            located, under which individual files contain measurement data of a
-            single phenomenon.""",
-            __default__ = os.path.join(
-                "/gpfs/bbp.cscs.ch/home/sood",
-                "work/validations/dmt",
-                "examples/datasets/cortex/sscx/rat/composition"))
-                
+            __type__ = dict,
+            __doc__="A dict{str: str} that maps dataset label to its location")
 
     def __init__(self,
             phenomenon,
@@ -83,21 +76,3 @@ class RatSSCxCompositionData(
             cell_ratio=RatSSCxCellRatioData,
             inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityData,
             synapse_density=RatSSCxSynapseDensityData)
-        
-        # cell_density=\
-        #     RatSomatosensoryCortexCellDensityData(
-        #         *args, **kwargs)
-        # cell_ratio=\
-        #     RatSomatosensoryCortexCellRatioData(
-        #         *args, **kwargs)
-        # inhibitory_synapse_density=\
-        #     RatSomatosensoryCortexInhibitorySynapseDensityData(
-        #         *args, **kwargs)
-        # synapse_density=\
-        #     RatSomatosensoryCortexSynapseDensityData(
-        #         *args, **kwargs)
-        # return dict(
-        #     cell_density=cell_density,
-        #     cell_ratio=cell_ratio,
-        #     inhibitory_synapse_density=inhibitory_synapse_density,
-        #     synapse_density=synapse_density)

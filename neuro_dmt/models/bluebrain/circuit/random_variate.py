@@ -192,11 +192,19 @@ class RandomRegionOfInterest(
     @property
     def sampling_method(self):
         """describe the method used to generate random regions of interest"""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Describe sampling method for a random variate
+            with condition fields: {}"""\
+            .format(
+                self.condition_type.fields))
         return\
             """Cuboids of shape {} were generated around a position
-            sampled randomly inside a circuit as specified by a condition.
+            sampled randomly inside a circuit for specified {}.
             """.format(
-                self.sampled_box_shape)
+                " X ".join( str(x) for x in self.sampled_box_shape),
+                ','.join(self.condition_type.fields))
+
 
 class RandomSpanningColumnOfInterest(
         RandomSpatialVariate):

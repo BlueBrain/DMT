@@ -24,9 +24,8 @@ class MouseSSCxCompositionData(
         Field(
             __name__ = "data_location",
             __type__ = dict,
-            __doc__ = """This should be the directory where composition data is
-            located, under which individual files contain measurement data of a
-            single phenomenon.""")
+            __doc__="A dict{str: str} that maps dataset label to its location")
+
     def __init__(self,
             phenomenon,
             *args, **kwargs):
@@ -81,21 +80,3 @@ class MouseSSCxCompositionData(
             cell_ratio=MouseSSCxCellRatioData,
             inhibitory_synapse_density=MouseSSCxInhibitorySynapseDensityData,
             synapse_density=MouseSSCxSynapseDensityData)
-
-        # cell_density\
-        #     = MouseSomatosensoryCortexCellDensityData(
-        #         *args, **kwargs)
-        # cell_ratio\
-        #     = MouseSomatosensoryCortexCellRatioData(
-        #         *args, **kwargs)
-        # inhibitory_synapse_density\
-        #     = MouseSomatosensoryCortexInhibitorySynapseDensityData(
-        #         *args, **kwargs)
-        # synapse_density\
-        #     = MouseSomatosensoryCortexSynapseDensityData(
-        #         *args, **kwargs)
-        # return dict(
-        #     cell_density=cell_density,
-        #     cell_ratio=cell_ratio,
-        #     inhibitory_synapse_density=inhibitory_synapse_density,
-        #     synapse_density=synapse_density)
