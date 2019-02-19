@@ -195,13 +195,18 @@ class TestCompositionAnalysis:
 
     def _save_report(self,
             analysis,
+            report,
             region,
-            report):
+            output_dir_path=""):
         """..."""
+        logger.debug(
+            logger.get_source_info(),
+            "save report at {}".format(
+                output_dir_path))
         report_path=\
             analysis.save_report(
                 report,
-                output_dir="region-{}".format(region))
+                output_dir_path=output_dir_path)
         phenomenon_label=\
             analysis.phenomenon.label
         if phenomenon_label not in self._reports:
@@ -259,8 +264,13 @@ class TestCompositionAnalysis:
         if save:
             self._save_report(
                 analysis,
+                report,
                 region,
-                report)
+                output_dir_path=os.path.join(
+                    os.getcwd(),
+                    analysis._get_output_dir(
+                        model_measurement=self._measurements[phenomenon]),
+                    "subregion-{}".format(region)))
         return report
 
 

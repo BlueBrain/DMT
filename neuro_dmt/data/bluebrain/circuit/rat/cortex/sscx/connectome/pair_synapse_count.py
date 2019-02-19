@@ -45,7 +45,7 @@ class RatSSCxPairSynapseCountData(
         """..."""
         return\
             {"michael_reimann_2017": os.path.join(
-                data_path,
+                reference_data_dir,
                 "2017-11-17_nsyn_SS_with_v6_mtypes.pickle")}
 
     def get_reference_datasets(self,

@@ -61,7 +61,6 @@ class RatSSCxInhibitorySynapsesOnSomaData(
         data_read=[
             (k, (np.mean(v), np.std(v), len(v)))
             for k, v in data_raw.items()]
-
         dataframe=\
             pd.DataFrame(
                 [{"mean": value[0],

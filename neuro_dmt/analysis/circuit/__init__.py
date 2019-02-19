@@ -43,13 +43,23 @@ class BrainCircuitAnalysis(
         super().__init__(
             *args, **kwargs)
 
-    def _get_output_dir(self):
+    def _get_output_dir(self,
+            model_measurement=None,
+            *args, **kwargs):
         """..."""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Get output directory from kwargs {}""".format(kwargs),
+            "and for model measurement {}".format(model_measurement))
+        brain_region=\
+            model_measurement.brain_region\
+            if model_measurement and hasattr(model_measurement, "brain_region")\
+               else self.brain_region
         return\
             os.path.join(
                 super()._get_output_dir(),
                 self.animal,
-                self.brain_region.label)
+                brain_region.label)
 
     def get_label(self, model):
         """Get a label for the circuit model. Will be useful in reporting"""

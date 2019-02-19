@@ -103,7 +103,8 @@ class MouseSSCxCellDensityData(
                      
     @classmethod
     def get_reference_datasets(self,
-            reference_data_dir):
+            reference_data_dir,
+            *args, **kwargs):
         """...."""
         keller2018=\
             datasets.load(

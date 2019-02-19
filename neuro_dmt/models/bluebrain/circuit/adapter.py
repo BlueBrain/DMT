@@ -167,7 +167,7 @@ class BlueBrainModelAdapter(
             *args, **kwargs):
         """..."""
         if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
-            return\
+            measurment=\
                 self.statistical_measurement(
                     circuit_model,
                     method,
@@ -176,7 +176,7 @@ class BlueBrainModelAdapter(
                                 .geometry\
                                 .spanning_column_parameter()},
                     *args, **kwargs)
-        return\
+        measurement=\
             self.statistical_measurement(
                 circuit_model,
                 method,
@@ -184,6 +184,10 @@ class BlueBrainModelAdapter(
                 parameters=parameters,
                 sampled_box_shape=self._sampled_box_shape,
                 *args, **kwargs)
+        return Record(
+            brain_region=circuit_model.brain_region,
+            **measurement.as_dict)
+        return measurement
     
     def get_cell_density(self,
             circuit_model,
