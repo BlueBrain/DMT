@@ -301,8 +301,7 @@ class BlueBrainModelAdapter(
             circuit_model,
             parameters=[],
             *args, **kwargs):
-        """Count synapses in a circuit. The type of the connection
-        is specified by the arguments in the method call."""
+        """Get statistics for number of synapses in a connection."""
         return\
             self.pathway_measurement(
                 connectome_measurements.PairSynapseCount,

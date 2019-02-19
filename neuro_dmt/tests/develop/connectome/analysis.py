@@ -21,7 +21,8 @@ from neuro_dmt.measurement.parameter\
 from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
     import get_iso_cortex_circuit_model
 from neuro_dmt.library.bluebrain.circuit.models.sscx\
-   import get_sscx_fake_atlas_circuit_model
+   import get_sscx_atlas_circuit_model\
+   ,      get_sscx_fake_atlas_circuit_model
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.adapter\
@@ -59,7 +60,7 @@ sscx_circuit_config=\
         "O1.v6a/20171212",
         "CircuitConfig")
 sscx_circuit_model=\
-    get_sscx_fake_atlas_circuit_model(
+    get_sscx_atlas_circuit_model(
         sscx_circuit_config,
         animal="rat",
         atlas_path=os.path.join(
@@ -207,6 +208,8 @@ class TestConnectomeAnalysis:
                 .get_measurement(
                     self._circuit_model,
                     *args, **kwargs)
+        syn_count_measurement.data.to_pickle(
+            "synapse_count.pickle")
         heatmap=\
             HeatMap(
                 Record(
