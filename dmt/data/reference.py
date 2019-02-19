@@ -67,6 +67,23 @@ class MultiReferenceData(
                 pass
         return None
 
+    def add_dataset(self,
+            dataset_label,
+            dataset):
+        """Add a dataset to the existing ones."""
+        if dataset_label in self.datasets:
+            raise ValueError(
+                "{} already has data set labeled {}".format(
+                    self,
+                    dataset_label))
+        assert\
+            isinstance(dataset, ReferenceData)
+        self.datasets[dataset_label]=\
+            dataset
+        self.data[dataset_label]=\
+            dataset.data
+        return self
+
     @property
     def primary_dataset(self):
         """..."""
