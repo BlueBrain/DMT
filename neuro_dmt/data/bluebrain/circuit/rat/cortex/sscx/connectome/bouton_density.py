@@ -19,9 +19,9 @@ data_path=\
         "/gpfs/bbp.cscs.ch/home/sood",
         "work/validations/dmt",
         "examples/datasets/cortex/sscx/rat/connectome",
-        "pair_synapse_count")
+        "bouton_density")
 
-class RatSSCxPairSynapseCountData(
+class RatSSCxBoutonDensity(
         RatSSCxConnectomeData):
     """..."""
     def __init__(self,
@@ -40,48 +40,54 @@ class RatSSCxPairSynapseCountData(
             primary=reference_datasets.primary,
             *args, **kwargs)
 
+
     def get_data_location(self,
             reference_data_dir):
         """..."""
         return\
             {"michael_reimann_2017": os.path.join(
                 reference_data_dir,
-                "2017-11-17_nsyn_SS_with_v6_mtypes.pickle")}
+                "2017-11-17_bd_v6_mtype_names.pickle")}
 
     def get_reference_datasets(self,
             reference_data_dir):
-        """Available reference data to be used to validate cell density"""
-        data_2017_path=\
+        """..."""
+        data_file_path=\
             os.path.join(
                 reference_data_dir,
-                "2017-11-17_nsyn_SS_with_v6_mtypes.pickle")
-        with open(data_2017_path, "rb") as file_2017:
-            data_raw, data_read = pickle.load(file_2017)
+                "2017-11-17_bd_v6_mtype_names.pickle")
+        with open(data_file_path, "rb") as data_file:
+            #pickle.load does not work, some problem with ascii codec.
+            #so use this workaround.
+            unpickler=\
+                pickle._Unpickler(data_file)
+            unpickler.encoding=\
+                "latin1"
+            data_raw= unpickler.load()
 
-        for k, v in data_raw.items():
-            data_read[k] = (np.mean(v), np.std(v), len(v))
-
-        data_read_list=\
-            [(k, v) for k, v in data_read.items()]
+        data_read=[
+            (k, (np.mean(v), np.std(v), len(v)))
+            for k, v in data_raw.items()]
         dataframe=\
             pd.DataFrame(
-                [{"mean": value[0], "std": value[1], "sample_size": value[2]}
-                  for _, value in data_read_list],
-                index = pd.MultiIndex.from_tuples(
-                    [pre_post_mtypes for pre_post_mtypes, _ in data_read_list],
-                    names=("pre_mtype", "post_mtype")))
+                [{"mean": value[0],
+                  "std": value[1],
+                  "sample_size": value[2]}
+                 for _, value in data_read],
+                index=pd.Index(
+                    [key for key, _ in data_read],
+                    name="mtype"))
         mr2017=\
             "michael_reimann_2017"
-        return Record(
-            primary=mr2017,
-            datasets={
-                mr2017: ReferenceData(
-                    data=Record(
-                        label = mr2017,
-                        uri = data_2017_path,
-                        citation = "Curated by Michael Reimann, BBP, EPFL",
-                        what = "Statistics for the count of synapses \
-                        connecting pairs of cells in mtype-->mtype pathways.",
-                        data = dataframe),
-                    description="Ask Michael Reimann")})
-            
+        return\
+            Record(
+                primary=mr2017,
+                datasets={
+                    mr2017: ReferenceData(
+                        data=Record(
+                            label=mr2017,
+                            uri=data_path,
+                            citation="Curated by Michael Reimann, BBP, EPFL",
+                            what="Ask Michael Reimann",
+                            data=dataframe),
+                        description="Ask Michael Reimann")})
