@@ -1,10 +1,13 @@
 """..."""
 
-from abc import abstractmethod
 import pandas as pd
-from dmt.data import ReferenceData
-from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.utils.collections import Record
+from dmt.data\
+    import ReferenceData
+from dmt.vtk.utils.descriptor\
+    import Field
+from dmt.vtk.utils.collections\
+    import Record\
+    ,      take
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
 
 
@@ -12,45 +15,41 @@ class MultiReferenceData(
         ReferenceData):
     """Reference data with multiple datasets, one of which will be primary"""
     
+    datasets=\
+        Field(
+            __name__="datasets",
+            __type__=dict,
+            __typecheck__=Field.typecheck.mapping(str, ReferenceData),
+            __doc__="""'datasets' should map dataset label to
+            a ReferenceData instance.""")
     primary=\
-        Field.Optional(
-        __name__="primary",
-            __typecheck__=Field.typecheck.either(str, pd.DataFrame),
+        Field(
+            __name__="primary",
+            __type__=str,
             __doc__="""If this ReferenceData holds more than one dataset, 
             then you may choose a primary dataset out of your multiple 
             datasets. If this field is set to a string, then its value 
             must be the label of one of the datasets in this
             ReferenceData.""")
-    # data=\
-    #     Field(
-    #         __name__ = "data",
-    #         __typecheck__=Field.typecheck.either(
-    #             Field.typecheck.mapping(str, Record),
-    #             Field.typecheck.mapping(str, dict)),
-    #         __doc__="""A dict that maps labels to datasets that are 
-    #         represented as a Record.""")
 
     def __init__(self,
-            data=None,
+            datasets,
             *args, **kwargs):
         """..."""
-        if not data:
-            raise Exception(
-                "initializer argument data cannot be None.")
         self.logger.info(
             self.logger.get_source_info(),
             "initialize {} instance with kwargs".format(
                 self.__class__.__name__),
             *["\t{}: {}".format(k, v) for k, v in kwargs.items()] )
-        data_and_primary= self.load(data)
-            
         self.logger.debug(
             self.logger.get_source_info(),
-            "data and primary should be a dictionary: \n {}".format(
-                data_and_primary))
+            "datasets: {}".format(datasets),
+            "primary dataset: {}".format(
+                kwargs.get("priamry", None)))
         super().__init__(
-            data=data_and_primary["datasets"],
-            primary=data_and_primary["primary"],
+            datasets=datasets,
+            data={dataset_label: dataset_data.data
+                  for dataset_label, dataset_data in datasets.items()},
             *args, **kwargs)
 
     def get_dataset(self,
@@ -67,6 +66,23 @@ class MultiReferenceData(
             except AttributeError:
                 pass
         return None
+
+    def add_dataset(self,
+            dataset_label,
+            dataset):
+        """Add a dataset to the existing ones."""
+        if dataset_label in self.datasets:
+            raise ValueError(
+                "{} already has data set labeled {}".format(
+                    self,
+                    dataset_label))
+        assert\
+            isinstance(dataset, ReferenceData)
+        self.datasets[dataset_label]=\
+            dataset
+        self.data[dataset_label]=\
+            dataset.data
+        return self
 
     @property
     def primary_dataset(self):

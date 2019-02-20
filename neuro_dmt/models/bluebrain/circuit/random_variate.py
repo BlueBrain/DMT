@@ -1,9 +1,11 @@
 """BBP specific random variates, and related utilities."""
 from abc import ABC, abstractmethod
+import random
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums\
-    import Cell
+    import Cell\
+    ,      Synapse
 from bluepy.geometry.roi\
     import ROI as RegionOfInterest
 from dmt.vtk.utils.collections\
@@ -121,8 +123,9 @@ class RandomPosition(
     def sampling_method(self):
         """describe the method used to generate random positions."""
         return\
-            "random positions generated in a circuit, for a given condition"
-        
+            "random positions generated in a circuit, for a given {}"\
+            .format(
+                ", ".join(self.condition_type.fields))
 
 class RandomCrossectionalPoint(
         RandomPosition):
@@ -192,11 +195,19 @@ class RandomRegionOfInterest(
     @property
     def sampling_method(self):
         """describe the method used to generate random regions of interest"""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Describe sampling method for a random variate
+            with condition fields: {}"""\
+            .format(
+                self.condition_type.fields))
         return\
             """Cuboids of shape {} were generated around a position
-            sampled randomly inside a circuit as specified by a condition.
+            sampled randomly inside a circuit for specified {}.
             """.format(
-                self.sampled_box_shape)
+                " X ".join( str(x) for x in self.sampled_box_shape),
+                ", ".join(self.condition_type.fields))
+
 
 class RandomSpanningColumnOfInterest(
         RandomSpatialVariate):
@@ -299,6 +310,13 @@ class RandomCellVariate(
             columns=["gid"],
             *args, **kwargs)
 
+    @property
+    def sampling_method(self):
+        """..."""
+        return\
+            "random cell gids were sampled for given {}".format(
+               ", ".join( self.condition_type.fields))
+
     def __call__(self,
             condition,
             *args, **kwargs):
@@ -330,29 +348,133 @@ class RandomConnectionVariate(
             RandomCellVariate(
                 circuit_model,
                 *args, **kwargs)
+        self._circuit_mtypes=\
+            circuit_model.bluepy_circuit.cells.mtypes
+        self._connections=\
+            {}
         super().__init__(
             circuit_model,
             reset_condition_type=True,
             columns=["pre_gid", "post_gid"],
             *args, **kwargs)
+        
+    @property
+    def sampling_method(self):
+        """describe the method used to generate random positions."""
+        return\
+            "pairs of cell gids were sampled for given pre, post mtypes."\
+
+    def __get_connections(self,
+            pre_mtype,
+            post_mtype):
+        """..."""
+        self.logger.info(
+            self.logger.get_source_info(),
+            """Get connections from {} --> {} """.format(
+                pre_mtype,
+                post_mtype))
+        if not pre_mtype in self._connections:
+            circuit_cells=\
+                self.circuit_model\
+                    .bluepy_circuit\
+                    .cells
+            connections={
+                mtype: [] for mtype in self._circuit_mtypes}
+
+            pre_gids=\
+                circuit_cells.ids(
+                    {Cell.MTYPE: pre_mtype})
+            for i, pre_gid in enumerate(pre_gids):
+                post_gids=\
+                    self.circuit_model\
+                        .bluepy_circuit\
+                        .connectome\
+                        .efferent_gids(
+                            pre_gid)
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    """Get connections from {} --> {} """.format(
+                        pre_mtype,
+                        post_mtype),
+                    "{}-th pre_gid {} of total {}".format(
+                        i, pre_gid, len(pre_gids)),
+                    "Found {} post gids for {}".format(
+                        len(post_gids),
+                        pre_gid))
+                post_gid_mtypes=\
+                    self.circuit_model\
+                        .bluepy_circuit\
+                        .cells\
+                        .get(
+                            post_gids,
+                            properties=Cell.MTYPE)
+
+                for post_gid, post_mtype in post_gid_mtypes.items():
+                    connections[post_mtype].append(
+                        (pre_gid, post_gid))
+            self._connections[pre_mtype]=\
+                connections
+        return self._connections[pre_mtype][post_mtype]
 
     def __call__(self,
             condition,
             *args, **kwargs):
         """Call Me"""
+        raise NotImplementedError(
+            """Need to think about sampling with or without replacement 
+            for a random variate with a finite number of possible values.
+            However, a method 'sample_one' is provided below.""")
+
+    def sample_one(self,
+            condition,
+            size=20,
+            *args, **kwargs):
+        """Override"""
         pre_mtype=\
             condition.get_value(
                 "pre_mtype")
         post_mtype=\
             condition.get_value(
                 "post_mtype")
-        return (
-            self.random_cell(
-                Condition([
-                    ("mtype", pre_mtype)])),
-            self.random_cell(
-                Condition([
-                    ("mtype", post_mtype) ])))
+        connections=\
+            self.__get_connections(
+                pre_mtype, post_mtype)
+        values=\
+            connections\
+            if len(connections) <= size else\
+               random.sample(
+                   connections,
+                   size)
+        df_list=[
+            self.row(condition, value)
+            for value in values]
+        if len(df_list) == 0:
+            return\
+                pd.DataFrame(
+                    [],
+                    columns=self.columns)
+        return\
+            pd.concat(
+                df_list)
+            
+
+    # def __call__(self,
+    #         condition,
+    #         *args, **kwargs):
+    #     """Call Me"""
+    #     pre_mtype=\
+    #         condition.get_value(
+    #             "pre_mtype")
+    #     post_mtype=\
+    #         condition.get_value(
+    #             "post_mtype")
+    #     return (
+    #         self.random_cell(
+    #             Condition([
+    #                 ("mtype", pre_mtype)])),
+    #         self.random_cell(
+    #             Condition([
+    #                 ("mtype", post_mtype) ])))
 
 
 class RandomPathwayConnectionVariate(
@@ -381,6 +503,12 @@ class RandomPathwayConnectionVariate(
             reset_condition_type=False,
             columns=["pre_gid", "post_gid"],
             *args, **kwargs)
+
+    @property
+    def sampling_method(self):
+        """describe the method used to generate random positions."""
+        return\
+            "pairs of cell gids were sampled for given pre, post mtypes."\
 
     def __call__(self,
             condition,

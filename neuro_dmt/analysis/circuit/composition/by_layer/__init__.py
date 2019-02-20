@@ -34,9 +34,11 @@ class ByLayerCompositionAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
     @property
@@ -60,3 +62,5 @@ from neuro_dmt.analysis.circuit.composition.by_layer.synapse_density\
     import SynapseDensityAnalysis
 from neuro_dmt.analysis.circuit.composition.by_layer.soma_volume_fraction\
     import SomaVolumeFractionAnalysis
+from neuro_dmt.analysis.circuit.composition.by_layer.mtype_cell_density\
+    import MtypeCellDensityAnalysis

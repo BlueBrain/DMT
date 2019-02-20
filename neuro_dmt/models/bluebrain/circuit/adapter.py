@@ -163,11 +163,11 @@ class BlueBrainModelAdapter(
     def spatial_measurement(self,
             method,
             circuit_model,
-            parameters={},
+            parameters=[],
             *args, **kwargs):
         """..."""
         if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
-            return\
+            measurment=\
                 self.statistical_measurement(
                     circuit_model,
                     method,
@@ -176,7 +176,7 @@ class BlueBrainModelAdapter(
                                 .geometry\
                                 .spanning_column_parameter()},
                     *args, **kwargs)
-        return\
+        measurement=\
             self.statistical_measurement(
                 circuit_model,
                 method,
@@ -184,6 +184,10 @@ class BlueBrainModelAdapter(
                 parameters=parameters,
                 sampled_box_shape=self._sampled_box_shape,
                 *args, **kwargs)
+        return Record(
+            brain_region=circuit_model.brain_region,
+            **measurement.as_dict)
+        return measurement
     
     def get_cell_density(self,
             circuit_model,
@@ -198,6 +202,20 @@ class BlueBrainModelAdapter(
                     circuit_model.bluepy_circuit,
                     by_property=by_property,
                     for_cell_type=for_cell_type,
+                    *args, **kwargs),
+                circuit_model=circuit_model,
+                parameters=spatial_parameters,
+                *args, **kwargs)
+
+    def get_mtype_cell_density(self,
+                circuit_model,
+                spatial_parameters=[],
+                *args, **kwargs):
+        """..."""
+        return\
+            self.spatial_measurement(
+                method=composition_measurements.MtypeCellDensity(
+                    circuit_model.bluepy_circuit,
                     *args, **kwargs),
                 circuit_model=circuit_model,
                 parameters=spatial_parameters,
@@ -283,8 +301,7 @@ class BlueBrainModelAdapter(
             circuit_model,
             parameters=[],
             *args, **kwargs):
-        """Count synapses in a circuit. The type of the connection
-        is specified by the arguments in the method call."""
+        """Get statistics for number of synapses in a connection."""
         return\
             self.pathway_measurement(
                 connectome_measurements.PairSynapseCount,

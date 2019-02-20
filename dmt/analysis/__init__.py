@@ -3,6 +3,7 @@
 import os
 from abc\
     import abstractmethod
+import traceback
 from dmt.model\
     import AIBase
 from dmt.vtk.author\
@@ -147,8 +148,11 @@ class Analysis(WithFCA, AIBase):
 
     def save_report(self,
             report,
-            output_dir=""):
+            output_dir_path=""):
         """..."""
+        output_dir_path=\
+            output_dir_path if output_dir_path\
+            else self._get_output_dir()
         try:
             fname = self.report_file_name
         except AttributeError as e:
@@ -158,12 +162,11 @@ class Analysis(WithFCA, AIBase):
                 .format(self.__class__.__name__),
                 "\t AttributeError: {}".format(e))
             fname = "report.html"
-            
-        return report.save(
-            output_dir_path=os.path.join(
-                self._get_output_dir(),
-                output_dir),
-            report_file_name=fname)
+        return\
+            report.save(
+                output_dir_path=os.path.join(
+                    output_dir_path),
+                report_file_name=fname)
 
     def __call__(self,
             model,
@@ -189,7 +192,9 @@ class Analysis(WithFCA, AIBase):
                 *args, **kwargs)
         if save_report:
             self.save_report(
-                report)
+                report,
+                output_dir_path=self._get_output_dir(
+                    model_measurement))
         return report
 
 
@@ -210,7 +215,8 @@ class OfSinglePhenomenon:
         kwargs["phenomena"] = {phenomenon}
         super().__init__(*args, **kwargs)
 
-    def _get_output_dir(self):
+    def _get_output_dir(self,
+            *args, **kwargs):
         """..."""
         group_label_path\
             = os.path.join(
@@ -218,9 +224,16 @@ class OfSinglePhenomenon:
                 self.phenomenon.label)
         try:
             return os.path.join(
-                super()._get_output_dir(),
+                super()._get_output_dir(
+                    *args, **kwargs),
                 group_label_path)
-        except AttributeError:
+        except AttributeError as aerr:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "Encountered an AttributeError {}".format(aerr),
+                traceback.format_exc(),
+                "will return output directory based on the phenomenon \
+                investigated")
             return group_label_path
 
     def get_caption(self,

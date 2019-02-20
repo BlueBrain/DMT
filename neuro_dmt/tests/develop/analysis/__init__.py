@@ -33,7 +33,8 @@ from neuro_dmt.analysis.circuit.composition.by_layer\
     import CellDensityAnalysis\
     ,      CellRatioAnalysis\
     ,      InhibitorySynapseDensityAnalysis\
-    ,      SynapseDensityAnalysis
+    ,      SynapseDensityAnalysis\
+    ,      MtypeCellDensityAnalysis
  
 
 logger=\
@@ -101,12 +102,13 @@ class TestCompositionAnalysis:
         cell_density=CellDensityAnalysis,
         cell_ratio=CellRatioAnalysis,
         inhibitory_synapse_density=InhibitorySynapseDensityAnalysis,
-        syn_density=SynapseDensityAnalysis)
+        synapse_density=SynapseDensityAnalysis,
+        mtype_cell_density=MtypeCellDensityAnalysis)
     
     def __init__(self,
             circuit_model=iso_circuit_model,
             sample_size=100,
-            sampled_box_shape=25. * np.ones(3),
+            sampled_box_shape=50. * np.ones(3),
             regions=["SSp-ll"],
             *args, **kwargs):
         """"..."""
@@ -177,7 +179,7 @@ class TestCompositionAnalysis:
         return\
             region in index.levels[index.names.index(Cell.REGION)]
 
-    def _append_measurment(self,
+    def _append_measurement(self,
             measurement):
         """..."""
         phenomenon=\
@@ -193,13 +195,18 @@ class TestCompositionAnalysis:
 
     def _save_report(self,
             analysis,
+            report,
             region,
-            report):
+            output_dir_path=""):
         """..."""
+        logger.debug(
+            logger.get_source_info(),
+            "save report at {}".format(
+                output_dir_path))
         report_path=\
             analysis.save_report(
                 report,
-                output_dir="region-{}".format(region))
+                output_dir_path=output_dir_path)
         phenomenon_label=\
             analysis.phenomenon.label
         if phenomenon_label not in self._reports:
@@ -209,7 +216,6 @@ class TestCompositionAnalysis:
         self._reports[phenomenon_label][region]\
             .append(report_path)
         return self._reports
-
 
     def get_report(self,
             phenomenon,
@@ -234,7 +240,7 @@ class TestCompositionAnalysis:
                 analysis.get_measurement(
                     self._circuit_model,
                     *args, **kwargs)
-            self._append_measurment(
+            self._append_measurement(
                 measurement)
             logger.debug(
                 logger.get_source_info(),
@@ -258,8 +264,13 @@ class TestCompositionAnalysis:
         if save:
             self._save_report(
                 analysis,
+                report,
                 region,
-                report)
+                output_dir_path=os.path.join(
+                    os.getcwd(),
+                    analysis._get_output_dir(
+                        model_measurement=self._measurements[phenomenon]),
+                    "subregion-{}".format(region)))
         return report
 
 

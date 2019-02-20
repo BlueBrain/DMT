@@ -25,7 +25,12 @@ class ByLayerCompositionComparison(
             __default__ = BarPlotComparison,
             __doc__ = """A subclass of {} to comparison results.""".format(
                 ComparisonPlot))
-    pass
+
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            *args, **kwargs)
 
        
 class CellDensityComparison(

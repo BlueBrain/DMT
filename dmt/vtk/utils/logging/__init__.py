@@ -132,37 +132,52 @@ class Logger:
                     index=traceback.index)
         ))
 
-    def _log_message(self, msg, color=None):
+    def _log_message(self,
+            message,
+            color=None):
         """"Log message with time.
             
         Parameters
         ------------------------------------------------------------------------
         msg :: Message #to be logged
         """
-        if msg.level >= self._level:
-            title = "{}@{} {}"\
-                    .format(self._name,
-                            self.timestamp(time.localtime()),
-                            msg.labelstamp)
+        if message.level >= self._level:
+            title=\
+                "{}@{} {}"\
+                .format(self._name,
+                        self.timestamp(
+                            time.localtime()),
+                        message.labelstamp)
+            
+            formatted_message=\
+                "{}".format(
+                    message.value)
 
-            fmsg = "{}".format(msg.value)
-
-            Logger.err_print(Logger.with_color(Logger.Color.UNDERLINE, title))
-            Logger.err_print(Logger.with_color(color, fmsg))
+            Logger.err_print(
+                Logger.with_color(
+                    Logger.Color.UNDERLINE,
+                    title))
+            Logger.err_print(
+                Logger.with_color(
+                    color,
+                    formatted_message))
             Logger.err_print(80*"=")
 
             if self._in_file:
                 with open(self._in_file, "a")  as f:
                     f.write(title)
-                    f.write(Logger.with_color(Logger.Color.OKGREEN, fmsg))
+                    f.write(
+                        Logger.with_color(
+                            Logger.Color.OKGREEN,
+                            formatted_message))
                     f.write(80*"=")
         else:
             pass
 
         try:
-            self.__statistics[msg.label] += 1
+            self.__statistics[message.label] += 1
         except KeyError:
-            self.__statistics[msg.label] = 1
+            self.__statistics[message.label] = 1
 
         return self.__statistics
 
@@ -289,10 +304,15 @@ class LazyLogger(Logger):
 
             self._logs = []
 
-    def _log_message(self, msg, msg_type=""):
-        self._logs.append(Record(timestamp=Logger.timestamp(time.localtime()),
-                                 message=msg,
-                                 message_type=msg_type))
+    def _log_message(self,
+            msg,
+            msg_type=""):
+        self._logs.append(
+            Record(
+                timestamp=Logger.timestamp(
+                    time.localtime()),
+                message=msg,
+                message_type=msg_type))
         if len(self._logs) > self._flush_threshold:
             self.flush()
 

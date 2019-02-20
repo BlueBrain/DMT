@@ -26,7 +26,7 @@ class TestCompositionValidation(
         cell_density=CellDensityValidation,
         cell_ratio=CellRatioValidation,
         inhibitory_synapse_density=InhibitorySynapseDensityValidation,
-        syn_density=SynapseDensityValidation)
+        synapse_density=SynapseDensityValidation)
 
     @classmethod
     def get_validation_type(cls,
@@ -45,11 +45,11 @@ class TestCompositionValidation(
         circuit_regions=\
             circuit_regions if circuit_regions\
             else self._circuit_regions
-        AnalysisType=\
-            self.get_analysis_type(
+        ValidationType=\
+            self.get_validation_type(
                 phenomenon)
         return\
-            self.ValidationType[phenomenon](
+            ValidationType(
                 phenomenon=phenomenon,
                 adapter=self._adapter,
                 animal=self._circuit_model.animal,

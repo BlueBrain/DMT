@@ -30,6 +30,37 @@ def test_three():
         "cell_density",
         circuit_geometry="S1")
 
-def test_all():
-    test_one()
-    test_two()
+def test_four():
+    """Test mouse SSCx cell ratio validation for the fake atlas circuit."""
+    from neuro_dmt.tests.models.bluebrain.circuit.atlas.validations.cortex.sscx\
+        import composition
+    composition.run(
+        "mouse",
+        "composition",
+        "cell_ratio",
+        circuit_geometry="F1")
+
+def test_mouse_sscx(
+        phenomenon,
+        circuit_geometry="F1"):
+    """..."""
+    from neuro_dmt.tests.models.bluebrain.circuit.atlas.validations.cortex.sscx\
+        import composition
+    composition.run(
+        "mouse",
+        "composition",
+        phenomenon,
+        circuit_geometry=circuit_geometry)
+
+def test_rat_sscx(
+        phenomenon,
+        circuit_geometry="F1"):
+    """..."""
+    from neuro_dmt.tests.models.bluebrain.circuit.atlas.validations.cortex.sscx\
+        import composition
+    composition.run(
+        "rat",
+        "composition",
+        phenomenon,
+        circuit_geometry=circuit_geometry)
+

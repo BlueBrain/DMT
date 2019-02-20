@@ -17,8 +17,10 @@ class MeasureByCorticalLayer:
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.spatial_parameters=\
-            {CorticalLayer()}
+        self.spatial_parameters=[
+            CorticalLayer()]
+        self.measurement_parameters=[
+            CorticalLayer()]
         super().__init__(self,
                 *args, **kwargs)
 
@@ -30,12 +32,13 @@ class MeasureByCorticalLayer:
 class MeasureByHippocampalLayer:
     """Mixin for validations of phenomena that are measured
     by hippocampa layer."""
-
-    def __init__(self
+    def __init__(self,
             *args, **kwargs):
         """..."""
-        self.spatial_parameters=\
-            {HippocampalLayer()}
+        self.spatial_parameters=[
+            HippocampalLayer()]
+        self.measurement_parameters=[
+            HippocampalLayer()]
         super().__init__(self,
                 *args, **kwargs)
 
@@ -49,9 +52,13 @@ class MeasureByMtype:
     """Mixin for analyses of"""
     def __init__(self,
             *args, **kwargs):
-        self.pathway_parameters=\
-            [Mtype(label="pre_mtype"), Mtype(label="post_mtype")]
+        self.pathway_parameters=[
+            Mtype(label="pre_mtype"),
+            Mtype(label="post_mtype")]
         self.cell_group_parameters=\
             Mtype()
+        self.measurement_parameters=[
+            Mtype(label="pre_mtype"),
+            Mtype(label="post_mtype")]
 
         
