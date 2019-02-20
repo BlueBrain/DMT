@@ -5,6 +5,8 @@ from dmt.analysis\
     import Analysis
 from dmt.vtk.phenomenon\
     import Phenomenon
+from dmt.vtk.measurement.parameter\
+    import Parameter
 from dmt.vtk.utils.descriptor\
     import Field, WithFCA
 from dmt.vtk.reporting\
@@ -30,7 +32,11 @@ class BrainCircuitAnalysis(
             __type__=str,
             __doc__="""Animal for which the circuit was built. This will help
             organize reporting.""")
-
+    measurement_parameters=\
+        Field(
+            __name__="measurement_parameters",
+            __typecheck__=Field.typecheck.collection(Parameter),
+            __doc__="""Parameters used to measure the phenomenon""")
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -94,6 +100,11 @@ class BrainCircuitAnalysis(
         kwargs.update(
             self.plot_customization)
         return kwargs
+
+    def get_measurement_parameters(self):
+        """For an analysis this will be self.measurement_parameters.
+        For a validation this will depend on the validation data."""
+        return self.measurement_parameters
 
     def _for_given_parameter_values(self,
             **kwargs):

@@ -10,6 +10,8 @@ from dmt.vtk.utils.logging\
 from dmt.vtk.utils.collections\
     import Record\
     ,      take
+from dmt.vtk.phenomenon\
+    import Phenomenon
 from dmt.vtk.plotting\
     import HeatMap
 from neuro_dmt.utils\
@@ -30,8 +32,12 @@ from neuro_dmt.models.bluebrain.circuit.adapter\
 from neuro_dmt.models.bluebrain.circuit.parameters\
      import Mtype\
      ,      MtypePathway
+from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
+    pair_synapse_count import RatSSCxPairSynapseCountData
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import PairSynapseCountAnalysis
+from neuro_dmt.analysis.comparison.validation.circuit.connectome.by_mtype\
+    import PairSynapseCountValidation
 
 logger=\
     Logger(
@@ -198,7 +204,25 @@ class TestConnectomeAnalysis:
                 animal=circuit_model.animal,
                 pathway_parameters=[
                     pre_mtype_parameter,
+                    post_mtype_parameter],
+                measurement_parameters=[
+                    pre_mtype_parameter,
                     post_mtype_parameter])
+        self.syn_count_validation=\
+            PairSynapseCountValidation(
+                phenomenon=Phenomenon(
+                    "Pair Synapse Count",
+                    "Number of cells in an mtype --> mtype pathway",
+                    group="connectome"),
+                adapter=self._adapter,
+                animal=circuit_model.animal,
+                pathway_parameters=[
+                    pre_mtype_parameter,
+                    post_mtype_parameter],
+                measurement_parameters=[
+                    pre_mtype_parameter,
+                    post_mtype_parameter],
+                reference_data=RatSSCxPairSynapseCountData())
                     
     def run(self,
         *args, **kwargs):

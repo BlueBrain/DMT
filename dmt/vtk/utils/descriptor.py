@@ -237,17 +237,17 @@ class Field:
                                     element,
                                     instance.__class__.__name__))
                 else:
-                    Field.logger.debug(
-                        Field.logger.get_source_info(),
-                        """Get element type for argument {}"""\
-                        .format(elem_type_arg))
+                    # Field.logger.debug(
+                    #     Field.logger.get_source_info(),
+                    #     """Get element type for argument {}"""\
+                    #    .format(elem_type_arg))
                     elem_type=\
                         Field.typecheck.get_type(
                             instance,
                             elem_type_arg)
-                    Field.logger.debug(
-                        Field.logger.get_source_info(),
-                        """elem type {}""".format(elem_type))
+                    # Field.logger.debug(
+                    #     Field.logger.get_source_info(),
+                    #     """elem type {}""".format(elem_type))
                     for element in candidate_attr_value:
                         if not isinstance(element, elem_type):
                             raise TypeError(

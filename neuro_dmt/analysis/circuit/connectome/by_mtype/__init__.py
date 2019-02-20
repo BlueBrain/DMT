@@ -38,9 +38,11 @@ class ByMtypeConnectomeAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
 
@@ -71,9 +73,11 @@ class ByMtypePathwayConnectomeAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
 

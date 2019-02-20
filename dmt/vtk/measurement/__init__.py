@@ -83,7 +83,7 @@ class Method(
         return self.__call__(
             **measurement_parameters)
 
- 
+
 
 @with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
@@ -99,7 +99,7 @@ class StatisticalMeasurement:
             __type__=int,
             __doc__="""Number of samples to be drawn
             for each statistical measurement.""")
-    
+
     def __init__(self,
             random_variate,
             sample_size=20):

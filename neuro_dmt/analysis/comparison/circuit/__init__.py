@@ -21,11 +21,6 @@ class CircuitPhenomenonComparison(
     """Mixin to define comparison of a circuit phenomenon between
     a model and another model or experiment.
     """
-    measurement_parameters=\
-        Field(
-            __name__="measurement_parameters",
-            __typecheck__=Field.typecheck.collection(Parameter),
-            __doc__="""Parameters used to measure the phenomenon""")
     Plotter=\
         Field(
             __name__ = "Plotter",
