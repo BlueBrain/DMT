@@ -15,8 +15,8 @@ class CircuitGeometry(
         WithFCA,
         ABC):
     """Geometry of a circuit! Dump all circuit build geometry 
-    dependent method definitions here."""
-
+    dependent method definitions here.
+    """
     circuit=\
         Field(
             __name__="circuit",
@@ -39,6 +39,7 @@ class CircuitGeometry(
             __name__="circuit_specialization",
             __type__=CircuitSpecialization,
             __doc__="""Provides circuit instance specific code.""")
+
     def __init__(self,
             circuit,
             *args, **kwargs):
@@ -56,6 +57,11 @@ class CircuitGeometry(
             condition):
         """..."""
         pass
+
+    @property
+    def region_label(self):
+        """..."""
+        return self.circuit_specialization.region_label
 
     @abstractmethod
     def random_spanning_column(self,

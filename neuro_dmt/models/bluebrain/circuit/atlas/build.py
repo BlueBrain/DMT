@@ -157,6 +157,7 @@ class AtlasCircuitGeometry(
         self._cortical_columns = {}
         super().__init__(
             circuit,
+            region_label="region",
             *args, **kwargs)
 
     @property

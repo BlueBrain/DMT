@@ -26,6 +26,7 @@ class IsoCortexAtlasSpecialization(
         self.representative_region=\
             "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
         super().__init__(
+            region_label=Cell.REGION,
             *args, **kwargs)
 
     def _get_atlas_region_acronyms(self,

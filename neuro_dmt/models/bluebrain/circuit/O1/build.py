@@ -93,6 +93,7 @@ class O1CircuitGeometry(
         self.__midplane = None
         super().__init__(
             circuit,
+            region_label="hypercolumn",
             *args, **kwargs)
 
     @property

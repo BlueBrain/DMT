@@ -1,7 +1,7 @@
 short_name: "LeFort2009"
 uri: "<none>"
 citation: "LeFort et. al. 2009"
-what: "cell ratio: INH/TOTAL, ask for details"
+what: "cell ratio: INH/TOTAL, ask for details, brain area S1"
 animal: "mouse? or scaled?"
 brainArea: "S1"
 sampleSize: "unknown"

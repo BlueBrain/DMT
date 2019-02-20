@@ -3,6 +3,8 @@ import sys
 import bluepy
 from bluepy.v2.circuit\
     import Circuit
+from dmt.vtk.utils\
+    import collections
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      WithFCA
@@ -42,7 +44,7 @@ class BlueBrainCircuitModel(
             __name__ = "brain_region",
             __type__ = brain_regions.BrainRegion,
             __doc__ = "The brain region modeled.")
-
+    
     def __init__(self,
             *args, **kwargs):
         super().__init__(
@@ -74,6 +76,17 @@ class BlueBrainCircuitModel(
             self._geometry
 
     @property
+    def region_label(self):
+        """..."""
+        return\
+            self.geometry.region_label
+
+    @property
+    def cells(self):
+        """..."""
+        return self.bluepy_circuit.cells
+
+    @property
     def connectome(self):
         """..."""
         try:
@@ -85,29 +98,23 @@ class BlueBrainCircuitModel(
                 "Caught Exception :\n  {}".format(e))
             return None
 
-    def get_cell_group(self,
-            cell_group):
-        """
-        Arguments
-        ------------
-        cell_group :: dict #accepted by bluepy.v2.circuit.cell
-
-        Return
-        ------------
-        List[GIDs]
-
-        Improvement
-        -----------
-        Add a validation to check that 'cell_group' has keys acceptable to
-        bluepy.v2.circuit.cells.get, and to filter out invalid keys.
-        """
-        return list(self\
-                    .bluepy_circuit\
-                    .cells\
-                    .get(
-                        cell_group,
-                        properties=[]
-                    ).index)
+    def filter_region(self,
+            cell_gids,
+            condition):
+        """filter cells (by gid) that fall in a given region.
+        region value None will be handled as Any"""
+        region=\
+            condition.get_value(
+                self.region_label)
+        if not region:
+            return cell_gids
+        cell_regions=\
+            self.cells\
+                .get(
+                    cell_gids,
+                    properties=self.region_label)
+        return\
+            cell_regions[cell_regions == region].index.values
 
 
 from neuro_dmt.models.bluebrain.circuit.circuit_model.o1_circuit_model\

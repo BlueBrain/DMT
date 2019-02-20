@@ -158,6 +158,7 @@ class SSCxAtlasSpecialization(
             kwargs["brain_region"]=\
                 brain_regions.sscx
         super().__init__(
+            region_label=Cell.HYPERCOLUMN,
             *args, **kwargs)
 
     def get_atlas_ids(self,
@@ -247,6 +248,7 @@ class SSCxFakeAtlasSpecialization(
             *args, **kwargs):
         """..."""
         super().__init__(
+            region_label=Cell.HYPERCOLUMN,
             *args, **kwargs)
         self.representative_region\
             = "mc2_Column"

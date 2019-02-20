@@ -111,6 +111,7 @@ class CorticalColumn(
     @property
     def voxel_layer_position(self):
         """..."""
+        raise NotImplementedError()
 
     def get_layer_depths(self,
             as_fractions=True):

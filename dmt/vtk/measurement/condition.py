@@ -87,8 +87,15 @@ class Condition:
             hasattr(value, field)
             for field in self.fields)
 
-    def plus(self, param_value_pairs):
+    def plus(self,
+            param_value_pairs):
         """..."""
+        if isinstance(param_value_pairs, Condition):
+            return self.plus(
+                param_value_pairs.as_dict.items())
+        if isinstance(param_value_pairs, dict):
+            return self.plus(
+                param_value_pairs.items())
         return Condition(
             self.__param_value_pairs +
             [(self.__get_label(param), value)
