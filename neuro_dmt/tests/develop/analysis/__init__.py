@@ -89,7 +89,7 @@ iso_circuit_config=\
 iso_circuit_model=\
     get_iso_cortex_circuit_model(
         iso_circuit_config,
-        "mouse")
+        "mouse")      
 iso_circuit=\
      iso_circuit_model.bluepy_circuit
 
