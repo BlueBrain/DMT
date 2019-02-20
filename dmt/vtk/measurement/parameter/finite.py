@@ -154,7 +154,7 @@ class FiniteValuedParameter(
 
         self.logger.debug(
             self.logger.get_source_info(),
-            """fill multi indexed dataframe""",
+            "{} will fill multi indexed dataframe".format(self.label),
             """data frame: {}""".format(dataframe),
             "missing values {}".format(missing_values))
 
@@ -180,8 +180,10 @@ class FiniteValuedParameter(
             with_index_renamed=True):
         """Filled and sorted Dataframe by index,
         which is of the type of this Parameter."""
-        self.logger.debug("measurement has an index of type {}"\
-                          .format(type(dataframe.index)))
+        self.logger.debug(
+            "measurement has an index of type {}"\
+            .format(
+                type(dataframe.index)))
         if isinstance(dataframe.index, pd.MultiIndex):
             return\
                 self._filled_multi_index(

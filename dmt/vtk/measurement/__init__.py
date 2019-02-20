@@ -215,9 +215,10 @@ def method_description(measurement_method):
     return measurement_method.__call__.__doc__
 
 
-def summary_statistic(measurement_sample,
-                      parameter_columns=[],
-                      measurement_columns=[]):
+def summary_statistic(
+        measurement_sample,
+        parameter_columns=[],
+        measurement_columns=[]):
     """Summarize a data-frame.
     Type of the returned data-frame depends on the type of
     'measurement_columns'. Thus this method can accommodate more than one
@@ -225,6 +226,10 @@ def summary_statistic(measurement_sample,
     summarize more than one measurement columns."""
     aggregators=\
         ["mean", "std"]
+    if measurement_sample.shape[0] == 0:
+        return pd.DataFrame(
+            [],
+            columns=aggregators)
     if not parameter_columns:
         log.debug(
             log.get_source_info(),

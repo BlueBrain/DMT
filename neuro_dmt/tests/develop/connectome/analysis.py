@@ -32,6 +32,8 @@ from neuro_dmt.models.bluebrain.circuit.adapter\
 from neuro_dmt.models.bluebrain.circuit.parameters\
      import Mtype\
      ,      MtypePathway
+from neuro_dmt.models.bluebrain.circuit.O1.parameters\
+    import HyperColumn
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
     pair_synapse_count import RatSSCxPairSynapseCountData
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
@@ -163,8 +165,9 @@ layer_mtypes=\
 class TestConnectomeAnalysis:
     """Test values of Connectome Analysis sub-classes."""
     def __init__(self,
-            circuit_model=sscx_circuit_model,
-            mtype_values=[]):
+            circuit_model,
+            mtype_values=[],
+            sample_size=20):
         """..."""
         self._circuit_model=\
             circuit_model
@@ -173,7 +176,7 @@ class TestConnectomeAnalysis:
                 brain_region=brain_regions.sscx,
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico",
-                sample_size=20)
+                sample_size=sample_size)
         pre_mtype_parameter=\
             Mtype(
                 circuit=sscx_circuit,
@@ -192,6 +195,8 @@ class TestConnectomeAnalysis:
                    Mtype(
                        circuit=sscx_circuit,
                        label="post_mtype")
+        hypercolumn=\
+            HyperColumn(values=[2])
         logger.info(
             logger.get_source_info(),
             """Analyzing pathways from {} pre mtypes
@@ -206,6 +211,7 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 measurement_parameters=[
+                    hypercolumn,
                     pre_mtype_parameter,
                     post_mtype_parameter])
         self.syn_count_validation=\
@@ -220,6 +226,7 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 measurement_parameters=[
+                    hypercolumn,
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 reference_data=RatSSCxPairSynapseCountData())
@@ -242,8 +249,8 @@ class TestConnectomeAnalysis:
         heatmap.save(
             heatmap.plot(),
             file_name="syn_count_heatmap.png")
-            
-        
+
+
 logger.success(
     logger.get_source_info(),
     "All tests passed!")

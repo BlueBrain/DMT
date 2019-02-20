@@ -55,14 +55,6 @@ class BlueBrainCircuitData(
             phenomenon,
             *args, **kwargs):
         """Data is loaded from self.data_location"""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "initialize {}".format(self.__class__),
-            "with phenomenon {}".format(phenomenon),
-            "with data_location {}".format(
-                kwargs.get(
-                    "data_location",
-                    "not provided")))
         super().__init__(
             phenomenon=phenomenon,
             *args, **kwargs)

@@ -31,6 +31,8 @@ class RatSSCxCellDensityData(
     def __init__(self,
             *args, **kwargs):
         """..."""
+        self.measurement_parameters=\
+            ["layer"]
         self.primary_spatial_parameter=\
             CorticalLayer()
         reference_datasets=\
@@ -132,6 +134,7 @@ class RatSSCxCellDensityData(
                             defelipe2017.density_means,
                             defelipe2017.density_stds,
                             scale_factor=0.8229e-3)),
+                    measurement_parameters=self.measurement_parameters,
                     description=defelipe2017.what),
                 defelipe2014.short_name: ReferenceData(
                     data=self.with_metadata(
@@ -140,6 +143,7 @@ class RatSSCxCellDensityData(
                             defelipe2014.density_means,
                             defelipe2014.density_stds,
                             scale_factor=1.e-3)),
+                    measurement_parameters=self.measurement_parameters,
                     description=defelipe2014.what),
                 defelipe2011.short_name: ReferenceData(
                     data=self.with_metadata(
@@ -147,6 +151,7 @@ class RatSSCxCellDensityData(
                         self.summarized(
                             defelipe2011.density_means,
                             defelipe2011.density_stds)),
+                    measurement_parameters=self.measurement_parameters,
                     description=defelipe2011.what),
                 defelipe2002.short_name: ReferenceData(
                     data=self.with_metadata(
@@ -154,6 +159,7 @@ class RatSSCxCellDensityData(
                         self.summarized(
                             defelipe2002.density_means,
                             defelipe2002.density_stds)),
+                    measurement_parameters=self.measurement_parameters,
                     description=defelipe2002.what),
                 meyer2010.short_name: ReferenceData(
                     data=self.with_metadata(
@@ -161,6 +167,7 @@ class RatSSCxCellDensityData(
                         self.summarized(
                             meyer2010.density_means,
                             meyer2010.density_stds)),
+                    measurement_parameters=self.measurement_parameters,
                     description=meyer2010.what),
                 sonja.short_name: ReferenceData(
                     data=self.with_metadata(
@@ -168,4 +175,5 @@ class RatSSCxCellDensityData(
                         self.summarized(
                             sonja.density_means,
                             sonja.density_stds)),
-                        description=sonja.what)})
+                    measurement_parameters=self.measurement_parameters,
+                    description=sonja.what)})

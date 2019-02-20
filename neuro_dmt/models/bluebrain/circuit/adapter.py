@@ -116,11 +116,14 @@ class BlueBrainModelAdapter(
         super().__init__(
             *args, **kwargs)
 
-    def get_label(self, circuit):
+    def get_label(self,
+            circuit):
         """method required by adapter interface."""
         return self.model_label
 
-    def filled(self, measurement, by):
+    def filled(self,
+            measurement,
+            by):
         """...
 
         Parameters
@@ -140,30 +143,37 @@ class BlueBrainModelAdapter(
             method,
             get_random_variate,
             parameters={},
+            fill_missing_param_values=True,
             *args, **kwargs):
         """..."""
         self.logger.debug(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with parameters {}"""\
             .format(parameters))
-        return\
-            self.filled(
-                StatisticalMeasurement(
-                    random_variate=get_random_variate(
-                        circuit_model,
-                        *args, **kwargs
-                    ).given(
-                        parameters),
-                    sample_size=self.sample_size
-                ).get(
-                    method,
+        measurement=\
+            StatisticalMeasurement(
+                random_variate=get_random_variate(
+                    circuit_model,
+                    *args, **kwargs
+                ).given(
+                    parameters,
                     *args, **kwargs),
-                by=parameters)
+                sample_size=self.sample_size
+            ).get(
+                method,
+                *args, **kwargs)
+        if fill_missing_param_values:
+            return\
+                self.filled(
+                    measurement,
+                    by=parameters)
+        return measurement
 
     def spatial_measurement(self,
             method,
             circuit_model,
             parameters=[],
+            fill_missing_param_values=True,
             *args, **kwargs):
         """..."""
         if not parameters: #special case, sensible for specific area circuits (sscx, CA1)
@@ -175,6 +185,7 @@ class BlueBrainModelAdapter(
                     parameters={circuit_model\
                                 .geometry\
                                 .spanning_column_parameter()},
+                    fill_missing_param_values=fill_missing_param_values,
                     *args, **kwargs)
         measurement=\
             self.statistical_measurement(
@@ -277,6 +288,7 @@ class BlueBrainModelAdapter(
             get_measurement_method,
             circuit_model,
             parameters={},
+            fill_missing_param_values=False,
             *args, **kwargs):
         """Meassure (mtype --> mtype) pathways."""
         if not parameters:
@@ -295,6 +307,7 @@ class BlueBrainModelAdapter(
                     *args, **kwargs),
                 get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
+                fill_missing_param_values=fill_missing_param_values,
                 *args, **kwargs)
 
     def get_pathway_synapse_count(self,

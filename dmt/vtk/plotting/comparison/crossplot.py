@@ -38,7 +38,8 @@ class CrossPlotComparison(ComparisonPlot):
                 """Could not get comparison data with
                 name and level. Exception {}""".format(e))
 
-    def plot(self, with_customization=None, save=True):
+    def plot(self,
+            with_customization=None):
         """
         Compare this ComparisonPlot's data against those in datasets.
 
@@ -52,25 +53,17 @@ class CrossPlotComparison(ComparisonPlot):
         ~                      
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
-        fig = golden_figure(height=self.height, width=self.width)
-        ydata = self.get_plotting_dataframe()
-        xdata = self.compared_datasets[0].data
-        xlabel = self.compared_datasets[0].label
-        given = self.given
-        #given_values = self.level_values(given) if given else self._data.index
-        given_values = self.level_values(given)
-        def __get_row(data_frame, given_val):
-            """..."""
-            if given and isinstance(data_frame.index, pd.MultiIndex):
-                return data_frame.xs(given_val, level=given)
-
-            return data_frame.loc[given_val]
-
-        # self._logger.info(
-        #     self._logger.get_source_info(),
-        #     *["for given {}\n xdata: {} \n ydata: {}"\
-        #        .format(v, __get_row(xdata, v), __get_row(ydata, v))
-        #        for v in self.given_variable_values])
+        figure=\
+            golden_figure(
+                height=self._height,
+                width=self._width)
+        ydata=\
+            self.get_plotting_dataframe(
+                allow_multi_indexed=True)
+        xdata=\
+            self.compared_datasets[0].data.loc[ydata.index]
+        xlabel=\
+            self.compared_datasets[0].label
 
         ys = ydata["mean"].values
         yerr = ydata["std"].values
@@ -95,7 +88,4 @@ class CrossPlotComparison(ComparisonPlot):
         fontP = FontProperties()
         fontP.set_size('small')
 
-        if save:
-            return self.save(fig)
-
-        return fig
+        return figure

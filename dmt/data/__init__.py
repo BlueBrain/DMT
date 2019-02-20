@@ -30,13 +30,16 @@ class ReferenceData(
             __type__=str,
             __default__="Reference data",
             __doc__="Describe this reference data instance.")
+    measurement_parameters=\
+        Field(
+            __name__="measurement_parameters",
+            __type__=list,
+            __typecheck__=Field.typecheck.collection(str),
+            __doc__="Names of the parameters in the dataframe index.")
 
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """initializer in ReferenceData""")
         super().__init__(
             *args, **kwargs)
 

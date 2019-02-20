@@ -3,7 +3,7 @@ import collections
 import copy
 from neuro_dmt.measurement.parameter import Column
 
-class HyperColumn(
+class HyperColumnTarget(
         Column):
     """..."""
     def __init__(self,
@@ -16,6 +16,20 @@ class HyperColumn(
             value_type=str,
             values=["mc{}_Column".format(n) for n in values],
             label="$target",
+            *args, **kwargs)
+
+class HyperColumn(
+        Column):
+    """..."""
+    def __init__(self,
+            *args, **kwargs):
+        """..."""
+        if "values" not in kwargs:
+            kwargs["values"]=\
+                list(range(7))
+        super().__init__(
+            value_type=int,
+            label="hypercolumn",
             *args, **kwargs)
 
 def transform(

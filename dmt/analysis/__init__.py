@@ -146,6 +146,20 @@ class Analysis(WithFCA, AIBase):
         """Get a label for the measurement validated."""
         pass
 
+    def is_permissible(self,
+            measurement_parameters_values):
+        """Is the given condition valid?
+        A default behavior (always permissible) is provided.
+        The intended use is for validations, for which not all parameter
+        value combinations need be measured. Only the values represented
+        in validation data should be measured.
+
+        Arguments
+        --------------
+        measurement_parameters_values :: Any[Condition, dict, pandas.Series].
+        """
+        return True
+
     def save_report(self,
             report,
             output_dir_path=""):
@@ -185,7 +199,10 @@ class Analysis(WithFCA, AIBase):
         model_measurement=\
             self.get_measurement(
                 model,
-                *args, **kwargs)
+                *args,
+                is_permissible=lambda condition: self.is_permissible(
+                    condition.as_dict),
+                **kwargs)
         report=\
             self.get_report(
                 model_measurement,

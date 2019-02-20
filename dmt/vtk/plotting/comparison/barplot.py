@@ -14,7 +14,8 @@ class BarPlotComparison(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        super(BarPlotComparison, self).__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
 
     @property
     def compared_datasets(self):

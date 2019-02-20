@@ -433,18 +433,33 @@ class RandomConnectionVariate(
         post_mtype=\
             condition.get_value(
                 "post_mtype")
+        region=\
+            condition.get_value(
+                self.circuit_model.region_label)
         self.logger.info(
             self.logger.get_source_info(),
-            """Get connections from {} --> {} """.format(
+            "Get connections from {} --> {} in region {} ".format(
                 pre_mtype,
-                post_mtype))
+                post_mtype,
+                region))
         if not pre_mtype in self._connections:
             connections={
-                mtype: [] for mtype in self._circuit_mtypes}
+                mtype: []
+                for mtype in self._circuit_mtypes}
             pre_gids=\
                 self.circuit_model\
-                    .cells.ids({
-                        Cell.MTYPE: pre_mtype})
+                    .filter_region(
+                        self.circuit_model\
+                            .cells.ids({
+                                Cell.MTYPE: pre_mtype}),
+                        condition)
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Get connections for {} pre-gids of mtype {} in region {} "\
+                .format(
+                    len(pre_gids),
+                    pre_mtype,
+                    region if region is not None else "any"))
             for i, pre_gid in enumerate(pre_gids):
                 post_gids=\
                     self.circuit_model\
@@ -453,16 +468,17 @@ class RandomConnectionVariate(
                                 .connectome\
                                 .efferent_gids(pre_gid),
                             condition)
-                self.logger.info(
-                    self.logger.get_source_info(),
-                    """Get connections from {} --> {} """.format(
-                        pre_mtype,
-                        post_mtype),
-                    "{}-th pre_gid {} of total {}".format(
-                        i, pre_gid, len(pre_gids)),
-                    "Found {} post gids for {}".format(
-                        len(post_gids),
-                        pre_gid))
+                # self.logger.info(
+                #     self.logger.get_source_info(),
+                #     "Get connections from {} --> {} in region {} ".format(
+                #         pre_mtype,
+                #         post_mtype,
+                #         region),
+                #     "{}-th pre_gid {} of total {}".format(
+                #         i, pre_gid, len(pre_gids)),
+                #     "Found {} post gids for {}".format(
+                #         len(post_gids),
+                #        pre_gid))
                 post_gid_mtypes=\
                     self.circuit_model\
                         .cells.get(
@@ -490,6 +506,9 @@ class RandomConnectionVariate(
             size=20,
             *args, **kwargs):
         """Override"""
+        self.logger.info(
+            self.logger.get_source_info(),
+            """Sample condition {}""".format(condition.value))
         connections=\
             self.__get_connections(
                 condition)

@@ -29,6 +29,12 @@ class Condition:
             key=lambda key_value: key_value[0])
 
     @property
+    def sorted_pairs_tuple(self):
+        """Return a tuple of (param, value) pairs."""
+        return tuple(
+            self.sorted_param_value_pairs)
+
+    @property
     def as_dict(self):
         """..."""
         return self.__record.as_dict
@@ -46,6 +52,11 @@ class Condition:
     def __hash__(self):
         """Convert this Condition to a string and hash it."""
         return hash(str(self.sorted_param_value_pairs))
+
+    def __eq__(self,
+            other):
+        """..."""
+        pass
 
     @classmethod
     def __get_label(cls, param):
@@ -105,7 +116,11 @@ class ConditionGenerator(
         ParameterGroup):
     """a minor extension."""
 
-    def __init__(self, arg0, *args, **kwargs):
+    def __init__(self,
+            arg0,
+            *args,
+            is_permissible=lambda condition: True,
+            **kwargs):
         """
         Arguments
         ---------------------
@@ -120,10 +135,12 @@ class ConditionGenerator(
              if collections.check(arg0) else
              dict([(arg0.label, arg0)] +
                   [(arg.label, arg) for arg in args]))
+        self._is_permissible=\
+            is_permissible
         super().__init__(
             arg0,
             *args, **kwargs)
-            
+
     @property
     def conditioning_variables(self):
         """..."""
@@ -134,9 +151,14 @@ class ConditionGenerator(
         return self.__conditioning_variables[label].value_type
 
     def __iter__(self):
+        """..."""
         for d in self.kwargs:
-            yield Condition([
-                (param, d[param.label]) for param in self.parameters ])
+            condition=\
+                Condition([
+                    (param, d[param.label])
+                    for param in self.parameters ])
+            if self._is_permissible(condition):
+                yield condition
 
     @property
     def values(self):

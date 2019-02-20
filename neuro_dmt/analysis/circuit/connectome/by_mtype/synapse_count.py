@@ -69,4 +69,5 @@ class PairSynapseCountAnalysis(
             self.adapter\
                 .get_pathway_synapse_count(
                     circuit_model,
-                    parameters=self.get_measurement_parameters())
+                    parameters=self.measurement_parameters,
+                    *args, **kwargs)
