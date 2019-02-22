@@ -35,6 +35,8 @@ from dmt.vtk.measurement.parameter.random\
 from dmt.vtk.utils.logging\
     import Logger\
     ,      with_logging
+from dmt.vtk.measurement.condition\
+    import Condition, ConditionGenerator
 from neuro_dmt.utils.enums\
     import Direction
 from neuro_dmt.utils.cell_type\
@@ -58,6 +60,7 @@ from neuro_dmt.models.bluebrain.circuit.random_variate\
     ,      RandomRegionOfInterest\
     ,      RandomSpanningColumnOfInterest\
     ,      RandomCellVariate\
+    ,      RandomPrePostPairs\
     ,      RandomConnectionVariate\
     ,      RandomPathwayConnectionVariate
 from neuro_dmt.models.bluebrain.circuit.geometry\
@@ -170,8 +173,8 @@ class BlueBrainModelAdapter(
         return measurement
 
     def spatial_measurement(self,
-            method,
             circuit_model,
+            method,
             parameters=[],
             fill_missing_param_values=True,
             *args, **kwargs):
@@ -209,12 +212,12 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition_measurements.CellDensity(
                     circuit_model.bluepy_circuit,
                     by_property=by_property,
                     for_cell_type=for_cell_type,
                     *args, **kwargs),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
@@ -225,10 +228,10 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition_measurements.MtypeCellDensity(
                     circuit_model.bluepy_circuit,
                     *args, **kwargs),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
@@ -239,9 +242,9 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition_measurements.CellRatio(
                     circuit_model.bluepy_circuit),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
@@ -252,9 +255,9 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition_measurements.InhibitorySynapseDensity(
                     circuit_model.bluepy_circuit),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
@@ -265,9 +268,9 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition.ExcitatorySynapseDensity(
                     circuit_model.bluepy_circuit),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
@@ -278,15 +281,16 @@ class BlueBrainModelAdapter(
         """..."""
         return\
             self.spatial_measurement(
+                circuit_model=circuit_model,
                 method=composition_measurements.ExtrinsicIntrinsicSynapseDensity(
                     circuit_model.bluepy_circuit),
-                circuit_model=circuit_model,
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
     def pathway_measurement(self,
-            get_measurement_method,
             circuit_model,
+            get_measurement_method,
+            get_random_variate,
             parameters={},
             fill_missing_param_values=False,
             *args, **kwargs):
@@ -305,7 +309,7 @@ class BlueBrainModelAdapter(
                 method=get_measurement_method(
                     circuit=circuit_model.bluepy_circuit,
                     *args, **kwargs),
-                get_random_variate=RandomConnectionVariate,
+                get_random_variate=get_random_variate,
                 parameters=parameters,
                 fill_missing_param_values=fill_missing_param_values,
                 *args, **kwargs)
@@ -317,8 +321,9 @@ class BlueBrainModelAdapter(
         """Get statistics for number of synapses in a connection."""
         return\
             self.pathway_measurement(
-                connectome_measurements.PairSynapseCount,
                 circuit_model,
+                connectome_measurements.PairSynapseCount,
+                get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -329,8 +334,8 @@ class BlueBrainModelAdapter(
         """Measure the strength of connections in a (mtype->mtype) pathway."""
         return\
             self.pathway_measurement(
-                connectome_measurements.ConnectionStrength,
                 circuit_model,
+                connectome_measurements.ConnectionStrength,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -339,13 +344,145 @@ class BlueBrainModelAdapter(
             parameters=[],
             *args, **kwargs):
         """Get statistical summary of the number of connections in a
-        (mtype --> mtype) pathway."""
+        (mtype --> mtype) pathway.
+        The analyzed phenomenon is essentially connection probability ---
+        that is the probability that two neurons with given pre and post mtypes
+        are connected.
+        We have a separate method to directly compute connection probability
+        without using the statistical measurement infrastructure used for
+        this version...
+        """
         return\
             self.pathway_measurement(
-                connectome_measurements.PairConnection,
                 circuit_model,
+                connectome_measurements.PairConnection,
+                get_random_variate=RandomPrePostPairs,
                 parameters=parameters,
                 *args, **kwargs)
+
+    def get_pathway_connection_probability(self,
+            circuit_model,
+            parameters=[],
+            *args, 
+            is_permissible=lambda condition: True,
+            **kwargs):
+        """Compute connection probability directly."""
+        if not parameters:
+            parameters=[
+                Mtype(circuit_model.bluepy_circuit, label="pre_mtype"),
+                Mtype(circuit_model.bluepy_circuit, label="post_mtype")]
+        parameters_dict={
+            parameter.label: parameters
+            for parameter in parameters}
+        circuit=\
+            circuit_model.bluepy_circuit
+        pre_mtype_parameter=\
+            parameters_dict["pre_mtype"]
+        post_mtype_parameter=\
+            parameters_dict["post_mtype"]
+        conditions=\
+            ConditionGenerator(
+                parameters,
+                is_permissible=is_permissible)
+        region_label=\
+            circuit_model.region_label
+            
+        def __pre_post_mtypes(
+                condition):
+            """..."""
+            return (
+                condition.get_value("pre_mtype"),
+                condition.get_value("post_mtype"))
+
+        def __with_region(
+                cell_group,
+                condition):
+            """..."""
+            region=\
+                condition.get_value(
+                    region_label)
+            if region is not None:
+                cell_group[region_label]=\
+                    region
+            return cell_group
+
+        connection_counts =[
+            (__pre_post_mtypes(condition),
+             1.*len(
+                 list(circuit_model\
+                      .bluepy_circuit\
+                      .connectome\
+                      .iter_connections(
+                          pre=__with_region(
+                              {Cell.MTYPE: condition.get_value("pre_mtype")},
+                              condition),
+                          post=__with_region(
+                              {Cell.MTYPE: condition.get_value("post_mtype")},
+                              condition)))))
+            for condition in conditions]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Connection counts : {}""".format(connection_counts))
+        all_mtypes=list({
+            mtype
+            for condition in conditions
+            for mtype in __pre_post_mtypes(condition)})
+
+        def __get_cell_count(
+                query):
+            """..."""
+            return len(
+                circuit_model\
+                .bluepy_circuit\
+                .cells.ids(query))
+            
+        count_cell_mtype= {}
+        for condition in conditions:
+            """..."""
+            pre_mtype, post_mtype=\
+                __pre_post_mtypes(
+                    condition)
+            region=\
+                condition.get_value(
+                    region_label)
+            if pre_mtype not in count_cell_mtype:
+                count_cell_mtype[pre_mtype]=\
+                    __get_cell_count({
+                        Cell.MTYPE: pre_mtype,
+                        region_label: region})
+            if post_mtype not in count_cell_mtype:
+                count_cell_mtype[post_mtype]=\
+                    __get_cell_count({
+                        Cell.MTYPE: post_mtype,
+                        region_label: region})
+
+        def __number_pairs(connection):
+            """..."""
+            return\
+                1. * count_cell_mtype[connection[0]]\
+                * count_cell_mtype[connection[1]]
+
+        return\
+            Record(
+                phenomenon=Phenomenon(
+                    "Pathway Connection Probability",
+                    "Probability of connections in an mtype-->mtype pathway.",
+                    group="connectome"),
+                label="in-silico",
+                sampling_method="All pathway pairs and connections were used",
+                sample_size=np.nan,
+                measurement_method="#(pathway connections) / #(pathway pairs)",
+                data=pd.DataFrame(
+                    [{"mean": count/__number_pairs(connection),
+                      "std":  np.sqrt(count)/__number_pairs(connection)}
+                     for connection, count in connection_counts],
+                    index=pd.MultiIndex.from_tuples(
+                        tuples=[connection
+                                for connection, _ in connection_counts],
+                        names=["pre_mtype", "post_mtype"])),
+                units="",
+                parameter_groups=["pre_mtype", "post_mtype"])
+
 
     def get_pathway_soma_distance(self,
             circuit_model,
@@ -354,8 +491,8 @@ class BlueBrainModelAdapter(
         """Get a statistical summary of the distance between cell somas."""
         return\
             self.pathway_measurement(
-                connectome_measurements.SomaDistance,
                 circuit_model,
+                connectome_measurements.SomaDistance,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -366,14 +503,14 @@ class BlueBrainModelAdapter(
         """Get a statistical summary of interbouton intervals"""
         return\
             self.pathway_measurement(
-                connectome_measurements.InterboutonInterval,
                 circuit_model,
+                connectome_measurements.InterboutonInterval,
                 parameters=parameters,
                 *args, **kwargs)
 
     def cell_group_measurement(self,
-            get_measurement_method,
             circuit_model,
+            get_measurement_method,
             parameters=[],
             *args, **kwargs):
         """Make (statistical) measurements of cell groups in a circuit."""
@@ -402,14 +539,14 @@ class BlueBrainModelAdapter(
                 "Unknown connection type {}".format(connection_type),
                 "Please set connection_type to one of:\n\t 1.{}\n\t 2.{}"\
                 .format(Direction.IN, Direction.OUT))
-        method=\
+        get_measurement_method=\
             connectome_measurements.AfferentConnectionCount\
             if connection_type == Direction.IN else\
                connectome_measurements.EfferentConnectionCount
         return\
             self.cell_group_measurement(
-                method,
                 circuit_model,
+                get_measurement_method,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -423,14 +560,14 @@ class BlueBrainModelAdapter(
                 "Unknown connection type {}".format(connection_type),
                 "Please set connection_type to one of:\n\t 1.{}\n\t 2.{}"\
                 .format(Direction.IN, Direction.OUT))
-        method=\
+        get_measurement_method=\
             connectome_measurements.AfferentSynapseCount\
             if connection_type == Direction.IN else\
                connectome_measurements.EfferentSynapseCount
         return\
             self.cell_group_measurement(
-                method,
                 cirucit_model,
+                get_measurement_method,
                 parameters=parameters,
                 *args, **kwargs)
 

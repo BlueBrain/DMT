@@ -86,18 +86,22 @@ class CrossPlotComparison(ComparisonPlot):
 
         ys = ydata["mean"].values
         yerr = ydata["std"].values
-        ymax = np.max(ys + yerr)
-        ymin = np.min(ys - yerr)
+        ymax = np.nanmax(ys + yerr)
+        ymin = np.nanmin(ys - yerr)
 
         xs = xdata["mean"].values
         xerr = xdata["std"].values
-        xmax = np.max(xs + xerr)
-        xmin = np.min(xs - xerr)
+        xmax = np.nanmax(xs + xerr)
+        xmin = np.nanmin(xs - xerr)
 
         plt.errorbar(xs, ys, fmt="o", xerr=xerr, yerr=yerr)
 
         min_val = min(xmin,  ymin)
         max_val = max(xmax, ymax)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "plot a diagonal from min {} to max {}".format(
+                min_val, max_val))
         plt.plot([min_val, max_val], [min_val, max_val], "-")
 
         plt.title(self._title, fontsize=24)

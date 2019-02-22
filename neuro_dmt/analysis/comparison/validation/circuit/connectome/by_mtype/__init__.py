@@ -10,7 +10,9 @@ from dmt.vtk.measurement.parameter.group\
 from neuro_dmt.analysis.comparison.circuit.connectome.by_mtype\
     import ByMtypeConnectomeComparison
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
-    import PairSynapseCountAnalysis
+    import PairSynapseCountAnalysis\
+    ,      PathwayConnectionCountAnalysis\
+    ,      PathwayConnectionProbabilityAnalysis
 from neuro_dmt.analysis.comparison.validation.circuit\
     import CircuitPhenomenonValidationTestCase
 from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
@@ -68,5 +70,17 @@ class ByMtypeConnectomeValidation(
 class PairSynapseCountValidation(
         ByMtypeConnectomeValidation,
         PairSynapseCountAnalysis):
+    pass
+
+
+class PathwayConnectionCountValidation(
+        ByMtypeConnectomeValidation,
+        PathwayConnectionCountAnalysis):
+    pass
+
+
+class PathwayConnectionProbabilityValidation(
+        ByMtypeConnectomeValidation,
+        PathwayConnectionProbabilityAnalysis):
     pass
 

@@ -1,4 +1,4 @@
-"""Analyze synapse count by mtype --> mtype pathway."""
+"""Analyze connection probabilty by mtype -> mtype pathway."""
 from dmt.model.interface\
     import Interface
 from dmt.vtk.phenomenon\
@@ -7,18 +7,17 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import ByMtypePathwayConnectomeAnalysis
 
 
-class PairSynapseCountAnalysis(
+class PathwayConnectionProbabilityAnalysis(
         ByMtypePathwayConnectomeAnalysis):
-    """Analyze synapse count by mtype --> mtype pathway."""
+    """Analyze probability of connections by mytpe --> mtype pathway."""
 
     def __init__(self,
             *args, **kwargs):
         """Initialize me."""
         super().__init__(
             Phenomenon(
-                "Pair Synapse Count",
-                "Number of synapses between connected cells \
-                in an mtype --> mtype pathway",
+                "Pathway Connection Probability",
+                "Probability of connections in an mtype --> mtype pathway.",
                 group="connectome"),
             *args, **kwargs)
 
@@ -37,7 +36,7 @@ class PairSynapseCountAnalysis(
             """
             pass
 
-        def get_pathway_synapse_count(self,
+        def get_pathway_connection_probability(self,
                 circuit_model,
                 parameters=[]):
             """Get statistical summary of the number of synapses between
@@ -68,7 +67,7 @@ class PairSynapseCountAnalysis(
         """Get a (statistical) measurement  of the phenomenon analyzed."""
         return\
             self.adapter\
-                .get_pathway_synapse_count(
+                .get_pathway_connection_probability(
                     circuit_model,
                     parameters=self.measurement_parameters,
                     *args, **kwargs)

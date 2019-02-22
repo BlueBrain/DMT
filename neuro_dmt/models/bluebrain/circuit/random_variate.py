@@ -484,7 +484,6 @@ class RandomConnectionVariate(
                         .cells.get(
                             post_gids,
                             properties=Cell.MTYPE)
-
                 for post_gid, post_mtype in post_gid_mtypes.items():
                     connections[post_mtype].append(
                         (pre_gid, post_gid))
