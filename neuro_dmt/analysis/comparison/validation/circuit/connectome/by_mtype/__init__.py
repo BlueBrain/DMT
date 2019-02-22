@@ -1,5 +1,6 @@
 """Validations of the circuit connectome, by mtype."""
 
+import numpy as np
 import pandas as pd
 from dmt.vtk.utils.descriptor\
     import Field\
@@ -57,6 +58,11 @@ class ByMtypeConnectomeValidation(
                     self.measurement_parameters,
                     zip(*common_parameter_values))]
 
+    def pvalue(self,
+            model_measurement,
+            *args, **kwargs):
+        """Suppressed for now."""
+        return np.nan
 
 
 class PairSynapseCountValidation(

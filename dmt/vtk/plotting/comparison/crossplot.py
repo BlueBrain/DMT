@@ -38,6 +38,19 @@ class CrossPlotComparison(ComparisonPlot):
                 """Could not get comparison data with
                 name and level. Exception {}""".format(e))
 
+    def with_xvar(self,
+            variable):
+        """Moved here, because it's super definition was creating
+            some problems. This method was to be used to set the variable
+            along the x-axis, which we assumed would be one of the levels
+            in the index. However, that is not the case in a cross-plot."""
+        self._xvar=\
+            getattr(
+                variable,
+                "label",
+                variable)
+        return self
+
     def plot(self,
             with_customization=None):
         """
@@ -60,6 +73,12 @@ class CrossPlotComparison(ComparisonPlot):
         ydata=\
             self.get_plotting_dataframe(
                 allow_multi_indexed=True)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Plot cross plot comparison with ydata: {}"""\
+            .format(ydata),
+            """and comparison data {}"""\
+            .format(self.compared_datasets[0].data))
         xdata=\
             self.compared_datasets[0].data.loc[ydata.index]
         xlabel=\

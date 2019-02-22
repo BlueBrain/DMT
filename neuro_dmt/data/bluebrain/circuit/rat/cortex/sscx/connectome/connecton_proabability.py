@@ -39,6 +39,7 @@ class RatSSCxConnectionProbability(
             data_location=self.get_data_location(data_path),
             datasets=reference_datasets.datasets,
             primary=reference_datasets.primary,
+            measurement_parameters=["pre_mtype", "post_mtype"],
             *args, **kwargs)
 
 
@@ -101,4 +102,5 @@ class RatSSCxConnectionProbability(
                             what="Connection probability between \
                             mtype-->mtype pathways.",
                             data=dataframe),
-                        description="Ask Michael Reimann")})
+                        description="Ask Michael Reimann",
+                        measurement_parameters=["pre_mtype", "post_mtype"])})

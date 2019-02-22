@@ -106,12 +106,13 @@ class BrainCircuitAnalysis(
         For a validation this will depend on the validation data."""
         return self.measurement_parameters
 
+
     def _for_given_parameter_values(self,
             **kwargs):
         return {
             parameter.label: kwargs[parameter.label]
             for parameter in self.measurement_parameters
-            if (parameter.label != self.plotting_parameter.label 
+            if (parameter.label not in self.plotted_parameters
                 and parameter.label in kwargs)}
 
     def plot(self,

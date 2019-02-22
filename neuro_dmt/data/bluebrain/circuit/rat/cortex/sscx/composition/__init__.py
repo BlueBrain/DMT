@@ -8,6 +8,8 @@ from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.utils.descriptor\
     import Field
+from neuro_dmt.measurement.parameter\
+    import CorticalLayer
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
     import SSCxCompositionData
 

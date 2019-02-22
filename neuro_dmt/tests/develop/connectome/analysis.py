@@ -205,23 +205,28 @@ class TestConnectomeAnalysis:
                 len(post_mtype_parameter.values)))
         self.syn_count_analysis=\
             PairSynapseCountAnalysis(
-                adapter=self._adapter,
                 animal=circuit_model.animal,
+                brain_region=circuit_model.brain_region,
                 pathway_parameters=[
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 measurement_parameters=[
                     hypercolumn,
                     pre_mtype_parameter,
-                    post_mtype_parameter])
+                    post_mtype_parameter],
+                plotted_parameters=[
+                    hypercolumn.label,
+                    pre_mtype_parameter.label,
+                    post_mtype_parameter.label],
+                adapter=self._adapter)
         self.syn_count_validation=\
             PairSynapseCountValidation(
                 phenomenon=Phenomenon(
                     "Pair Synapse Count",
                     "Number of cells in an mtype --> mtype pathway",
                     group="connectome"),
-                adapter=self._adapter,
                 animal=circuit_model.animal,
+                brain_region=circuit_model.brain_region,
                 pathway_parameters=[
                     pre_mtype_parameter,
                     post_mtype_parameter],
@@ -229,7 +234,8 @@ class TestConnectomeAnalysis:
                     hypercolumn,
                     pre_mtype_parameter,
                     post_mtype_parameter],
-                reference_data=RatSSCxPairSynapseCountData())
+                reference_data=RatSSCxPairSynapseCountData(),
+                adapter=self._adapter)
                     
     def run(self,
         *args, **kwargs):

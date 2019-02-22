@@ -31,10 +31,10 @@ class RatSSCxCellDensityData(
     def __init__(self,
             *args, **kwargs):
         """..."""
-        self.measurement_parameters=\
-            ["layer"]
         self.primary_spatial_parameter=\
             CorticalLayer()
+        self.measurement_parameters=\
+            [CorticalLayer().label]
         reference_datasets=\
             self.get_reference_datasets(
                 data_path)

@@ -44,6 +44,7 @@ class MouseSSCxCompositionData(
         super().__init__(
             animal="mouse",
             phenomenon=phenomenon,
+            measurement_parameters=[CorticalLayer().label],
             *args, **kwargs)
 
     @classmethod

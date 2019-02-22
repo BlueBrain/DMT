@@ -79,6 +79,17 @@ class Analysis(WithFCA, AIBase):
             __type__=Parameter,
             __doc__="""Parameter that measurement data will be plotted
             against.""")
+    plotted_parameters=\
+        Field(
+            __name__="plotted_parameters",
+            __type__=list,
+            __typecheck__=Field.typecheck.collection(str),
+            __doc__="""Labels of parameters that will be plotted. Usually this 
+            will be single value -- sometimes there may be more than one. For ,
+            example in a cross-plot with model measurement data on the y-axis 
+            and reference validation data on the x-axis, qll the measurement
+            parameters get plotted.""",
+            __default__ = [])
     author=\
         Field(
             __name__="author",
