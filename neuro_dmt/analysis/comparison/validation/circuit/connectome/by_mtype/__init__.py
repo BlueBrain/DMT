@@ -12,7 +12,8 @@ from neuro_dmt.analysis.comparison.circuit.connectome.by_mtype\
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import PairSynapseCountAnalysis\
     ,      PathwayConnectionCountAnalysis\
-    ,      PathwayConnectionProbabilityAnalysis
+    ,      PathwayConnectionProbabilityAnalysis\
+    ,      CellBoutonDensityAnalysis
 from neuro_dmt.analysis.comparison.validation.circuit\
     import CircuitPhenomenonValidationTestCase
 from neuro_dmt.analysis.comparison.validation.report.single_phenomenon\
@@ -84,3 +85,9 @@ class PathwayConnectionProbabilityValidation(
         PathwayConnectionProbabilityAnalysis):
     pass
 
+
+class CellBoutonDensityValidation(
+        ByMtypeConnectomeValidation,
+        CellBoutonDensityAnalysis):
+    """Validate cell bouton densities."""
+    pass

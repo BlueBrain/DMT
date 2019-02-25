@@ -38,7 +38,8 @@ class PathwayConnectionProbabilityAnalysis(
 
         def get_pathway_connection_probability(self,
                 circuit_model,
-                parameters=[]):
+                parameters=[],
+                *args, **kwargs):
             """Get statistical summary of the number of synapses between
             pre- and post-synaptic cells in an mtype --> mtype pathway.
             This method must be defined for the model adapter class that will
@@ -47,8 +48,8 @@ class PathwayConnectionProbabilityAnalysis(
             Parameters
             -------------------
             circuit_model :: ModelCircuit
-            pathway_parameter :: provides the pathways for which synapse counts
-            ~                    are to be computed.
+            parameters :: provides the pathways for which synapse counts
+            ~             are to be computed. For eg. [pre_mtype, post_mtype]
 
             Return
             -------------------
@@ -56,7 +57,7 @@ class PathwayConnectionProbabilityAnalysis(
             ~   phenomenon :: Phenomenon,
             ~   data :: DataFrame<pre_mtype, post_mtype>["mean", "std"]
             ~           #a dataframe with a pre/post mtypes in index
-            ~   method :: String #describe how synapse counts were computed]
+            ~   method :: String #describe how the computation]
             """
             pass
 

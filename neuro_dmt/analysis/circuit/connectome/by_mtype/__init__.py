@@ -87,3 +87,5 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_count\
     import PathwayConnectionCountAnalysis
 from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_probability\
     import PathwayConnectionProbabilityAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.bouton_density\
+    import CellBoutonDensityAnalysis

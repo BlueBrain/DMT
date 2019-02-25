@@ -155,7 +155,8 @@ class TestCompositionAnalysis:
                 spatial_parameters=[
                     circuit_regions,
                     CorticalLayer()],
-                plotted_parameters=[CorticalLayer().label],
+                plotted_parameters=[
+                    CorticalLayer().label],
                 *args, **kwargs)
             
     def _already_measured(self,

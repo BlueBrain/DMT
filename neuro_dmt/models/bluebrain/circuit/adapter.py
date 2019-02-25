@@ -387,9 +387,16 @@ class BlueBrainModelAdapter(
         region_label=\
             circuit_model.region_label
             
-        def __pre_post_mtypes(
+        def __get_parameter_values(
                 condition):
             """..."""
+            region=\
+                condition.get_value(region_label)
+            if region:
+                return(
+                    region,
+                    condition.get_value("pre_mtype"),
+                    condition.get_value("post_mtype"))
             return (
                 condition.get_value("pre_mtype"),
                 condition.get_value("post_mtype"))
@@ -406,61 +413,62 @@ class BlueBrainModelAdapter(
                     region
             return cell_group
 
-        connection_counts =[
-            (__pre_post_mtypes(condition),
-             1.*len(
-                 list(circuit_model\
-                      .bluepy_circuit\
-                      .connectome\
-                      .iter_connections(
-                          pre=__with_region(
-                              {Cell.MTYPE: condition.get_value("pre_mtype")},
-                              condition),
-                          post=__with_region(
-                              {Cell.MTYPE: condition.get_value("post_mtype")},
-                              condition)))))
-            for condition in conditions]
-        self.logger.debug(
-            self.logger.get_source_info(),
-            """Connection counts : {}""".format(connection_counts))
-        all_mtypes=list({
-            mtype
-            for condition in conditions
-            for mtype in __pre_post_mtypes(condition)})
+        def __get_connection_count(
+                condition):
+            """get connection for a given condition"""
+            pre_cell_group=\
+                __with_region(
+                    {Cell.MTYPE: condition.get_value("pre_mtype")},
+                    condition)
+            post_cell_group=\
+                __with_region(
+                    {Cell.MTYPE: condition.get_value("post_mtype")},
+                    condition)
+            connection_iterator=\
+                circuit_model\
+                .bluepy_circuit\
+                .connectome\
+                .iter_connections(
+                    pre=pre_cell_group,
+                    post=post_cell_group)
+            return\
+                sum(1. for _ in connection_iterator)
 
+        count_cell_mtype= {}
         def __get_cell_count(
                 query):
             """..."""
-            return len(
-                circuit_model\
-                .bluepy_circuit\
-                .cells.ids(query))
-            
-        count_cell_mtype= {}
-        for condition in conditions:
-            """..."""
-            pre_mtype, post_mtype=\
-                __pre_post_mtypes(
-                    condition)
-            region=\
-                condition.get_value(
-                    region_label)
-            if pre_mtype not in count_cell_mtype:
-                count_cell_mtype[pre_mtype]=\
-                    __get_cell_count({
-                        Cell.MTYPE: pre_mtype,
-                        region_label: region})
-            if post_mtype not in count_cell_mtype:
-                count_cell_mtype[post_mtype]=\
-                    __get_cell_count({
-                        Cell.MTYPE: post_mtype,
-                        region_label: region})
+            mtype = query[Cell.MTYPE]
+            if mtype not in count_cell_mtype:
+                count_cell_mtype[mtype]=len(
+                    circuit_model\
+                    .bluepy_circuit\
+                    .cells.ids(query))
+            return count_cell_mtype[mtype]
 
-        def __number_pairs(connection):
-            """..."""
-            return\
-                1. * count_cell_mtype[connection[0]]\
-                * count_cell_mtype[connection[1]]
+        def __get_pair_count(
+                condition):
+            """get number of gid pairs for a given condition."""
+            pre_mtype_cell_count=\
+                __get_cell_count(
+                    __with_region(
+                        {Cell.MTYPE: condition.get_value("pre_mtype")},
+                        condition))
+            post_mtype_cell_count=\
+                __get_cell_count(
+                    __with_region(
+                        {Cell.MTYPE: condition.get_value("post_mtype")},
+                        condition))
+            return 1. * pre_mtype_cell_count * post_mtype_cell_count
+                
+        connection_counts=[
+            (__get_parameter_values(condition),
+             __get_pair_count(condition),
+             __get_connection_count(condition))
+             for condition in conditions]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Connection counts : {}""".format(connection_counts))
 
         return\
             Record(
@@ -473,15 +481,15 @@ class BlueBrainModelAdapter(
                 sample_size=np.nan,
                 measurement_method="#(pathway connections) / #(pathway pairs)",
                 data=pd.DataFrame(
-                    [{"mean": count/__number_pairs(connection),
-                      "std":  np.sqrt(count)/__number_pairs(connection)}
-                     for connection, count in connection_counts],
+                    [{"mean": n_connections/n_pairs,
+                      "std":  np.sqrt(n_connections)/n_pairs}
+                     for _, n_pairs, n_connections in connection_counts],
                     index=pd.MultiIndex.from_tuples(
                         tuples=[connection
-                                for connection, _ in connection_counts],
-                        names=["pre_mtype", "post_mtype"])),
+                                for connection, _, _ in connection_counts],
+                        names=[p.label for p in parameters])),
                 units="",
-                parameter_groups=["pre_mtype", "post_mtype"])
+                parameter_groups=[p.label for p in parameters])
 
 
     def get_pathway_soma_distance(self,
@@ -493,18 +501,6 @@ class BlueBrainModelAdapter(
             self.pathway_measurement(
                 circuit_model,
                 connectome_measurements.SomaDistance,
-                parameters=parameters,
-                *args, **kwargs)
-
-    def get_pathway_interbouton_interval(self,
-            circuit_model,
-            parameters=[],
-            *args, **kwargs):
-        """Get a statistical summary of interbouton intervals"""
-        return\
-            self.pathway_measurement(
-                circuit_model,
-                connectome_measurements.InterboutonInterval,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -524,6 +520,30 @@ class BlueBrainModelAdapter(
                     circuit=circuit_model.bluepy_circuit,
                     *args, **kwargs),
                 get_random_variate=RandomCellVariate,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_cell_bouton_density(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """..."""
+        return\
+            self.cell_group_measurement(
+                circuit_model,
+                connectome_measurements.BoutonDensity,
+                parameters=parameters,
+                *args, **kwargs)
+
+    def get_cell_interbouton_interval(self,
+            circuit_model,
+            parameters=[],
+            *args, **kwargs):
+        """Get a statistical summary of interbouton intervals"""
+        return\
+            self.cell_group_measurement(
+                circuit_model,
+                connectome_measurements.InterboutonInterval,
                 parameters=parameters,
                 *args, **kwargs)
 

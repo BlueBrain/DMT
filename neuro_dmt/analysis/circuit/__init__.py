@@ -106,7 +106,6 @@ class BrainCircuitAnalysis(
         For a validation this will depend on the validation data."""
         return self.measurement_parameters
 
-
     def _for_given_parameter_values(self,
             **kwargs):
         return {

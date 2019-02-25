@@ -38,13 +38,17 @@ from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
     pair_synapse_count import RatSSCxPairSynapseCountData
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
     connecton_proabability import RatSSCxConnectionProbability
+from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
+    bouton_density import RatSSCxBoutonDensity
 from neuro_dmt.analysis.comparison.validation.circuit.connectome.by_mtype\
     import PairSynapseCountAnalysis\
     ,      PairSynapseCountValidation\
     ,      PathwayConnectionCountAnalysis\
     ,      PathwayConnectionCountValidation\
     ,      PathwayConnectionProbabilityAnalysis\
-    ,      PathwayConnectionProbabilityValidation
+    ,      PathwayConnectionProbabilityValidation\
+    ,      CellBoutonDensityAnalysis\
+    ,      CellBoutonDensityValidation
 
 logger=\
     Logger(
@@ -182,23 +186,32 @@ class TestConnectomeAnalysis:
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico",
                 sample_size=sample_size)
+        mtype_parameter=\
+            Mtype(
+                circuit=circuit_model.bluepy_circuit,
+                label="mtype",
+                values=mtype_values)\
+                if mtype_values else\
+                   Mtype(
+                       circuit=circuit_model.bluepy_circuit,
+                       label="mtype")
         pre_mtype_parameter=\
             Mtype(
-                circuit=sscx_circuit,
+                circuit=circuit_model.bluepy_circuit,
                 label="pre_mtype",
                 values=mtype_values)\
                 if mtype_values else\
                    Mtype(
-                       circuit=sscx_circuit,
+                       circuit=circuit_model.bluepy_circuit,
                        label="pre_mtype")
         post_mtype_parameter=\
             Mtype(
-                circuit=sscx_circuit,
+                circuit=circuit_model.bluepy_circuit,
                 label="post_mtype",
                 values=mtype_values)\
                 if mtype_values else\
                    Mtype(
-                       circuit=sscx_circuit,
+                       circuit=circuit_model.bluepy_circuit,
                        label="post_mtype")
         hypercolumn=\
             HyperColumn(values=[2])
@@ -239,6 +252,9 @@ class TestConnectomeAnalysis:
                     hypercolumn,
                     pre_mtype_parameter,
                     post_mtype_parameter],
+                plotted_parameters=[
+                    pre_mtype_parameter.label,
+                    post_mtype_parameter.label],
                 reference_data=RatSSCxPairSynapseCountData(),
                 adapter=self._adapter)
         self.pathway_connection_count_analysis=\
@@ -253,7 +269,6 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 plotted_parameters=[
-                    hypercolumn.label,
                     pre_mtype_parameter.label,
                     post_mtype_parameter.label],
                 adapter=self._adapter)
@@ -273,7 +288,6 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 plotted_parameters=[
-                    hypercolumn.label,
                     pre_mtype_parameter.label,
                     post_mtype_parameter.label],
                 reference_data=RatSSCxConnectionProbability(),
@@ -290,16 +304,15 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 plotted_parameters=[
-                    hypercolumn.label,
                     pre_mtype_parameter.label,
                     post_mtype_parameter.label],
                 adapter=self._adapter)
         self.pathway_connection_probability_validation=\
             PathwayConnectionProbabilityValidation(
-            phenomenon=Phenomenon(
-                "Pathway Connection Probability",
-                "Probability of connections in an mtype-->mtype pathway.",
-                group="connectome"),
+                phenomenon=Phenomenon(
+                    "Pathway Connection Probability",
+                    "Probability of connections in an mtype-->mtype pathway.",
+                    group="connectome"),
                 animal=circuit_model.animal,
                 brain_region=circuit_model.brain_region,
                 pathway_parameters=[
@@ -310,10 +323,38 @@ class TestConnectomeAnalysis:
                     pre_mtype_parameter,
                     post_mtype_parameter],
                 plotted_parameters=[
-                    hypercolumn.label,
                     pre_mtype_parameter.label,
                     post_mtype_parameter.label],
                 reference_data=RatSSCxConnectionProbability(),
+                adapter=self._adapter)
+        self.cell_bouton_density_analysis=\
+            CellBoutonDensityAnalysis(
+                animal=circuit_model.animal,
+                brain_region=circuit_model.brain_region,
+                cell_group_parameters=[
+                    mtype_parameter],
+                measurement_parameters=[
+                    hypercolumn,
+                    mtype_parameter],
+                plotted_parameters=[
+                    mtype_parameter.label],
+                adapter=self._adapter)
+        self.cell_bouton_density_validation=\
+            CellBoutonDensityValidation(
+                phenomenon=Phenomenon(
+                    "Bouton Density",
+                    "Number of boutons per unit length of a cell's axon arbor",
+                    group="connectome"),
+                animal=circuit_model.animal,
+                brain_region=circuit_model.brain_region,
+                cell_group_parameters=[
+                    mtype_parameter],
+                measurement_parameters=[
+                    hypercolumn,
+                    mtype_parameter],
+                plotted_parameters=[
+                    mtype_parameter.label],
+                reference_data=RatSSCxBoutonDensity(),
                 adapter=self._adapter)
  
                     
