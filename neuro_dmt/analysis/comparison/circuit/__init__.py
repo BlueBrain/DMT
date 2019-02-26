@@ -54,17 +54,20 @@ class CircuitPhenomenonComparison(
                 self.logger.get_source_info(),
                 "Could not find attribute 'output_dir_path'.",
                 "\tAttributeError: {}".format(e))
-        try:
-            xvar= self.plotting_parameter.label
-            if isinstance(model_measurement.data.index, pd.MultiIndex):
-                assert\
-                    plotting_param in model_measurement.data.index.names
-        except AttributeError as aerr:
-            self.logger.alert(
-                self.logger.get_source_info(),
-                "Missing plotting parameter? {}".format(aerr))
-            xvar= "not-available"
 
+        if len(self.plotted_parameters) == 1:
+            try:
+                xvar= self.plotted_parameters[0]
+                if isinstance(model_measurement.data.index, pd.MultiIndex):
+                    assert\
+                        xvar in model_measurement.data.index.names
+            except AttributeError as aerr:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    "Missing attribute 'plotted_parameters'? {}".format(aerr))
+                xvar= "not-available"
+        else:
+            xvar= "not-available"
         kwargs["ylabel"]=\
             "{} / [{}]".format(
                 "mean {}".format(

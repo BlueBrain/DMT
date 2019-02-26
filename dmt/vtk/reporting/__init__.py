@@ -1,7 +1,8 @@
 """Report the result of an analysis or a validation."""
 import os
+import pandas as pd
 from dmt.vtk.utils.exceptions import RequiredKeywordArgumentError
-from dmt.vtk.utils.descriptor import is_field, WithFCA
+from dmt.vtk.utils.descriptor import is_field, WithFCA, Field
 from dmt.vtk.utils.utils import get_file_name_base, timestamp
 from dmt.vtk.utils.logging import Logger
 
@@ -10,29 +11,18 @@ class Report(
     """Report base class.
     A report may have fields (dmt.vtk.utils.descriptor.Field)
     """
+    model_measurement=\
+        Field(
+            __name__="model_measurement",
+            __type__=pd.DataFrame,
+            __doc__="Result of measuring the model.")
+
     def __init__(self, *args, **kwargs):
         """Add attributes from kwargs to this report instance.
         The value of each report attribute in 'kwargs' must be a string."""
         #self.__dict__.update(kwargs)
         self.__report_attributes__ = kwargs.keys()
         self.__report_dict__ = {k: v for k, v in kwargs.items()}
-        # for attr, value in self.__class__.__dict__.items():
-        #     if is_field(value):
-        #         self.logger.debug(
-        #             self.logger.get_source_info(),
-        #             "Setting Report qttribute for {} with value {}".format(
-        #                 attr, value))
-        #         try:
-        #             value = kwargs[attr]
-        #         except:
-        #             raise RequiredKeywordArgumentError(attr)
-        #         setattr(self, attr, value) #this will validate the value
-        #         #self.__report_dict__[attr] = value #this will be a validated value!
-        #     else:
-        #         self.logger.debug(
-        #             self.logger.get_source_info(),
-        #             "Report Attribute {} is not a field.".format(attr))
-
         super().__init__(
             *args, **kwargs)
             
@@ -75,6 +65,19 @@ class Report(
                 f.write("    {}\n".format(getattr(self, attribute)))
 
         return report_file_path
+
+    def save_measurement(self,
+            output_dir_path,
+            sep=","):
+        """..."""
+        file_path=\
+            os.path.join(
+                output_dir_path,
+                "model_measurement.csv")
+        self.model_measurement\
+            .to_csv(file_path, sep=sep, index=False)
+        return\
+            file_path
 
     def save(self,
             output_dir_path,

@@ -52,6 +52,13 @@ class BlueBrainCircuitModel(
         self._implied_circuit = None #the implied bluepy circuit
         self._geometry = None
 
+    def get_label(self,
+            *args, **kwargs):
+        """Get a label that can be used to name files."""
+        return "{}_{}".format(
+            self.__class__.__name__,
+            self.circuit_config.strip("/").split("/")[-2])
+
     @property
     def bluepy_circuit(self):
         """..."""

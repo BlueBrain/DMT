@@ -10,6 +10,8 @@ from dmt.vtk.author\
     import Author
 from dmt.vtk.plotting\
     import Plot
+from dmt.vtk.utils.utils\
+    import timestamp
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      WithFCA\
@@ -73,12 +75,6 @@ class Analysis(WithFCA, AIBase):
             __name__="measurement_parameters",
             __typecheck__=Field.typecheck.collection(Parameter),
             __doc__="""Parameters used to measure the phenomenon""")
-    plotting_parameter=\
-        Field.Optional(
-            __name__="plotting_parameter",
-            __type__=Parameter,
-            __doc__="""Parameter that measurement data will be plotted
-            against.""")
     plotted_parameters=\
         Field(
             __name__="plotted_parameters",
@@ -171,6 +167,20 @@ class Analysis(WithFCA, AIBase):
         """
         return True
 
+    def _get_file_name_base(self,
+            circuit_model,
+            model_measurement,
+            *args, **kwargs):
+        """Combine available information to generate a name suitable
+        for a file."""
+        return\
+            "_".join([
+                circuit_model.animal,
+                circuit_model.brain_region.label,
+                circuit_model.get_label(),
+                model_measurement.phenomenon.label])
+
+
     def save_report(self,
             report,
             output_dir_path=""):
@@ -195,7 +205,7 @@ class Analysis(WithFCA, AIBase):
 
     def __call__(self,
             model,
-            save_report=False,
+            save_report=True,
             *args, **kwargs):
         """An Analysis is a callable.
         In the concrete Analysis implementation,

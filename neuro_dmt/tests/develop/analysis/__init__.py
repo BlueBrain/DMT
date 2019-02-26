@@ -85,7 +85,7 @@ sscx_atlas_circuit=\
 iso_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj68/circuits",
-        "Isocortex/20190212/",
+        "Isocortex/20190225/",
         "CircuitConfig")
 iso_circuit_model=\
     get_iso_cortex_circuit_model(

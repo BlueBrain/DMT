@@ -79,22 +79,25 @@ class CrossPlotComparison(ComparisonPlot):
             .format(ydata),
             """and comparison data {}"""\
             .format(self.compared_datasets[0].data))
-        xdata=\
-            self.compared_datasets[0].data.loc[ydata.index]
-        xlabel=\
-            self.compared_datasets[0].label
 
         ys = ydata["mean"].values
         yerr = ydata["std"].values
         ymax = np.nanmax(ys + yerr)
         ymin = np.nanmin(ys - yerr)
 
+        xdata=\
+            self.compared_datasets[0]\
+                .data.loc[
+                    ydata.index]
         xs = xdata["mean"].values
         xerr = xdata["std"].values
         xmax = np.nanmax(xs + xerr)
         xmin = np.nanmin(xs - xerr)
 
-        plt.errorbar(xs, ys, fmt="o", xerr=xerr, yerr=yerr)
+        plt.errorbar(
+            xs, ys,
+            fmt="o",
+            xerr=xerr, yerr=yerr)
 
         min_val = min(xmin,  ymin)
         max_val = max(xmax, ymax)
@@ -102,11 +105,19 @@ class CrossPlotComparison(ComparisonPlot):
             self.logger.get_source_info(),
             "plot a diagonal from min {} to max {}".format(
                 min_val, max_val))
-        plt.plot([min_val, max_val], [min_val, max_val], "-")
-
-        plt.title(self._title, fontsize=24)
-        plt.ylabel(self._ylabel, fontsize=20)
-        plt.xlabel(xlabel, fontsize=20)
+        plt.plot(
+            [min_val, max_val],
+            [min_val, max_val],
+            "-")
+        plt.title(
+            self._title,
+            fontsize=24)
+        plt.ylabel(
+            self._ylabel,
+            fontsize=20)
+        plt.xlabel(
+            self.compared_datasets[0].label,
+            fontsize=20)
 
         fontP = FontProperties()
         fontP.set_size('small')

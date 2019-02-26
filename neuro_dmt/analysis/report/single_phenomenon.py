@@ -85,6 +85,8 @@ class AnalysisReport(
         output_dir_path=\
             self.get_output_location(
                 output_dir_path=output_dir_path)
+        self.save_measurement(
+            output_dir_path)
         file_name_base= \
             get_file_name_base(
                 report_file_name)

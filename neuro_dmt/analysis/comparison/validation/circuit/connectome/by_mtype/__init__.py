@@ -34,6 +34,7 @@ class ByMtypeConnectomeValidation(
         super().__init__(
             ReportType=ValidationReport,
             *args, **kwargs)
+
     def get_measurement_parameters(self):
         """We want to validate the pathways represented in both the reference
         data and the circuit."""

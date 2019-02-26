@@ -50,7 +50,8 @@ class TestCompositionValidation(
                 spatial_parameters=[
                     circuit_regions,
                     CorticalLayer()],
-                plotting_parameter=CorticalLayer(),
+                plotted_parameters=[
+                    CorticalLayer().label],
                 reference_data=ValidationReferenceData.get(phenomenon),
                 *args, **kwargs)
                

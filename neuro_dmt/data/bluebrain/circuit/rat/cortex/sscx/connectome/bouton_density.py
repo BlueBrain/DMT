@@ -5,6 +5,7 @@ import os
 import pickle
 import numpy as np
 import pandas as pd
+from bluepy.v2.enums import Cell
 from dmt.vtk.utils.collections\
     import Record
 from dmt.vtk.phenomenon\
@@ -38,7 +39,7 @@ class RatSSCxBoutonDensity(
             data_location=self.get_data_location(data_path),
             datasets=reference_datasets.datasets,
             primary=reference_datasets.primary,
-            measurement_parameters=["pre_mtype", "post_mtype"],
+            measurement_parameters=[Cell.MTYPE],
             *args, **kwargs)
 
 
@@ -92,4 +93,4 @@ class RatSSCxBoutonDensity(
                             what="Ask Michael Reimann",
                             data=dataframe),
                         description="Ask Michael Reimann",
-                        measurement_parameters=["pre_mtype", "post_mtype"])})
+                        measurement_parameters=[Cell.MTYPE])})

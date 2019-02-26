@@ -133,7 +133,7 @@ class BrainCircuitAnalysis(
             .plotting(
                 model_measurement.phenomenon.label)\
             .versus(
-                self.plotting_parameter.label)\
+                self.get_plotting_parameter_label())\
             .given(
                 **self._for_given_parameter_values(
                     **kwargs))\
@@ -152,6 +152,7 @@ class BrainCircuitAnalysis(
                 *args, **kwargs)
         return\
             self.ReportType(
+                model_measurement=model_measurement.data,
                 phenomenon=self.phenomenon,
                 author=self.author,
                 figure=figure,
