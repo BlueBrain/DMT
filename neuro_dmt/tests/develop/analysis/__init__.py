@@ -84,8 +84,9 @@ sscx_atlas_circuit=\
 
 iso_circuit_config=\
     os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68/circuits",
-        "Isocortex/20190212/",
+        "/gpfs/bbp.cscs.ch/data/project_no_backup",
+        "proj68_no_backup/circuits",
+        "Isocortex/20190225/",
         "CircuitConfig")
 iso_circuit_model=\
     get_iso_cortex_circuit_model(
@@ -110,8 +111,11 @@ class TestCompositionAnalysis:
             sample_size=100,
             sampled_box_shape=50. * np.ones(3),
             regions=["SSp-ll"],
+            outdir=os.getcwd(),
             *args, **kwargs):
         """"..."""
+        print(outdir)
+        self._outdir = outdir
         self._circuit_model=\
             circuit_model
         self._adapter=\
@@ -267,7 +271,7 @@ class TestCompositionAnalysis:
                 report,
                 region,
                 output_dir_path=os.path.join(
-                    os.getcwd(),
+                    self._outdir,
                     analysis._get_output_dir(
                         model_measurement=self._measurements[phenomenon]),
                     "subregion-{}".format(region)))

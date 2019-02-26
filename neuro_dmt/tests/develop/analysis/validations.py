@@ -13,6 +13,8 @@ from neuro_dmt.models.bluebrain.circuit.circuit_model\
 from neuro_dmt.models.bluebrain.circuit.specialization import\
     CircuitSpecialization
 from neuro_dmt.utils.brain_regions import whole_brain
+from neuro_dmt.data.bluebrain.circuit.atlas import get_atlas_data
+
 
 logger=\
     Logger(
@@ -41,27 +43,36 @@ class TestCompositionValidation(
             *args, **kwargs):
         """..."""
         if reference_data is None:
-            reference_data = ValidationReferenceData(phenomenon)
+            reference_data = ValidationReferenceData# (phenomenon)
         circuit_regions=\
             circuit_regions if circuit_regions\
             else self._circuit_regions
         ValidationType=\
             self.get_validation_type(
                 phenomenon)
-        return\
-            ValidationType(
-                phenomenon=phenomenon,
-                adapter=self._adapter,
-                animal=self._circuit_model.animal,
-                measurement_parameters=[
-                    circuit_regions,
-                    CorticalLayer()],
-                spatial_parameters=[
-                    circuit_regions,
-                    CorticalLayer()],
-                plotting_parameter=CorticalLayer(),
-                reference_data=reference_data.get(phenomenon),
-                *args, **kwargs)
+
+        atlas_path = self._circuit_model.bluepy_circuit.atlas.dirpath
+        atlas_data = get_atlas_data(phenomenon)(
+            atlas_path,
+            circuit_regions.values[0])
+    
+        v = ValidationType(
+            phenomenon=phenomenon,
+            adapter=self._adapter,
+            animal=self._circuit_model.animal,
+            measurement_parameters=[
+                circuit_regions,
+                CorticalLayer()],
+            spatial_parameters=[
+                circuit_regions,
+                CorticalLayer()],
+            plotting_parameter=CorticalLayer(),
+            reference_data=reference_data.get(phenomenon),
+            *args, **kwargs)
+        # TODO: label passing should be automatic
+        v.reference_data.add_dataset(atlas_data.data.label, atlas_data)
+        return v
+        
 
 
 # class MySpecialization(CircuitSpecialization):
