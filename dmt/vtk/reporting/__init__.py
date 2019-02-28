@@ -74,7 +74,7 @@ class Report(
             os.path.join(
                 output_dir_path,
                 "model_measurement.csv")
-        self.model_measurement\
+        self.model_measurement.reset_index()\
             .to_csv(file_path, sep=sep, index=False)
         return\
             file_path

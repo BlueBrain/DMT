@@ -175,12 +175,13 @@ class FiniteValuedParameter(
 
     def filled(self,
             dataframe,
-            sorted=True,
+            get_sorted=True,
             ascending=True,
             with_index_renamed=True):
         """Filled and sorted Dataframe by index,
         which is of the type of this Parameter."""
         self.logger.debug(
+            self.logger.get_source_info(),
             "measurement has an index of type {}"\
             .format(
                 type(dataframe.index)))
@@ -191,13 +192,17 @@ class FiniteValuedParameter(
                     sorted=True,
                     ascending=ascending,
                     with_index_renamed=with_index_renamed)
-        if dataframe.index.name != self.label:
-            raise ValueError("index name {} != self.label {}"\
-                             .format(dataframe.index.name, self.label))
+        if  dataframe.index.name != self.label:
+            raise ValueError(
+                "index name {} != self.label {}"\
+                .format(dataframe.index.name, self.label),
+                "the data-frame: {}".format(dataframe))
                                                   
         IndexType = type(dataframe.index)
         missing = list(set(self.values) - set(dataframe.index))
-        self.logger.debug("missing values in the index {}".format(missing))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "missing values in the index {}".format(missing))
         missing_df=\
             pd.DataFrame(
                 len(missing) * [[0., 0.]],
@@ -205,10 +210,20 @@ class FiniteValuedParameter(
                     missing,
                     name=dataframe.index.name),
                 columns=dataframe.columns)
-        self.logger.debug("missing data frame {}".format(missing_df))
-        self.logger.debug("dataframe measured {}".format(dataframe))
-        full_df = pd.concat([dataframe, missing_df])
-        return self.sorted(full_df, ascending=ascending) if sorted else full_df
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "missing data frame {}".format(missing_df))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "dataframe measured {}".format(dataframe))
+        full_df=\
+            pd.concat([dataframe, missing_df])
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Filled dataframe, before sorting: {}""".format(full_df))
+        return\
+            self.sorted(full_df, ascending=ascending)\
+            if get_sorted else full_df
 
     def make_aggregator(self, rand_var_gen_func):
         """This 'FiniteValuedParameter' as an aggregator of 'grouped_variable.

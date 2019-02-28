@@ -85,8 +85,12 @@ class BlueBrainCircuitModel(
     @property
     def region_label(self):
         """..."""
-        return\
-            self.geometry.region_label
+        try:
+            return self.region_label
+        except AttributeError:
+            return\
+                self.geometry.region_label
+        return "region" 
 
     @property
     def cells(self):

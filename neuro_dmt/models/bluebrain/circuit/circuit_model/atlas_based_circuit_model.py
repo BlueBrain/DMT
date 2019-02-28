@@ -32,7 +32,18 @@ class AtlasBasedCircuitModel(
             __type__ = str,
             __doc__ = """Path to the cirucit's atlas. Provide this path if an
             atlas attribute has not been defined for the cirucit.""")
+    region_label=\
+        Field(
+            __name__="region_label",
+            __type__=str,
+            __doc__="label used for atlas regions.",
+            __default__="region",
+            __examples__=["region", "hypercolumn"])
 
+    def __init__(self,
+            *args, **kwargs):
+        super().__init__(
+            *args, **kwargs)
     @property
     def bluepy_circuit(self):
         """Override to check, and set the circuit's atlas."""

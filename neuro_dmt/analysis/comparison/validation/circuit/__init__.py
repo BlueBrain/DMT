@@ -57,7 +57,7 @@ class CircuitPhenomenonValidationTestCase(
                 model_measurement.data
         return\
             ValidationReport(
-                model_measurement=model_measurement_data.reset_index(),
+                model_measurement=model_measurement_data,
                 phenomenon = self.phenomenon,
                 author = self.author,
                 caption = self.get_caption(

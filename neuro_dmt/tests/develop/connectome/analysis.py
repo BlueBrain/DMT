@@ -1,4 +1,4 @@
-"""Test develop connectome analysis."""
+"""Test develop sonata-connectome analysis."""
 
 import os
 from dmt.vtk.measurement\
@@ -71,19 +71,30 @@ iso_circuit_model=\
         "mouse")
 iso_circuit=\
      iso_circuit_model.bluepy_circuit
-sscx_circuit_config=\
+rat_sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "O1.v6a/20171212",
         "CircuitConfig")
-sscx_circuit_model=\
+rat_sscx_circuit_model=\
     get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
+        rat_sscx_circuit_config,
         animal="rat",
+        region_label="hypercolumn",
         atlas_path=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj64", "entities",
             "dev", "atlas",
             "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"))
+sscx_circuit_config=\
+    os.path.join(
+        "/gpfs/bbp.cscs.ch/project/proj68", "circuits",
+        "O1/20190226_2",
+        "CircuitConfig")
+sscx_circuit_model=\
+    get_sscx_atlas_circuit_model(
+        sscx_circuit_config,
+        animal="mouse",
+        region_label="region")
 sscx_circuit=\
     sscx_circuit_model.bluepy_circuit
 mtype_values=[
@@ -132,7 +143,7 @@ pathway=\
 class TestAdapterMethods:
     """Test values of adapter methods"""
     def __init__(self,
-            circuit_model=sscx_circuit_model):
+            circuit_model):
         """Initialize Me"""
         self._circuit_model=\
             circuit_model
@@ -165,7 +176,6 @@ logger.info(
     logger.get_source_info(),
     "test (Analysis) class SynapseCount")
 
-
 layer_mtypes=\
     {l: [m for m in sscx_circuit.cells.mtypes
          if l in m]
@@ -175,189 +185,142 @@ class TestConnectomeAnalysis:
     """Test values of Connectome Analysis sub-classes."""
     def __init__(self,
             circuit_model,
+            RegionType,
+            region_values=[],
             mtype_values=[],
             sample_size=20):
         """..."""
         self._circuit_model=\
             circuit_model
+        self._region_parameter=\
+            RegionType(values=region_values)
         self._adapter=\
             BlueBrainModelAdapter(
                 brain_region=brain_regions.sscx,
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico",
                 sample_size=sample_size)
-        mtype_parameter=\
+        self._mtype_values=\
+            mtype_values if mtype_values\
+            else list(circuit_model.bluepy_circuit.cells.mtypes)
+        self._mtype_parameter=\
             Mtype(
                 circuit=circuit_model.bluepy_circuit,
                 label="mtype",
-                values=mtype_values)\
-                if mtype_values else\
-                   Mtype(
-                       circuit=circuit_model.bluepy_circuit,
-                       label="mtype")
-        pre_mtype_parameter=\
+                values=self._mtype_values)
+        self._pre_mtype_parameter=\
             Mtype(
                 circuit=circuit_model.bluepy_circuit,
                 label="pre_mtype",
-                values=mtype_values)\
-                if mtype_values else\
-                   Mtype(
-                       circuit=circuit_model.bluepy_circuit,
-                       label="pre_mtype")
-        post_mtype_parameter=\
+                values=self._mtype_values)
+        self._post_mtype_parameter=\
             Mtype(
                 circuit=circuit_model.bluepy_circuit,
                 label="post_mtype",
-                values=mtype_values)\
-                if mtype_values else\
-                   Mtype(
-                       circuit=circuit_model.bluepy_circuit,
-                       label="post_mtype")
-        hypercolumn=\
-            HyperColumn(values=[2])
+                values=self._mtype_values)
         logger.info(
             logger.get_source_info(),
             """Analyzing pathways from {} pre mtypes
             to {} post mtypes""".format(
-                len(pre_mtype_parameter.values),
-                len(post_mtype_parameter.values)))
-        self.synapse_count_analysis=\
-            PairSynapseCountAnalysis(
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    hypercolumn.label,
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                adapter=self._adapter)
-        self.synapse_count_validation=\
-            PairSynapseCountValidation(
-                phenomenon=Phenomenon(
-                    "Pair Synapse Count",
-                    "Number of cells in an mtype-->mtype pathway",
-                    group="connectome"),
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                reference_data=RatSSCxPairSynapseCountData(),
-                adapter=self._adapter)
-        self.pathway_connection_count_analysis=\
-            PathwayConnectionCountAnalysis(
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                adapter=self._adapter)
-        self.pathway_connection_count_validation=\
-            PathwayConnectionCountValidation(
-                phenomenon=Phenomenon(
-                    "Pathway Connection Count",
-                    "Number of connections between an mtype-->mtype pathway.",
-                    group="connectome"),
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                reference_data=RatSSCxConnectionProbability(),
-                adapter=self._adapter)
-        self.pathway_connection_probability_analysis=\
-            PathwayConnectionProbabilityAnalysis(
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                adapter=self._adapter)
-        self.pathway_connection_probability_validation=\
-            PathwayConnectionProbabilityValidation(
-                phenomenon=Phenomenon(
-                    "Pathway Connection Probability",
-                    "Probability of connections in an mtype-->mtype pathway.",
-                    group="connectome"),
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                pathway_parameters=[
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    pre_mtype_parameter,
-                    post_mtype_parameter],
-                plotted_parameters=[
-                    pre_mtype_parameter.label,
-                    post_mtype_parameter.label],
-                reference_data=RatSSCxConnectionProbability(),
-                adapter=self._adapter)
-        self.cell_bouton_density_analysis=\
-            CellBoutonDensityAnalysis(
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                cell_group_parameters=[
-                    mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    mtype_parameter],
-                plotted_parameters=[
-                    mtype_parameter.label],
-                adapter=self._adapter)
-        self.cell_bouton_density_validation=\
-            CellBoutonDensityValidation(
-                phenomenon=Phenomenon(
-                    "Bouton Density",
-                    "Number of boutons per unit length of a cell's axon arbor",
-                    group="connectome"),
-                animal=circuit_model.animal,
-                brain_region=circuit_model.brain_region,
-                cell_group_parameters=[
-                    mtype_parameter],
-                measurement_parameters=[
-                    hypercolumn,
-                    mtype_parameter],
-                plotted_parameters=[
-                    mtype_parameter.label],
-                reference_data=RatSSCxBoutonDensity(),
-                adapter=self._adapter)
- 
-                    
+                len(self._pre_mtype_parameter.values),
+                len(self._post_mtype_parameter.values)))
+        self.phenomenon={
+            "pair_synapse_count"\
+            : Phenomenon(
+                "Pair Synapse Count",
+                "Number of synapses connecting mtype-->mtype \
+                pathway cell pairs",
+                group="connectome"),
+            "pathway_connection_count"\
+            : Phenomenon(
+                "Pathway Connection Count",
+                "Number of connections between an mtype-->mtype \
+                pathway cell pairs",
+                group="connectome"),
+            "pathway_connection_probability"\
+            : Phenomenon(
+                "Pathway Connection Probability",
+                "Proabability that a mtype-->mtype pathway cell pair \
+                is connected",
+                group="connectome"),
+            "bouton_density"\
+            : Phenomenon(
+                "Bouton Density",
+                "Number of boutons per unit length of a cell's axon arbor",
+                group="connectome")}
+        self.AnalysisType={
+            "pair_synapse_count"\
+            : PairSynapseCountAnalysis,
+            "pathway_connection_count"\
+            : PathwayConnectionCountAnalysis,
+            "pathway_connection_probability"\
+            : PathwayConnectionProbabilityAnalysis,
+            "bouton_density"\
+            : CellBoutonDensityAnalysis}
+        self.ValidationType={
+            "pair_synapse_count"\
+            : PairSynapseCountValidation,
+            "pathway_connection_count"\
+            : PathwayConnectionCountValidation,
+            "pathway_connection_probability"\
+            : PathwayConnectionProbabilityValidation,
+            "bouton_density"\
+            : CellBoutonDensityValidation}
+        self.reference_data={
+            "pair_synapse_count"\
+            : RatSSCxPairSynapseCountData(),
+            "pathway_connection_count"\
+            : RatSSCxConnectionProbability(),
+            "pathway_connection_probability"\
+            : RatSSCxConnectionProbability(),
+            "bouton_density"\
+            : RatSSCxBoutonDensity()}
+
+    def get_analysis(self,
+            phenomenon_label):
+        """..."""
+        AnalysisType=\
+            self.AnalysisType[
+                phenomenon_label]
+        return AnalysisType(
+            animal=self._circuit_model.animal,
+            brain_region=self._circuit_model.brain_region,
+            pathway_parameters=[
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            measurement_parameters=[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            plotted_parameters=[
+                self._pre_mtype_parameter.label,
+                self._post_mtype_parameter.label],
+            adapter=self._adapter)
+
+    def get_validation(self,
+            phenomenon_label):
+        ValidationType=\
+            self.ValidationType[
+                phenomenon_label]
+        return ValidationType(
+            phenomenon=self.phenomenon[phenomenon_label],
+            animal=self._circuit_model.animal,
+            brain_region=self._circuit_model.brain_region,
+            cell_group_parameters=[
+                self._mtype_parameter],
+            pathway_parameters=[
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            measurement_parameters=[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            plotted_parameters=[
+                self._pre_mtype_parameter.label,
+                self._post_mtype_parameter.label],
+            reference_data=self.reference_data[phenomenon_label],
+            adapter=self._adapter)
+
     def run(self,
         *args, **kwargs):
         """..."""

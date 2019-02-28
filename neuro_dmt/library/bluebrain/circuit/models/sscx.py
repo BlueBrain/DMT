@@ -218,6 +218,7 @@ def get_sscx_atlas_circuit_model(
         circuit_config,
         animal,
         atlas_path=None,
+        region_label="region", #this could be "hypercolumn" for some circuits.
         *args, **kwargs):
     """..."""
     return\
@@ -226,7 +227,8 @@ def get_sscx_atlas_circuit_model(
             brain_region=brain_regions.sscx,
             geometry_type=SSCxAtlasCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            region_label=region_label)
 
 
 class SSCxFakeAtlasSpecialization(

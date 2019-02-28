@@ -114,6 +114,13 @@ class BrainCircuitAnalysis(
             if (parameter.label not in self.plotted_parameters
                 and parameter.label in kwargs)}
 
+    def _get_plotting_parameter_label(self):
+        """..."""
+        if len(self.plotted_parameters):
+            return self.plotted_parameters[0]
+        return "X"
+
+
     def plot(self,
             model_measurement,
             *args, **kwargs):
@@ -133,7 +140,7 @@ class BrainCircuitAnalysis(
             .plotting(
                 model_measurement.phenomenon.label)\
             .versus(
-                self.get_plotting_parameter_label())\
+                self._get_plotting_parameter_label())\
             .given(
                 **self._for_given_parameter_values(
                     **kwargs))\

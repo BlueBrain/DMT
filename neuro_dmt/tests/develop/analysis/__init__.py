@@ -47,40 +47,52 @@ bbadapter=\
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)
-sscx_circuit_config=\
+rat_sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "O1.v6a/20171212",
         "CircuitConfig")
-sscx_circuit_model=\
+rat_sscx_circuit_model=\
     get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
+        rat_sscx_circuit_config,
         animal="rat",
+        region_label="hypercolumn",
         atlas_path=os.path.join(
             "/gpfs/bbp.cscs.ch/project/proj64", "entities",
             "dev", "atlas",
             "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"))
-sscx_circuit_model.geometry.circuit_specialization.representative_region=\
+rat_sscx_circuit_model.geometry.circuit_specialization.representative_region=\
     "mc2_Column"
-sscx_circuit=\
-    sscx_circuit_model.bluepy_circuit
+rat_sscx_circuit=\
+    rat_sscx_circuit_model.bluepy_circuit
 
-sscx_atlas_circuit_config=\
+rat_sscx_atlas_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "S1.v6a/20171206",
         "CircuitConfig")
-sscx_atlas_circuit_model=\
+rat_sscx_atlas_circuit_model=\
     get_sscx_atlas_circuit_model(
-        sscx_atlas_circuit_config,
+        rat_sscx_atlas_circuit_config,
         animal="rat",
         atlas_path=os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "S1.v6a/20171206",
             ".atlas", "C63CB79F-392A-4873-9949-0D347682253A"))
-sscx_atlas_circuit=\
-    sscx_atlas_circuit_model.bluepy_circuit
+rat_sscx_atlas_circuit=\
+    rat_sscx_atlas_circuit_model.bluepy_circuit
 
+sscx_circuit_config=\
+    os.path.join(
+        "/gpfs/bbp.cscs.ch/project/proj68", "circuits",
+        "O1/20190226_2",
+        "CircuitConfig")
+sscx_circuit_model=\
+    get_sscx_atlas_circuit_model(
+        sscx_circuit_config,
+        animal="mouse")
+sscx_circuit=\
+    sscx_circuit_model.bluepy_circuit
 
 iso_circuit_config=\
     os.path.join(
@@ -110,6 +122,7 @@ class TestCompositionAnalysis:
             sample_size=100,
             sampled_box_shape=50. * np.ones(3),
             regions=["SSp-ll"],
+            output_dir_path=os.getcwd(),
             *args, **kwargs):
         """"..."""
         self._circuit_model=\
@@ -124,6 +137,8 @@ class TestCompositionAnalysis:
         self._circuit_regions=\
             AtlasRegion(
                 values=regions)
+        self._output_dir_path=\
+            output_dir_path
         self._measurements=\
             {} # map phenomenon (label) to its Measurement
         self._reports=\
@@ -157,6 +172,7 @@ class TestCompositionAnalysis:
                     CorticalLayer()],
                 plotted_parameters=[
                     CorticalLayer().label],
+                output_dir_path=self._output_dir_path,
                 *args, **kwargs)
             
     def _already_measured(self,

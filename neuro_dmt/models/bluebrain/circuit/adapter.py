@@ -30,6 +30,8 @@ from dmt.vtk.measurement\
 from dmt.vtk.utils.descriptor\
      import Field\
      ,      WithFCA
+from dmt.vtk.measurement.parameter.group\
+    import ParameterGroup
 from dmt.vtk.measurement.parameter.random\
      import get_conditioned_random_variate
 from dmt.vtk.utils.logging\
@@ -135,9 +137,33 @@ class BlueBrainModelAdapter(
         by :: List[FiniteValuedParameter] #the parameters conditioning
         ~                                 #self.spatial_random_variate
         """
-        for p in by:
-            measurement.data\
-                = p.filled(
+        if measurement.data.empty:
+            if len(by) > 1:
+                parameter_group=\
+                    ParameterGroup(*by)
+                parameter_value_dicts=\
+                    list(ParameterGroup(*by).kwargs)
+                index=\
+                    pd.MultiIndex.from_tuples(
+                        tuples=[
+                            tuple(parameter_value[parameter.label]
+                                  for parameter in by)
+                            for parameter_value in parameter_value_dicts],
+                        names=[parameter.label for parameter in by])
+                 
+            if len(by) == 1:
+                index=\
+                    pd.Index(
+                        by.values,
+                        name=by.label)
+            measurement.data=\
+                pd.DataFrame(
+                    [{"mean": np.nan, "std": np.nan} for _ in index],
+                    index = index)
+        else:
+            for p in by:
+                measurement.data\
+                    = p.filled(
                     measurement.data)
         return measurement
 
@@ -438,17 +464,29 @@ class BlueBrainModelAdapter(
         def __get_cell_count(
                 query):
             """..."""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                """Get cell count for cell group: {}""".format(query))
             mtype = query[Cell.MTYPE]
             if mtype not in count_cell_mtype:
                 count_cell_mtype[mtype]=len(
                     circuit_model\
                     .bluepy_circuit\
                     .cells.ids(query))
-            return count_cell_mtype[mtype]
+            count=\
+                count_cell_mtype[mtype]
+            self.logger.debug(
+                self.logger.get_source_info(),
+                """Number of cells: {}""".format(count))
+            return count
 
         def __get_pair_count(
                 condition):
             """get number of gid pairs for a given condition."""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                """Get pair count for connection {}"""\
+                .format(condition.as_dict))
             pre_mtype_cell_count=\
                 __get_cell_count(
                     __with_region(
@@ -459,7 +497,12 @@ class BlueBrainModelAdapter(
                     __with_region(
                         {Cell.MTYPE: condition.get_value("post_mtype")},
                         condition))
-            return 1. * pre_mtype_cell_count * post_mtype_cell_count
+            count=\
+                1. * pre_mtype_cell_count * post_mtype_cell_count
+            self.logger.debug(
+                self.logger.get_source_info(),
+                """Number of pairs: {}""".format(count))
+            return count
                 
         connection_counts=[
             (__get_parameter_values(condition),
@@ -469,6 +512,18 @@ class BlueBrainModelAdapter(
         self.logger.debug(
             self.logger.get_source_info(),
             """Connection counts : {}""".format(connection_counts))
+
+        def __get_pair_dict(
+                n_pairs, n_connections):
+            """..."""
+            assert n_connections <= n_pairs
+            if n_pairs == 0:
+                return {"mean": np.nan,  "std": np.nan}
+            if n_pairs == 1:
+                return {"mean": n_connections, "std": np.nan}
+            return{
+                "mean": n_connections / n_pairs,
+                "std":  np.sqrt(n_connections) / (n_pairs - 1)}
 
         return\
             Record(
@@ -481,8 +536,7 @@ class BlueBrainModelAdapter(
                 sample_size=np.nan,
                 measurement_method="#(pathway connections) / #(pathway pairs)",
                 data=pd.DataFrame(
-                    [{"mean": n_connections/n_pairs,
-                      "std":  np.sqrt(n_connections)/n_pairs}
+                    [__get_pair_dict(n_pairs, n_connections)
                      for _, n_pairs, n_connections in connection_counts],
                     index=pd.MultiIndex.from_tuples(
                         tuples=[connection

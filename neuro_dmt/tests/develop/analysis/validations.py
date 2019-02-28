@@ -53,5 +53,6 @@ class TestCompositionValidation(
                 plotted_parameters=[
                     CorticalLayer().label],
                 reference_data=ValidationReferenceData.get(phenomenon),
+                output_dir_path=self._output_dir_path,
                 *args, **kwargs)
                
