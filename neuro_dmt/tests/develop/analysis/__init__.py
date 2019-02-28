@@ -49,17 +49,17 @@ bbadapter=\
         sample_size=20)
 sscx_circuit_config=\
     os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
-        "O1.v6a/20171212",
+        "/gpfs/bbp.cscs.ch/project/proj68",
+        "circuits", "O1", "20190226_2",
         "CircuitConfig")
 sscx_circuit_model=\
     get_sscx_atlas_circuit_model(
         sscx_circuit_config,
-        animal="rat",
+        animal="mouse",
         atlas_path=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj64", "entities",
+            "/gpfs/bbp.cscs.ch/project/proj66", "entities",
             "dev", "atlas",
-            "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"))
+            "O1-152"))
 sscx_circuit_model.geometry.circuit_specialization.representative_region=\
     "mc2_Column"
 sscx_circuit=\
@@ -225,6 +225,7 @@ class TestCompositionAnalysis:
             phenomenon,
             region="SSp-ll",
             save=True,
+            with_atlas_data=True,
             *args, **kwargs):
         """Analysis of only one region may be reported"""
         logger.debug(
@@ -235,7 +236,8 @@ class TestCompositionAnalysis:
             self.get_instance(
                 phenomenon,
                 circuit_regions=AtlasRegion(
-                    values=[region]))
+                    values=[region]),
+                with_atlas_data=with_atlas_data)
         if not self._already_measured(phenomenon, region):
             logger.debug(
                 logger.get_source_info(),

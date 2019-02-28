@@ -40,6 +40,7 @@ class TestCompositionValidation(
             phenomenon,
             circuit_regions=None,
             reference_data=None,
+            with_atlas_data=True,
             *args, **kwargs):
         """..."""
         if reference_data is None:
@@ -51,10 +52,6 @@ class TestCompositionValidation(
             self.get_validation_type(
                 phenomenon)
 
-        atlas_path = self._circuit_model.bluepy_circuit.atlas.dirpath
-        atlas_data = get_atlas_data(phenomenon)(
-            atlas_path,
-            circuit_regions.values[0])
     
         v = ValidationType(
             phenomenon=phenomenon,
@@ -70,7 +67,13 @@ class TestCompositionValidation(
             reference_data=reference_data.get(phenomenon),
             *args, **kwargs)
         # TODO: label passing should be automatic
-        v.reference_data.add_dataset(atlas_data.data.label, atlas_data)
+        if with_atlas_data:
+            atlas_path = self._circuit_model.bluepy_circuit.atlas.dirpath
+            atlas_data = get_atlas_data(phenomenon)(
+                atlas_path,
+                circuit_regions.values[0])
+            
+            v.reference_data.add_dataset(atlas_data.data.label, atlas_data)
         return v
         
 
