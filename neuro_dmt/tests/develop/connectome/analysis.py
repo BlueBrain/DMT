@@ -275,7 +275,22 @@ class TestConnectomeAnalysis:
             : RatSSCxConnectionProbability(),
             "bouton_density"\
             : RatSSCxBoutonDensity()}
-
+        self.measurement_parameters={
+            "pair_synapse_count":[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            "pathway_connection_count":[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            "pathway_connection_probability":[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            "bouton_density":[
+                self._region_parameter,
+                self._mtype_parameter]}
     def get_analysis(self,
             phenomenon_label):
         """..."""
@@ -288,10 +303,8 @@ class TestConnectomeAnalysis:
             pathway_parameters=[
                 self._pre_mtype_parameter,
                 self._post_mtype_parameter],
-            measurement_parameters=[
-                self._region_parameter,
-                self._pre_mtype_parameter,
-                self._post_mtype_parameter],
+            measurement_parameters=self.measurement_parameters[
+                phenomenon_label],
             plotted_parameters=[
                 self._pre_mtype_parameter.label,
                 self._post_mtype_parameter.label],
@@ -311,10 +324,8 @@ class TestConnectomeAnalysis:
             pathway_parameters=[
                 self._pre_mtype_parameter,
                 self._post_mtype_parameter],
-            measurement_parameters=[
-                self._region_parameter,
-                self._pre_mtype_parameter,
-                self._post_mtype_parameter],
+            measurement_parameters=self.measurement_parameters[
+                phenomenon_label],
             plotted_parameters=[
                 self._pre_mtype_parameter.label,
                 self._post_mtype_parameter.label],

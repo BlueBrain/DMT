@@ -338,12 +338,12 @@ class RandomCellVariate(
         cell_gids=\
             self.__get_cells(
                 condition)
-        if "size" in kwargs:
-            return np.random.choice(
-                self.__get_cells(condition),
-                kwargs["size"])
-        return np.random.choice(
-            self.__get_cells(condition))
+        if len(cell_gids) == 0:
+            return None
+        return\
+            np.random.choice(
+                cell_gids,
+                kwargs.get("size", None))
 
 
 class RandomPrePostPairs(

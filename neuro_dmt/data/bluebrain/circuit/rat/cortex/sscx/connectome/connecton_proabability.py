@@ -1,4 +1,4 @@
-"""Rat SSCx circuit connectome data used for building and validation circuits 
+"""Rat SSCx circuit connectome data used for building and validating circuits 
 at the Blue Brain Project"""
 
 import os
