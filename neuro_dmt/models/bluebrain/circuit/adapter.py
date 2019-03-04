@@ -150,7 +150,7 @@ class BlueBrainModelAdapter(
                                   for parameter in by)
                             for parameter_value in parameter_value_dicts],
                         names=[parameter.label for parameter in by])
-                 
+
             if len(by) == 1:
                 index=\
                     pd.Index(
@@ -192,11 +192,13 @@ class BlueBrainModelAdapter(
                 method,
                 *args, **kwargs)
         if fill_missing_param_values:
-            return\
+            measurement=\
                 self.filled(
                     measurement,
                     by=parameters)
-        return measurement
+        return measurement.plus(
+            model_label=circuit_model.get_label(),
+            model_uri=circuit_model.get_uri())
 
     def spatial_measurement(self,
             circuit_model,
@@ -532,6 +534,7 @@ class BlueBrainModelAdapter(
                     "Probability of connections in an mtype-->mtype pathway.",
                     group="connectome"),
                 label="in-silico",
+                model_label=circuit_model.get_label(),
                 sampling_method="All pathway pairs and connections were used",
                 sample_size=np.nan,
                 measurement_method="#(pathway connections) / #(pathway pairs)",

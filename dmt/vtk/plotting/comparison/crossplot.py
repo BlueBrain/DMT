@@ -81,18 +81,55 @@ class CrossPlotComparison(ComparisonPlot):
             .format(self.compared_datasets[0].data))
 
         ys = ydata["mean"].values
+        ys_nan_index = np.isnan(ys)
+        ys_no_nan = ys[np.logical_not(ys_nan_index)]
         yerr = ydata["std"].values
-        ymax = np.nanmax(ys + yerr)
-        ymin = np.nanmin(ys - yerr)
+        yerr_nan_index = np.isnan(yerr)
+        yerr_no_nan = yerr[np.logical_not(yerr)]
+        if len(ys_no_nan) == 0:
+            raise ValueError(
+            "All Y values are nan!")
+        ymax=\
+            with_customization.get(
+                "ymax",
+                np.max(ys_no_nan)+\
+                (0. if len(yerr_no_nan) == 0
+                 else np.max(yerr_no_nan)))
+        ymin=\
+            with_customization.get(
+                "ymin",
+                0. if np.min(ys_no_nan) >= 0.\
+                else (np.min(ys_no_nan)+\
+                      (0. if len(yerr_no_nan) == 0
+                       else np.min(yerr_no_nan))))
+
 
         xdata=\
             self.compared_datasets[0]\
                 .data.loc[
                     ydata.index]
         xs = xdata["mean"].values
+        xs_nan_index = np.isnan(xs)
+        xs_no_nan = xs[np.logical_not(xs_nan_index)]
         xerr = xdata["std"].values
-        xmax = np.nanmax(xs + xerr)
-        xmin = np.nanmin(xs - xerr)
+        xerr_nan_index = np.isnan(xerr)
+        xerr_no_nan = xerr[np.logical_not(xerr_nan_index)]
+        if len(xs_no_nan) == 0:
+            raise ValueError(
+                "All X values are nan!")
+        xmax=\
+            with_customization.get(
+                "xmax",
+                np.max(xs_no_nan) +\
+                (0. if len(xerr_no_nan) == 0
+                 else np.max(xerr_no_nan)))
+        xmin=\
+            with_customization.get(
+                "xmin",
+                0. if np.min(xs_no_nan) >= 0.\
+                else (np.min(xs_no_nan) +\
+                      (0. if len(xerr_no_nan) == 0
+                       else np.min(xerr_no_nan))))
 
         plt.errorbar(
             xs, ys,
@@ -109,6 +146,8 @@ class CrossPlotComparison(ComparisonPlot):
             [min_val, max_val],
             [min_val, max_val],
             "-")
+        plt.axis([
+            xmin, xmax, ymin, ymax])
         plt.title(
             self._title,
             fontsize=24)

@@ -63,6 +63,13 @@ class Record:
         """Make Record a function!"""
         return self.get(key, default)
 
+    def plus(self,
+            *args, **kwargs):
+        """add a field"""
+        r_dict = self.as_dict
+        r_dict.update(kwargs)
+        return Record(**r_dict)
+
 
 class POD:
     """Plain Old Data"""

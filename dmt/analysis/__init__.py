@@ -310,6 +310,8 @@ class OfSinglePhenomenon:
                 model_measurement.sampling_method),
             "Number samples: {}".format(
                 model_measurement.sample_size),
+            "Model: {}".format(model_measurement.model_label),
+            "URI: {}".format(model_measurement.model_uri),
             given_parameter_values]
 
 class OfMultiPhenomena:

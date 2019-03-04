@@ -228,7 +228,8 @@ def get_sscx_atlas_circuit_model(
             geometry_type=SSCxAtlasCircuitGeometry,
             circuit_config=circuit_config,
             atlas_path=atlas_path,
-            region_label=region_label)
+            region_label=region_label,
+            *args, **kwargs)
 
 
 class SSCxFakeAtlasSpecialization(
@@ -291,5 +292,6 @@ def get_sscx_fake_atlas_circuit_model(
             brain_region=brain_regions.sscx,
             geometry_type=SSCxFakeAtlasCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            *args, **kwargs)
 

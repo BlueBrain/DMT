@@ -44,6 +44,11 @@ class BlueBrainCircuitModel(
             __name__ = "brain_region",
             __type__ = brain_regions.BrainRegion,
             __doc__ = "The brain region modeled.")
+    release_date=\
+        Field.Optional(
+            __name__="release_date",
+            __type__=str,
+            __doc__="date when this circuit was released.")
     
     def __init__(self,
             *args, **kwargs):
@@ -52,12 +57,31 @@ class BlueBrainCircuitModel(
         self._implied_circuit = None #the implied bluepy circuit
         self._geometry = None
 
+    def get_release_date(self,
+            *args, **kwargs):
+        """..."""
+        try:
+            return self.release_date
+        except AttributeError:
+            pass
+        return None
+
     def get_label(self,
             *args, **kwargs):
         """Get a label that can be used to name files."""
-        return "{}_{}".format(
-            self.__class__.__name__,
-            self.circuit_config.strip("/").split("/")[-2])
+        label=\
+            "{}_{}".format(
+                self.label,
+                self.brain_region.label)
+        date=\
+            self.get_release_date(
+                *args, **kwargs)
+        return "{}_{}".format(label, date) if date else label
+
+    def get_uri(self,
+            *args, **kwargs):
+        """Location of this circuit."""
+        return self.circuit_config
 
     @property
     def bluepy_circuit(self):

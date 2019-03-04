@@ -1,0 +1,210 @@
+"""Analysis of the neocortex."""
+import os
+import numpy as np
+import pandas as pd
+from bluepy.v2.enums\
+    import Cell
+from dmt.vtk.utils.logging\
+    import Logger
+from neuro_dmt.measurement.parameter\
+    import AtlasRegion\
+    ,      CorticalLayer
+from neuro_dmt.models.bluebrain.circuit.random_variate\
+    import RandomRegionOfInterest
+from neuro_dmt.models.bluebrain.circuit.adapter\
+     import BlueBrainModelAdapter
+from neuro_dmt.analysis.circuit.composition.by_layer\
+    import CellDensityAnalysis\
+    ,      CellRatioAnalysis\
+    ,      InhibitorySynapseDensityAnalysis\
+    ,      SynapseDensityAnalysis\
+    ,      MtypeCellDensityAnalysis
+
+logger=\
+    Logger(
+        "Test develop neuro_dmt Analysis",
+        level=Logger.level.DEBUG)
+
+
+class TestCompositionAnalysis:
+    """Test behavior of Composition Analysis subclasses"""
+
+    AnalysisType=dict(
+        cell_density=CellDensityAnalysis,
+        cell_ratio=CellRatioAnalysis,
+        inhibitory_synapse_density=InhibitorySynapseDensityAnalysis,
+        synapse_density=SynapseDensityAnalysis,
+        mtype_cell_density=MtypeCellDensityAnalysis)
+    
+    def __init__(self,
+            circuit_model,
+            sample_size=100,
+            sampled_box_shape=50. * np.ones(3),
+            regions=["SSp-ll"],
+            output_dir_path=os.getcwd(),
+            *args, **kwargs):
+        """"..."""
+        self._circuit_model=\
+            circuit_model
+        self._adapter=\
+            BlueBrainModelAdapter(
+                brain_region=self._circuit_model.brain_region,
+                sample_size=sample_size,
+                sampled_box_shape=sampled_box_shape,
+                spatial_random_variate=RandomRegionOfInterest,
+                model_label="in-silico")
+        self._circuit_regions=\
+            AtlasRegion(
+                values=regions)
+        self._output_dir_path=\
+            output_dir_path
+        self._measurements=\
+            {} # map phenomenon (label) to its Measurement
+        self._reports=\
+            {}
+
+    @classmethod
+    def get_analysis_type(cls,
+            phenomenon):
+        return cls.AnalysisType[phenomenon]
+
+    def get_instance(self,
+            phenomenon,
+            circuit_regions=None,
+            *args, **kwargs):
+        """..."""
+        circuit_regions=\
+            circuit_regions if circuit_regions\
+            else self._circuit_regions
+        AnalysisType=\
+            self.get_analysis_type(
+                phenomenon)
+        return\
+            AnalysisType(
+                adapter=self._adapter,
+                animal=self._circuit_model.animal,
+                measurement_parameters=[
+                    circuit_regions,
+                    CorticalLayer()],
+                spatial_parameters=[
+                    circuit_regions,
+                    CorticalLayer()],
+                plotted_parameters=[
+                    CorticalLayer().label],
+                output_dir_path=self._output_dir_path,
+                *args, **kwargs)
+            
+    def _already_measured(self,
+            phenomenon,
+            region):
+        """..."""
+        if not self._measurements:
+            return False
+        phenomenon_label=\
+            getattr(
+                phenomenon, "label",
+                phenomenon)
+        measurement=\
+            self._measurements.get(
+                phenomenon,
+                None)
+        if measurement is None:
+            return False
+        index=\
+            measurement.data.index
+        return\
+            region in index.levels[index.names.index(Cell.REGION)]
+
+    def _append_measurement(self,
+            measurement):
+        """..."""
+        phenomenon=\
+            measurement.phenomenon.label
+        if phenomenon not in self._measurements:
+            self._measurements[phenomenon]=\
+                measurement
+        else:
+            self._measurements[phenomenon].data=\
+                pd.concat([
+                    self._measurements[phenomenon].data,
+                    measurement.data])
+
+    def _save_report(self,
+            analysis,
+            report,
+            region,
+            output_dir_path=""):
+        """..."""
+        logger.debug(
+            logger.get_source_info(),
+            "save report at {}".format(
+                output_dir_path))
+        report_path=\
+            analysis.save_report(
+                report,
+                output_dir_path=output_dir_path)
+        phenomenon_label=\
+            analysis.phenomenon.label
+        if phenomenon_label not in self._reports:
+            self._reports[phenomenon_label]= {}
+        if region not in self._reports[phenomenon_label]:
+            self._reports[phenomenon_label][region]= []
+        self._reports[phenomenon_label][region]\
+            .append(report_path)
+        return self._reports
+
+    def get_report(self,
+            phenomenon,
+            region="SSp-ll",
+            save=True,
+            *args, **kwargs):
+        """Analysis of only one region may be reported"""
+        logger.debug(
+            logger.get_source_info(),
+            "get report for phenomenon {}, region {}"\
+            .format(phenomenon, region))
+        analysis=\
+            self.get_instance(
+                phenomenon,
+                circuit_regions=AtlasRegion(
+                    values=[region]))
+        if not self._already_measured(phenomenon, region):
+            logger.debug(
+                logger.get_source_info(),
+                """not already measured""")
+            measurement=\
+                analysis.get_measurement(
+                    self._circuit_model,
+                    *args, **kwargs)
+            self._append_measurement(
+                measurement)
+            logger.debug(
+                logger.get_source_info(),
+                """appended measurement""",
+                "{}".format(measurement))
+        else:
+            logger.debug(
+                logger.get_source_info(),
+                """Already measured""")
+        logger.debug(
+            logger.get_source_info(),
+            """measurement after getting one for {}""".format(phenomenon))
+        for p, m in self._measurements.items():
+            logger.debug(
+                "{}: {}".format(p, m))
+        report=\
+            analysis.get_report(
+                self._measurements[phenomenon],
+                region=region,
+                *args, **kwargs)
+        if save:
+            self._save_report(
+                analysis,
+                report,
+                region,
+                output_dir_path=os.path.join(
+                    os.getcwd(),
+                    analysis._get_output_dir(
+                        model_measurement=self._measurements[phenomenon]),
+                    "subregion-{}".format(region)))
+        return report

@@ -120,4 +120,5 @@ def get_iso_cortex_circuit_model(
             brain_region=brain_regions.isocortex,
             geometry_type=IsoCortexAtlasBasedCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            *args, **kwargs)

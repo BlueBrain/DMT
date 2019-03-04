@@ -78,13 +78,42 @@ class PairSynapseCountValidation(
 class PathwayConnectionCountValidation(
         ByMtypeConnectomeValidation,
         PathwayConnectionCountAnalysis):
-    pass
+
+
+    def plot(self,
+            model_measurement,
+            compared_quantity="dataset",
+            *args, **kwargs):
+        """..."""
+        kwargs["ymin"] = 0.
+        kwargs["ymax"] = 1.
+        kwargs["xmin"] = 0.
+        kwargs["xmax"] = 1.
+        return\
+            super().plot(
+                model_measurement,
+                compared_quantity=compared_quantity,
+                *args, **kwargs)
 
 
 class PathwayConnectionProbabilityValidation(
         ByMtypeConnectomeValidation,
         PathwayConnectionProbabilityAnalysis):
-    pass
+
+    def plot(self,
+            model_measurement,
+            compared_quantity="dataset",
+            *args, **kwargs):
+        """..."""
+        kwargs["ymin"] = 0.
+        kwargs["ymax"] = 1.
+        kwargs["xmin"] = 0.
+        kwargs["xmax"] = 1.
+        return\
+            super().plot(
+                model_measurement,
+                compared_quantity=compared_quantity,
+                *args, **kwargs)
 
 
 class CellBoutonDensityValidation(

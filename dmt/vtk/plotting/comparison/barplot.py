@@ -28,7 +28,7 @@ class BarPlotComparison(
             yield (label, data)
 
     def plot(self,
-            with_customiztion=None):
+            with_customization=None):
         """
         Compare this ComparisonPlot's data against those in datasets.
 

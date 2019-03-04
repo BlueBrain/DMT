@@ -122,7 +122,7 @@ class InhibitorySynapseDensity(
     def __init__(self,
             circuit,
             phenomenon=Phenomenon(
-                "inhibitor_synapse_density",
+                "inhibitory_synapse_density",
                 "Number of inhibitory synapses in a unit volume"),
             *args, **kwargs):
         """..."""

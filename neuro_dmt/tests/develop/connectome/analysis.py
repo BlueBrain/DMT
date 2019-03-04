@@ -85,101 +85,49 @@ rat_sscx_circuit_model=\
             "/gpfs/bbp.cscs.ch/project/proj64", "entities",
             "dev", "atlas",
             "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"))
-sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68", "circuits",
-        "O1/20190226_2",
-        "CircuitConfig")
-sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
+#SSCx circuits are the O1 circuits to be released along with the iso-cortex.
+def get_sscx_circuit_config(
+        build_date,
+        eff_aff_label="",
+        from_connectome=True):
+    """..."""
+    build_date_path=\
+        os.path.join(
+            "/gpfs/bbp.cscs.ch/project/proj68",
+            "circuits/O1",
+            build_date)
+    circuit_config=\
+        "CircuitConfig" if not eff_aff_label\
+        else "CircuitConfig-{}".format(eff_aff_label.lower())
+    if not from_connectome:
+        return\
+            os.path.join(
+                build_date_path,
+                circuit_config)
+    return os.path.join(
+        build_date_path,
+        "connectome",
+        "functional",
+        "All",
+        circuit_config)
+
+def get_sscx_circuit_model(
+        build_date,
+        from_connectome=True,
+        eff_aff_label="",
         animal="mouse",
-        region_label="region")
-sscx_circuit=\
-    sscx_circuit_model.bluepy_circuit
+        region_label ="region"):
+    """..."""
+    return\
+        get_sscx_atlas_circuit_model(
+            get_sscx_circuit_config(
+                build_date,
+                from_connectome=from_connectome,
+                eff_aff_label=eff_aff_label),
+            animal=animal,
+            region_label=region_label)
 mtype_values=[
     "L4_TPC", "L2_TPC:A", "L3_TPC:A", "FOO"]
-mtype=\
-    Mtype(
-         sscx_circuit,
-         values=mtype_values)
-for m in mtype_values:
-    if m in sscx_circuit.cells.mtypes:
-        assert m in mtype.values
-    else:
-        assert m not in mtype.values
-
-mtype_unvalidated=\
-    Mtype(
-        values=mtype_values)
-assert all(
-    m in mtype_unvalidated.values for m in mtype_values)
-
-mtype_validated=\
-    mtype_unvalidated.for_circuit(
-        sscx_circuit)
-for m in mtype_values:
-    if m in sscx_circuit.cells.mtypes:
-        assert m in mtype_validated.values
-    else:
-        assert m not in mtype_validated.values
-
-pre_mtype=\
-    Mtype(
-        circuit=sscx_circuit,
-        label="pre_mtype",
-        values=mtype.values)
-post_mtype=\
-    Mtype(
-        circuit=sscx_circuit,
-        label="post_mtype",
-        values=mtype.values)
-pathway=\
-    MtypePathway(
-        circuit=sscx_circuit,
-        pre_mtypes=mtype.values,
-        post_mtypes=mtype.values)
-
-class TestAdapterMethods:
-    """Test values of adapter methods"""
-    def __init__(self,
-            circuit_model):
-        """Initialize Me"""
-        self._circuit_model=\
-            circuit_model
-        self.syn_count=\
-            bbadapter.get_pathway_synapse_count(
-                self._circuit_model,
-                parameters=[pre_mtype, post_mtype],
-                sample_size=5,
-            debug=True)
-        self.cnxn_strength=\
-            bbadapter.get_pathway_connection_strength(
-                self._circuit_model,
-                parameters=[pre_mtype, post_mtype],
-                sample_size=5,
-                debug=True)
-        self.cnxn_count=\
-            bbadapter.get_pathway_connection_count(
-                self._circuit_model,
-                parameters=[pre_mtype, post_mtype],
-                sample_size=5,
-                debug=True)
-        self.soma_distance=\
-            bbadapter.get_pathway_soma_distance(
-                self._circuit_model,
-                parameters=[pre_mtype, post_mtype],
-                sample_size=5,
-                debug=True)
-
-logger.info(
-    logger.get_source_info(),
-    "test (Analysis) class SynapseCount")
-
-layer_mtypes=\
-    {l: [m for m in sscx_circuit.cells.mtypes
-         if l in m]
-     for l in ["L{}".format(i) for i in range(1, 7)]}
 
 class TestConnectomeAnalysis:
     """Test values of Connectome Analysis sub-classes."""
