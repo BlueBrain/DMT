@@ -83,8 +83,8 @@ class ByMtypePathwayConnectomeAnalysis(
 
 from neuro_dmt.analysis.circuit.connectome.by_mtype.synapse_count\
     import PairSynapseCountAnalysis
-from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_count\
-    import PathwayConnectionCountAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.pair_connection\
+    import PairConnectionAnalysis
 from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_probability\
     import PathwayConnectionProbabilityAnalysis
 from neuro_dmt.analysis.circuit.connectome.by_mtype.bouton_density\

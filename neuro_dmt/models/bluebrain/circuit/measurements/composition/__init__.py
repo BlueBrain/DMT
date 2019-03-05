@@ -41,7 +41,8 @@ class CellDensity(
             circuit,
             phenomenon=Phenomenon(
                 "Cell Density",
-                "Number of cells in a unit volume"),
+                "Number of cells in a unit volume",
+                group="composition"),
             *args, **kwargs):
         """..."""
         super().__init__(
@@ -88,7 +89,8 @@ class CellRatio(
             circuit,
             phenomenon=Phenomenon(
                 "cell_ratio",
-                "Fraction of inhibitory cells in the circuit."),
+                "Fraction of inhibitory cells in the circuit.",
+                group="composition"),
             *args, **kwargs):
         """..."""
         self._property = Cell.SYNAPSE_CLASS
@@ -123,7 +125,8 @@ class InhibitorySynapseDensity(
             circuit,
             phenomenon=Phenomenon(
                 "inhibitory_synapse_density",
-                "Number of inhibitory synapses in a unit volume"),
+                "Number of inhibitory synapses in a unit volume",
+                group="composition"),
             *args, **kwargs):
         """..."""
         super().__init__(
@@ -150,7 +153,8 @@ class ExcitatorySynapseDensity(
             circuit,
             phenomenon=Phenomenon(
                 "excitatory_synapse_density",
-                "Number of excitatory synapses in a unit volume"),
+                "Number of excitatory synapses in a unit volume",
+                group="composition"),
             *args, **kwargs):
         """..."""
         super().__init__(
@@ -183,7 +187,8 @@ class ExtrinsicIntrinsicSynapseDensity(
             circuit,
             phenomenon=Phenomenon(
                 "synapse_density",
-                "Number of synapses in a unit volume"),
+                "Number of synapses in a unit volume",
+                group="composition"),
             *args, **kwargs):
         """..."""
         super().__init__(

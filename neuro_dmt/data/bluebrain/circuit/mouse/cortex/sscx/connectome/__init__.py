@@ -36,15 +36,17 @@ class MouseSSCxConnectomeData(
     @classmethod
     def get_available_data_keys(cls):
         """A list of keys (labels) for available data."""
-        return[
-            "pair_synapse_count"]
+        return list(cls.get_available_data().keys())
 
     @classmethod
-    def get_available_data(cls):
+    def get_available_data(cls,
+            phenomenon=None):
         """..."""
-        from neuro_dmt.data.bluebrain.circuit.rat.\
-            cortex.sscx.connectome.pair_synapse_count\
-            import RatSSCxPairSynapseCountData
-
-        return {
-            "pair_synapse_count": RatSSCxPairSynapseCountData}
+        from neuro_dmt.data.bluebrain.circuit.mouse.\
+            cortex.sscx.connectome.connection_probability\
+            import MouseSSCxConnectionProbability
+        available={
+            "pathway_connection_probability": MouseSSCxConnectionProbability}
+        return\
+            available[getattr(phenomenon, "label", phenomenon)]\
+            if phenomenon else available

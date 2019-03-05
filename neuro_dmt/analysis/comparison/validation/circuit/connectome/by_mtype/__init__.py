@@ -11,7 +11,7 @@ from neuro_dmt.analysis.comparison.circuit.connectome.by_mtype\
     import ByMtypeConnectomeComparison
 from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import PairSynapseCountAnalysis\
-    ,      PathwayConnectionCountAnalysis\
+    ,      PairConnectionAnalysis\
     ,      PathwayConnectionProbabilityAnalysis\
     ,      CellBoutonDensityAnalysis
 from neuro_dmt.analysis.comparison.validation.circuit\
@@ -75,10 +75,9 @@ class PairSynapseCountValidation(
     pass
 
 
-class PathwayConnectionCountValidation(
+class PairConnectionValidation(
         ByMtypeConnectomeValidation,
-        PathwayConnectionCountAnalysis):
-
+        PairConnectionAnalysis):
 
     def plot(self,
             model_measurement,

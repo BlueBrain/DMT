@@ -468,17 +468,19 @@ class RandomConnectionVariate(
                                 .connectome\
                                 .efferent_gids(pre_gid),
                             condition)
-                # self.logger.info(
-                #     self.logger.get_source_info(),
-                #     "Get connections from {} --> {} in region {} ".format(
-                #         pre_mtype,
-                #         post_mtype,
-                #         region),
-                #     "{}-th pre_gid {} of total {}".format(
-                #         i, pre_gid, len(pre_gids)),
-                #     "Found {} post gids for {}".format(
-                #         len(post_gids),
-                #        pre_gid))
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "For circuit at {}".format(
+                        self.circuit_model.circuit_config),
+                    "Get connections from {} --> {} in region {} ".format(
+                        pre_mtype,
+                        post_mtype,
+                        region),
+                    "{}-th pre_gid {} of total {}".format(
+                        i, pre_gid, len(pre_gids)),
+                    "Found {} post gids for {}".format(
+                        len(post_gids),
+                        pre_gid))
                 post_gid_mtypes=\
                     self.circuit_model\
                         .cells.get(

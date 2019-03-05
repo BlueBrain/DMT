@@ -47,13 +47,11 @@ class RatSSCxCompositionData(
     @classmethod
     def get_available_data_keys(cls):
         """A list of keys(labels) for available data."""
-        return ["cell_density",
-                "cell_ratio",
-                "inhibitory_synapse_density",
-                "synapse_density"]
+        return list(cls.get_available_data().keys())
 
     @classmethod
-    def get_available_data(cls):
+    def get_available_data(cls,
+            phenomenon):
         """Get reference data by phenomenon.
 
         Parameters
@@ -73,8 +71,11 @@ class RatSSCxCompositionData(
             cortex.sscx.composition.synapse_density\
             import RatSSCxSynapseDensityData
 
-        return dict(
+        available = dict(
             cell_density=RatSSCxCellDensityData,
             cell_ratio=RatSSCxCellRatioData,
             inhibitory_synapse_density=RatSSCxInhibitorySynapseDensityData,
             synapse_density=RatSSCxSynapseDensityData)
+        return\
+            available[getattr(phenomenon, "label", phenomenon)]\
+            if phenomenon else available

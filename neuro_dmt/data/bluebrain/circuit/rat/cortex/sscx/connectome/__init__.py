@@ -36,15 +36,28 @@ class RatSSCxConnectomeData(
     @classmethod
     def get_available_data_keys(cls):
         """A list of keys (labels) for available data."""
-        return[
-            "pair_synapse_count"]
+        return list(cls.data().keys())
 
     @classmethod
-    def get_available_data(cls):
-        """..."""
+    def get_available_data(cls,
+            phenomenon=None):
         from neuro_dmt.data.bluebrain.circuit.rat.\
             cortex.sscx.connectome.pair_synapse_count\
             import RatSSCxPairSynapseCountData
-
-        return {
-            "pair_synapse_count": RatSSCxPairSynapseCountData}
+        from neuro_dmt.data.bluebrain.circuit.rat.\
+            cortex.sscx.connectome.bouton_density\
+            import RatSSCxBoutonDensity
+        from neuro_dmt.data.bluebrain.circuit.rat.\
+            cortex.sscx.connectome.connecton_proabability\
+            import RatSSCxConnectionProbability
+        from neuro_dmt.data.bluebrain.circuit.rat.\
+            cortex.sscx.connectome.inhibitory_synapses_on_soma\
+            import RatSSCxInhibitorySynapsesOnSomaData
+        available={
+            "pair_synapse_count": RatSSCxPairSynapseCountData,
+            "pathway_connection_count": RatSSCxConnectionProbability,
+            "pathway_connection_probability": RatSSCxConnectionProbability,
+            "bouton_density": RatSSCxBoutonDensity}
+        return\
+            available[getattr(phenomenon, "label", phenomenon)]\
+            if phenomenon else available

@@ -166,7 +166,7 @@ class PairSynapseCount(
     label= "in-silico"
     phenomenon=\
         Phenomenon(
-            "Synapse Count",
+            "Pair Synapse Count",
             "Number of synapses between two cells.")
     units= "Count"
     

@@ -50,19 +50,16 @@ class MouseSSCxCompositionData(
     @classmethod
     def get_available_data_keys(cls):
         """A list of keys(labels) for available data."""
-        return ["cell_density",
-                "cell_ratio",
-                "inhibitory_synapse_density",
-                "synapse_density"]
+        return list(cls.get_available_data().keys())
 
     @classmethod
-    def get_available_data(cls, *args, **kwargs):
+    def get_available_data(cls,
+            phenomenon=None):
         """Get reference data by phenomenon.
 
         Parameters
         --------------------------------------------------------------------
         phenomenon :: Either[str, Phenomenon]"""
-
         from neuro_dmt.data.bluebrain.circuit.mouse.\
             cortex.sscx.composition.cell_density\
             import MouseSSCxCellDensityData
@@ -76,8 +73,13 @@ class MouseSSCxCompositionData(
             cortex.sscx.composition.synapse_density\
             import MouseSSCxSynapseDensityData
 
-        return dict(
-            cell_density=MouseSSCxCellDensityData,
-            cell_ratio=MouseSSCxCellRatioData,
-            inhibitory_synapse_density=MouseSSCxInhibitorySynapseDensityData,
-            synapse_density=MouseSSCxSynapseDensityData)
+        available={
+            "cell_density": MouseSSCxCellDensityData,
+            "cell_ratio": MouseSSCxCellRatioData,
+            "inhibitory_synapse_density": MouseSSCxInhibitorySynapseDensityData,
+            "synapse_density": MouseSSCxSynapseDensityData}
+
+        return\
+            available[getattr(phenomenon, "label", phenomenon)]\
+            if phenomenon else available
+    

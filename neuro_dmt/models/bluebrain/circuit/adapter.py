@@ -443,7 +443,7 @@ class BlueBrainModelAdapter(
 
         def __get_connection_count(
                 condition):
-            """get connection for a given condition"""
+            """get number of connections for a given condition"""
             pre_cell_group=\
                 __with_region(
                     {Cell.MTYPE: condition.get_value("pre_mtype")},
@@ -535,6 +535,7 @@ class BlueBrainModelAdapter(
                     group="connectome"),
                 label="in-silico",
                 model_label=circuit_model.get_label(),
+                model_uri=circuit_model.get_uri(),
                 sampling_method="All pathway pairs and connections were used",
                 sample_size=np.nan,
                 measurement_method="#(pathway connections) / #(pathway pairs)",
