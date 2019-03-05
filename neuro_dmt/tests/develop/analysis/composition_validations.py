@@ -111,5 +111,5 @@ def validate_circuit(circuit_model, regions, with_atlas_data=True):
                         report_file_name=str(time.clock()) + ".html")
     return tester
 
-# t = validate_circuit(iso_circuit_model, iso_regions, with_atlas_data=True)
+t = validate_circuit(iso_circuit_model, [iso_regions[0]], with_atlas_data=True)
 t2 = validate_circuit(sscx_circuit_model, ["mc2_Column"], with_atlas_data=False)

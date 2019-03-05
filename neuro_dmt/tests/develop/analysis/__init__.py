@@ -47,13 +47,13 @@ bbadapter=\
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico",
         sample_size=20)
-rat_sscx_circuit_config=\
+sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj68",
         "circuits", "O1", "20190228",
         "connectome", "structural" ,"All",
         "CircuitConfig")
-rat_sscx_circuit_model=\
+sscx_circuit_model=\
     get_sscx_atlas_circuit_model(
         sscx_circuit_config,
         animal="mouse",
@@ -63,36 +63,25 @@ rat_sscx_circuit_model=\
             "O1-152"))
 sscx_circuit_model.geometry.circuit_specialization.representative_region=\
     "mc2_Column"
-rat_sscx_circuit=\
-    rat_sscx_circuit_model.bluepy_circuit
+sscx_circuit=\
+    sscx_circuit_model.bluepy_circuit
 
-rat_sscx_atlas_circuit_config=\
+sscx_atlas_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "S1.v6a/20171206",
         "CircuitConfig")
-rat_sscx_atlas_circuit_model=\
+sscx_atlas_circuit_model=\
     get_sscx_atlas_circuit_model(
-        rat_sscx_atlas_circuit_config,
+        sscx_atlas_circuit_config,
         animal="rat",
         atlas_path=os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
         "S1.v6a/20171206",
             ".atlas", "C63CB79F-392A-4873-9949-0D347682253A"))
-rat_sscx_atlas_circuit=\
-    rat_sscx_atlas_circuit_model.bluepy_circuit
+sscx_atlas_circuit=\
+    sscx_atlas_circuit_model.bluepy_circuit
 
-sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68", "circuits",
-        "O1/20190226_2",
-        "CircuitConfig")
-sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
-        animal="mouse")
-sscx_circuit=\
-    sscx_circuit_model.bluepy_circuit
 
 iso_circuit_config=\
     os.path.join(
@@ -140,8 +129,6 @@ class TestCompositionAnalysis:
         self._circuit_regions=\
             AtlasRegion(
                 values=regions)
-        self._output_dir_path=\
-            output_dir_path
         self._measurements=\
             {} # map phenomenon (label) to its Measurement
         self._reports=\
@@ -173,9 +160,7 @@ class TestCompositionAnalysis:
                 spatial_parameters=[
                     circuit_regions,
                     CorticalLayer()],
-                plotted_parameters=[
-                    CorticalLayer().label],
-                output_dir_path=self._output_dir_path,
+                plotting_parameter=CorticalLayer(),
                 *args, **kwargs)
             
     def _already_measured(self,

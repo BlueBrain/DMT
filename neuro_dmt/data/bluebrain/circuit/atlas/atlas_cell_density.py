@@ -21,7 +21,10 @@ class AtlasBasedInSilicoConstraint(ReferenceData):
         self.spatial_parameters = [CorticalLayer()]
         self.data = self.data_from_atlas()
 
-        super().__init__(*args, **kwargs)# spatial_parameters=by,
+        super().__init__(*args,
+                         measurement_parameters=
+                         [sp.label for sp in self.spatial_parameters],
+                         **kwargs)# spatial_parameters=by,
                          # phenomenon=Phenomenon('cell_density', 'cell_density'),
                          # brain_region=whole_brain, **kwargs)
 

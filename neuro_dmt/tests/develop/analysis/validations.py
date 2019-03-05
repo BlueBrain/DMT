@@ -63,7 +63,7 @@ class TestCompositionValidation(
             spatial_parameters=[
                 circuit_regions,
                 CorticalLayer()],
-            plotting_parameter=CorticalLayer(),
+            plotted_parameters=[CorticalLayer().label],
             reference_data=reference_data.get(phenomenon),
             *args, **kwargs)
         # TODO: label passing should be automatic
