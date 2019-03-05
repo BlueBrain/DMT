@@ -1,4 +1,4 @@
-"""Rat SSCx circuit connectome data used for building and validation circuits 
+"""Rat SSCx circuit connectome data used for building and validating circuits 
 at the Blue Brain Project"""
 
 import os
@@ -39,6 +39,7 @@ class RatSSCxConnectionProbability(
             data_location=self.get_data_location(data_path),
             datasets=reference_datasets.datasets,
             primary=reference_datasets.primary,
+            measurement_parameters=["pre_mtype", "post_mtype"],
             *args, **kwargs)
 
 
@@ -69,15 +70,17 @@ class RatSSCxConnectionProbability(
                 connection_data[0]
             sample_size=\
                 connection_data[2]
-            probability_std=\
+            binom_std=\
                 np.sqrt(
                     stats.binom.stats(
                         sample_size,
                         probability_mean)[1])
+            probability_std=\
+                binom_std/sample_size
             return\
                 pd.Series({
                     "mean": probability_mean,
-                    "std": probability_std,
+                    "std":  probability_std,
                     "sample_size": sample_size})
 
         dataframe=\
@@ -101,4 +104,5 @@ class RatSSCxConnectionProbability(
                             what="Connection probability between \
                             mtype-->mtype pathways.",
                             data=dataframe),
-                        description="Ask Michael Reimann")})
+                        description="Ask Michael Reimann",
+                        measurement_parameters=["pre_mtype", "post_mtype"])})

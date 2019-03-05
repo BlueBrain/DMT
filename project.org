@@ -1096,3 +1096,6 @@
      of the adaptor, and it maps the string to it to know what to apply.
      this way, one is not required to implement SpatialParameters for one's own
      Adapter to be usable for the validation
+
+* Circuits
+  Specifics of circuits build at BBP teach us about validations. 

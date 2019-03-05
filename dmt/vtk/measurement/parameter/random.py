@@ -144,7 +144,9 @@ class ConditionedRandomVariate(
         return instance
 
     def given(self,
-           *conditioning_vars):
+            *conditioning_vars,
+            is_permissible=lambda condition: True,
+            **kwargs):
         """Set the condition type.
         This method can be used to reset the condition type accepted
         by this random variate. This feature allows us to pass any kind
@@ -198,7 +200,8 @@ class ConditionedRandomVariate(
         return\
             self.__with_condition_generator(
                 ConditionGenerator(
-                    conditioning_vars))
+                    conditioning_vars,
+                    is_permissible=is_permissible))
 
     def conditioned_values(self,
             condition,
@@ -289,9 +292,15 @@ class ConditionedRandomVariate(
                 Please provide one that produces conditions of type:\n {}"""\
                 .format(self.condition_type))
             return None
-        return pd.concat([
+        dataframes_for_conditions=[
             self.sample_one(condition, size=size)
-            for condition in conditions])
+            for condition in conditions]
+        if len(dataframes_for_conditions) == 0:
+            return pd.DataFrame([])
+        return\
+            pd.concat(
+                dataframes_for_conditions)
+
 
     def transform(self,
             mapping):

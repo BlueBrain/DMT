@@ -49,8 +49,15 @@ class CircuitPhenomenonValidationTestCase(
         verdict=\
             self.get_verdict(
                 pval)
+        try:
+            model_measurement_data=\
+                model_measurement.data[model_measurement.label]
+        except:
+            model_measurement_data=\
+                model_measurement.data
         return\
             ValidationReport(
+                model_measurement=model_measurement_data,
                 phenomenon = self.phenomenon,
                 author = self.author,
                 caption = self.get_caption(

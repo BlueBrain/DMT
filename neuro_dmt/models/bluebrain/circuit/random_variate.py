@@ -8,6 +8,8 @@ from bluepy.v2.enums\
     ,      Synapse
 from bluepy.geometry.roi\
     import ROI as RegionOfInterest
+from dmt.vtk.utils\
+    import collections
 from dmt.vtk.utils.collections\
     import *
 from dmt.vtk.measurement.condition\
@@ -36,8 +38,8 @@ from neuro_dmt.models.bluebrain.circuit.geometry\
 class CircuitPropertyRandomVariate(
         ConditionedRandomVariate):
     """A random variate that returns values for a circuit property,
-    such as it's cell's gids, or positions in the circuit's physical space."""
-    
+    such as it's cell's gids, or positions in the circuit's physical space.
+    """
     circuit_model=\
         Field(
             __name__="circuit_model",
@@ -55,6 +57,7 @@ class CircuitPropertyRandomVariate(
             = circuit_model
         super().__init__(
             *args, **kwargs)
+
 
 class RandomSpatialVariate(
         CircuitPropertyRandomVariate):
@@ -317,27 +320,38 @@ class RandomCellVariate(
             "random cell gids were sampled for given {}".format(
                ", ".join( self.condition_type.fields))
 
+    def __get_cells(self,
+            condition):
+        """..."""
+        if not condition.hash_id in self.__gid_cache__:
+            self.__gid_cache__[condition.hash_id]=\
+                self.circuit_model\
+                    .cells.ids(
+                        condition.as_dict)
+        return\
+            self.__gid_cache__[condition.hash_id]
+
     def __call__(self,
             condition,
             *args, **kwargs):
         """...Call Me..."""
-        if not condition.hash_id in self.__gid_cache__:
-            self.__gid_cache__[condition.hash_id]=\
-                self.circuit_model\
-                    .get_cell_group(
-                        condition.as_dict)
-        if "size" in kwargs:
-            return np.random.choice(
-                self.__gid_cache__[condition.hash_id],
-                kwargs["size"])
-        return np.random.choice(
-            self.__gid_cache__[condition.hash_id])
+        cell_gids=\
+            self.__get_cells(
+                condition)
+        if len(cell_gids) == 0:
+            return None
+        return\
+            np.random.choice(
+                cell_gids,
+                kwargs.get("size", None))
 
 
-class RandomConnectionVariate(
+class RandomPrePostPairs(
         CircuitPropertyRandomVariate):
-    """Generate random pair of cell gids..."""
-    label = "connection"
+    """Generate random pair of cell gids...,
+    for given a pre and a post mtype.
+    """
+    label = "pre_post_pair"
     value_type = tuple
 
     def __init__(self,
@@ -349,7 +363,53 @@ class RandomConnectionVariate(
                 circuit_model,
                 *args, **kwargs)
         self._circuit_mtypes=\
-            circuit_model.bluepy_circuit.cells.mtypes
+            circuit_model.cells.mtypes
+        self._connections=\
+            {}
+        super().__init__(
+            circuit_model,
+            reset_condition_type=True,
+            columns=["pre_gid", "post_gid"],
+            *args, **kwargs)
+
+    @property
+    def sampling_method(self):
+        """describe the method used to generate random positions."""
+        return\
+            "pairs of cell gids were sampled for given pre, post mtypes."\
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """Call Me"""
+        pre_mtype=\
+            condition.get_value(
+                "pre_mtype")
+        post_mtype=\
+            condition.get_value(
+                "post_mtype")
+        return (
+            self.random_cell(
+                Condition([
+                    ("mtype", pre_mtype)])),
+            self.random_cell(
+                Condition([
+                    ("mtype", post_mtype) ])))
+
+
+class RandomConnectionVariate(
+        CircuitPropertyRandomVariate):
+    """Generate random pair of connected cell gids...,
+    given pre and post mtypes."""
+    label = "connection"
+    value_type = tuple
+
+    def __init__(self,
+            circuit_model,
+            *args, **kwargs):
+        """Initialize Me"""
+        self._circuit_mtypes=\
+            circuit_model.cells.mtypes
         self._connections=\
             {}
         super().__init__(
@@ -362,53 +422,68 @@ class RandomConnectionVariate(
     def sampling_method(self):
         """describe the method used to generate random positions."""
         return\
-            "pairs of cell gids were sampled for given pre, post mtypes."\
+            "connected cell pairs were sampled for given pre, post mtypes."\
 
     def __get_connections(self,
-            pre_mtype,
-            post_mtype):
+            condition):
         """..."""
+        pre_mtype=\
+            condition.get_value(
+                "pre_mtype")
+        post_mtype=\
+            condition.get_value(
+                "post_mtype")
+        region=\
+            condition.get_value(
+                self.circuit_model.region_label)
         self.logger.info(
             self.logger.get_source_info(),
-            """Get connections from {} --> {} """.format(
+            "Get connections from {} --> {} in region {} ".format(
                 pre_mtype,
-                post_mtype))
+                post_mtype,
+                region))
         if not pre_mtype in self._connections:
-            circuit_cells=\
-                self.circuit_model\
-                    .bluepy_circuit\
-                    .cells
             connections={
-                mtype: [] for mtype in self._circuit_mtypes}
-
+                mtype: []
+                for mtype in self._circuit_mtypes}
             pre_gids=\
-                circuit_cells.ids(
-                    {Cell.MTYPE: pre_mtype})
+                self.circuit_model\
+                    .filter_region(
+                        self.circuit_model\
+                            .cells.ids({
+                                Cell.MTYPE: pre_mtype}),
+                        condition)
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Get connections for {} pre-gids of mtype {} in region {} "\
+                .format(
+                    len(pre_gids),
+                    pre_mtype,
+                    region if region is not None else "any"))
             for i, pre_gid in enumerate(pre_gids):
                 post_gids=\
                     self.circuit_model\
-                        .bluepy_circuit\
-                        .connectome\
-                        .efferent_gids(
-                            pre_gid)
-                self.logger.info(
-                    self.logger.get_source_info(),
-                    """Get connections from {} --> {} """.format(
-                        pre_mtype,
-                        post_mtype),
-                    "{}-th pre_gid {} of total {}".format(
-                        i, pre_gid, len(pre_gids)),
-                    "Found {} post gids for {}".format(
-                        len(post_gids),
-                        pre_gid))
+                        .filter_region(
+                            self.circuit_model\
+                                .connectome\
+                                .efferent_gids(pre_gid),
+                            condition)
+                # self.logger.info(
+                #     self.logger.get_source_info(),
+                #     "Get connections from {} --> {} in region {} ".format(
+                #         pre_mtype,
+                #         post_mtype,
+                #         region),
+                #     "{}-th pre_gid {} of total {}".format(
+                #         i, pre_gid, len(pre_gids)),
+                #     "Found {} post gids for {}".format(
+                #         len(post_gids),
+                #        pre_gid))
                 post_gid_mtypes=\
                     self.circuit_model\
-                        .bluepy_circuit\
-                        .cells\
-                        .get(
+                        .cells.get(
                             post_gids,
                             properties=Cell.MTYPE)
-
                 for post_gid, post_mtype in post_gid_mtypes.items():
                     connections[post_mtype].append(
                         (pre_gid, post_gid))
@@ -430,15 +505,12 @@ class RandomConnectionVariate(
             size=20,
             *args, **kwargs):
         """Override"""
-        pre_mtype=\
-            condition.get_value(
-                "pre_mtype")
-        post_mtype=\
-            condition.get_value(
-                "post_mtype")
+        self.logger.info(
+            self.logger.get_source_info(),
+            """Sample condition {}""".format(condition.value))
         connections=\
             self.__get_connections(
-                pre_mtype, post_mtype)
+                condition)
         values=\
             connections\
             if len(connections) <= size else\
@@ -457,25 +529,6 @@ class RandomConnectionVariate(
             pd.concat(
                 df_list)
             
-
-    # def __call__(self,
-    #         condition,
-    #         *args, **kwargs):
-    #     """Call Me"""
-    #     pre_mtype=\
-    #         condition.get_value(
-    #             "pre_mtype")
-    #     post_mtype=\
-    #         condition.get_value(
-    #             "post_mtype")
-    #     return (
-    #         self.random_cell(
-    #             Condition([
-    #                 ("mtype", pre_mtype)])),
-    #         self.random_cell(
-    #             Condition([
-    #                 ("mtype", post_mtype) ])))
-
 
 class RandomPathwayConnectionVariate(
         CircuitPropertyRandomVariate):
@@ -524,3 +577,10 @@ class RandomPathwayConnectionVariate(
             self.random_post_cell(
                  Condition([
                     ("mtype", pathway[1])])))
+
+
+class RandomEfferentGid(
+        CircuitPropertyRandomVariate):
+    """Sample random gids from the set of gids efferent from a given
+    group of cells."""
+    pass

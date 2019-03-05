@@ -26,6 +26,7 @@ class IsoCortexAtlasSpecialization(
         self.representative_region=\
             "SSp-ll" #primary Somatosensory lower-limb (i.e. hind-limb)
         super().__init__(
+            region_label=Cell.REGION,
             *args, **kwargs)
 
     def _get_atlas_region_acronyms(self,
@@ -119,4 +120,5 @@ def get_iso_cortex_circuit_model(
             brain_region=brain_regions.isocortex,
             geometry_type=IsoCortexAtlasBasedCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            *args, **kwargs)

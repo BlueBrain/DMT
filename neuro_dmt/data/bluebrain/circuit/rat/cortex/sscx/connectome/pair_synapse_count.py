@@ -38,6 +38,7 @@ class RatSSCxPairSynapseCountData(
             data_location=self.get_data_location(data_path),
             datasets=reference_datasets.datasets,
             primary=reference_datasets.primary,
+            measurement_parameters=["pre_mtype", "post_mtype"],
             *args, **kwargs)
 
     def get_data_location(self,
@@ -83,5 +84,5 @@ class RatSSCxPairSynapseCountData(
                         what = "Statistics for the count of synapses \
                         connecting pairs of cells in mtype-->mtype pathways.",
                         data = dataframe),
-                    description="Ask Michael Reimann")})
-            
+                    description="Ask Michael Reimann",
+                    measurement_parameters=["pre_mtype", "post_mtype"])})

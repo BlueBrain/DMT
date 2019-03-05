@@ -158,6 +158,7 @@ class SSCxAtlasSpecialization(
             kwargs["brain_region"]=\
                 brain_regions.sscx
         super().__init__(
+            region_label=Cell.HYPERCOLUMN,
             *args, **kwargs)
 
     def get_atlas_ids(self,
@@ -217,6 +218,7 @@ def get_sscx_atlas_circuit_model(
         circuit_config,
         animal,
         atlas_path=None,
+        region_label="region", #this could be "hypercolumn" for some circuits.
         *args, **kwargs):
     """..."""
     return\
@@ -225,7 +227,9 @@ def get_sscx_atlas_circuit_model(
             brain_region=brain_regions.sscx,
             geometry_type=SSCxAtlasCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            region_label=region_label,
+            *args, **kwargs)
 
 
 class SSCxFakeAtlasSpecialization(
@@ -247,6 +251,7 @@ class SSCxFakeAtlasSpecialization(
             *args, **kwargs):
         """..."""
         super().__init__(
+            region_label=Cell.HYPERCOLUMN,
             *args, **kwargs)
         self.representative_region\
             = "mc2_Column"
@@ -287,5 +292,6 @@ def get_sscx_fake_atlas_circuit_model(
             brain_region=brain_regions.sscx,
             geometry_type=SSCxFakeAtlasCircuitGeometry,
             circuit_config=circuit_config,
-            atlas_path=atlas_path)
+            atlas_path=atlas_path,
+            *args, **kwargs)
 

@@ -38,9 +38,11 @@ class ByMtypeConnectomeAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
 
@@ -71,11 +73,19 @@ class ByMtypePathwayConnectomeAnalysis(
             phenomenon,
             *args, **kwargs):
         """..."""
+        if "ReportType" not in kwargs:
+            kwargs["ReportType"]=\
+                AnalysisReport
         super().__init__(
             phenomenon,
-            ReportType=AnalysisReport,
             *args, **kwargs)
 
 
 from neuro_dmt.analysis.circuit.connectome.by_mtype.synapse_count\
     import PairSynapseCountAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_count\
+    import PathwayConnectionCountAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_probability\
+    import PathwayConnectionProbabilityAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.bouton_density\
+    import CellBoutonDensityAnalysis

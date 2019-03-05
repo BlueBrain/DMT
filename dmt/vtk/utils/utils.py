@@ -9,8 +9,8 @@ def isabstract(cls):
             isinstance(cls.__abstractmethods__, collections.Iterable) and
             len(cls.__abstractmethods__) > 0)
 
-
-def get_file_name_base(file_name=None):
+def get_file_name_base(
+        file_name=None):
     """Get the base from a file name, stripping away it's suffix."""
     if file_name is None:
         return "report"
@@ -18,6 +18,18 @@ def get_file_name_base(file_name=None):
     if len(fname_parts) == 1:
         return fname_parts[0].strip().replace(' ', '_')
     return '_'.join(fname_parts[0:-1]).strip().replace(' ', '_')
+
+def get_file_name(
+        some_string,
+        is_illegal=lambda character: character in {' ', ',', '~', '/', ';', ':'},
+        replacement_character='_'):
+    "convert a string into a name suitable for a file. "
+    return\
+        replacement_character.join(
+            ' '.join(
+                ' ' if is_illegal(character) else character
+                for character in some_string)\
+            .split())
 
 def grouped_label(*args):
     """Create a label for a group of things each of which has a label."""

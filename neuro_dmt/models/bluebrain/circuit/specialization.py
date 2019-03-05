@@ -18,40 +18,46 @@ class CircuitSpecialization(
     """Abstract Base class that can be subclassed to define Mixins specialized
     for (very) specific BBP circuits."""
     
-    brain_region = Field(
-        __name__="brain_region",
-        __type__=BrainRegion,
-        __doc__="""A utility class instance that contains some generic
-        information about the brain region that this CircuitSpecialization is
-        specialized for.""",
+    brain_region=\
+        Field(
+            __name__="brain_region",
+            __type__=BrainRegion,
+            __doc__="""A utility class instance that contains some generic
+            information about the brain region that this CircuitSpecialization 
+            is specialized for.""",
         __default__=brain_regions.whole_brain)
 
-    cell_group_params = Field(
-        __name__="cell_group_params",
-        __type__=tuple,
-        __doc__="""Tuple of (BluePy query) fields that group cells. Measurements
-        will be (jointly) conditioned on the values of these fields. Use this
-        information to create cell queries. You can stick in anything that a
-        cell query will accept. The entries must be a subset of condition_type
-        fields.""",
-        __default__=(Cell.LAYER,
-                     Cell.REGION,
-                     "$target",
-                     Cell.SYNAPSE_CLASS,
-                     Cell.MORPH_CLASS,
-                     Cell.ETYPE,
-                     Cell.MTYPE))
+    cell_group_params=\
+        Field(
+            __name__="cell_group_params",
+            __type__=tuple,
+            __doc__="""Tuple of (BluePy query) fields that group cells. 
+            Measurements will be (jointly) conditioned on the values of these 
+            fields. Use this information to create cell queries. You can stick 
+            in anything that a cell query will accept. The entries must be a 
+            subset of condition_type fields.""",
+            __default__=(Cell.LAYER,
+                         Cell.REGION,
+                         "$target",
+                         Cell.SYNAPSE_CLASS,
+                         Cell.MORPH_CLASS,
+                         Cell.ETYPE,
+                         Cell.MTYPE))
+    region_label=\
+        Field(
+            __name__ = "region_label",
+            __type__ = str,
+            __doc__  = """Label used for 'region' that a cell is in.
+            For O1 circuits, 'hypercolumn' has been used, while the latest
+            atlas based circuits use 'region'.""",
+            __examples__ = ["hypercolumn", "region"],
+            __default__ = Cell.REGION)
 
     def __init__(self,
             *args, **kwargs):
         """..."""
         super().__init__(
             *args, **kwargs)
-
-    @property
-    def region_label(self):
-        """..."""
-        return self.brain_region.label
 
     @property
     @abstractmethod

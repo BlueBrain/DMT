@@ -42,7 +42,8 @@ class MouseSSCxSynapseDensityData(
             datasets={
                 defelipe2018.label: ReferenceData(
                     data=defelipe2018,
-                    description=defelipe2018.what)},
+                    description=defelipe2018.what,
+                    measurement_parameters=[CorticalLayer().label])},
             primary=defelipe2018.label,
             *args, **kwargs)
 

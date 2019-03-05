@@ -38,13 +38,14 @@ class RatSSCxInhibitorySynapsesOnSomaData(
             data_location=self.get_data_location(data_path),
             datasets=reference_datasets.datasets,
             primary=reference_datasets.primary,
+            measurement_parameters=["pre_mtype", "post_mtype"],
             *args, **kwargs)
 
     def get_data_location(self,
             reference_data_dir):
         """..."""
-        return\
-            {"michael_reimann_2017": os.path.join(
+        return{
+            "michael_reimann_2017": os.path.join(
                 data_path,
                 "inh_syns_on_soma.pickle")}
 
@@ -83,4 +84,6 @@ class RatSSCxInhibitorySynapsesOnSomaData(
                             citation="Curated by Michael Reimann, BBP, EPFL",
                             what="Ask Michael Reimann",
                             data=dataframe),
-                        description="Ask Michael Reimann")})
+                        description="Ask Michael Reimann",
+                        measurement_parameters=["pre_mtype", "post_mtype"])})
+

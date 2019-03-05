@@ -36,6 +36,7 @@ class ValidationTestCase:
             __type__=ReferenceData,
             __doc__="""A validation needs reference data to compare the
             model against.""")
+
     def __init__(self,
             *args, **kwargs):
         """..."""
@@ -52,8 +53,8 @@ class ValidationTestCase:
                 "Validation test case {} does not use reference data"\
                 .format(self.__class__.__name__))
 
-        data = self.reference_data.data
-
+        data=\
+            self.reference_data.data
         self.logger.debug(
             self.logger.get_source_info(),
             "validation_data for reference data:\n {}".format(data))
@@ -67,11 +68,9 @@ class ValidationTestCase:
         if isinstance(data, dict):
             dataset_names=\
                 list(data.keys())
-
             self.logger.debug(
                 self.logger.get_source_info(),
                 "dataset names: {}".format(dataset_names))
-
             flattened_dataframe=\
                 flatten(
                     {n: data[n].data for n in dataset_names},
@@ -94,6 +93,32 @@ class ValidationTestCase:
             "It is a {}\n{}"\
             .format(type(data).__name__, data))
 
+    def is_permissible(self,
+            measurement_parameters_value):
+        """Is the given condition valid?
+        A default behavior (always permissible) is provided.
+        The intended use is for validations, for which not all parameter
+        value combinations need be measured. Only the values represented
+        in validation data should be measured.
+
+        Arguments
+        --------------
+        measurement_parameters_values :: Dict[(ParameterLabel, ParameterValue)]
+        #a dict mapping param_label --> param_value
+
+        Development Note
+        -----------------
+        'measurement_parameters_value' is required to be contained
+        in the reference data' measurement parameters values.
+        However, we may have a situation when the queried
+        measurement_parameters_value does not have the same fields
+        as the reference data's parameters. For example, 
+        """
+        return\
+            self.reference_data.contains(
+                measurement_parameters_value)
+        
+        
     @property
     def reference_datasets(self):
         """Return validation data as a dict."""
@@ -127,6 +152,7 @@ class ValidationTestCase:
     def reference_data_for_plotting(self):
         """..."""
         return self.validation_data
+
 
 @document_fields
 class SinglePhenomenonValidation(

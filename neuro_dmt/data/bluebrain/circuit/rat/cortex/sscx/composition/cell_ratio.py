@@ -31,6 +31,8 @@ class RatSSCxCellRatioData(
         """..."""
         self.primary_spatial_parameter=\
             CorticalLayer()
+        self.measurement_parameters=\
+            [CorticalLayer().label]
         reference_datasets=\
             self.get_reference_datasets(
                 data_path)
@@ -95,18 +97,21 @@ class RatSSCxCellRatioData(
                         self.summarized(
                             ghobril2012.ratio_means,
                             ghobril2012.ratio_stds)),
-                    description=ghobril2012.what),
+                    description=ghobril2012.what,
+                    measurement_parameters=self.measurement_parameters),
                 lefort2009.short_name: ReferenceData(
                     data=self.with_metadata(
                         lefort2009,
                         self.summarized(
                             lefort2009.ratio_means,
                             lefort2009.ratio_stds)),
-                    description=lefort2009.what),
+                    description=lefort2009.what,
+                    measurement_parameters=self.measurement_parameters),
                 beaulieu1992.short_name: ReferenceData(
                     data=self.with_metadata(
                         beaulieu1992,
                         self.summarized(
                             beaulieu1992.ratio_means,
                             beaulieu1992.ratio_stds)),
-                    description=beaulieu1992.what)})
+                    description=beaulieu1992.what,
+                    measurement_parameters=self.measurement_parameters)})

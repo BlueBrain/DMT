@@ -32,6 +32,8 @@ class RatSSCxInhibitorySynapseDensityData(
         """..."""
         self.primary_spatial_parameter=\
             CorticalLayer()
+        self.measurement_parameters=\
+            [CorticalLayer().label]
         reference_datasets=\
             self.get_reference_datasets(
                 data_path)
@@ -66,5 +68,6 @@ class RatSSCxInhibitorySynapseDensityData(
                         self.summarized(
                             defelipe2011.density_means,
                             defelipe2011.density_stds)),
-                    description=defelipe2011.what)})
+                    description=defelipe2011.what,
+                    measurement_parameters=self.measurement_parameters)})
 

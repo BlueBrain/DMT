@@ -21,11 +21,6 @@ class CircuitPhenomenonComparison(
     """Mixin to define comparison of a circuit phenomenon between
     a model and another model or experiment.
     """
-    measurement_parameters=\
-        Field(
-            __name__="measurement_parameters",
-            __typecheck__=Field.typecheck.collection(Parameter),
-            __doc__="""Parameters used to measure the phenomenon""")
     Plotter=\
         Field(
             __name__ = "Plotter",
@@ -59,15 +54,20 @@ class CircuitPhenomenonComparison(
                 self.logger.get_source_info(),
                 "Could not find attribute 'output_dir_path'.",
                 "\tAttributeError: {}".format(e))
-        kwargs["title"]=\
-            model_measurement.label
-        plotting_param=\
-            self.plotting_parameter.label
-        if isinstance(model_measurement.data.index, pd.MultiIndex):
-            assert\
-                plotting_param in model_measurement.data.index.names
-        # kwargs["xlabel"]=\
-        #     plotting_param
+
+        if len(self.plotted_parameters) == 1:
+            try:
+                xvar= self.plotted_parameters[0]
+                if isinstance(model_measurement.data.index, pd.MultiIndex):
+                    assert\
+                        xvar in model_measurement.data.index.names
+            except AttributeError as aerr:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    "Missing attribute 'plotted_parameters'? {}".format(aerr))
+                xvar= "not-available"
+        else:
+            xvar= "not-available"
         kwargs["ylabel"]=\
             "{} / [{}]".format(
                 "mean {}".format(
@@ -75,39 +75,26 @@ class CircuitPhenomenonComparison(
                 model_measurement.units)
         kwargs.update(
             self.plot_customization)
-        return\
-            self.Plotter(
-                Record(
-                    data=model_measurement.data,
-                    label=model_measurement.label))\
-                .against(
-                    self.reference_data_for_plotting,
-                    comparing=compared_quantity)\
-                .plotting(
-                    phenomenon.label)\
-                .versus(
-                    self.plotting_parameter.label)\
-                .given(
-                    **self._for_given_parameter_values(
-                        **kwargs))\
-                .with_customization(
-                    **kwargs)\
-                .plot()
-
+        return self\
+            .Plotter(
+                model_measurement)\
+            .against(
+                self.reference_data_for_plotting,
+                comparing=compared_quantity)\
+            .plotting(
+                phenomenon.label)\
+            .versus(
+                xvar)\
+            .given(
+                **self._for_given_parameter_values(
+                    **kwargs))\
+            .with_customization(
+                **kwargs)\
+            .plot(
+                with_customization=kwargs)
+    
     def get_report(self,
             model_measurement,
             *args, **kwargs):
         """..."""
-        figure=\
-            self.plot(
-                model_measurement)
-        pval=\
-            self.pvalue(
-                model_measurement)
-        verdict=\
-            self.get_verdict(
-                pval)
-        return\
-            ComparisonReport
-
-
+        raise NotImplementedError()

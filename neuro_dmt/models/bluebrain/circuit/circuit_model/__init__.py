@@ -3,6 +3,8 @@ import sys
 import bluepy
 from bluepy.v2.circuit\
     import Circuit
+from dmt.vtk.utils\
+    import collections
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      WithFCA
@@ -42,13 +44,44 @@ class BlueBrainCircuitModel(
             __name__ = "brain_region",
             __type__ = brain_regions.BrainRegion,
             __doc__ = "The brain region modeled.")
-
+    release_date=\
+        Field.Optional(
+            __name__="release_date",
+            __type__=str,
+            __doc__="date when this circuit was released.")
+    
     def __init__(self,
             *args, **kwargs):
         super().__init__(
             *args, **kwargs)
         self._implied_circuit = None #the implied bluepy circuit
         self._geometry = None
+
+    def get_release_date(self,
+            *args, **kwargs):
+        """..."""
+        try:
+            return self.release_date
+        except AttributeError:
+            pass
+        return None
+
+    def get_label(self,
+            *args, **kwargs):
+        """Get a label that can be used to name files."""
+        label=\
+            "{}_{}".format(
+                self.label,
+                self.brain_region.label)
+        date=\
+            self.get_release_date(
+                *args, **kwargs)
+        return "{}_{}".format(label, date) if date else label
+
+    def get_uri(self,
+            *args, **kwargs):
+        """Location of this circuit."""
+        return self.circuit_config
 
     @property
     def bluepy_circuit(self):
@@ -74,6 +107,21 @@ class BlueBrainCircuitModel(
             self._geometry
 
     @property
+    def region_label(self):
+        """..."""
+        try:
+            return self.region_label
+        except AttributeError:
+            return\
+                self.geometry.region_label
+        return "region" 
+
+    @property
+    def cells(self):
+        """..."""
+        return self.bluepy_circuit.cells
+
+    @property
     def connectome(self):
         """..."""
         try:
@@ -85,29 +133,23 @@ class BlueBrainCircuitModel(
                 "Caught Exception :\n  {}".format(e))
             return None
 
-    def get_cell_group(self,
-            cell_group):
-        """
-        Arguments
-        ------------
-        cell_group :: dict #accepted by bluepy.v2.circuit.cell
-
-        Return
-        ------------
-        List[GIDs]
-
-        Improvement
-        -----------
-        Add a validation to check that 'cell_group' has keys acceptable to
-        bluepy.v2.circuit.cells.get, and to filter out invalid keys.
-        """
-        return list(self\
-                    .bluepy_circuit\
-                    .cells\
-                    .get(
-                        cell_group,
-                        properties=[]
-                    ).index)
+    def filter_region(self,
+            cell_gids,
+            condition):
+        """filter cells (by gid) that fall in a given region.
+        region value None will be handled as Any"""
+        region=\
+            condition.get_value(
+                self.region_label)
+        if not region:
+            return cell_gids
+        cell_regions=\
+            self.cells\
+                .get(
+                    cell_gids,
+                    properties=self.region_label)
+        return\
+            cell_regions[cell_regions == region].index.values
 
 
 from neuro_dmt.models.bluebrain.circuit.circuit_model.o1_circuit_model\

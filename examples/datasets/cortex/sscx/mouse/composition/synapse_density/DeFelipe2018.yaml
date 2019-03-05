@@ -3,7 +3,7 @@ short_name: "DeFelipe2018"
 # TODO: put the spreadsheet online somewhere
 uri: ""
 citation: "De Felipe et al. (2018 unpublished).  'Synapse Densities per Layer', Unpublished."
-what: "synaptic densities"
+what: "synaptic densities, brain area S1 hindlimb"
 animal: "mouse"
 brainArea: "S1 hindlimb"
 sampleSize: "various"

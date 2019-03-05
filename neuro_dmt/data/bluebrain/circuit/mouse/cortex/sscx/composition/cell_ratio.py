@@ -60,7 +60,8 @@ class MouseSSCxCellRatioData(
             datasets={
                 lefort2009.label: ReferenceData(
                     data=lefort2009,
-                    description=lefort2009.what)},
+                    description=lefort2009.what,
+                    measurement_parameters=[CorticalLayer().label])},
             primary=lefort2009.label,
             *args, **kwargs)
 

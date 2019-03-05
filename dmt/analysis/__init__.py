@@ -10,6 +10,8 @@ from dmt.vtk.author\
     import Author
 from dmt.vtk.plotting\
     import Plot
+from dmt.vtk.utils.utils\
+    import timestamp
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      WithFCA\
@@ -73,12 +75,17 @@ class Analysis(WithFCA, AIBase):
             __name__="measurement_parameters",
             __typecheck__=Field.typecheck.collection(Parameter),
             __doc__="""Parameters used to measure the phenomenon""")
-    plotting_parameter=\
-        Field.Optional(
-            __name__="plotting_parameter",
-            __type__=Parameter,
-            __doc__="""Parameter that measurement data will be plotted
-            against.""")
+    plotted_parameters=\
+        Field(
+            __name__="plotted_parameters",
+            __type__=list,
+            __typecheck__=Field.typecheck.collection(str),
+            __doc__="""Labels of parameters that will be plotted. Usually this 
+            will be single value -- sometimes there may be more than one. For ,
+            example in a cross-plot with model measurement data on the y-axis 
+            and reference validation data on the x-axis, qll the measurement
+            parameters get plotted.""",
+            __default__ = [])
     author=\
         Field(
             __name__="author",
@@ -146,6 +153,34 @@ class Analysis(WithFCA, AIBase):
         """Get a label for the measurement validated."""
         pass
 
+    def is_permissible(self,
+            measurement_parameters_values):
+        """Is the given condition valid?
+        A default behavior (always permissible) is provided.
+        The intended use is for validations, for which not all parameter
+        value combinations need be measured. Only the values represented
+        in validation data should be measured.
+
+        Arguments
+        --------------
+        measurement_parameters_values :: Any[Condition, dict, pandas.Series].
+        """
+        return True
+
+    def _get_file_name_base(self,
+            circuit_model,
+            model_measurement,
+            *args, **kwargs):
+        """Combine available information to generate a name suitable
+        for a file."""
+        return\
+            "_".join([
+                circuit_model.animal,
+                circuit_model.brain_region.label,
+                circuit_model.get_label(),
+                model_measurement.phenomenon.label])
+
+
     def save_report(self,
             report,
             output_dir_path=""):
@@ -170,7 +205,7 @@ class Analysis(WithFCA, AIBase):
 
     def __call__(self,
             model,
-            save_report=False,
+            save_report=True,
             *args, **kwargs):
         """An Analysis is a callable.
         In the concrete Analysis implementation,
@@ -185,7 +220,10 @@ class Analysis(WithFCA, AIBase):
         model_measurement=\
             self.get_measurement(
                 model,
-                *args, **kwargs)
+                *args,
+                is_permissible=lambda condition: self.is_permissible(
+                    condition.as_dict),
+                **kwargs)
         report=\
             self.get_report(
                 model_measurement,
@@ -272,6 +310,8 @@ class OfSinglePhenomenon:
                 model_measurement.sampling_method),
             "Number samples: {}".format(
                 model_measurement.sample_size),
+            "Model: {}".format(model_measurement.model_label),
+            "URI: {}".format(model_measurement.model_uri),
             given_parameter_values]
 
 class OfMultiPhenomena:

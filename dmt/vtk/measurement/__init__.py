@@ -83,7 +83,7 @@ class Method(
         return self.__call__(
             **measurement_parameters)
 
- 
+
 
 @with_logging(Logger.level.STUDY)
 class StatisticalMeasurement:
@@ -99,7 +99,7 @@ class StatisticalMeasurement:
             __type__=int,
             __doc__="""Number of samples to be drawn
             for each statistical measurement.""")
-    
+
     def __init__(self,
             random_variate,
             sample_size=20):
@@ -215,9 +215,10 @@ def method_description(measurement_method):
     return measurement_method.__call__.__doc__
 
 
-def summary_statistic(measurement_sample,
-                      parameter_columns=[],
-                      measurement_columns=[]):
+def summary_statistic(
+        measurement_sample,
+        parameter_columns=[],
+        measurement_columns=[]):
     """Summarize a data-frame.
     Type of the returned data-frame depends on the type of
     'measurement_columns'. Thus this method can accommodate more than one
@@ -225,6 +226,10 @@ def summary_statistic(measurement_sample,
     summarize more than one measurement columns."""
     aggregators=\
         ["mean", "std"]
+    if measurement_sample.shape[0] == 0:
+        return pd.DataFrame(
+            [],
+            columns=aggregators)
     if not parameter_columns:
         log.debug(
             log.get_source_info(),

@@ -151,6 +151,9 @@ class Plot(ABC):
             if hasattr(self, key):
                 try:
                     setattr(self, key, value)
+                    self.logger.success(
+                        self.logger.get_source_info(),
+                        "Attribute {} set to {}".format(key, value))
                 except AttributeError as aerr:
                     self._logger.alert(
                         self._logger.get_source_info(),
@@ -165,6 +168,9 @@ class Plot(ABC):
                             "instead, try to set {}".format(_key))
                         try:
                             setattr(self, _key, value)
+                            self.logger.success(
+                                self.logger.get_source_info(),
+                                "Attribute {} set to {}".format(_key, value))
                         except AttributeError as aerr:
                             self._logger.alert(
                                 self._logger.get_source_info(),

@@ -28,6 +28,8 @@ class RatSSCxSynapseDensityData(
         """..."""
         self.primary_spatial_parameter=\
             CorticalLayer()
+        self.measurement_parameters=\
+            [CorticalLayer().label]
         reference_datasets=\
             self.get_reference_datasets(
                 data_path)
@@ -72,18 +74,21 @@ class RatSSCxSynapseDensityData(
                         self.summarized(
                             defelipe2011.density_means,
                             defelipe2011.density_stds)),
-                    description=defelipe2011.what),
+                    description=defelipe2011.what,
+                    measurement_parameters=self.measurement_parameters),
                 defelipe2002.short_name: ReferenceData(
                     data=self.with_metadata(
                         defelipe2002,
                         self.summarized(
                             defelipe2002.density_means,
                             defelipe2002.density_stds)),
-                    description=defelipe2002.what),
+                    description=defelipe2002.what,
+                    measurement_parameters=self.measurement_parameters),
                 anton2014.short_name: ReferenceData(
                     data=self.with_metadata(
                         anton2014,
                         self.summarized(
                             anton2014.density_means,
                             anton2014.density_stds)),
-                    description=anton2014.what)})
+                    description=anton2014.what,
+                    measurement_parameters=self.measurement_parameters)})

@@ -1,5 +1,6 @@
 """Measurements of the circuit's connectome."""
 import numpy as np
+import neurom as nm
 from dmt.vtk import measurement
 from dmt.vtk.phenomenon import Phenomenon
 from neuro_dmt.models.bluebrain.circuit import BlueBrainModelHelper
@@ -217,6 +218,22 @@ class InterboutonInterval(
             1. / self._circuit.stats.bouton_density(gid)
 
 
+class BoutonDensity(
+        ConnectomeMeasurementMethod):
+    """Bouton density of a cell."""
+    label = "in-silico"
+    phenomenon=\
+        Phenomenon(
+            "Bouton Density",
+            "Number of boutons per unit length of axonic arbor of a cell.",
+            group="connectome")
+    units = "Count/um"
+
+    def __call__(self, gid):
+        """...Call Me...."""
+        return self._circuit.stats.bouton_density(gid)
+
+
 class ConnectionStrength(
         PairSynapseCount):
     """Number of synapses in a cell --> cell connection."""
@@ -236,3 +253,27 @@ class ConnectionStrength(
                 self.conn.pair_synapses(
                     pre_gid=pre_gid,
                     post_gid=post_gid))
+
+
+class AxonLength(
+        ConnectomeMeasurementMethod):
+    """Total length of the axons of a cell.
+    We do not filter on the region."""
+    label = "in-silico"
+    phenomenon=\
+        Phenomenon(
+            "Axon Length",
+            "Total length of the axons of a neuron.",
+            group="Connectome")
+    units= "um"
+
+    def __call__(self,
+            cell_gid):
+        """...Call Me..."""
+        return\
+            nm.get(
+                "neurite_lengths",
+                self._circuit.morph.get(cell_gid, False),
+                neurite_type=nm.AXON
+            )[0]
+

@@ -3,8 +3,12 @@
 import pandas as pd
 from dmt.data\
     import ReferenceData
+from dmt.vtk.utils.pandas\
+    import flatten
 from dmt.vtk.utils.descriptor\
     import Field
+from dmt.vtk.measurement.condition\
+    import Condition
 from dmt.vtk.utils.collections\
     import Record\
     ,      take
@@ -46,6 +50,7 @@ class MultiReferenceData(
             "datasets: {}".format(datasets),
             "primary dataset: {}".format(
                 kwargs.get("priamry", None)))
+        self._measurement_parameters_values = None
         super().__init__(
             datasets=datasets,
             data={dataset_label: dataset_data.data
@@ -94,3 +99,62 @@ class MultiReferenceData(
             return self.primary
 
         return self.get_dataset(self.primary)
+
+    @property
+    def single_data_frame(self):
+        """All reference datasets flattened to a single dataframe."""
+        data=\
+            self.data
+        if isinstance(data, pd.DataFrame):
+            return data
+        if isinstance(data, dict):
+            dataset_names=\
+                list(data.keys())
+            flattened_dataframe=\
+                flatten(
+                    {name: data[name].data for name in dataset_names},
+                    names=["dataset"]
+                )[["mean", "std"]]
+            return\
+                flattened_dataframe.set_index(
+                    pd.MultiIndex(
+                        levels=flattened_dataframe.index.levels,
+                        labels=flattened_dataframe.index.labels,
+                        names=[name.lower()
+                               for name in flattened_dataframe.index.names]))
+
+        raise AttributeError(
+            "Reference data is neither a 'dict', nor a pandas DataFrame",
+            "It is a {}\n{}"\
+            .format(type(data).__name__, data))
+
+    @property
+    def measurement_parameters_values(self):
+        """a list of dict{parameter_label: parameter_value}"""
+        if self._measurement_parameters_values is None:
+            data_index_dataframe=\
+                pd.MultiIndex.to_frame(
+                    self.single_data_frame.index
+                )[self.measurement_parameters]
+            self._measurement_parameters_values={
+                Condition(
+                    list(
+                        row[1].to_dict().items()))\
+                .sorted_pairs_tuple
+                for row in data_index_dataframe.iterrows()}
+        return self._measurement_parameters_values
+
+    def contains(self,
+            measurement_parameters_value):
+        """Does this data contain measurement_parameters_values.
+
+        Arguments
+        --------------
+        measurement_parameters_values :: dict(param_label -> param_value)
+        """
+        return any(
+            all(
+                measurement_parameters_value.get(param_label, None)\
+                == param_value
+                for param_label, param_value in param_label_value_pairs)
+            for param_label_value_pairs in self.measurement_parameters_values)

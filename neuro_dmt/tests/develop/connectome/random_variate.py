@@ -1,5 +1,6 @@
 """Test develop random variates for connectome analysis."""
 import os
+import pandas as pd
 from dmt.vtk.measurement.condition\
     import Condition
 from neuro_dmt.models.bluebrain.circuit.random_variate\
@@ -29,17 +30,26 @@ sscx_circuit_model.geometry.circuit_specialization.representative_region=\
     "mc2_Column"
 sscx_circuit=\
     sscx_circuit_model.bluepy_circuit
-
+sscx_mtypes=\
+    sscx_circuit.cells.mtypes
 synapse_count_data=\
     RatSSCxPairSynapseCountData().datasets["michael_reimann_2017"].data.data
-random_connections=\
-    RandomConnectionVariate(
-        sscx_circuit_model)
+pathways=\
+    [(pre_mtype, post_mtype)
+     for pre_mtype, post_mtype in synapse_count_data.index
+     if pre_mtype in sscx_mtypes and post_mtype in sscx_mtypes]
 
-def get_pathway(i):
+def get_pathway_condition(i):
     pre_mtype, post_mtype=\
-        synapse_count_data.index[i]
+        pathways[i]
     return\
         Condition([
             ("pre_mtype", pre_mtype),
             ("post_mtype", post_mtype)])
+
+random_cells=\
+    RandomCellVariate(
+        sscx_circuit_model)
+random_connections=\
+    RandomConnectionVariate(
+        sscx_circuit_model)

@@ -1,30 +1,14 @@
-"""Test develop (generic) neuro_dmt Analysis."""
-
+"""Analysis of the neocortex."""
 import os
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums\
     import Cell
-from dmt.vtk.measurement\
-     import StatisticalMeasurement
-from dmt.vtk.measurement.condition\
-    import Condition
 from dmt.vtk.utils.logging\
     import Logger
-from dmt.vtk.utils.collections\
-    import Record\
-    ,      take
-from neuro_dmt.utils\
-    import brain_regions
 from neuro_dmt.measurement.parameter\
     import AtlasRegion\
-    ,      CorticalLayer\
-    ,      CorticalLayer6abSplit
-from neuro_dmt.library.bluebrain.circuit.models.sscx\
-   import get_sscx_fake_atlas_circuit_model\
-   ,      get_sscx_atlas_circuit_model
-from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
-    import get_iso_cortex_circuit_model
+    ,      CorticalLayer
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 from neuro_dmt.models.bluebrain.circuit.adapter\
@@ -35,77 +19,11 @@ from neuro_dmt.analysis.circuit.composition.by_layer\
     ,      InhibitorySynapseDensityAnalysis\
     ,      SynapseDensityAnalysis\
     ,      MtypeCellDensityAnalysis
- 
 
 logger=\
     Logger(
         "Test develop neuro_dmt Analysis",
         level=Logger.level.DEBUG)
-bbadapter=\
-    BlueBrainModelAdapter(
-        brain_region=brain_regions.sscx,
-        spatial_random_variate=RandomRegionOfInterest,
-        model_label="in-silico",
-        sample_size=20)
-rat_sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68",
-        "circuits", "O1", "20190228",
-        "connectome", "structural" ,"All",
-        "CircuitConfig")
-rat_sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
-        animal="mouse",
-        atlas_path=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj66", "entities",
-            "dev", "atlas",
-            "O1-152"))
-sscx_circuit_model.geometry.circuit_specialization.representative_region=\
-    "mc2_Column"
-rat_sscx_circuit=\
-    rat_sscx_circuit_model.bluepy_circuit
-
-rat_sscx_atlas_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
-        "S1.v6a/20171206",
-        "CircuitConfig")
-rat_sscx_atlas_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        rat_sscx_atlas_circuit_config,
-        animal="rat",
-        atlas_path=os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
-        "S1.v6a/20171206",
-            ".atlas", "C63CB79F-392A-4873-9949-0D347682253A"))
-rat_sscx_atlas_circuit=\
-    rat_sscx_atlas_circuit_model.bluepy_circuit
-
-sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj68", "circuits",
-        "O1/20190226_2",
-        "CircuitConfig")
-sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
-        animal="mouse")
-sscx_circuit=\
-    sscx_circuit_model.bluepy_circuit
-
-iso_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/data/project_no_backup",
-        "proj68_no_backup/circuits",
-        "Isocortex/20190301/",
-        "CircuitConfig")
-iso_circuit_model=\
-    get_iso_cortex_circuit_model(
-        iso_circuit_config,
-        "mouse")      
-iso_circuit=\
-     iso_circuit_model.bluepy_circuit
 
 
 class TestCompositionAnalysis:
@@ -119,15 +37,13 @@ class TestCompositionAnalysis:
         mtype_cell_density=MtypeCellDensityAnalysis)
     
     def __init__(self,
-            circuit_model=iso_circuit_model,
+            circuit_model,
             sample_size=100,
             sampled_box_shape=50. * np.ones(3),
             regions=["SSp-ll"],
-            outdir=os.getcwd(),
+            output_dir_path=os.getcwd(),
             *args, **kwargs):
         """"..."""
-        print(outdir)
-        self._outdir = outdir
         self._circuit_model=\
             circuit_model
         self._adapter=\
@@ -241,7 +157,6 @@ class TestCompositionAnalysis:
             phenomenon,
             region="SSp-ll",
             save=True,
-            with_atlas_data=True,
             *args, **kwargs):
         """Analysis of only one region may be reported"""
         logger.debug(
@@ -252,8 +167,7 @@ class TestCompositionAnalysis:
             self.get_instance(
                 phenomenon,
                 circuit_regions=AtlasRegion(
-                    values=[region]),
-                with_atlas_data=with_atlas_data)
+                    values=[region]))
         if not self._already_measured(phenomenon, region):
             logger.debug(
                 logger.get_source_info(),
@@ -289,10 +203,8 @@ class TestCompositionAnalysis:
                 report,
                 region,
                 output_dir_path=os.path.join(
-                    self._outdir,
+                    os.getcwd(),
                     analysis._get_output_dir(
                         model_measurement=self._measurements[phenomenon]),
                     "subregion-{}".format(region)))
         return report
-
-

@@ -31,6 +31,4 @@ def get_reference_datasets(reference_data_dir):
                    citation = anton2014.get('citation', 'NA'),
                    what = anton2014.get('what', 'synapse density'),
                    data = summarized(anton2014['density_means'],
-                                     anton2014['density_stds'])),
-
-        ]
+                                     anton2014['density_stds']))]

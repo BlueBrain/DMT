@@ -7,6 +7,8 @@ from matplotlib\
     import pylab
 from matplotlib.font_manager\
     import FontProperties
+from dmt.vtk.utils.logging\
+    import Logger
 from dmt.vtk.plotting\
     import golden_figure\
     ,      Plot
@@ -18,12 +20,19 @@ class HeatMap(Plot):
     def __init__(self,
             *args, **kwargs):
         """..."""
+        self._logger=\
+            Logger(
+                self,
+                level=Logger.level.DEBUG)
         self._index_values=\
             None
         self._dataframe = None
         self._matrix    = None
         super().__init__(
             *args, **kwargs)
+        self._logger.debug(
+            self._logger.get_source_info(),
+            "data frame set? {}".format(self._dataframe))
 
     @property
     def dataframe(self):
@@ -34,18 +43,6 @@ class HeatMap(Plot):
                 self.get_plotting_dataframe(
                     allow_multi_indexed=True)
         return self._dataframe
-
-    def set_customization(self,
-            measurement,
-            *args, **kwargs):
-        """x and y labels will be specialized for heatmaps"""
-        super().set_customization(
-            measurement,
-            *args, **kwargs)
-        self._xlabel=\
-            self.dataframe.index.names[0]
-        self._ylabel=\
-            self.dataframe.index.names[1]
 
     @property
     def index_values(self):
@@ -113,7 +110,7 @@ class HeatMap(Plot):
         n_data_points=\
             len(index_values)
         axes.set_xlabel(
-            self._xlabel)
+            self.dataframe.index.names[0])
         axes.set_xticks(
             range(n_data_points))
         axes.set_xticklabels(
@@ -121,7 +118,7 @@ class HeatMap(Plot):
             rotation="vertical",
             size="xx-small")
         axes.set_ylabel(
-            self._ylabel)
+            self.dataframe.index.names[1])
         axes.set_yticks(
             range(n_data_points))
         axes.set_yticklabels(

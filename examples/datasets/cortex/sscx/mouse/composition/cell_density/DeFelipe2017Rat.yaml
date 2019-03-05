@@ -14,7 +14,7 @@ citation: >-
 
 what: >-
   number of neurons for a given volume (100x100xlayer thickness [um3])
-  of each cortical layer for rat.
+  of each cortical layer for rat somatosensory cortex.
 
 animal: "wistar rat"
 brainArea: "S1 hindlimb"
