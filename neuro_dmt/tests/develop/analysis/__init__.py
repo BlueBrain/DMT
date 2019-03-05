@@ -50,7 +50,8 @@ bbadapter=\
 sscx_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/project/proj68",
-        "circuits", "O1", "20190226_2",
+        "circuits", "O1", "20190228",
+        "connectome", "structural" ,"All",
         "CircuitConfig")
 sscx_circuit_model=\
     get_sscx_atlas_circuit_model(
@@ -86,7 +87,7 @@ iso_circuit_config=\
     os.path.join(
         "/gpfs/bbp.cscs.ch/data/project_no_backup",
         "proj68_no_backup/circuits",
-        "Isocortex/20190225/",
+        "Isocortex/20190301/",
         "CircuitConfig")
 iso_circuit_model=\
     get_iso_cortex_circuit_model(
