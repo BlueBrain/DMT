@@ -134,12 +134,11 @@ class CellBoutonDensityValidation(
             *args, **kwargs):
         """..."""
         mtypes = model_measurement.data.index.to_frame()["mtype"].values
-        color=[
-            "blue" if "PC" in mtype else "red"
+        kwargs["color"]=[
+            "green" if "PC" in mtype else "red"
             for mtype in mtypes]
         return\
             super().plot(
                 model_measurement,
                 compared_quantity=compared_quantity,
-                color=color,
                 *args, **kwargs)
