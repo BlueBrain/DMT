@@ -52,6 +52,7 @@ class CrossPlotComparison(ComparisonPlot):
         return self
 
     def plot(self,
+            figure=None,
             with_customization=None):
         """
         Compare this ComparisonPlot's data against those in datasets.
@@ -66,10 +67,15 @@ class CrossPlotComparison(ComparisonPlot):
         ~                      
         given :: List[Either[Integer, String]] #other levels to show the result for
         """
-        figure=\
-            golden_figure(
-                height=self._height,
-                width=self._width)
+        if not figure:
+            figure=\
+                    golden_figure(
+                        height=self._height,
+                    width=self._width)
+        else:
+            self.logger.debug(
+                self.get_source_info(),
+                "plot on the provided figure")
         ydata=\
             self.get_plotting_dataframe(
                 allow_multi_indexed=True)
@@ -131,10 +137,15 @@ class CrossPlotComparison(ComparisonPlot):
                       (0. if len(xerr_no_nan) == 0
                        else np.min(xerr_no_nan))))
 
+
+        color = with_customization.get("color", "blue")
         plt.errorbar(
             xs, ys,
             fmt="o",
             xerr=xerr, yerr=yerr)
+        if isinstance(color, list):
+            for x, y, c in zip(xs, ys, color):
+                plt.scatter([x], [y], c, "o")
 
         min_val = min(xmin,  ymin)
         max_val = max(xmax, ymax)
@@ -146,6 +157,7 @@ class CrossPlotComparison(ComparisonPlot):
             [min_val, max_val],
             [min_val, max_val],
             "-")
+       
         plt.axis([
             xmin, xmax, ymin, ymax])
         plt.title(

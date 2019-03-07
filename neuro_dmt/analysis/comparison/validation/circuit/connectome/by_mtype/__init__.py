@@ -1,10 +1,13 @@
 """Validations of the circuit connectome, by mtype."""
 
+import copy
 import numpy as np
 import pandas as pd
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      document_fields
+from dmt.vtk.utils.collections\
+    import Record
 from dmt.vtk.measurement.parameter.group\
     import ParameterGroup
 from neuro_dmt.analysis.comparison.circuit.connectome.by_mtype\
@@ -123,4 +126,20 @@ class CellBoutonDensityValidation(
         ByMtypeConnectomeValidation,
         CellBoutonDensityAnalysis):
     """Validate cell bouton densities."""
-    pass
+
+
+    def plot(self,
+            model_measurement,
+            compared_quantity="dataset",
+            *args, **kwargs):
+        """..."""
+        mtypes = model_measurement.data.index.to_frame()["mtype"].values
+        color=[
+            "blue" if "PC" in mtype else "red"
+            for mtype in mtypes]
+        return\
+            super().plot(
+                model_measurement,
+                compared_quantity=compared_quantity,
+                color=color,
+                *args, **kwargs)
