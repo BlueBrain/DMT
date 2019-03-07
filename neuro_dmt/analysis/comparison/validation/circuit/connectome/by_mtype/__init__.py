@@ -82,12 +82,14 @@ class PairConnectionValidation(
     def plot(self,
             model_measurement,
             compared_quantity="dataset",
+            with_full_axis_range=False,
             *args, **kwargs):
         """..."""
-        kwargs["ymin"] = 0.
-        kwargs["ymax"] = 1.
-        kwargs["xmin"] = 0.
-        kwargs["xmax"] = 1.
+        if with_full_axis_range:
+            kwargs["ymin"] = 0.
+            kwargs["ymax"] = 1.
+            kwargs["xmin"] = 0.
+            kwargs["xmax"] = 1.
         return\
             super().plot(
                 model_measurement,
@@ -102,12 +104,14 @@ class PathwayConnectionProbabilityValidation(
     def plot(self,
             model_measurement,
             compared_quantity="dataset",
+            with_full_axis_range=False,
             *args, **kwargs):
         """..."""
-        kwargs["ymin"] = 0.
-        kwargs["ymax"] = 1.
-        kwargs["xmin"] = 0.
-        kwargs["xmax"] = 1.
+        if with_full_axis_range:
+            kwargs["ymin"] = 0.
+            kwargs["ymax"] = 1.
+            kwargs["xmin"] = 0.
+            kwargs["xmax"] = 1.
         return\
             super().plot(
                 model_measurement,

@@ -277,8 +277,9 @@ class ConditionedRandomVariate(
             size=20,
             *args, **kwargs):
         """..."""
-        conditions\
-            = conditions if conditions else self._conditions
+        conditions=\
+            conditions if conditions\
+            else self._conditions
         if conditions is None:
             self.logger.warn(
                 self.logger.get_source_info(),

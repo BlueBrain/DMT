@@ -179,14 +179,21 @@ class BlueBrainModelAdapter(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with parameters {}"""\
             .format(parameters))
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """get statitistical measurement from adapter with kwargs {}"""\
+            .format(list(kwargs.keys())))
+        if not "is_permissible" in kwargs:
+            raise ValueError(
+                "adapter statistical measurement called without is_permissible")
         measurement=\
             StatisticalMeasurement(
                 random_variate=get_random_variate(
                     circuit_model,
                     *args, **kwargs
                 ).given(
-                    parameters,
-                    *args, **kwargs),
+                    *parameters,
+                    **kwargs),
                 sample_size=self.sample_size
             ).get(
                 method,

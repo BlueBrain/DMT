@@ -1,6 +1,7 @@
 """Measurement can be made under given conditions."""
 
 import pandas as pd
+from dmt.vtk.utils.logging import Logger
 from dmt.vtk.utils import collections
 from dmt.vtk.utils.collections import Record
 from dmt.vtk.measurement.parameter.group import ParameterGroup
@@ -130,6 +131,10 @@ class ConditionGenerator(
         If arg0 is a list, only this list's elements will be used, and
         arg1 ignored.
         """
+        self._log=\
+            Logger(
+                "ConditionGenerator",
+                level=Logger.level.DEBUG)
         self.__conditioning_variables=\
             ({v.label: v for v in arg0}
              if collections.check(arg0) else
@@ -158,7 +163,16 @@ class ConditionGenerator(
                     (param, d[param.label])
                     for param in self.parameters ])
             if self._is_permissible(condition):
+                self._log.debug(
+                    self._log.get_source_info(),
+                    "Condition {} is permissible".format(
+                        condition.as_dict))
                 yield condition
+            else:
+                self._log.debug(
+                    self._log.get_source_info(),
+                    "Condition {} not permissible".format(
+                        condition.as_dict))
 
     @property
     def values(self):

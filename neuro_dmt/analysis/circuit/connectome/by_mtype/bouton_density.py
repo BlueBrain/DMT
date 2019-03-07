@@ -63,6 +63,10 @@ class CellBoutonDensityAnalysis(
             circuit_model,
             *args, **kwargs):
         """Get a (statistical) measurement of the phenomenon analyzed"""
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Bouton density get measurement kwargs {}"""\
+            .format(kwargs))
         return\
             self.adapter\
                 .get_cell_bouton_density(

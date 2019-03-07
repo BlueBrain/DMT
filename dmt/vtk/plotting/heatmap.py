@@ -89,7 +89,7 @@ class HeatMap(Plot):
     def get_color_limits(self,
             use_logscale=False):
         """..."""
-        return (np.min(self.matrix), np.max(self.matrix))
+        return (np.nanmin(self.matrix), np.nanmax(self.matrix))
 
     def plot(self,
             with_customization={}):

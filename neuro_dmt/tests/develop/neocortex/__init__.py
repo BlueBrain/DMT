@@ -230,13 +230,13 @@ class NeocortexAnalysisSuite(
             "bouton_density")}
 
     def __init__(self,
-                 circuit_model,
-                 sampled_box_shape=50. * np.ones(3),
-                 region_values=["SSp-ll"],
-                 mtype_values=[],
-                 sample_size=20,
-                 output_dir_path=os.getcwd(),
-                 *args, **kwargs):
+            circuit_model,
+            sampled_box_shape=50. * np.ones(3),
+            region_values=["SSp-ll"],
+            mtype_values=[],
+            sample_size=20,
+            output_dir_path=os.getcwd(),
+            *args, **kwargs):
         """Initialize Me"""
         self._circuit_model=\
             circuit_model
@@ -484,7 +484,10 @@ class NeocortexAnalysisSuite(
             measurement=\
                 analysis.get_measurement(
                     self._circuit_model,
-                    *args, **kwargs)
+                    *args,
+                    is_permissible=lambda condition: analysis.is_permissible(
+                        condition.as_dict),
+                    **kwargs)
             self._append_measurement(
                 measurement)
             logger.debug(
