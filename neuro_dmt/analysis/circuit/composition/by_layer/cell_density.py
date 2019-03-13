@@ -72,4 +72,5 @@ class CellDensityAnalysis(
             self.adapter\
                 .get_cell_density(
                     circuit_model,
-                    spatial_parameters=self.spatial_parameters)
+                    spatial_parameters=self.spatial_parameters,
+                    *args, **kwargs)

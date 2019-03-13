@@ -251,3 +251,7 @@ def modelextension(validation_cls):
     now it acts like an alias for 'extends'.
     """
     return extends(validation_cls)
+
+
+from dmt.model.interface import Interface
+from dmt.model.adapter import Adapter

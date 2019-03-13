@@ -1099,3 +1099,7 @@
 
 * Circuits
   Specifics of circuits build at BBP teach us about validations. 
+* Presentations
+  Talk about validations.
+** <2019-03-01 Fri>
+   

@@ -65,7 +65,8 @@ class MtypeCellDensityAnalysis(
             self.adapter\
                 .get_mtype_cell_density(
                     circuit_model,
-                    spatial_parameters=self.spatial_parameters)
+                    spatial_parameters=self.spatial_parameters,
+                    *args, **kwargs)
 
     def plot(self,
             model_measurement,

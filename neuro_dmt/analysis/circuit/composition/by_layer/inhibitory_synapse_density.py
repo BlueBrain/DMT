@@ -65,4 +65,5 @@ class InhibitorySynapseDensityAnalysis(
         return self.adapter\
                    .get_inhibitory_synapse_density(
                        circuit_model,
-                       spatial_parameters=self.spatial_parameters)
+                       spatial_parameters=self.spatial_parameters,
+                       *args, **kwargs)

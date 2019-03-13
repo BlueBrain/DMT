@@ -63,4 +63,5 @@ class CellRatioAnalysis(
         return self.adapter\
                    .get_cell_ratio(
                        circuit_model,
-                       spatial_parameters=self.spatial_parameters)
+                       spatial_parameters=self.spatial_parameters,
+                       *args, **kwargs)

@@ -51,4 +51,8 @@ class SomaVolumeFractionAnalysis(
      
     def get_measurement(self, circuit_model):
         """Get measurement of the phenomenon validated."""
-        return self.adapter.get_soma_volume_fraction(circuit_model)
+        return\
+            self.adapter\
+                .get_soma_volume_fraction(
+                    circuit_model,
+                    *args, **kwargs)
