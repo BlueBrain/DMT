@@ -427,6 +427,13 @@ class RandomConnectionVariate(
     def __get_connections(self,
             condition):
         """..."""
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Get connections from {} --> {} in region {} "\
+            .format(
+                pre_mtype,
+                post_mtype,
+                region))
         pre_mtype=\
             condition.get_value(
                 "pre_mtype")
@@ -436,12 +443,6 @@ class RandomConnectionVariate(
         region=\
             condition.get_value(
                 self.circuit_model.region_label)
-        self.logger.info(
-            self.logger.get_source_info(),
-            "Get connections from {} --> {} in region {} ".format(
-                pre_mtype,
-                post_mtype,
-                region))
         if not pre_mtype in self._connections:
             connections={
                 mtype: []
@@ -493,6 +494,7 @@ class RandomConnectionVariate(
                 connections
         return self._connections[pre_mtype][post_mtype]
 
+
     def __call__(self,
             condition,
             *args, **kwargs):
@@ -510,9 +512,37 @@ class RandomConnectionVariate(
         self.logger.info(
             self.logger.get_source_info(),
             """Sample condition {}""".format(condition.value))
+        pre_mtype=\
+            condition.get_value(
+                "pre_mtype")
+        post_mtype=\
+            condition.get_value(
+                "post_mtype")
+        region=\
+            condition.get_value(
+                self.circuit_model.region_label)
+        # connections=\
+        #     self.__get_connections(
+        #         pre_mtype,
+        #         post_mtype,
+        #         region=region)
+        pre_cell_type={
+            Cell.MTYPE: pre_mtype,
+            self.circuit_model.region_label: region}
+        post_cell_type={
+            Cell.MTYPE: post_mtype,
+            self.circuit_model.region_label: region}
         connections=\
-            self.__get_connections(
-                condition)
+            list(self\
+                 .circuit_model\
+                 .connectome\
+                 .iter_connections(
+                     pre_cell_type,
+                     post_cell_type))
+        self.logger.info(
+            self.logger.get_source_info(),
+            """found {} connections."""\
+            .format(len(connections)))
         values=\
             connections\
             if len(connections) <= size else\
