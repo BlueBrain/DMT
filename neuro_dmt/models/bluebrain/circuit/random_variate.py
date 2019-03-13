@@ -491,7 +491,11 @@ class RandomConnectionVariate(
                         (pre_gid, post_gid))
             self._connections[pre_mtype]=\
                 connections
-        return self._connections[pre_mtype][post_mtype]
+        number = self._connections[pre_mtype][post_mtype]
+        self.logger.info(
+            self.logger.get_source_info(),
+            """Found {} connections.""".format(number))
+        return number
 
     def __call__(self,
             condition,
