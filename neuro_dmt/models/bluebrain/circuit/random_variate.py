@@ -356,6 +356,7 @@ class RandomPrePostPairs(
 
     def __init__(self,
             circuit_model,
+            upper_bound_random_draws = 1000000
             *args, **kwargs):
         """Initialize Me"""
         self.random_cell=\
@@ -364,7 +365,9 @@ class RandomPrePostPairs(
                 *args, **kwargs)
         self._circuit_mtypes=\
             circuit_model.cells.mtypes
-        self._connections=\
+        self._upper_bound_random_draws=\
+            upper_bound_random_draws
+        self._distance=\
             {}
         super().__init__(
             circuit_model,
@@ -378,6 +381,20 @@ class RandomPrePostPairs(
         return\
             "pairs of cell gids were sampled for given pre, post mtypes."\
 
+
+    def _get_distance(self,
+            pre_cell,
+            post_cell):
+        """..."""
+        if (pre_cell not in self._distance or
+            post_cell not in self._distance[pre_cell]):
+            self.circuit_model.cells.positions(
+                [pre_cell, post_cell])
+            self._distance[pre_cell][post_cell]=\
+                np.linalg.norm(
+                    positions[0] - positions[1])
+        return self._distance[pre_cell][post_cell]
+
     def __call__(self,
             condition,
             *args, **kwargs):
@@ -388,14 +405,48 @@ class RandomPrePostPairs(
         post_mtype=\
             condition.get_value(
                 "post_mtype")
-        return (
+        distance_interval=\
+            condition.get_value(
+                "soma_distance")
+        if not distance:
+            return(
+                self.random_cell(
+                    Condition([
+                        ("mtype", pre_mtype)])),
+                self.random_cell(
+                    Condition([
+                        ("mtype", post_mtype)])))
+        pre_cell=\
             self.random_cell(
                 Condition([
-                    ("mtype", pre_mtype)])),
+                    ("mtype", pre_mtype)]))
+        post_cell=\
             self.random_cell(
                 Condition([
-                    ("mtype", post_mtype) ])))
-
+                    ("mtype", post_mtype)]))
+        number_random_draws = 1
+        soma_distance=\
+            self._get_distance(
+                pre_cell, post_cell)
+        
+        while(soma_distance < distance_interval[0]
+              or soma_distance >= distance_interval[1]):
+            if number_random_draws >= self._upper_bound_random_draws:
+                return None
+            pre_cell=\
+                self.random_cell(
+                    Condition([
+                        ("mtype", pre_mtype)]))
+            post_cell=\
+                self.random_cell(
+                    Condition([
+                        ("mtype", post_mtype)]))
+            number_random_draws += 1
+            soma_distance=\
+                self._get_distance(
+                    pre_cell, post_cell)
+        return(
+            pre_cell, post_cell)
 
 class RandomConnectionVariate(
         CircuitPropertyRandomVariate):
@@ -427,13 +478,6 @@ class RandomConnectionVariate(
     def __get_connections(self,
             condition):
         """..."""
-        self.logger.info(
-            self.logger.get_source_info(),
-            "Get connections from {} --> {} in region {} "\
-            .format(
-                pre_mtype,
-                post_mtype,
-                region))
         pre_mtype=\
             condition.get_value(
                 "pre_mtype")
@@ -443,6 +487,13 @@ class RandomConnectionVariate(
         region=\
             condition.get_value(
                 self.circuit_model.region_label)
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Get connections from {} --> {} in region {} "\
+            .format(
+                pre_mtype,
+                post_mtype,
+                region))
         if not pre_mtype in self._connections:
             connections={
                 mtype: []
@@ -525,28 +576,26 @@ class RandomConnectionVariate(
         region=\
             condition.get_value(
                 self.circuit_model.region_label)
-        # connections=\
-        #     self.__get_connections(
-        #         pre_mtype,
-        #         post_mtype,
-        #         region=region)
-        pre_cell_type={
-            Cell.MTYPE: pre_mtype,
-            self.circuit_model.region_label: region}
-        post_cell_type={
-            Cell.MTYPE: post_mtype,
-            self.circuit_model.region_label: region}
         connections=\
-            list(self\
-                 .circuit_model\
-                 .connectome\
-                 .iter_connections(
-                     pre_cell_type,
-                     post_cell_type))
-        self.logger.info(
-            self.logger.get_source_info(),
-            """found {} connections."""\
-            .format(len(connections)))
+             self.__get_connections(
+                 condition)
+        # pre_cell_type={
+        #     Cell.MTYPE: pre_mtype,
+        #     self.circuit_model.region_label: region}
+        # post_cell_type={
+        #     Cell.MTYPE: post_mtype,
+        #     self.circuit_model.region_label: region}
+        # connections=\
+        #     list(self\
+        #          .circuit_model\
+        #          .connectome\
+        #          .iter_connections(
+        #              pre_cell_type,
+        #              post_cell_type))
+        # self.logger.info(
+        #     self.logger.get_source_info(),
+        #     """found {} connections."""\
+        #     .format(len(connections)))
         values=\
             connections\
             if len(connections) <= size else\
