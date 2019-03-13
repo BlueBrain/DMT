@@ -148,7 +148,7 @@ class CrossPlotComparison(ComparisonPlot):
             color if isinstance(color, list)\
             else len(xs) * ["blue"]
         for x, y, c in zip(xs, ys, colors):
-            plt.scatter([x], [y], c=c, s=80)
+            plt.scatter([x], [y], c=c, s=160)
 
         min_val = min(xmin,  ymin)
         max_val = max(xmax, ymax)
