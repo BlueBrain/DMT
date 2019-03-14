@@ -1,44 +1,48 @@
 """A script to run some connectome validations"""
 import time
 import datetime
-from bluepy.v2.circuit import Circuit
-from dmt.vtk.utils.logging import Logger
-from dmt.vtk.measurement import StatisticalMeasurement
-from dmt.vtk.measurement.parameter import get_grouped_values
-from neuro_dmt.models.bluebrain.circuit.parameters import PreMtype, PostMtype
-from neuro_dmt.models.bluebrain.circuit.measurements.connectome \
-    import PairSynapseCount
+from dmt.vtk.utils.logging\
+    import Logger
+from neuro_dmt.tests.develop.neocortex\
+    import *
 
-cpath = "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/20171206/CircuitConfig"
-circuit = Circuit(cpath)
-
-mtype_pre = PreMtype(circuit)
-mtype_post = PostMtype(circuit)
-
-syn_count = StatisticalMeasurement(method=PairSynapseCount(circuit),
-                                   by=[mtype_pre, mtype_post])
-
-def log_message(msg):
-    print("TIME: {}".format(time.localtime()))
-    print(msg)
-    with open("./connectome_test.log", "a") as f:
-        f.write("TIME: {}".format(time.localtime()))
-        f.write(msg)
+logger = Logger(
+    "Isocortex validations.",
+    level=Logger.level.DEBUG)
 
 def usage():
-    print("Explain how to use.")
+    logger.info(
+        "Explain how to use.")
 
 if __name__=="__main__":
-    logger = Logger("Pathway Synapses Test")
+    logger.info(
+        logger.get_source_info(),
+        logger.info(
+            "run validations and analysis"))
+    ssp_ll_left_circuit_model=\
+        IsocortexCircuitModel(
+            region="SSp-ll",
+            hemisphere="left",
+            direction="eff")
+    neocortex_analysis_suite=\
+        NeocortexAnalysisSuite(
+            ssp_ll_left_circuit_model,
+            region_values=["SSp-ll@left"],
+            sample_size=200,
+            output_dir_path=os.path.join(
+                "/gpfs/bbp.cscs.ch/home/sood/work/validations",
+                "release/neocortex-2019/arxiv"))
+    synapse_count_analysis=\
+        neocortex_analysis_suite.get_instance(
+            "pair_synapse_count",
+            circuit_regions=AtlasRegion(
+                values=["SSp-ll@left"]),
+            analysis_type="validation")
+    synapse_count_measurement=\
+        synapse_count_analysis.get_measurement(
+            ssp_ll_left_circuit_model,
+            is_permissinble = lambda c: synapse_count_analysis.is_permissible(
+                c.as_dict))
+    synapse_count_measurement.to_csv(
+        "syanpse_count.csv")
 
-    logger.info("Test if group variables are working fine.")
-    df = get_grouped_values([mtype_pre, mtype_post])
-    logger.info("grouped variable data frame size {}".format(df.shape))
-    logger.info("Get the measurement")
-    measurement = syn_count(sample_size=10)
-    logger.info("measurement shape {}".format(measurement.data.shape))
-    now = time.localtime()
-    logger.info("Synapses counted for {} pathways."\
-                .format(measurement.data.shape[0]))
-    logger.info("writing data frame to CSV")
-    measurement.data.to_csv("./pathway_synapse_count.csv")

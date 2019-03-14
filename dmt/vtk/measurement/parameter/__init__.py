@@ -42,12 +42,18 @@ class Parameter(
         """
         pass
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self,
+            *args, **kwargs):
         """...
         """
-        self.logger.inform("initialize {} instance with kwargs: {}"\
-                           .format(self.__class__.__name__, kwargs))
-        super(Parameter, self).__init__(*args, **kwargs)
+        self.logger.info(
+            self.logger.get_source_info(),
+            "initialize {} instance with kwargs: {}"\
+            .format(
+                self.__class__.__name__,
+                kwargs))
+        super().__init__(
+            *args, **kwargs)
 
     def is_valid(self, value):
         """Is value 'v' an accepted value?
