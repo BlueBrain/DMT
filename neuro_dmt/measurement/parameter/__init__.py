@@ -77,7 +77,7 @@ class BrainCircuitConnectomeParameter(
         """..."""
         super().__init__(
             *args, **kwargs)
-    
+
 
 class LayerIndex(
         BrainCircuitSpatialParameter):

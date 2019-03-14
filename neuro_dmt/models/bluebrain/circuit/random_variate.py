@@ -356,7 +356,8 @@ class RandomPrePostPairs(
 
     def __init__(self,
             circuit_model,
-            upper_bound_random_draws = 1000000
+            upper_bound_random_draws=1000000,
+            binner=None,
             *args, **kwargs):
         """Initialize Me"""
         self.random_cell=\
@@ -367,8 +368,12 @@ class RandomPrePostPairs(
             circuit_model.cells.mtypes
         self._upper_bound_random_draws=\
             upper_bound_random_draws
-        self._distance=\
+        self.__distance_cache__=\
             {}
+        self.__pair_cache__=\
+            {}
+        self._binner=\
+            binner
         super().__init__(
             circuit_model,
             reset_condition_type=True,
@@ -381,6 +386,36 @@ class RandomPrePostPairs(
         return\
             "pairs of cell gids were sampled for given pre, post mtypes."\
 
+    def __pair_by_distance(self
+            pre_cell_type,
+            post_cell_type,
+            distance_bin):
+        """..."""
+        if distance_bin not in self.__pair_cache__:
+            self.__pair_cache__[distance_bin]=\
+                []
+        number_random_draws=\
+            0
+        while number_random_draws < self._upper_bound_random_draws:
+            if self.__pair_cache__[distance_bin]:
+                return self__pair_cache__.pop()
+            pre_cell=\
+                self.random_cell(
+                    pre_cell_type)
+            post_cell=\
+                self.random_cell(
+                    post_cell_type)
+            number_random_draws+=\
+                1
+            soma_distance=\
+                self._get_distance(
+                    pre_cell,
+                    post_cell)
+            self.__pair_cache__[
+                binnner.get_bin(
+                    soma_distance)]=\
+                (pre_cell, post_cell)
+        return None
 
     def _get_distance(self,
             pre_cell,
@@ -388,8 +423,11 @@ class RandomPrePostPairs(
         """..."""
         if (pre_cell not in self._distance or
             post_cell not in self._distance[pre_cell]):
-            self.circuit_model.cells.positions(
-                [pre_cell, post_cell])
+            postions=\
+                self.circuit_model\
+                    .cells\
+                    .positions(
+                        [pre_cell, post_cell])
             self._distance[pre_cell][post_cell]=\
                 np.linalg.norm(
                     positions[0] - positions[1])
@@ -408,45 +446,13 @@ class RandomPrePostPairs(
         distance_interval=\
             condition.get_value(
                 "soma_distance")
-        if not distance:
-            return(
-                self.random_cell(
-                    Condition([
-                        ("mtype", pre_mtype)])),
-                self.random_cell(
-                    Condition([
-                        ("mtype", post_mtype)])))
-        pre_cell=\
-            self.random_cell(
-                Condition([
-                    ("mtype", pre_mtype)]))
-        post_cell=\
-            self.random_cell(
-                Condition([
-                    ("mtype", post_mtype)]))
-        number_random_draws = 1
-        soma_distance=\
-            self._get_distance(
-                pre_cell, post_cell)
+        if distance_interval:
+            return\
+                self.__pair_by_distance(
+                    pre_mtype,
+                    post_mtype,
+                    distance_interval)
         
-        while(soma_distance < distance_interval[0]
-              or soma_distance >= distance_interval[1]):
-            if number_random_draws >= self._upper_bound_random_draws:
-                return None
-            pre_cell=\
-                self.random_cell(
-                    Condition([
-                        ("mtype", pre_mtype)]))
-            post_cell=\
-                self.random_cell(
-                    Condition([
-                        ("mtype", post_mtype)]))
-            number_random_draws += 1
-            soma_distance=\
-                self._get_distance(
-                    pre_cell, post_cell)
-        return(
-            pre_cell, post_cell)
 
 class RandomConnectionVariate(
         CircuitPropertyRandomVariate):

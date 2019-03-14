@@ -1,4 +1,14 @@
 """Custom exceptions"""
+class OutOfRangeError(Exception):
+    """..."""
+    def __init__(self,
+            key,
+            *args):
+        """..."""
+        self.message = key
+        super().__init__(
+            key, *args``)
+
 class RequiredKeywordArgumentError(TypeError):
     def __init__(self, key, *args):
         self.message = key
