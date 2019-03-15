@@ -71,6 +71,8 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
     import composition as composition_measurements
 from neuro_dmt.models.bluebrain.circuit.measurements\
     import connectome as connectome_measurements
+from neuro_dmt.measurement.parameter.spatial\
+    import SomaDistance
 from neuro_dmt.models.bluebrain.circuit.parameters\
     import Mtype\
     ,      MtypePathway
@@ -555,6 +557,40 @@ class BlueBrainModelAdapter(
                         names=[p.label for p in parameters])),
                 units="",
                 parameter_groups=[p.label for p in parameters])
+
+
+    def get_pathway_connection_probability_by_distance(
+            circuit_model,
+            parameters=[],
+            *args,
+            is_permissible=lambda condition: True,
+            **kwargs):
+        """Get pathway connection probability
+        as a function of distance."""
+        distance_parameter=\
+            SomaDistance(
+                lower_bound=0.,
+                upper_bound=500.,
+                number_bins=10)
+        if not parameters:
+             parameters=[
+                 Mtype(
+                     circuit=circuit_model.bluepy_circuit,
+                     label="pre_mtype"),
+                 Mtype(
+                     circuit=circuit_model.bluepy_circuit,
+                     label="post_mtype"),
+                 distance_parameter]
+        random_pairs=\
+            RandomPrePostPairs(
+                circuit_model,
+                binner=distance_parameter,
+                *args, **kwargs
+            ).given(
+                *parameters,
+                **kwargs)
+
+
 
 
     def get_pathway_soma_distance(self,

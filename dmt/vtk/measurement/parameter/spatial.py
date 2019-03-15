@@ -1,27 +1,8 @@
-"""A binned parameter."""
-from abc\
-    import abstractmethod
-from dmt.vtk.utils.exceptions\
-    import OutOfRangeError
-from dmt.vtk.measurement.parameter\
-    import Parameter
+"""Generic parameters to measure phenomena that are functions
+of space."""
 
-class BinnedParameter(
-        Parameter):
-    """A binned parameter"""
-
-@abstractmethod
-def __contains__(self,
-            value_x):
-    """is value_x in this bin."""
-    pass
-
-@abstractmethod
-def get_bin(self,
-            value_x):
-    """Get bin for value_x"""
-    pass
-
+from dmt.vtk.measurement.parameter.binned\
+    import BinnedParameter
 
 class BinnedDistance(
         BinnedParameter):
@@ -70,6 +51,5 @@ class BinnedDistance(
             self.values[bin_index]
         
               
-
 
 
