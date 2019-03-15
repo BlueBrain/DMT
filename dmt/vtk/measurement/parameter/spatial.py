@@ -1,6 +1,9 @@
 """Generic parameters to measure phenomena that are functions
 of space."""
 
+import numpy as np
+from dmt.vtk.utils.descriptor\
+    import Field
 from dmt.vtk.measurement.parameter.binned\
     import BinnedParameter
 
@@ -8,7 +11,13 @@ class BinnedDistance(
         BinnedParameter):
     """Binned distance."""
     label = "distance"
-    value_type = float
+    elem_type = float
+    value_type = Field(
+        __name__="value_type",
+        __type__=tuple,
+        __typecheck__=Field.typecheck.__tuple__(float, float),
+        __doc__="""Bins containing floats can be defined as an interval.""")
+
     def __init__(self,
             lower_bound,
             upper_bound,

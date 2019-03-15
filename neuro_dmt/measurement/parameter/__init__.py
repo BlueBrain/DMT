@@ -118,23 +118,8 @@ class CorticalLayer(
             value_repr={1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI"},
             *args, **kwargs)
         
-
-class CorticalDepth(
-        BrainCircuitSpatialParameter):
-    """Depth down a cortical column,
-    as a fraction so that different cortical regions can be compared."""
-    label=\
-        "depth"
-    def __init__(self,
-            number_points=20,
-            *args, **kwargs):
-        """..."""
-        super().__init__(
-            brain_region=brain_regions.isocortex,
-            value_type=float,
-            values=list(np.linspace(0., 1., number_points)),
-            *args, **kwargs)
-
+from neuro_dmt.measurement.parameter.spatial\
+    import CorticalDepth
 
 class CorticalLayer23Fused(
         LayerIndex):

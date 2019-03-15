@@ -218,17 +218,21 @@ class Field:
             --------------------------------------------------------------------
             elem_type_arg :: Either[type, # either type to check against, or
             ~                       str, # instance attribute that provides it
-            ~                       function] #function that checks each element
+            ~                       function]#function that checks each element
             ~                                 
             """
 
             def check(instance, candidate_attr_value):
                 """..."""
 
-                if not isinstance(elem_type_arg, type) and callable(elem_type_arg):
+                if (not isinstance(elem_type_arg, type)
+                    and callable(elem_type_arg)):
                     for element in candidate_attr_value:
                         try:
-                            element_checks = elem_type_arg(instance, element)
+                            element_checks=\
+                                elem_type_arg(
+                                    instance,
+                                    element)
                         except TypeError as e:
                             raise TypeError(
                                 """element {} of a collection field of
@@ -259,6 +263,26 @@ class Field:
                     
                 return True
             return check
+
+        @staticmethod
+        def __tuple__(*type_args):
+            """..."""
+            def check(instance, candidate_attr_value):
+                """..."""
+                if len(candidate_attr_value) != len(type_args):
+                    raise TypeError(
+                        "Candidate attribute value's length is not "
+                        "the required {}".format(len(args)))
+                if not all(
+                        issubclass(y, x)
+                        for x, y in zip(type_args, candidate_attr_value)):
+                    raise TypeError(
+                        "Bad type of candidate attribute value {}"\
+                        .format(candidate_attr_value))
+                return True
+            return check
+
+                    
 
         @staticmethod
         def mapping(key_type_arg, val_type_arg):

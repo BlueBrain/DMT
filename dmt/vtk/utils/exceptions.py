@@ -7,12 +7,13 @@ class OutOfRangeError(Exception):
         """..."""
         self.message = key
         super().__init__(
-            key, *args``)
+            key, *args)
+
 
 class RequiredKeywordArgumentError(TypeError):
     def __init__(self, key, *args):
         self.message = key
-        super(RequiredKeywordArgumentError, self).__init__(key, *args)
+        super().__init__(key, *args)
 
 
 class MissingRequiredKeywordArgument(TypeError):
@@ -24,7 +25,7 @@ class MissingRequiredKeywordArgument(TypeError):
 class RequiredArgumentError(TypeError):
     def __init__(self, pos, argname, *args):
         self.message = argname + " at pos " + str(pos)
-        super(RequiredArgumentError, self).__init__(self.message, *args)
+        super().__init__(self.message, *args)
 
 
 class MissingRequiredArgument(TypeError):
