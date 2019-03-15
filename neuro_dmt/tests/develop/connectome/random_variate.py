@@ -9,36 +9,14 @@ from neuro_dmt.models.bluebrain.circuit.random_variate\
     ,      RandomPathwayConnectionVariate
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
     pair_synapse_count import RatSSCxPairSynapseCountData
-from neuro_dmt.library.bluebrain.circuit.models.sscx\
-   import get_sscx_fake_atlas_circuit_model\
-   ,      get_sscx_atlas_circuit_model
+from neuro_dmt.tests.develop.circuits\
+    import *
 
-sscx_circuit_config=\
-    os.path.join(
-        "/gpfs/bbp.cscs.ch/project/proj64", "circuits",
-        "O1.v6a/20171212",
-        "CircuitConfig")
-sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        sscx_circuit_config,
-        animal="rat",
-        atlas_path=os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj64", "entities",
-            "dev", "atlas",
-            "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"))
-sscx_circuit_model.geometry.circuit_specialization.representative_region=\
-    "mc2_Column"
-sscx_circuit=\
-    sscx_circuit_model.bluepy_circuit
-sscx_mtypes=\
-    sscx_circuit.cells.mtypes
-synapse_count_data=\
-    RatSSCxPairSynapseCountData().datasets["michael_reimann_2017"].data.data
-pathways=\
-    [(pre_mtype, post_mtype)
-     for pre_mtype, post_mtype in synapse_count_data.index
-     if pre_mtype in sscx_mtypes and post_mtype in sscx_mtypes]
-
+isocortex_model=\
+    IsocortexCircuitModel(
+        region="SSp-ll",
+        hemisphere="left",
+        direction="eff")
 def get_pathway_condition(i):
     pre_mtype, post_mtype=\
         pathways[i]
@@ -50,6 +28,17 @@ def get_pathway_condition(i):
 random_cells=\
     RandomCellVariate(
         sscx_circuit_model)
-random_connections=\
+random_connections_isocortex=\
     RandomConnectionVariate(
-        sscx_circuit_model)
+        isocortex_model,
+        cache_size=100)
+random_connections_sscx=\
+    RandomConnectionVariate(
+        sscx_circuit_model_eff,
+        cache_size=100)
+# l5_tpca_tpca=\
+#     random_connections.sample_one(
+#         Condition([
+#             ("pre_mtype", "L5_TPC:A"),
+#             ("post_mtype", "L5_TPC:A"),
+#             ("region", "SSp-ll@left")]))

@@ -364,8 +364,6 @@ class RandomPrePostPairs(
             RandomCellVariate(
                 circuit_model,
                 *args, **kwargs)
-        self._circuit_mtypes=\
-            circuit_model.cells.mtypes
         self._upper_bound_random_draws=\
             upper_bound_random_draws
         self.__distance_cache__=\
@@ -386,7 +384,7 @@ class RandomPrePostPairs(
         return\
             "pairs of cell gids were sampled for given pre, post mtypes."\
 
-    def __pair_by_distance(self
+    def __pair_by_distance(self,
             pre_cell_type,
             post_cell_type,
             distance_bin):
@@ -463,12 +461,13 @@ class RandomConnectionVariate(
 
     def __init__(self,
             circuit_model,
+            cache_size=1000,
             *args, **kwargs):
         """Initialize Me"""
-        self._circuit_mtypes=\
-            circuit_model.cells.mtypes
         self._connections=\
             {}
+        self.__cache_size__=\
+            cache_size
         super().__init__(
             circuit_model,
             reset_condition_type=True,
@@ -500,17 +499,31 @@ class RandomConnectionVariate(
                 pre_mtype,
                 post_mtype,
                 region))
+
+        def __with_region(
+                cell_group):
+            """Add region to cell group"""
+            if region is not None:
+                cell_group[self.circuit_model.region_label]=\
+                    region
+            return cell_group
+
         if not pre_mtype in self._connections:
-            connections={
-                mtype: []
-                for mtype in self._circuit_mtypes}
-            pre_gids=\
+            connections={}
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Get pre-synaptic cell gids ")
+            pre_gids_all=\
                 self.circuit_model\
-                    .filter_region(
-                        self.circuit_model\
-                            .cells.ids({
-                                Cell.MTYPE: pre_mtype}),
-                        condition)
+                    .cells.ids(
+                        __with_region({
+                            Cell.MTYPE: pre_mtype}))
+            pre_gids=\
+                np.random.choice(
+                    pre_gids_all,
+                    self.__cache_size__)\
+                if len(pre_gids_all) >= self.__cache_size__\
+                   else pre_gids_all
             self.logger.info(
                 self.logger.get_source_info(),
                 "Get connections for {} pre-gids of mtype {} in region {} "\
@@ -524,7 +537,8 @@ class RandomConnectionVariate(
                         .filter_region(
                             self.circuit_model\
                                 .connectome\
-                                .efferent_gids(pre_gid),
+                                .efferent_gids(
+                                    pre_gid),
                             condition)
                 self.logger.info(
                     self.logger.get_source_info(),
@@ -543,18 +557,36 @@ class RandomConnectionVariate(
                     self.circuit_model\
                         .cells.get(
                             post_gids,
-                            properties=Cell.MTYPE)
-                for post_gid, post_mtype in post_gid_mtypes.items():
-                    connections[post_mtype].append(
-                        (pre_gid, post_gid))
+                            properties=[Cell.MTYPE])
+                post_mtype_gids=\
+                    post_gid_mtypes.groupby(
+                        Cell.MTYPE)
+                for post_mtype, post_gids in post_mtype_gids.groups.items():
+                    if post_mtype not in connections:
+                        connections[post_mtype]=\
+                            np.array([])
+                    random_post_gids=\
+                        np.random.choice(
+                            post_gids.values,
+                            self.__cache_size__)\
+                        if len(post_gids) > 0\
+                           else np.array([])
+                    connections[post_mtype]=\
+                        np.hstack([
+                            connections[post_mtype],
+                            random_post_gids])
+
             self._connections[pre_mtype]=\
                 connections
-        number = self._connections[pre_mtype][post_mtype]
+
+        connections=\
+            self._connections[pre_mtype][post_mtype]
         self.logger.info(
             self.logger.get_source_info(),
-            """Found {} connections.""".format(number))
-        return number
-
+            """Found {} connections."""\
+            .format(
+                len(connections)))
+        return connections
 
     def __call__(self,
             condition,

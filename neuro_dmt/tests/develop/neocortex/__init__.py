@@ -12,10 +12,6 @@ from dmt.vtk.phenomenon\
     import Phenomenon
 from neuro_dmt.utils\
     import brain_regions
-from neuro_dmt.library.bluebrain.circuit.models.sscx\
-   import get_sscx_atlas_circuit_model
-from neuro_dmt.library.bluebrain.circuit.models.iso_cortex\
-    import get_iso_cortex_circuit_model
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomRegionOfInterest
 from neuro_dmt.measurement.parameter\
@@ -51,78 +47,14 @@ from neuro_dmt.analysis.comparison.validation.circuit.connectome.by_mtype\
     ,      PathwayConnectionProbabilityValidation\
     ,      CellBoutonDensityAnalysis\
     ,      CellBoutonDensityValidation
+from neuro_dmt.tests.develop.circuits\
+    import *
 
 
 logger=\
     Logger(
         "NeocortexAnalysisSuite",
         level=Logger.level.DEBUG)
-circuits_path=\
-        os.path.join(
-            "/gpfs/bbp.cscs.ch/project/proj68",
-            "circuits")
-sscx_circuit_model=\
-    get_sscx_atlas_circuit_model(
-        os.path.join(
-            circuits_path, "O1",
-            "20190307",
-            "connectome/functional/All",
-            "CircuitConfig"),
-        animal="mouse",
-        region_label="region")
-sscx_circuit_model_nrn=\
-    get_sscx_atlas_circuit_model(
-        os.path.join(
-            circuits_path, "O1",
-            "20190307",
-            "connectome",
-            "functional", "All",
-            "CircuitConfig-nrn"),
-        animal="mouse",
-        region_label="region")
-sscx_circuit_model_aff=\
-    get_sscx_atlas_circuit_model(
-        os.path.join(
-            circuits_path, "O1",
-            "20190307",
-            "connectome",
-            "functional", "All",
-            "CircuitConfig-aff"),
-        animal="mouse",
-        region_label="region")
-sscx_circuit_model_eff=\
-    get_sscx_atlas_circuit_model(
-        os.path.join(
-            circuits_path, "O1",
-            "20190307",
-            "connectome",
-            "functional", "All",
-            "CircuitConfig-eff"),
-        animal="mouse",
-        region_label="region")
-
-def IsocortexCircuitModel(
-        region,
-        hemisphere="left",
-        direction="eff"):
-    "..."
-    assert\
-        direction in {"eff", "aff"}
-    assert\
-        hemisphere in {"left", "right"}
-    circuit_config_path=\
-        os.path.join(
-            circuits_path, "Isocortex",
-            "20190307",
-            "connectome/functional",
-            "{}@{}".format(region, hemisphere),
-            "CircuitConfig-{}".format(direction))
-    return get_iso_cortex_circuit_model(
-        circuit_config_path,
-        animal="mouse",
-        region_label="region",
-        hemisphere=hemisphere)
-
 
 class NeocortexAnalysisSuite(
         ABC):

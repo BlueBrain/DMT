@@ -1,10 +1,13 @@
 """Circuit models from the Blue Brain Project"""
 import sys
+import numpy as np
 import bluepy
 from bluepy.v2.circuit\
     import Circuit
 from dmt.vtk.utils\
     import collections
+from dmt.vtk.measurement.condition\
+    import Condition
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      WithFCA
@@ -133,6 +136,27 @@ class BlueBrainCircuitModel(
                 "Caught Exception :\n  {}".format(e))
             return None
 
+    def filter_condition(self,
+            cell_gids,
+            condition):
+        """filter cell gids that satisfy a Condition."""
+        cell_gids=\
+            cell_gids.astype(np.uint32)
+        cell_query=\
+            condition.as_dict
+        if "region" in cell_query:
+            cell_query[self.region_label]=\
+                cell_query.pop("region")
+        conditioned_gids=\
+            self.cells.ids(
+                cell_query)
+        mask=\
+            np.in1d(
+                cell_gids,
+                conditioned_gids,
+                assume_unique=True)
+        return cell_gids[mask]
+
     def filter_region(self,
             cell_gids,
             condition):
@@ -143,14 +167,18 @@ class BlueBrainCircuitModel(
                 self.region_label)
         if not region:
             return cell_gids
-        cell_regions=\
-            self.cells\
-                .get(
-                    cell_gids,
-                    properties=self.region_label)
         return\
-            cell_regions[cell_regions == region].index.values
-
+            self.filter_condition(
+                cell_gids,
+                Condition([
+                    (self.region_label, region)]))
+        # cell_regions=\
+        #     self.cells\
+        #         .get(
+        #             cell_gids,
+        #             properties=self.region_label)
+        # return\
+        #    cell_regions[cell_regions == region].index.values
 
 from neuro_dmt.models.bluebrain.circuit.circuit_model.o1_circuit_model\
     import O1CircuitModel

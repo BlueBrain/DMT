@@ -1,4 +1,4 @@
-"""Adapters for O1 (v5 and v6a) circuits from the Blue Brain Project.
+"""Adapters for circuits from the Blue Brain Project.
 These adapters leverage the bluepy API.
 
 Guidelines
@@ -135,7 +135,7 @@ class BlueBrainModelAdapter(
 
         Parameters
         ------------------------------------------------------------------------
-        measurement :: pandas.DataFrame,  #with an index and columns 'mean' and 'std'
+        measurement :: pandas.DataFrame,#with columns 'mean' and 'std'
         by :: List[FiniteValuedParameter] #the parameters conditioning
         ~                                 #self.spatial_random_variate
         """
@@ -179,7 +179,7 @@ class BlueBrainModelAdapter(
         """..."""
         self.logger.debug(
             self.logger.get_source_info(),
-            """get statitistical measurement from adapter with parameters {}"""\
+            """get statistical measurement from adapter with parameters {}"""\
             .format(parameters))
         self.logger.debug(
             self.logger.get_source_info(),
@@ -187,7 +187,7 @@ class BlueBrainModelAdapter(
             .format(list(kwargs.keys())))
         if not "is_permissible" in kwargs:
             raise ValueError(
-                "adapter statistical measurement called without is_permissible")
+                "statistical measurement called without is_permissible")
         measurement=\
             StatisticalMeasurement(
                 random_variate=get_random_variate(
