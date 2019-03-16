@@ -572,7 +572,7 @@ class RandomConnectionVariate(
                         if len(post_gids) > 0\
                            else np.array([])
                     connections[post_mtype]=\
-                        np.hstack([
+                        np.vstack([
                             connections[post_mtype],
                             random_post_gids])
 

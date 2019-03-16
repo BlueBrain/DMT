@@ -32,9 +32,13 @@ random_connections_isocortex=\
     RandomConnectionVariate(
         isocortex_model,
         cache_size=100)
-random_connections_sscx=\
+random_connections_sscx_son=\
     RandomConnectionVariate(
         sscx_circuit_model_eff,
+        cache_size=100)
+random_connections_sscx_nrn=\
+    RandomConnectionVariate(
+        sscx_circuit_model_nrn,
         cache_size=100)
 # l5_tpca_tpca=\
 #     random_connections.sample_one(
