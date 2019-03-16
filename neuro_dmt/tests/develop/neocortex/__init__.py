@@ -166,7 +166,7 @@ class NeocortexAnalysisSuite(
     def __init__(self,
             circuit_model,
             sampled_box_shape=50. * np.ones(3),
-            region_values=["SSp-ll"],
+            region_values=["SSp-ll@left"],
             mtype_values=[],
             sample_size=20,
             output_dir_path=os.getcwd(),

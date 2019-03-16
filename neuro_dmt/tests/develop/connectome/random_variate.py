@@ -40,9 +40,3 @@ random_connections_sscx_nrn=\
     RandomConnectionVariate(
         sscx_circuit_model_nrn,
         cache_size=100)
-# l5_tpca_tpca=\
-#     random_connections.sample_one(
-#         Condition([
-#             ("pre_mtype", "L5_TPC:A"),
-#             ("post_mtype", "L5_TPC:A"),
-#             ("region", "SSp-ll@left")]))
