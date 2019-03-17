@@ -62,7 +62,7 @@ from neuro_dmt.models.bluebrain.circuit.random_variate\
     ,      RandomRegionOfInterest\
     ,      RandomSpanningColumnOfInterest\
     ,      RandomCellVariate\
-    ,      RandomPrePostPairs\
+    ,      RandomPairs\
     ,      RandomConnectionVariate\
     ,      RandomPathwayConnectionVariate
 from neuro_dmt.models.bluebrain.circuit.geometry\
@@ -393,7 +393,7 @@ class BlueBrainModelAdapter(
             self.pathway_measurement(
                 circuit_model,
                 connectome_measurements.PairConnection,
-                get_random_variate=RandomPrePostPairs,
+                get_random_variate=RandomPairs,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -582,7 +582,7 @@ class BlueBrainModelAdapter(
                      label="post_mtype"),
                  distance_parameter]
         random_pairs=\
-            RandomPrePostPairs(
+            RandomPairs(
                 circuit_model,
                 binner=distance_parameter,
                 *args, **kwargs

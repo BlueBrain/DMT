@@ -2,10 +2,16 @@
 of space."""
 
 import numpy as np
+from dmt.vtk.utils\
+    import collections
 from dmt.vtk.utils.descriptor\
     import Field
 from dmt.vtk.measurement.parameter.binned\
     import BinnedParameter
+from dmt.vtk.measurement.parameter.binner\
+    import ParameterBinner
+from dmt.vtk.utils.exceptions\
+    import OutOfRangeError
 
 class BinnedDistance(
         BinnedParameter):
@@ -29,7 +35,7 @@ class BinnedDistance(
         self.__number_bins=\
             number_bins
         self.__bin_width=\
-            (upper_bound - lower_bounds) / number_bins
+            (upper_bound - lower_bound) / number_bins
         self.values=[
             (lower_bound + i * self.__bin_width,
              lower_bound + (i + 1) * self.__bin_width)
@@ -51,14 +57,53 @@ class BinnedDistance(
             np.floor((value_x - self.values[0][0]) / self.__bin_width)
         if bin_index < 0 or bin_index >= self.__number_bins:
             raise OutOfRangeError(
-                "value {} is out of binning range "\
+                "{} out of binning range ({}, {}]"\
                 .format(
                     value_x,
                     self.values[0][0],
                     self.values[-1][1]))
         return\
             self.values[bin_index]
-        
+
+class DistanceBinner(
+        ParameterBinner):
+    """bin distances"""
+    def __init__(self,
+            lower_bound,
+            upper_bound,
+            number_bins=5,
+            *args, **kwargs):
+        """..."""
+        self._bin_width=\
+            (upper_bound - lower_bound) / number_bins
+        self._number_bins=\
+            number_bins
+        self._bins=np.array([
+            (lower_bound + i * self._bin_width,
+             lower_bound + (i+1) * self._bin_width)
+            for i in range(number_bins)])
+
+    def get_bin(self, values):
+        """Which bin for value?"""
+        is_scalar=\
+            collections.check(values)
+        if is_scalar:
+            values=\
+                np.array([values])
+        bin_indexes=\
+            np.floor(
+                (values - self._bins[0][0]) / self._bin_width)\
+              .astype(
+                  int)
+        bin_indexes[bin_indexes < 0]=\
+            0
+        bin_indexes[bin_indexes >= self._number_bins]=\
+            self._number_bins - 1
+        bins=\
+            self._bins[bin_indexes]
+        return\
+            bins[0] if is_scalar else bins
+            
               
 
 

@@ -3,8 +3,11 @@ import os
 import pandas as pd
 from dmt.vtk.measurement.condition\
     import Condition
+from dmt.vtk.measurement.parameter.spatial\
+    import DistanceBinner
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomCellVariate\
+    ,      RandomPairs\
     ,      RandomConnectionVariate\
     ,      RandomPathwayConnectionVariate
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.connectome.\
@@ -27,7 +30,7 @@ def get_pathway_condition(i):
 
 random_cells=\
     RandomCellVariate(
-        sscx_circuit_model)
+        sscx_circuit_model_nrn)
 random_connections_isocortex=\
     RandomConnectionVariate(
         isocortex_model,
@@ -40,3 +43,9 @@ random_connections_sscx_nrn=\
     RandomConnectionVariate(
         sscx_circuit_model_nrn,
         cache_size=100)
+random_pairs_sscx_nrn=\
+    RandomPairs(
+        sscx_circuit_model_nrn,
+        distance_binner=DistanceBinner(
+            0., 1000., 5))
+
