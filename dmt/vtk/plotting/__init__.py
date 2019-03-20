@@ -151,8 +151,8 @@ class Plot(ABC):
             if hasattr(self, key):
                 try:
                     setattr(self, key, value)
-                    self.logger.success(
-                        self.logger.get_source_info(),
+                    self._logger.success(
+                        self._logger.get_source_info(),
                         "Attribute {} set to {}".format(key, value))
                 except AttributeError as aerr:
                     self._logger.alert(
@@ -168,8 +168,8 @@ class Plot(ABC):
                             "instead, try to set {}".format(_key))
                         try:
                             setattr(self, _key, value)
-                            self.logger.success(
-                                self.logger.get_source_info(),
+                            self._logger.success(
+                                self._logger.get_source_info(),
                                 "Attribute {} set to {}".format(_key, value))
                         except AttributeError as aerr:
                             self._logger.alert(
@@ -218,6 +218,10 @@ class Plot(ABC):
             measurement\
             if measurement is not None else\
                self._measurement
+        self._logger.debug(
+            self._logger.get_source_info(),
+            "Get plotting dataframe for the measurement: {}"\
+            .format(measurement.data))
         if not isinstance(measurement.data.columns, pd.MultiIndex):
             dataframe=\
                 measurement.data
@@ -235,10 +239,18 @@ class Plot(ABC):
         if not isinstance(dataframe.index, pd.MultiIndex):
             return dataframe
         for level, value in self._given.items():
-            dataframe=\
-                dataframe.xs(
-                    value,
-                    level=level)
+            try:
+                dataframe=\
+                    dataframe.xs(
+                        value,
+                        level=level)
+            except KeyError as keyerror:
+                self._logger.alert(
+                    self._logger.get_source_info(),
+                    "KeyError raised {}".format(keyerror),
+                    "Probably the level {} was not in the dataframe index"\
+                    .format(level),
+                    "will ignore this condition and continue.")
         if allow_multi_indexed:
             return dataframe
         if isinstance(dataframe.index, pd.MultiIndex):

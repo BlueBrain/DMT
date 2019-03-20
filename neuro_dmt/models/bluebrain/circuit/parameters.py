@@ -82,11 +82,12 @@ class Mtype(
                     "mtype value {} not in the circuit {}"\
                     .format(mtype, circuit))
         return\
-            list(circuit\
-                 .cells\
-                 .mtypes\
-                 .intersection(
-                     mtypes))
+            sorted(list(
+                circuit\
+                .cells\
+                .mtypes\
+                .intersection(
+                    mtypes)))
 
     def __init__(self,
             circuit=None,

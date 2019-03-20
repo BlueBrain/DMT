@@ -176,7 +176,8 @@ class NeocortexAnalysisSuite(
             circuit_model
         self._mtype_values=\
             mtype_values if mtype_values\
-            else list(circuit_model.bluepy_circuit.cells.mtypes)
+            else sorted(
+                    list(circuit_model.cells.mtypes))
         self._region_parameter=\
             AtlasRegion(values=region_values)
         self._layer_parameter=\

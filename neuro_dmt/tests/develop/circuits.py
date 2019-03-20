@@ -62,7 +62,8 @@ sscx_circuit_model_eff=\
 def IsocortexCircuitModel(
         region,
         hemisphere="left",
-        direction="eff"):
+        direction="eff",
+        use_backup_circuit=False):
     "..."
     assert\
         direction in {"eff", "aff"}
@@ -74,7 +75,15 @@ def IsocortexCircuitModel(
             "20190307",
             "connectome/functional",
             "{}@{}".format(region, hemisphere),
-            "CircuitConfig-{}".format(direction))
+            "CircuitConfig-{}".format(direction))\
+            if not use_backup_circuit else\
+               os.path.join(
+                   circuits_path, "Isocortex",
+                   "20190307",
+                   "connectome/functional_backup",
+                   "{}@{}".format(region, hemisphere),
+                   "CircuitConfig-{}".format(direction))\
+
     return get_iso_cortex_circuit_model(
         circuit_config_path,
         animal="mouse",

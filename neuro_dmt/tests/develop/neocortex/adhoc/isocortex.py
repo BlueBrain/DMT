@@ -75,7 +75,7 @@ def run_isocortex(
             "Number of efferent connections for {}: {}"\
             .format(
                 pre_mtype,
-                len(post_mtypes)))
+                number_connections))
         post_mtype_counts=[
             (mtype, count)
             for mtype, count in post_mtypes.value_counts().items()]

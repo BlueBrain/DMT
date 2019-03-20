@@ -471,7 +471,7 @@ class RandomPrePostPairs0(
                     post_mtype,
                     distance_interval)
 
-        
+
 class RandomPairs(
         CircuitPropertyRandomVariate):
     """Generate random pairs of cell gids...,
@@ -660,17 +660,30 @@ class RandomConnectionVariate(
 
     def __init__(self,
             circuit_model,
-            cache_size=1000,
+            cache_size=None,
             *args, **kwargs):
         """Initialize Me"""
         self.__cache__=\
-            {}
+            pd.DataFrame(
+                [],
+                columns=["pre_gid", "post_gid"])
         self.__cache_size__=\
             cache_size
+        self._empty_dataframe=\
+            pd.DataFrame(
+                [],
+                columns=["pre_gid", "post_gid"],
+                index=pd.MultiIndex.from_tuples(
+                    tuples=[],
+                    names=["pre_mtype", "post_mtype"]))
+        self.__pathways_without_connections=\
+            set()
+        self.__pre_mtypes_cached=\
+            set()
         super().__init__(
             circuit_model,
             reset_condition_type=True,
-            columns=["pre_gid", "post_gid"],
+            columns=["region", "pre_gid", "post_gid"],
             *args, **kwargs)
         
     @property
@@ -678,6 +691,34 @@ class RandomConnectionVariate(
         """describe the method used to generate random positions."""
         return\
             "connected cell pairs were sampled for given pre, post mtypes."\
+
+    def __random_sample(self,
+            gids):
+        """..."""
+        if len(gids) == 0:
+            return np.array([])
+        if not self.__cache_size__:
+            return gids
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "sample {} gids out of {}"\
+            .format(
+                self.__cache_size__,
+                len(gids)))
+        return\
+            np.random.choice(
+                gids,
+                self.__cache_size__)
+
+    def __random_post_gids(self,
+            pre_gid):
+        """..."""
+        return\
+            self.__random_sample(
+                self.circuit_model\
+                    .connectome\
+                    .efferent_gids(
+                        pre_gid))
 
     def __get_connections(self,
             condition):
@@ -693,112 +734,96 @@ class RandomConnectionVariate(
                 self.circuit_model.region_label)
         self.logger.info(
             self.logger.get_source_info(),
+            "RandomConnectionVariate instance {}".format(self),
             "Get connections from {} --> {} in region {} "\
             .format(
                 pre_mtype,
                 post_mtype,
                 region))
+        pathway=\
+            (pre_mtype, post_mtype)
+        if pathway in self.__pathways_without_connections:
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "pathway {} is without connections".format(pathway))
+            return self._empty_dataframe
+        def __get_cell_type(mtype):
+            """..."""
+            if region:
+                return{
+                    Cell.MTYPE: mtype,
+                    Cell.REGION: region}
+            return{
+                Cell.MTYPE: mtype}
 
-        if not pre_mtype in self.__cache__:
-            connections={}
-            self.logger.info(
-                self.logger.get_source_info(),
-                "Get pre-synaptic cell gids ")
-            pre_gids_all=\
-                self.circuit_model\
-                    .cells.ids(
-                        self._with_region(
-                            {Cell.MTYPE: pre_mtype},
-                            region))
-            self.logger.info(
-                self.logger.get_source_info(),
-                """Found {} cell gids."""\
-                .format(len(pre_gids_all)))
+        if pre_mtype not in self.__pre_mtypes_cached:
             pre_gids=\
-                np.random.choice(
-                    pre_gids_all,
-                    self.__cache_size__)\
-                if len(pre_gids_all) >= self.__cache_size__\
-                   else pre_gids_all
+                self.__random_sample(
+                    self.circuit_model.cells.ids(
+                        __get_cell_type(
+                            pre_mtype)))
+            if len(pre_gids) == 0:
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "No pre gids for {}".format(pre_mtype))
+                return self._empty_dataframe
+                
+
+            def __get_post_gids(gid):
+                return\
+                    self.__random_sample(
+                        self.circuit_model\
+                            .connectome\
+                            .efferent_gids(gid))
+                           
+            pre_post_pairs=[
+                [pre_gid, post_gid]
+                for pre_gid in pre_gids
+                for post_gid in __get_post_gids(pre_gid)]
+
+            number_connections=\
+                len(pre_post_pairs)
+            if number_connections == 0:
+                self.__pathways_without_connections.add(pathway)
+                return self._empty_dataframe
+
             self.logger.info(
                 self.logger.get_source_info(),
-                "Get connections for {} pre-gids of mtype {} in region {} "\
+                "Number of efferent connections for {}: {}"\
                 .format(
-                    len(pre_gids),
                     pre_mtype,
-                    region if region is not None else "any"))
+                    number_connections))
 
-            pre_post_pairs=\
-                np.vstack([
-                    [pre_gid, post_gid]
-                    for pre_gid in pre_gids
-                    for post_mtype, post_gid in __random_post_gids(pre_gid)])
-
-            for i, pre_gid in enumerate(pre_gids):
-                post_gids=\
-                    self.circuit_model\
-                        .filter_region(
-                            self.circuit_model\
-                                .connectome\
-                                .efferent_gids(
-                                    pre_gid),
-                            condition)
-                self.logger.info(
-                    self.logger.get_source_info(),
-                    "For circuit at {}".format(
-                        self.circuit_model.circuit_config),
-                    "Get connections from {} --> {} in region {} ".format(
-                        pre_mtype,
-                        post_mtype,
-                        region),
-                    "{}-th pre_gid {} of total {}".format(
-                        i, pre_gid, len(pre_gids)),
-                    "Found {} post gids for {}".format(
-                        len(post_gids),
-                        pre_gid))
-                post_gid_groups_by_mtype=\
-                    self.circuit_model\
-                        .cells.get(
-                            post_gids,
-                            properties=[Cell.MTYPE])\
-                        .groupby(
-                            Cell.MTYPE)\
-                        .groups
-                self.logger.info(
-                    self.logger.get_source_info(),
-                    "Mtype groups among the post gids {}"\
-                    .format(
-                        post_gid_groups_by_mtype.keys()))
-                for mtype, gids in post_gid_groups_by_mtype.items():
-                    if mtype not in connections:
-                        connections[mtype]=\
-                            np.array([])
-                    if len(gids) > 0:
-                        random_gids=\
-                            np.random.choice(
-                                gids.values,
-                                self.__cache_size__)
-                        mtype_connections=\
-                            np.array([
-                                [pre_gid, post_gid]
-                                for post_gid in random_gids])
-                        connections[mtype]=\
-                            np.vstack([
-                                connections[mtype],
-                                mtype_connections])\
-                            if len(connections[mtype]) > 0\
-                               else mtype_connections
-                self.__cache__[pre_mtype]=\
-                    connections
-
-        connections=\
-            self.__cache__[pre_mtype][post_mtype]
-        self.logger.info(
-            self.logger.get_source_info(),
-            """Found {} connections."""\
-            .format(
-                len(connections)))
-        return connections
+            dataframe=\
+                pd.DataFrame(
+                    np.vstack(pre_post_pairs).astype(int),
+                    columns=["pre_gid", "post_gid"])
+            dataframe_with_index=\
+                dataframe.set_index(
+                    pd.MultiIndex.from_tuples(
+                        tuples=[(region, pre_mtype, mtype)
+                                for mtype in self.circuit_model.cells.get(
+                                        dataframe["post_gid"].values,
+                                        Cell.MTYPE)],
+                        names=["region", "pre_mtype", "post_mtype"]))
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "dataframe computed for pre mtype {}".format(pre_mtype),
+                "{}".format(dataframe_with_index.head()))
+            if self.__cache__.empty:
+                self.__cache__=\
+                    dataframe_with_index
+            else:
+                self.__cache__=\
+                    pd.concat([
+                        self.__cache__,
+                        dataframe_with_index])
+            self.__pre_mtypes_cached.add(pre_mtype)
+        try:
+            return self.__cache__.loc[(region, pre_mtype, post_mtype)]
+        except KeyError:
+            return self._empty_dataframe
+        
 
     def __call__(self,
             condition,
@@ -817,53 +842,22 @@ class RandomConnectionVariate(
         self.logger.info(
             self.logger.get_source_info(),
             """Sample condition {}""".format(condition.value))
-        # pre_mtype=\
-        #     condition.get_value(
-        #         "pre_mtype")
-        # post_mtype=\
-        #     condition.get_value(
-        #         "post_mtype")
-        # region=\
-        #     condition.get_value(
-        #         self.circuit_model.region_label)
-        # pre_cell_type={
-        #     Cell.MTYPE: pre_mtype,
-        #     self.circuit_model.region_label: region}
-        # post_cell_type={
-        #     Cell.MTYPE: post_mtype,
-        #     self.circuit_model.region_label: region}
-        # connections=\
-        #     list(self\
-        #          .circuit_model\
-        #          .connectome\
-        #          .iter_connections(
-        #              pre_cell_type,
-        #              post_cell_type))
-        # self.logger.info(
-        #     self.logger.get_source_info(),
-        #     """found {} connections."""\
-        #     .format(len(connections)))
         connections=\
-             self.__get_connections(
-                 condition)
-        number_connections=\
-            len(connections)
-        indexes_random=lambda:\
-            np.random.randint(
-                0, number_connections, size)
-        values=\
-            connections\
-            if number_connections <= size else\
-               connections[indexes_random(), :]
-        df_list=[
-            self.row(condition, value)
-            for value in values]
-        if len(df_list) == 0:
-            return\
-                pd.DataFrame([], columns=self.columns)
-        df = pd.concat(df_list)
-        assert isinstance(df.index, pd.MultiIndex)
-        return df
+            self.__get_connections(
+                condition)
+        if connections.shape[0] == 0:
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "no connections found for condition".format(
+                    condition.value))
+            return self._empty_dataframe
+        
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "found {} connections for condition".format(
+                connections.shape,
+                condition.value))
+        return connections.sample(size, replace=True)
             
 
 class RandomPathwayConnectionVariate(

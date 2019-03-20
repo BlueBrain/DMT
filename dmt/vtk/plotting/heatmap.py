@@ -56,7 +56,8 @@ class HeatMap(Plot):
                     allow_multi_indexed=True)
             if not isinstance(dataframe.index, pd.MultiIndex):
                 raise ValueError(
-                    "Plot dataframe is not a multi-indexed.")
+                    "Plot dataframe {} is not a multi-indexed."\
+                    .format(dataframe))
             if not len(dataframe.index.names) == 2:
                 raise ValueError(
                     "Plot dataframe's index has more than 2 levels:\n {}"\
