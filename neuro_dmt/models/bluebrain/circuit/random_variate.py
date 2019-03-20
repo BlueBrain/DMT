@@ -727,6 +727,13 @@ class RandomConnectionVariate(
                     len(pre_gids),
                     pre_mtype,
                     region if region is not None else "any"))
+
+            pre_post_pairs=\
+                np.vstack([
+                    [pre_gid, post_gid]
+                    for pre_gid in pre_gids
+                    for post_mtype, post_gid in __random_post_gids(pre_gid)])
+
             for i, pre_gid in enumerate(pre_gids):
                 post_gids=\
                     self.circuit_model\
@@ -749,7 +756,7 @@ class RandomConnectionVariate(
                     "Found {} post gids for {}".format(
                         len(post_gids),
                         pre_gid))
-                post_mtype_gids=\
+                post_gid_groups_by_mtype=\
                     self.circuit_model\
                         .cells.get(
                             post_gids,
@@ -757,25 +764,30 @@ class RandomConnectionVariate(
                         .groupby(
                             Cell.MTYPE)\
                         .groups
-                for post_mtype, post_gids in post_mtype_gids.items():
-                    if post_mtype not in connections:
-                        connections[post_mtype]=\
+                self.logger.info(
+                    self.logger.get_source_info(),
+                    "Mtype groups among the post gids {}"\
+                    .format(
+                        post_gid_groups_by_mtype.keys()))
+                for mtype, gids in post_gid_groups_by_mtype.items():
+                    if mtype not in connections:
+                        connections[mtype]=\
                             np.array([])
-                    if len(post_gids) > 0:
-                        random_post_gids=\
+                    if len(gids) > 0:
+                        random_gids=\
                             np.random.choice(
-                                post_gids.values,
+                                gids.values,
                                 self.__cache_size__)
-                        post_mtype_connections=\
+                        mtype_connections=\
                             np.array([
                                 [pre_gid, post_gid]
-                                for post_gid in random_post_gids])
-                        connections[post_mtype]=\
+                                for post_gid in random_gids])
+                        connections[mtype]=\
                             np.vstack([
-                                connections[post_mtype],
-                                post_mtype_connections])\
-                            if len(connections[post_mtype]) > 0\
-                               else post_mtype_connections
+                                connections[mtype],
+                                mtype_connections])\
+                            if len(connections[mtype]) > 0\
+                               else mtype_connections
                 self.__cache__[pre_mtype]=\
                     connections
 
