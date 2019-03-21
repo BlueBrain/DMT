@@ -425,10 +425,6 @@ class BlueBrainModelAdapter(
         region_label=\
             circuit_model.region_label
 
-        pathways_without_connections=\
-            set()
-        pre_mtypes_cached=\
-            set()
 
         def __random_sample(gids):
             """..."""
@@ -445,13 +441,66 @@ class BlueBrainModelAdapter(
             pd.DataFrame(
                 [],
                 columns=["mean", "std"])
-        connection_counts_dataframe_cache=\
-            pd.DataFrame([], columns=["count"])
-        mtype_counts_cache=\
+        was_cached=\
+            set()
+        connection_counts_pathway=\
             {}
+        number_cells_mtype=\
+            {}
+        has_efferent_connections_mtype=\
+            {}
+
+        def __add_to_cache(
+                mtype,
+                region):
+            """presumably, mtype is not in the cache"""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "cache mtype {}, region {}".format(mtype, region))
+            cell_type={
+                Cell.MTYPE: mtype}
+            if region:
+                cell_type[Cell.REGION]=\
+                    region
+            mtype_gids=\
+                circuit_model.cells.ids(
+                    cell_type)
+            number_cells_mtype[mtype]=\
+                len(mtype_gids)
+            if len(mtype_gids) == 0:
+                has_efferent_connections_mtype[mtype]=\
+                    False
+                return
+            post_mtypes=\
+                circuit.cells.get(
+                    np.hstack([
+                        circuit.connectome.efferent_gids(gid)
+                        for gid in mtype_gids]),
+                    Cell.MTYPE)
+            number_connections=\
+                len(post_mtypes)
+            if number_connections == 0:
+                has_efferent_connections_mtype[mtype]=\
+                    False
+                return
+            else:
+                has_efferent_connections_mtype[mtype]=\
+                    True
+            connection_counts_pathway.update({
+                (region, mtype, post_mtype): counts
+                for post_mtype, counts in post_mtypes.value_counts().items()})
+            was_cached.add(
+                mtype)
+            return
+
         def __get_pathway_connection_probability(
                 condition):
             """..."""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "get pathway connection probability for condition {}"\
+                .format(
+                    condition.value))
             pre_mtype=\
                 condition.get_value("pre_mtype")
             post_mtype=\
@@ -468,70 +517,70 @@ class BlueBrainModelAdapter(
             if region:
                 post_cell_type[Cell.REGION]=\
                     region
-            if pre_mtype not in pre_mtypes_cached:
-                pre_gids=\
-                    circuit_model.cells.ids(
-                        pre_cell_type)
-                mtype_counts_cache[pre_mtype]=\
-                    len(pre_gids)
-                if post_mtype not in mtype_counts_cache:
-                    post_gids=\
-                        circuit_model.cells.ids(
-                            post_cell_type)
-                    mtype_counts_cache[post_mtype]=\
-                        len(post_gids)
-                if len(pre_gids) == 0:
-                    return empty_dataframe
-                post_mtypes=\
-                    circuit.cells.get(
-                        np.hstack(
-                            circuit.connectome.efferent_gids(pre_gid)
-                            for pre_gid in pre_gids),
-                        Cell.MTYPE)
-                number_connections=\
-                    len(post_mtypes)
-                if number_connections == 0:
-                    return empty_dataframe
-                post_mtype_counts=[
-                    (mtype, count)
-                    for mtype, count in post_mtypes.value_counts().items()]
-                connection_counts_dataframe=\
-                    pd.DataFrame(
-                        {"count": np.array([
-                            count for _,count in post_mtype_counts]
-                        ).astype(float)},
-                        index=pd.MultiIndex.from_tuples(
-                            tuples=[(region, pre_mtype, post_mtype)
-                                    for post_mtype,_ in post_mtype_counts],
-                            names=[region, "pre_mtype", "post_mtype"]))
-                if connection_counts_dataframe_cache.empty:
-                    connection_counts_dataframe_cache=\
-                        connection_counts_dataframe
-                else:
-                    connection_counts_dataframe_cache=\
-                        pd.concat(
-                            connection_counts_dataframe_cache,
-                            connection_counts_dataframe)
+            if pre_mtype not in was_cached:
+                __add_to_cache(pre_mtype, region)
+            if post_mtype not in was_cached:
+                __add_to_cache(post_mtype, region)
+            number_pre_mtype_gids=\
+                number_cells_mtype[
+                    pre_mtype]
+            number_post_mtype_gids=\
+                number_cells_mtype[
+                    post_mtype]
+
+            if (number_pre_mtype_gids == 0
+                or number_post_mtype_gids == 0):
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "no pre mtype {} gids or no post mtype {} gids"\
+                    .format(
+                        pre_mtype,
+                        post_mtype))
+                return\
+                    pd.Series({
+                        "mean": np.nan,
+                        "std": np.nan})
+            number_pairs=\
+                number_pre_mtype_gids * number_post_mtype_gids
+            if not has_efferent_connections_mtype[pre_mtype]:
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "no efferent connections from {}"\
+                    .format(
+                        pre_mtype))
+                return\
+                    pd.Series({
+                        "mean": 0.,
+                        "std": 1./np.sqrt(
+                            number_pairs)})
             pathway=\
                 (region, pre_mtype, post_mtype)
+            number_connections=\
+                connection_counts_pathway[pathway]
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "condition {}".format(condition.value),
+                "found number pairs {}".format(number_pairs),
+                "found number connections {}".format(number_connections))
             return\
-                connection_counts_dataframe_cache.loc[pathway]\
-                /(mtype_counts_cache[pre_mtype]*mtype_counts_cache[post_mtype])
+                pd.Series({
+                    "mean": number_connections / number_pairs,
+                    "std": np.sqrt(number_connections) / number_pairs})
             
                 
-        # def __get_parameter_values(
-        #         condition):
-        #     """..."""
-        #     region=\
-        #         condition.get_value(region_label)
-        #     if region:
-        #         return(
-        #             region,
-        #             condition.get_value("pre_mtype"),
-        #             condition.get_value("post_mtype"))
-        #     return (
-        #         condition.get_value("pre_mtype"),
-        #         condition.get_value("post_mtype"))
+        def __get_parameter_values(
+                condition):
+            """..."""
+            region=\
+                condition.get_value(region_label)
+            if region:
+                return(
+                    region,
+                    condition.get_value("pre_mtype"),
+                    condition.get_value("post_mtype"))
+            return (
+                condition.get_value("pre_mtype"),
+                condition.get_value("post_mtype"))
 
         # def __with_region(
         #         cell_group,
@@ -640,8 +689,13 @@ class BlueBrainModelAdapter(
         #                           for connection, _, _ in connection_counts],
         #                   names=[p.label for p in parameters]))
         measurement=\
-            pd.concat([
-                __get_pathway_connection_probability(condition)])
+            pd.DataFrame(
+                [__get_pathway_connection_probability(condition)
+                 for condition in conditions],
+                index=pd.MultiIndex.from_tuples(
+                    tuples=[__get_parameter_values(condition)
+                            for condition in conditions],
+                    names=["region", "pre_mtype", "post_mtype"]))
         return\
             Record(
                 phenomenon=Phenomenon(

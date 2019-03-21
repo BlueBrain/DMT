@@ -95,12 +95,17 @@ def run_isocortex(
         pd.concat(
             get_pathway_strength(pre_mtype)
             for pre_mtype in mtypes)
-    result.to_csv(
+    filepath=\
         os.path.join(
             output_directory,
             "pathway_strength_region_{}{}.csv"\
             .format(
                 region,
-                filename_suffix)))
+                filename_suffix))
+    result.to_csv(
+        filepath)
+    logger.info(
+        "Pathway strengths for region {} written to "\
+        .format(region, filename))
     return result
 
