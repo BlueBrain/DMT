@@ -402,6 +402,7 @@ class BlueBrainModelAdapter(
             parameters=[],
             is_permissible=lambda condition: True,
             cache_size=None,
+            upper_bound_soma_distance=300, #um
             *args, **kwargs):
             
         """Compute connection probability directly."""
@@ -425,7 +426,6 @@ class BlueBrainModelAdapter(
         region_label=\
             circuit_model.region_label
 
-
         def __random_sample(gids):
             """..."""
             if len(gids) == 0:
@@ -437,6 +437,10 @@ class BlueBrainModelAdapter(
                     gids,
                     cache_size)
 
+        XYZ=[
+            Cell.X, Cell.Y, CEll.Z]
+        all_gids=\
+            circuit_model.cells.ids()
         empty_dataframe=\
             pd.DataFrame(
                 [],
@@ -447,8 +451,24 @@ class BlueBrainModelAdapter(
             {}
         number_cells_mtype=\
             {}
+        possible_post_mtype_counts=\
+            {}
         has_efferent_connections_mtype=\
             {}
+
+        def __filter_close_by(
+                origin,
+                gids=None):
+            """..."""
+            gids=\
+                all_gids if gids is None else gids
+            positions=\
+                circuit_model.cells.positions(gids)
+            distances=\
+                np.linalg.norm(
+                    positions - origin)
+            return\
+                gids[distances < upper_bound_soma_distance]
 
         def __add_to_cache(
                 mtype,
@@ -467,18 +487,36 @@ class BlueBrainModelAdapter(
                     cell_type)
             number_cells_mtype[mtype]=\
                 len(mtype_gids)
+            possible_post_mtype_counts[mtype]=\
+                circuit_model\
+                  .cells\
+                  .get(
+                      np.hstack([
+                          __filter_close_by(
+                              circuit_model.cells.positions(gid).values,
+                              all_gids)
+                          for gid in mtype_gids]),
+                      Cell.MTYPE)\
+                  .value_counts()\
+                  .to_dict()
             if len(mtype_gids) == 0:
                 has_efferent_connections_mtype[mtype]=\
                     False
                 return
-            post_mtypes=\
-                circuit.cells.get(
-                    np.hstack([
-                        circuit.connectome.efferent_gids(gid)
-                        for gid in mtype_gids]),
-                    Cell.MTYPE)
+            actual_post_mtype_counts=\
+                circuit_model\
+                  .cells\
+                  .get(
+                      np.hstack([
+                          __filter_close_by(
+                              circuit_model.cells.positions(gid).values,
+                              circuit_model.connectome.efferent_gids(gid))
+                          for gid in mtype_gids]),
+                      Cell.MTYPE)\
+                  .value_counts()\
+                  .to_dict()
             number_connections=\
-                len(post_mtypes)
+                len(actual_post_mtypes)
             if number_connections == 0:
                 has_efferent_connections_mtype[mtype]=\
                     False
@@ -488,7 +526,7 @@ class BlueBrainModelAdapter(
                     True
             connection_counts_pathway.update({
                 (region, mtype, post_mtype): counts
-                for post_mtype, counts in post_mtypes.value_counts().items()})
+                for post_mtype, counts in actual_post_mtype_counts.items()})
             was_cached.add(
                 mtype)
             return
@@ -527,7 +565,6 @@ class BlueBrainModelAdapter(
             number_post_mtype_gids=\
                 number_cells_mtype[
                     post_mtype]
-
             if (number_pre_mtype_gids == 0
                 or number_post_mtype_gids == 0):
                 self.logger.debug(
@@ -541,7 +578,7 @@ class BlueBrainModelAdapter(
                         "mean": np.nan,
                         "std": np.nan})
             number_pairs=\
-                number_pre_mtype_gids * number_post_mtype_gids
+                possible_post_mtype_counts[pre_mtype][post_mtype]
             if not has_efferent_connections_mtype[pre_mtype]:
                 self.logger.debug(
                     self.logger.get_source_info(),
