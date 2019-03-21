@@ -402,35 +402,6 @@ class BlueBrainModelHelper:
             ].value_counts()
         
 
-    def __get_cell_counts_by_property(self,
-            region_of_interest,
-            _property):
-        """..."""
-        properties=\
-            [] if not _property else [_property]
-        cells=\
-            self.cells_in_region(
-                region_of_interest,
-                with_properties=properties)
-        if not _property:
-            return np.count_nonzero(
-                roi.contains(
-                    self.__xyz(
-                        cells)))
-        property_values=\
-            cells[_property].unique()
-        data_series=\
-            pd.Series({
-                prop: np.count_nonzero(
-                    region_of_interest.contains(
-                        self.__xyz(
-                            cells[
-                                cells[_property] == prop])))
-                for prop in property_values})
-        data_series["TOT"]=\
-            data_series.sum()
-        return data_series
-
     def get_cell_counts_by_cell_type(self,
             region_of_interest):
         """Counts of inhibitory and excitatory cells, in a region of interest,
@@ -665,61 +636,23 @@ class BlueBrainModelHelper:
             scale_factor * random_spine_density() *\
             total_spine_length/(1.e-9 * region_of_interest.volume)
 
-    def soma_volume_fraction(self,
-            region_of_interest):
-        def contour_with_spines(
-                cmorph):
-            contour\
-                = cmorph.soma.points[:, 0:3]
-            spines\
-                = np.vstack([
-                    n.points[0][0:3] for n in cmorph.neurites])
-            return np.vstack([
-                contour,
-                spines])
+    # def filter_connected_pairs(self,
+    #         dataframe):
+    #     """...
+    #     Arguments
+    #     ------------
+    #     dataframe :: pandas.DataFrame, with index ["pre_gid", "post_gid"]
+    #     Return
+    #     ------------
+    #     filtered dataframe
+    #     """
+    #     pre_gid_groups=\
+    #         dataframe[["pre_gid", "post_gid"]]\
+    #             .groupby("pre_gid")\
+    #             .groups
+    #     are_connected=[
+    #         np.in1d(
+    #             post_gids,
+    #             self._conn.efferent_gids(pre_gid))
+    #         for pre_gid, post_gids in pre_gid_groups.items()}
 
-        def volume_estimate(gid):
-            morph = self._circuit.morph.get(gid)
-            try:
-                return soma.estimate_convex_hull_volume(
-                    contour_with_spines(morph))
-            except Exception as e:
-                return None
-
-        #return soma.estimate_volume_assuming_sphere(morph.soma.points[:, 0:3])
-
-
-        corner0, corner1 = roi.bbox
-        gids = self._cells.ids({
-            Cell.X: (corner0[0], corner1[0]),
-            Cell.Y: (corner0[1], corner1[1]),
-            Cell.Z: (corner0[2], corner1[2])})
-        print(
-            "for soma volume fraction, obtained ",
-            len(gids),
-            " neuron ids in ROI")
-        #soma_volumes = [soma.estimate_convex_hull_volume(c) for c in envelop]
-        #soma_volumes = [soma.estimate_volume_assuming_sphere(c) for c in contours]
-
-        soma_volumes = [volume_estimate(gid) for gid in gids]
-
-        #total_volume = np.sum(volume_estimate(gid) for gid in gids)
-        #return total_volume / roi.volume
-        nvalid = np.sum([1.0 for v in soma_volumes if v])
-        ntotal = 1. * len(soma_volumes)
-
-        if nvalid != ntotal:
-            print(
-                "Soma volume estimate.",
-                "Number of cells for which volume calculation failed",
-                ntotal - nvalid,
-                " out of ", ntotal, " total cells.")
-            print(
-                "total volumes obtained ", ntotal,
-                " with number valid ", nvalid)
-            volume_fraction\
-                = (((ntotal + 1.0)/ (nvalid + 1.0)) *
-                   np.sum([v for v in soma_volumes if v]) /
-                   region_of_interest.volume)
-            print("soma volume fraction for the roi: ", vol_frac)
-        return volume_fraction

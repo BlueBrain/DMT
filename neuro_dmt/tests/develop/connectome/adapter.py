@@ -27,15 +27,22 @@ adapter=\
         sampled_box_shape=50.*np.ones(3),
         spatial_random_variate=RandomRegionOfInterest,
         model_label="in-silico")
-mtypes=\
+all_mtypes=\
     sorted(
         list(
             sscx_circuit_model_nrn.cells.mtypes))
-conn_prob=\
-    adapter.get_pathway_connection_probability(
-        sscx_circuit_model_nrn,
-        parameters=[
-            AtlasRegion(label="region", values=["mc2_Column"]),
-            Mtype(label="pre_mtype", values=mtypes),
-            Mtype(label="post_mtype", values=mtypes)],
-        cache_size=10)
+def get_connection_probabilities(
+        circuit_model,
+        region,
+        mtypes,
+        upper_bound_soma_distance=300,
+        cache_size=100):
+    return\
+        adapter.get_pathway_connection_probability(
+            circuit_model,
+            parameters=[
+                AtlasRegion(label="region", values=[region]),
+                Mtype(label="pre_mtype", values=mtypes),
+                Mtype(label="post_mtype", values=mtypes)],
+            cache_size=cache_size,
+            upper_bound_soma_distance=upper_bound_soma_distance)

@@ -428,9 +428,7 @@ class BlueBrainModelAdapter(
 
         def __random_sample(gids):
             """..."""
-            if len(gids) == 0:
-                return np.array([])
-            if not cache_size:
+            if not cache_size or len(gids) < cache_size:
                 return gids
             return\
                 np.random.choice(
@@ -438,7 +436,7 @@ class BlueBrainModelAdapter(
                     cache_size)
 
         XYZ=[
-            Cell.X, Cell.Y, CEll.Z]
+            Cell.X, Cell.Y, Cell.Z]
         all_gids=\
             circuit_model.cells.ids()
         empty_dataframe=\
@@ -458,65 +456,137 @@ class BlueBrainModelAdapter(
 
         def __filter_close_by(
                 origin,
-                gids=None):
+                cells):
             """..."""
-            gids=\
-                all_gids if gids is None else gids
             positions=\
-                circuit_model.cells.positions(gids)
+                cells[XYZ].values
             distances=\
                 np.linalg.norm(
-                    positions - origin)
-            return\
-                gids[distances < upper_bound_soma_distance]
+                    positions - origin,
+                    axis = 1)
+            result=\
+                cells.index[distances < upper_bound_soma_distance]\
+                     .values
+            return result
 
         def __add_to_cache(
                 mtype,
-                region):
+                region,
+                all_cells):
             """presumably, mtype is not in the cache"""
-            self.logger.debug(
-                self.logger.get_source_info(),
-                "cache mtype {}, region {}".format(mtype, region))
             cell_type={
                 Cell.MTYPE: mtype}
             if region:
                 cell_type[Cell.REGION]=\
                     region
+            # mtype_gids=\
+            #     __random_sample(
+            #         circuit_model.cells.ids(
+            #             cell_type))
             mtype_gids=\
-                circuit_model.cells.ids(
-                    cell_type)
+                __random_sample(
+                    all_cells.index[
+                        all_cells["mtype"].values == mtype])
             number_cells_mtype[mtype]=\
                 len(mtype_gids)
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "cache {} mtype {} cells, region {}"\
+                .format(
+                    len(mtype_gids),
+                    mtype,
+                    region))
+
+            possible_efferent_gids={
+                gid: __filter_close_by(
+                    circuit_model.cells.positions(gid).values,
+                    all_cells)
+                for gid in mtype_gids}
             possible_post_mtype_counts[mtype]=\
-                circuit_model\
-                  .cells\
-                  .get(
+                all_cells[Cell.MTYPE]\
+                  .loc[
                       np.hstack([
-                          __filter_close_by(
-                              circuit_model.cells.positions(gid).values,
-                              all_gids)
-                          for gid in mtype_gids]),
-                      Cell.MTYPE)\
+                          gids for gids in possible_efferent_gids.values()])]\
                   .value_counts()\
                   .to_dict()
+            # possible_post_mtype_counts[mtype]=\
+            #     circuit_model\
+            #       .cells\
+            #       .get(
+            #           np.hstack([
+            #               gids for gids in possible_efferent_gids.values()]),
+            #           Cell.MTYPE)\
+            #       .value_counts()\
+            #       .to_dict()
+            
+            self.logger.info(
+                self.logger.get_source_info(),
+                "found {} possible efferent connections"\
+                .format(np.sum(possible_post_mtype_counts)))
             if len(mtype_gids) == 0:
                 has_efferent_connections_mtype[mtype]=\
                     False
                 return
+            # actual_efferent_gids={
+            #     gid: possible[
+            #         np.in1d(
+            #             possible,
+            #             circuit_model.connectome.efferent_gids(gid))]
+            #     for gid, possible in possible_efferent_gids.items()}
+            actual_efferent_gids={
+                gid: possible[
+                    np.in1d(
+                        possible,
+                        circuit_model.connectome.efferent_gids(gid))]
+                for gid, possible in possible_efferent_gids.items()}
+            # actual_post_mtype_counts=\
+            #     circuit_model\
+            #       .cells\
+            #       .get(
+            #           np.hstack([
+            #               gids for gids in actual_efferent_gids.values()]),
+            #           Cell.MTYPE)\
+            #       .value_counts()\
+            #       .to_dict()
+
             actual_post_mtype_counts=\
-                circuit_model\
-                  .cells\
-                  .get(
+                all_cells[Cell.MTYPE]\
+                  .loc[
                       np.hstack([
-                          __filter_close_by(
-                              circuit_model.cells.positions(gid).values,
-                              circuit_model.connectome.efferent_gids(gid))
-                          for gid in mtype_gids]),
-                      Cell.MTYPE)\
+                          gids for gids in actual_efferent_gids.values()])]\
                   .value_counts()\
                   .to_dict()
+
+            # possible_post_mtype_counts[mtype]=\
+            #     circuit_model\
+            #       .cells\
+            #       .get(
+            #           np.hstack([
+            #               __filter_close_by(
+            #                   circuit_model.cells.positions(gid).values,
+            #                   all_gids)
+            #               for gid in mtype_gids]),
+            #           Cell.MTYPE)\
+            #       .value_counts()\
+            #       .to_dict()
+            # actual_post_mtype_counts=\
+            #     circuit_model\
+            #       .cells\
+            #       .get(
+            #           np.hstack([
+            #               __filter_close_by(
+            #                   circuit_model.cells.positions(gid).values,
+            #                   circuit_model.connectome.efferent_gids(gid))
+            #               for gid in mtype_gids]),
+            #           Cell.MTYPE)\
+            #       .value_counts()\
+            #       .to_dict()
+            self.logger.info(
+                self.logger.get_source_info(),
+                "found {} efferent connections"\
+                .format(np.sum(possible_post_mtype_counts)))
             number_connections=\
-                len(actual_post_mtypes)
+                len(actual_post_mtype_counts)
             if number_connections == 0:
                 has_efferent_connections_mtype[mtype]=\
                     False
@@ -555,30 +625,27 @@ class BlueBrainModelAdapter(
             if region:
                 post_cell_type[Cell.REGION]=\
                     region
+            all_cells=\
+                circuit_model\
+                .cells\
+                .get(
+                    group={Cell.REGION: region} if region else None,
+                    properties=[Cell.MTYPE, Cell.X, Cell.Y, Cell.Z])
             if pre_mtype not in was_cached:
-                __add_to_cache(pre_mtype, region)
-            if post_mtype not in was_cached:
-                __add_to_cache(post_mtype, region)
-            number_pre_mtype_gids=\
-                number_cells_mtype[
-                    pre_mtype]
-            number_post_mtype_gids=\
-                number_cells_mtype[
-                    post_mtype]
-            if (number_pre_mtype_gids == 0
-                or number_post_mtype_gids == 0):
-                self.logger.debug(
+                __add_to_cache(
+                    pre_mtype,
+                    region,
+                    all_cells)
+            number_pairs=\
+                possible_post_mtype_counts[pre_mtype][post_mtype]
+            if number_pairs == 0:
+                self.logger.info(
                     self.logger.get_source_info(),
-                    "no pre mtype {} gids or no post mtype {} gids"\
-                    .format(
-                        pre_mtype,
-                        post_mtype))
+                    "no possible pre mtype to post mtype connections")
                 return\
                     pd.Series({
                         "mean": np.nan,
                         "std": np.nan})
-            number_pairs=\
-                possible_post_mtype_counts[pre_mtype][post_mtype]
             if not has_efferent_connections_mtype[pre_mtype]:
                 self.logger.debug(
                     self.logger.get_source_info(),
