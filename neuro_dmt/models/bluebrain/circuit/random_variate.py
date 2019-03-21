@@ -566,7 +566,7 @@ class RandomPairs(
                 self.random_cell\
                     .sample_one(
                         Condition([
-                            ("mtype", post_mtype),
+                            (Cell.MTYPE, post_mtype),
                             (self.circuit_model.region_label, region)]),
                         size=self.__cache_size__)
             soma_distances=\
