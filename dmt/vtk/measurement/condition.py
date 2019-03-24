@@ -20,7 +20,19 @@ class Condition:
             Record(
                 **{param: value
                    for param, value in self.__param_value_pairs})
-        super().__init__(*args, **kwargs)
+        super().__init__(
+            *args, **kwargs)
+
+
+    @classmethod
+    def from_dict(cls,
+            param_value_dict,
+            *args, **kwargs):
+        """..."""
+        return\
+            Condition(
+                list(param_value_dict.items()),
+                *args, **kwargs)
 
     @property
     def sorted_param_value_pairs(self):
