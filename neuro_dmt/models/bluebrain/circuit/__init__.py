@@ -635,24 +635,3 @@ class BlueBrainModelHelper:
         return\
             scale_factor * random_spine_density() *\
             total_spine_length/(1.e-9 * region_of_interest.volume)
-
-    # def filter_connected_pairs(self,
-    #         dataframe):
-    #     """...
-    #     Arguments
-    #     ------------
-    #     dataframe :: pandas.DataFrame, with index ["pre_gid", "post_gid"]
-    #     Return
-    #     ------------
-    #     filtered dataframe
-    #     """
-    #     pre_gid_groups=\
-    #         dataframe[["pre_gid", "post_gid"]]\
-    #             .groupby("pre_gid")\
-    #             .groups
-    #     are_connected=[
-    #         np.in1d(
-    #             post_gids,
-    #             self._conn.efferent_gids(pre_gid))
-    #         for pre_gid, post_gids in pre_gid_groups.items()}
-

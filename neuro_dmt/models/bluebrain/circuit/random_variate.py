@@ -352,7 +352,7 @@ class RandomCellVariate(
             self.__get_cells(
                 condition)
         if len(cell_gids) == 0:
-            return None
+            return np.array([])
         return\
             np.random.choice(
                 cell_gids,
@@ -474,7 +474,7 @@ class RandomPrePostPairs(
                     distance_interval)
 
 
-class RandomPairs(
+class RandomPairs0(
         CircuitPropertyRandomVariate):
     """Generate random pairs of cell gids...,
     for a given pre-mtype --> post-mtype pathway.
@@ -652,7 +652,228 @@ class RandomPairs(
             for a random variate with a finite number of possible values.
             However, a method 'sample_one' is provided below.""")
 
+class RandomPairs(
+        CircuitPropertyRandomVariate):
+    """Generate random pairs of cell gids...,
+    for a given pre-mtype --> post-mtype pathway.
+    """
 
+    label = "pre_post_pair"
+    value_type = tuple
+
+    def __init__(self,
+            circuit_model,
+            upper_bound_random_draws=1000000,
+            cache_size=100,
+            distance_binner=DistanceBinner(
+                lower_bound=0.,
+                upper_bound=10000.,#um large include all possible connections.
+                number=1),
+            *args, **kwargs):
+        """..."""
+        self.random_cell=\
+            RandomCellVariate(
+                circuit_model,
+                *args, **kwargs)
+        self.cells=\
+            circuit_model\
+              .cells\
+              .get(
+                  properties=[Cell.MTYPE, Cell.X, Cell.Y, Cell.Z])
+        self._upper_bound_random_draws=\
+            upper_bound_random_draws
+        self.__cache_size__=\
+            cache_size
+        self._distance_binner=\
+            distance_binner
+        self._empty_dataframe=\
+            pd.DataFrame(
+                [],
+                columns=[
+                    "pre_gid", "post_gid"],
+                index=pd.MultiIndex.from_tuples(
+                    [],
+                    names=[
+                        "region", "pre_mtype", "post_mtype", "soma_distance"]))
+        self.__cache__=\
+            self._empty_dataframe
+        self._has_pairs=\
+            {}
+        super().__init__(
+            circuit_model,
+            reset_condition_type=True,
+            columns=["pre_gid", "post_gid"],
+            *args, **kwargs)
+
+    @property
+    def sampling_method(self):
+        """describe the method usef to generate random pairs."""
+        return(
+            "Pairs of cell gids were sampled for given pre and post mtypes, "
+            "in the specified region and soma distance bins.")
+
+    def _get_pathway(self,
+            condition):
+        """get pathway out of a condition.
+        Data is held in this class as a dataframe,
+        indexed by pathways.
+        Arguments
+        -----------
+        condition :: Condition
+
+        Return
+        -----------
+        Index tuple
+        """
+        region=\
+            condition.get_value(
+                self.circuit_model.region_label)
+        if not region:
+            region=\
+                "Any"
+        pre_mtype=\
+            condition.get_value(
+                "pre_mtype")
+        if not pre_mtype:
+            pre_mtype=\
+                slice(None)
+        post_mtype=\
+            condition.get_value(
+                "post_mtype")
+        if not post_mtype:
+            post_mtype=\
+                slice(None)
+        soma_distance=\
+            condition.get_value(
+                "soma_distance")
+        if not soma_distance:
+            soma_distance=\
+                slice(None)
+        return(
+            region, pre_mtype, post_mtype, soma_distance)
+
+    def get_distances(self,
+            origin_gid,
+            cell_gids):
+        """Distance of cells from origin."""
+        XYZ=[
+            Cell.X, Cell.Y, Cell.Z]
+        origin=\
+            self.cells[XYZ].loc[origin_gid]
+        cell_positions=\
+            self.cells[XYZ].loc[cell_gids]
+        return\
+            self._distance_binner\
+                .get_bin_centers(
+                    np.linalg.norm(
+                        cell_positions - origin,
+                        axis=1))
+
+    def __random_sample(self, gids):
+        """..."""
+        if len(gids) < self.__cache_size__:
+            return gids
+        return\
+            np.random.choice(
+                gids,
+                self.__cache_size__)
+
+    def _get_cell_type(self,
+            mtype,
+            region):
+        """..."""
+        if region:
+            return{
+                Cell.MTYPE: mtype,
+                self.circuit_model.region_label: region}
+        return{
+            Cell.MTYPE: mtype}
+
+    def _get_pairs(self,
+            condition):
+        """..."""
+        pathway=\
+            self._get_pathway(condition)
+        try:
+            return\
+                self.__cache__.loc[pathway]
+        except KeyError as key_error:
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Pathway {} will be cached.".format(condition.value))
+            region, pre_mtype, post_mtype, soma_distance=\
+                pathway
+            pre_gids=\
+                self.__random_sample(
+                    self.cells.index[
+                        self.cells[Cell.MTYPE].values == pre_mtype])
+            if len(pre_gids) == 0:
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "No gids for mtype {}".format(pre_mtype))
+                return self._empty_dataframe
+            post_gids=\
+                self.__random_sample(
+                    self.cells.index[
+                        self.cells[Cell.MTYPE].values == post_mtype])
+            if len(post_gids) == 0:
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "No gids for mtype {}".format(post_mtype))
+            dataframe=\
+                pd.DataFrame(
+                    [[pre_gid, post_gid]
+                     for pre_gid in pre_gids
+                     for post_gid in post_gids],
+                    columns=["pre_gid", "post_gid"],
+                    index=pd.MultiIndex.from_tuples(
+                        [(region, pre_mtype, post_mtype, distance)
+                         for pre_gid in pre_gids
+                         for distance in self.get_distances(pre_gid,post_gids)],
+                        names=[
+                            "region","pre_mtype","post_mtype","soma_distance"]))
+            if self.__cache__.empty:
+                self.__cache__=\
+                    dataframe
+            else:
+                self.__cache__=\
+                    pd.concat([
+                        self.__cache__,
+                        dataframe])
+        return self.__cache__.loc[pathway]
+
+    def sample_one(self,
+            condition,
+            size=20,
+            *args, **kwargs):
+        """Override"""
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Sample condition {}.".format(condition.value))
+        pairs=\
+            self._get_pairs(
+                condition)
+        if pairs.shape[0] == 0:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "no pairs found for pathway".format(
+                    condition.value))
+            return self._empty_dataframe
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "found {} pairs for pathway".format(
+                pairs.shape,
+                condition.value))
+        return pairs.sample(size, replace=True)
+
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """Call Me"""
+        raise NotImplementedError(
+            """Need to think about sampling with or without replacement 
+            for a random variate with a finite number of possible values.
+            However, a method 'sample_one' is provided below.""")
 
 class RandomConnectionVariate(
         CircuitPropertyRandomVariate):
