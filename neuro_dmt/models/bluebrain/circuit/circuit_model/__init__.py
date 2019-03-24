@@ -52,6 +52,16 @@ class BlueBrainCircuitModel(
             __name__="release_date",
             __type__=str,
             __doc__="date when this circuit was released.")
+    representative_subregion=\
+        Field.Optional(
+            __name__="representative_subregion",
+            __type__=str,
+            __doc__="""A sub-region of the brain-region modeled. In BlueBrain
+            circuits, this will be 'mc2_Column' for micro-circuits, and
+            an actual brain-area such as 'SSp-ll@left'.
+            The name of this Field can cause confusion, which should be
+            mitigated if we rename 'class BrainRegion' to 'BrainArea'.""")
+
     
     def __init__(self,
             *args, **kwargs):

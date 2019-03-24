@@ -26,7 +26,8 @@ sscx_circuit_model=\
             "connectome/functional/All",
             "CircuitConfig"),
         animal="mouse",
-        region_label="region")
+        region_label="region",
+        representative_subregion="mc2_Column")
 sscx_circuit_model_nrn=\
     get_sscx_atlas_circuit_model(
         os.path.join(
@@ -36,7 +37,8 @@ sscx_circuit_model_nrn=\
             "functional-nrn", "All",
             "CircuitConfig"),
         animal="mouse",
-        region_label="region")
+        region_label="region",
+        representative_subregion="mc2_Column")
 sscx_circuit_model_aff=\
     get_sscx_atlas_circuit_model(
         os.path.join(
@@ -46,7 +48,8 @@ sscx_circuit_model_aff=\
             "functional", "All",
             "CircuitConfig-aff"),
         animal="mouse",
-        region_label="region")
+        region_label="region",
+        representative_subregion="mc2_Column")
 sscx_circuit_model_eff=\
     get_sscx_atlas_circuit_model(
         os.path.join(
@@ -56,7 +59,8 @@ sscx_circuit_model_eff=\
             "functional", "All",
             "CircuitConfig-eff"),
         animal="mouse",
-        region_label="region")
+        region_label="region",
+        representative_subregion="mc2_Column")
 
 
 def IsocortexCircuitModel(
@@ -88,5 +92,6 @@ def IsocortexCircuitModel(
         circuit_config_path,
         animal="mouse",
         region_label="region",
-        hemisphere=hemisphere)
+        hemisphere=hemisphere,
+        representative_subregion="SSp-ll@left")
 

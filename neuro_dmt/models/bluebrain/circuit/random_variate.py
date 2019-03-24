@@ -95,6 +95,7 @@ class RandomSpatialVariate(
         """
         return self.circuit_model.geometry
 
+
 class RandomPosition(
         RandomSpatialVariate):
     """Generate random positions in the circuit region."""
@@ -140,6 +141,7 @@ class RandomPosition(
             "random positions generated in a circuit, for a given {}"\
             .format(
                 ", ".join(self.condition_type.fields))
+
 
 class RandomCrossectionalPoint(
         RandomPosition):
@@ -366,7 +368,7 @@ class RandomCellVariate(
                 *args, **kwargs)
 
 
-class RandomPrePostPairs0(
+class RandomPrePostPairs(
         CircuitPropertyRandomVariate):
     """Generate random pairs of cell gids...,
     for a given pre-mtype --> post-mtype pathway.
@@ -430,7 +432,7 @@ class RandomPrePostPairs0(
                     pre_cell,
                     post_cell)
             self.__pair_cache__[
-                binnner.get_bin(
+                self._binner.get_bins(
                     soma_distance)]=\
                 (pre_cell, post_cell)
         return None
@@ -479,6 +481,7 @@ class RandomPairs(
     """
     label = "pre_post_pair"
     value_type = tuple
+
     def __init__(self,
             circuit_model,
             upper_bound_random_draws=1000000,
@@ -533,7 +536,7 @@ class RandomPairs(
         def __get_distances(
                 pre_gid,
                 post_gids):
-            """..."""
+            """By distance, we mean the binned distance."""
             position_pre_gid=\
                 self.circuit_model\
                     .cells\
@@ -553,11 +556,9 @@ class RandomPairs(
                     axis="columns")\
                 .values
             return\
-                np.mean(
-                    self._distance_binner\
-                        .get_bin(
-                            distances_raw),
-                    axis=1)
+                self._distance_binner\
+                    .get_bin_centers(
+                        distances_raw)
 
         def __get_one_pre_gid(
                 pre_gid):
@@ -576,7 +577,9 @@ class RandomPairs(
                 """Soma distances from pre cell {}: \n{}"""\
                 .format(
                     pre_gid,
-                    soma_distances))
+                    pd.Series(soma_distances)\
+                      .value_counts()\
+                      .sort_index()))
             return\
                 pd.DataFrame(
                     {"soma_distance": soma_distances},
@@ -748,14 +751,12 @@ class RandomConnectionVariate(
                 "pathway {} is without connections".format(pathway))
             return self._empty_dataframe
         def __get_cell_type(mtype):
-            """..."""
             if region:
                 return{
                     Cell.MTYPE: mtype,
                     Cell.REGION: region}
             return{
                 Cell.MTYPE: mtype}
-
         if pre_mtype not in self.__pre_mtypes_cached:
             pre_gids=\
                 self.__random_sample(
@@ -767,33 +768,27 @@ class RandomConnectionVariate(
                     self.logger.get_source_info(),
                     "No pre gids for {}".format(pre_mtype))
                 return self._empty_dataframe
-                
-
             def __get_post_gids(gid):
                 return\
                     self.__random_sample(
                         self.circuit_model\
                             .connectome\
                             .efferent_gids(gid))
-                           
             pre_post_pairs=[
                 [pre_gid, post_gid]
                 for pre_gid in pre_gids
                 for post_gid in __get_post_gids(pre_gid)]
-
             number_connections=\
                 len(pre_post_pairs)
             if number_connections == 0:
                 self.__pathways_without_connections.add(pathway)
                 return self._empty_dataframe
-
             self.logger.info(
                 self.logger.get_source_info(),
                 "Number of efferent connections for {}: {}"\
                 .format(
                     pre_mtype,
                     number_connections))
-
             dataframe=\
                 pd.DataFrame(
                     np.vstack(pre_post_pairs).astype(int),
@@ -820,10 +815,12 @@ class RandomConnectionVariate(
                         dataframe_with_index])
             self.__pre_mtypes_cached.add(pre_mtype)
         try:
-            return self.__cache__.loc[(region, pre_mtype, post_mtype)]
+            return\
+                self.__cache__\
+                    .loc[
+                        (region, pre_mtype, post_mtype)]
         except KeyError:
             return self._empty_dataframe
-        
 
     def __call__(self,
             condition,
@@ -851,7 +848,6 @@ class RandomConnectionVariate(
                 "no connections found for condition".format(
                     condition.value))
             return self._empty_dataframe
-        
         self.logger.debug(
             self.logger.get_source_info(),
             "found {} connections for condition".format(

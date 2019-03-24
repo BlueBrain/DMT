@@ -8,7 +8,7 @@ class ParameterBinner(
     """..."""
 
     @abstractmethod
-    def get_bin(self, values):
+    def get_bins(self, values):
         """
         Arguments
         -----------
