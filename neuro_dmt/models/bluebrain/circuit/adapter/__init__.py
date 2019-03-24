@@ -670,7 +670,6 @@ class BlueBrainModelAdapter(
                 pd.Series({
                     "mean": number_connections / number_pairs,
                     "std": np.sqrt(number_connections) / number_pairs})
-            
                 
         def __get_parameter_values(
                 condition):
@@ -686,112 +685,7 @@ class BlueBrainModelAdapter(
                 condition.get_value("pre_mtype"),
                 condition.get_value("post_mtype"))
 
-        # def __with_region(
-        #         cell_group,
-        #         condition):
-        #     """..."""
-        #     region=\
-        #         condition.get_value(
-        #             region_label)
-        #     if region is not None:
-        #         cell_group[region_label]=\
-        #             region
-        #     return cell_group
-
-        # def __get_connection_count(
-        #         condition):
-        #     """get number of connections for a given condition"""
-        #     pre_cell_group=\
-        #         __with_region(
-        #             {Cell.MTYPE: condition.get_value("pre_mtype")},
-        #             condition)
-        #     post_cell_group=\
-        #         __with_region(
-        #             {Cell.MTYPE: condition.get_value("post_mtype")},
-        #             condition)
-        #     connection_iterator=\
-        #         circuit_model\
-        #           .bluepy_circuit\
-        #           .connectome\
-        #           .iter_connections(
-        #               pre=pre_cell_group,
-        #               post=post_cell_group)
-        #     return\
-        #         sum(1. for _ in connection_iterator)
-
-        # count_cell_mtype= {}
-        # def __get_cell_count(
-        #         query):
-        #     """..."""
-        #     self.logger.debug(
-        #         self.logger.get_source_info(),
-        #         """Get cell count for cell group: {}""".format(query))
-        #     mtype = query[Cell.MTYPE]
-        #     if mtype not in count_cell_mtype:
-        #         count_cell_mtype[mtype]=len(
-        #             circuit_model\
-        #             .bluepy_circuit\
-        #             .cells.ids(query))
-        #     count=\
-        #         count_cell_mtype[mtype]
-        #     self.logger.debug(
-        #         self.logger.get_source_info(),
-        #         """Number of cells: {}""".format(count))
-        #     return count
-
-        # def __get_pair_count(
-        #         condition):
-        #     """get number of gid pairs for a given condition."""
-        #     self.logger.debug(
-        #         self.logger.get_source_info(),
-        #         """Get pair count for connection {}"""\
-        #         .format(condition.as_dict))
-        #     pre_mtype_cell_count=\
-        #         __get_cell_count(
-        #             __with_region(
-        #                 {Cell.MTYPE: condition.get_value("pre_mtype")},
-        #                 condition))
-        #     post_mtype_cell_count=\
-        #         __get_cell_count(
-        #             __with_region(
-        #                 {Cell.MTYPE: condition.get_value("post_mtype")},
-        #                 condition))
-        #     count=\
-        #         1. * pre_mtype_cell_count * post_mtype_cell_count
-        #     self.logger.debug(
-        #         self.logger.get_source_info(),
-        #         """Number of pairs: {}""".format(count))
-        #     return count
-                
-        # connection_counts=[
-        #     (__get_parameter_values(condition),
-        #      __get_pair_count(condition),
-        #      __get_connection_count(condition))
-        #      for condition in conditions]
-        # self.logger.debug(
-        #     self.logger.get_source_info(),
-        #     """Connection counts : {}""".format(connection_counts))
-
-        # def __get_pair_dict(
-        #         n_pairs, n_connections):
-        #     """..."""
-        #     assert n_connections <= n_pairs
-        #     if n_pairs == 0:
-        #         return {"mean": np.nan,  "std": np.nan}
-        #     if n_pairs == 1:
-        #         return {"mean": n_connections, "std": np.nan}
-        #     return{
-        #         "mean": n_connections / n_pairs,
-        #         "std":  np.sqrt(n_connections) / (n_pairs - 1)}
-
-        # measurement=\
-        #           pd.DataFrame(
-        #               [__get_pair_dict(n_pairs, n_connections)
-        #                for _, n_pairs, n_connections in connection_counts],
-        #               index=pd.MultiIndex.from_tuples(
-        #                   tuples=[connection
-        #                           for connection, _, _ in connection_counts],
-        #                   names=[p.label for p in parameters]))
+       #                   names=[p.label for p in parameters]))
         measurement=\
             pd.DataFrame(
                 [__get_pathway_connection_probability(condition)
@@ -811,7 +705,10 @@ class BlueBrainModelAdapter(
                 model_uri=circuit_model.get_uri(),
                 sampling_method="All pathway pairs and connections were used",
                 sample_size=np.nan,
-                measurement_method="#(pathway connections) / #(pathway pairs)",
+                measurement_method="Pairs with theirs somas within {}um "
+                "of each other were sampled. Probability was defined as "
+                "#(pathway connections) / #(pathway pairs)"\
+                .format(upper_bound_soma_distance),
                 data=measurement,
                 units="",
                 parameter_groups=[p.label for p in parameters])
