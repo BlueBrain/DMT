@@ -712,7 +712,7 @@ class RandomPairs(
             "Pairs of cell gids were sampled for given pre and post mtypes, "
             "in the specified region and soma distance bins.")
 
-    def _get_pathway(self,
+    def _read_condition(self,
             condition):
         """get pathway out of a condition.
         Data is held in this class as a dataframe,
@@ -798,21 +798,27 @@ class RandomPairs(
     def _get_pairs(self,
             condition):
         """..."""
+        query=\
+            self._read_condition(condition)
+        region, pre_mtype, post_mtype, soma_distance=\
+            query
         pathway=\
-            self._get_pathway(condition)
+            (pre_mtype, post_mtype)
         self.logger.debug(
             self.logger.get_source_info(),
-            """get pairs for pathway {}""".format(pathway))
+            """get pairs for pathway {} in region {}, at distance {}"""\
+            .format(
+                pathway,
+                region,
+                soma_distance))
         try:
-            return\
+            dataframe=\
                 self.__cache__[pathway]
         except KeyError as key_error:
-            self.logger.info(
-                self.logger.get_source_info(),
-                "Got key error {}".format(key_error),
-                "Pathway {} will be cached.".format(condition.value))
-            region, pre_mtype, post_mtype, soma_distance=\
-                pathway
+            # self.logger.debug(
+            #     self.logger.get_source_info(),
+            #     "Got key error {}".format(key_error),
+            #     "Pathway {} will be cached.".format(condition.value))
             pre_gids=\
                 self.__random_sample(
                     self.cells.index[
@@ -842,12 +848,12 @@ class RandomPairs(
                          for distance in self.get_distances(pre_gid,post_gids)],
                         names=[
                             "region","pre_mtype","post_mtype","soma_distance"]))
-            self.logger.debug(
-                self.logger.get_source_info(),
-                "will cache dataframe {}".format(dataframe))
+            # self.logger.debug(
+            #     self.logger.get_source_info(),
+            #     "will cache dataframe {}".format(dataframe))
             self.__cache__[pathway]=\
                 dataframe
-        return self.__cache__[pathway]
+        return dataframe.loc[query]
 
     def sample_one(self,
             condition,
@@ -866,11 +872,11 @@ class RandomPairs(
                 "no pairs found for pathway {}".format(
                     condition.value))
             return self._empty_dataframe
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "found {} pairs for pathway".format(
-                pairs.shape,
-                condition.value))
+        # self.logger.debug(
+        #     self.logger.get_source_info(),
+        #     "found {} pairs for pathway".format(
+        #         pairs.shape,
+        #         condition.value))
         return pairs.sample(size, replace=True)
 
     def __call__(self,
