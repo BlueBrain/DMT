@@ -41,12 +41,27 @@ class LinePlot(Plot):
         axes=\
             figure.add_subplot(
                 111)
-        a_plot=\
-           axes.errorbar(
-               dataframe.index,
-               dataframe['mean'].values,
-               yerr=dataframe['std'].values,
-               fmt=self._colors[0] + self.line_point_types[0])
+        try:
+            a_plot=\
+                axes.errorbar(
+                    dataframe.index,
+                    dataframe['mean'].values,
+                    yerr=dataframe['std'].values,
+                    fmt=self._colors[0] + self.line_point_types[0])
+        except ValueError as value_error:
+            self._logger.alert(
+                self._logger.get_source_info(),
+                "Value error raised {}".format(value_error),
+                "Possible the index is not an Array of floats",
+                "We do have some cases where the index are intervals",
+                "that is they are (flaot, float) tuples",
+                "will try assuming that")
+            a_plot=\
+                axes.errorbar(
+                    [np.mean(xvals) for xvals in dataframe.index.values],
+                    dataframe['mean'].values,
+                    yerr=dataframe['std'].values,
+                    fmt=self._colors[0] + self.line_point_types[0])
         plt.title(
             self._title,
             fontsize=24)

@@ -140,9 +140,15 @@ class StatisticalMeasurement:
             return method(**row[1])
         _make_measurement.counter = 0
 
-        data=[
-            _make_measurement(row)
-            for row in params.iterrows()]
+        # data=[
+        #     _make_measurement(row)
+        #     for row in params.iterrows()]
+        data=\
+            params\
+              .apply(
+                  lambda row: method(**row.to_dict()),
+                  axis=1)\
+              .values
         if issubclass(method.return_type, float):
             measurement=\
                 pd.DataFrame(
