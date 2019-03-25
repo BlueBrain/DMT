@@ -1,7 +1,10 @@
 """General utilities."""
 import collections
 import time
-from dmt.vtk.utils.collections import Record
+from dmt.vtk.utils\
+    import collections
+from dmt.vtk.utils.collections\
+    import Record
 
 def isabstract(cls):
     """is the class cls abstract?"""
@@ -58,3 +61,17 @@ def timestamp(now=None, sep=None):
             two_char(now.tm_min),
             two_char(now.tm_sec)) )
     return "{}{}{}".format(ts.day, sep, ts.time) if sep else ts
+
+
+def check_subclass(x, y):
+    """..."""
+    if isinstance(x, type):
+        return issubclass(x, y)
+    if collections.check(x):
+        if not collections.check(y):
+            return False
+        if len(x) != len(y):
+            return False
+        return all(
+            issubclass(_x, _y)
+            for _x, _y in zip(x, y))

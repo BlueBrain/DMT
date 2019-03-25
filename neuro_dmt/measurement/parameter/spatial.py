@@ -2,6 +2,8 @@
 
 from dmt.vtk.utils.descriptor\
     import Field
+from dmt.vtk.measurement.parameter.spatial\
+    import DistanceBinner
 from neuro_dmt.measurement.parameter\
     import BrainCircuitSpatialParameter
 from neuro_dmt.utils\
@@ -33,7 +35,6 @@ class SomaDistance(
 
     value_type = Field(
         __name__="value_type",
-        __type__=tuple,
         __typecheck__=Field.typecheck.__tuple__(float, float),
         __doc__="""Bins containing floats can be defined as an interval.""")
 
@@ -53,3 +54,9 @@ class SomaDistance(
                  lower_bound + (i + 1) * bin_width)
                 for i in range(number_bins)],
             *args, **kwargs)
+        self._binner=\
+            DistanceBinner(
+                lower_bound=lower_bound,
+                upper_bound=upper_bound,
+                number_bins=number_bins,
+                *args, **kwargs)

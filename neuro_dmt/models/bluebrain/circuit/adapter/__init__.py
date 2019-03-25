@@ -419,13 +419,28 @@ class BlueBrainModelAdapter(
                     label="pre_mtype"),
                 Mtype(
                     circuit_model.bluepy_circuit,
-                    label="post_mty;e")]
+                    label="post_mtype"),
+                SomaDistance()]
+        soma_distance_params=\
+            [param for param in parameters if param.label == "soma_distance"]
+
+        assert len(soma_distance_params) <= 1
+
+        if len(soma_distance_params) == 0:
+            parameters.append(
+                SomaDistance())
+            distance_binner=\
+                SomaDistance()._binner
+        else:
+            distance_binner=\
+                soma_distance_params[0]._binner
         return\
             self.pathway_measurement(
                 circuit_model,
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
                 parameters=parameters,
+                distance_binner=distance_binner,
                 *args, **kwargs)
 
     def get_pathway_soma_distance(self,

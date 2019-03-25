@@ -10,6 +10,8 @@ from dmt.vtk.measurement.parameter.spatial\
     import DistanceBinner
 from neuro_dmt.measurement.parameter\
     import AtlasRegion
+from neuro_dmt.measurement.parameter.spatial\
+    import SomaDistance
 from neuro_dmt.models.bluebrain.circuit.random_variate\
     import RandomCellVariate\
     ,      RandomPairs\
@@ -66,6 +68,7 @@ def get_connection_probabilities(
               parameters=[
                   AtlasRegion(label="region", values=[region]),
                   Mtype(label="pre_mtype", values=mtypes),
-                  Mtype(label="post_mtype", values=mtypes)],
+                  Mtype(label="post_mtype", values=mtypes),
+                  SomaDistance(0., 500., 10)],
               sample_size=sample_size,
               is_permissible=lambda condition: True)

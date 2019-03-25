@@ -696,7 +696,7 @@ class RandomPairs(
                     names=[
                         "region", "pre_mtype", "post_mtype", "soma_distance"]))
         self.__cache__=\
-            self._empty_dataframe
+            {}
         self._has_pairs=\
             {}
         super().__init__(
@@ -762,12 +762,18 @@ class RandomPairs(
             self.cells[XYZ].loc[origin_gid]
         cell_positions=\
             self.cells[XYZ].loc[cell_gids]
+        # return\
+        #     self._distance_binner\
+        #         .get_bin_centers(
+        #             np.linalg.norm(
+        #                 cell_positions - origin,
+        #                 axis=1))
         return\
             self._distance_binner\
-                .get_bin_centers(
-                    np.linalg.norm(
-                        cell_positions - origin,
-                        axis=1))
+              .get_bins(
+                  np.linalg.norm(
+                      cell_positions - origin,
+                      axis=1))
 
     def __random_sample(self, gids):
         """..."""
@@ -794,12 +800,16 @@ class RandomPairs(
         """..."""
         pathway=\
             self._get_pathway(condition)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """get pairs for pathway {}""".format(pathway))
         try:
             return\
-                self.__cache__.loc[pathway]
+                self.__cache__[pathway]
         except KeyError as key_error:
             self.logger.info(
                 self.logger.get_source_info(),
+                "Got key error {}".format(key_error),
                 "Pathway {} will be cached.".format(condition.value))
             region, pre_mtype, post_mtype, soma_distance=\
                 pathway
@@ -832,15 +842,12 @@ class RandomPairs(
                          for distance in self.get_distances(pre_gid,post_gids)],
                         names=[
                             "region","pre_mtype","post_mtype","soma_distance"]))
-            if self.__cache__.empty:
-                self.__cache__=\
-                    dataframe
-            else:
-                self.__cache__=\
-                    pd.concat([
-                        self.__cache__,
-                        dataframe])
-        return self.__cache__.loc[pathway]
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "will cache dataframe {}".format(dataframe))
+            self.__cache__[pathway]=\
+                dataframe
+        return self.__cache__[pathway]
 
     def sample_one(self,
             condition,
@@ -856,7 +863,7 @@ class RandomPairs(
         if pairs.shape[0] == 0:
             self.logger.alert(
                 self.logger.get_source_info(),
-                "no pairs found for pathway".format(
+                "no pairs found for pathway {}".format(
                     condition.value))
             return self._empty_dataframe
         self.logger.debug(
