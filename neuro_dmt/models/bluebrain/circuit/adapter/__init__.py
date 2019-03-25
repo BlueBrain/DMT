@@ -402,294 +402,31 @@ class BlueBrainModelAdapter(
     def get_pathway_connection_probability(self,
             circuit_model,
             parameters=[],
-            is_permissible=lambda condition: True,
-            cache_size=None,
-            upper_bound_soma_distance=300, #um
             *args, **kwargs):
-            
-        """Compute connection probability directly."""
+        """Get pathway connection probability
+        as a function of distance.
+        """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get_pathway_connection_probability kwargs {}"\
+            .format(kwargs))
         if not parameters:
             parameters=[
-                AtlasRegion(values=[circuit_model.representative_subregion]),
-                Mtype(circuit_model.bluepy_circuit, label="pre_mtype"),
-                Mtype(circuit_model.bluepy_circuit, label="post_mtype")]
-        region_label=\
-            circuit_model.region_label
-
-        def __random_sample(gids):
-            """..."""
-            if not cache_size or len(gids) < cache_size:
-                return gids
-            return\
-                np.random.choice(
-                    gids,
-                    cache_size)
-
-        XYZ=[
-            Cell.X, Cell.Y, Cell.Z]
-        all_gids=\
-            circuit_model.cells.ids()
-        empty_dataframe=\
-            pd.DataFrame(
-                [],
-                columns=["mean", "std"])
-        was_cached=\
-            set()
-        connection_counts_pathway=\
-            {}
-        number_cells_mtype=\
-            {}
-        possible_post_mtype_counts=\
-            {}
-        has_efferent_connections_mtype=\
-            {}
-
-        def __filter_close_by(
-                origin,
-                cells):
-            """..."""
-            positions=\
-                cells[XYZ].values
-            distances=\
-                np.linalg.norm(
-                    positions - origin,
-                    axis = 1)
-            close_by=\
-                distances < upper_bound_soma_distance
-            self.logger.devnote(
-                self.logger.get_source_info(),
-                "with distance mean {}, std {}"\
-                .format(
-                    np.mean(distances[close_by]),
-                    np.std(distances[close_by])),
-                "with distance min {}, max {}"\
-                .format(
-                    np.nanmin(distances[close_by]),
-                    np.nanmax(distances[close_by])))
-            return cells.index[close_by].values
-
-        def __add_to_cache(
-                mtype,
-                region,
-                all_cells):
-            """presumably, mtype is not in the cache"""
-            cell_type={
-                Cell.MTYPE: mtype}
-            if region:
-                cell_type[Cell.REGION]=\
-                    region
-            mtype_gids=\
-                __random_sample(
-                    all_cells.index[
-                        all_cells["mtype"].values == mtype])
-            number_cells_mtype[mtype]=\
-                len(mtype_gids)
-            self.logger.debug(
-                self.logger.get_source_info(),
-                "cache {} mtype {} cells, region {}"\
-                .format(
-                    len(mtype_gids),
-                    mtype,
-                    region))
-            possible_efferent_gids={
-                gid: __filter_close_by(
-                    circuit_model.cells.positions(gid).values,
-                    all_cells)
-                for gid in mtype_gids}
-            possible_post_mtype_counts[mtype]=\
-                all_cells[Cell.MTYPE]\
-                  .loc[
-                      np.hstack([
-                          gids for gids in possible_efferent_gids.values()])]\
-                  .value_counts()\
-                  .to_dict()
-            
-            self.logger.info(
-                self.logger.get_source_info(),
-                "found {} possible efferent connections"\
-                .format(np.sum(possible_post_mtype_counts)))
-            if len(mtype_gids) == 0:
-                has_efferent_connections_mtype[mtype]=\
-                    False
-                return
-            actual_efferent_gids={
-                gid: possible[
-                    np.in1d(
-                        possible,
-                        circuit_model.connectome.efferent_gids(gid))]
-                for gid, possible in possible_efferent_gids.items()}
-            actual_post_mtype_counts=\
-                all_cells[Cell.MTYPE]\
-                  .loc[
-                      np.hstack([
-                          gids for gids in actual_efferent_gids.values()])]\
-                  .value_counts()\
-                  .to_dict()
-            self.logger.info(
-                self.logger.get_source_info(),
-                "found {} efferent connections"\
-                .format(np.sum(possible_post_mtype_counts)))
-            number_connections=\
-                len(actual_post_mtype_counts)
-            if number_connections == 0:
-                has_efferent_connections_mtype[mtype]=\
-                    False
-                return
-            else:
-                has_efferent_connections_mtype[mtype]=\
-                    True
-            connection_counts_pathway.update({
-                (region, mtype, post_mtype): counts
-                for post_mtype, counts in actual_post_mtype_counts.items()})
-            was_cached.add(
-                mtype)
-            return
-
-        def __get_pathway_connection_probability(
-                condition):
-            """..."""
-            self.logger.debug(
-                self.logger.get_source_info(),
-                "get pathway connection probability for condition {}"\
-                .format(
-                    condition.value))
-            pre_mtype=\
-                condition.get_value("pre_mtype")
-            post_mtype=\
-                condition.get_value("post_mtype")
-            region=\
-                condition.get_value("region")
-            pre_cell_type=\
-                {Cell.MTYPE: pre_mtype}
-            if region:
-                pre_cell_type[Cell.REGION]=\
-                    region
-            post_cell_type=\
-                {Cell.MTYPE: post_mtype}
-            if region:
-                post_cell_type[Cell.REGION]=\
-                    region
-            all_cells=\
-                circuit_model\
-                .cells\
-                .get(
-                    group={Cell.REGION: region} if region else None,
-                    properties=[Cell.MTYPE, Cell.X, Cell.Y, Cell.Z])
-            if pre_mtype not in was_cached:
-                __add_to_cache(
-                    pre_mtype,
-                    region,
-                    all_cells)
-            number_pairs=\
-                possible_post_mtype_counts[pre_mtype][post_mtype]
-            if number_pairs == 0:
-                self.logger.info(
-                    self.logger.get_source_info(),
-                    "no possible pre mtype to post mtype connections")
-                return\
-                    pd.Series({
-                        "mean": np.nan,
-                        "std": np.nan})
-            if not has_efferent_connections_mtype[pre_mtype]:
-                self.logger.debug(
-                    self.logger.get_source_info(),
-                    "no efferent connections from {}"\
-                    .format(
-                        pre_mtype))
-                return\
-                    pd.Series({
-                        "mean": 0.,
-                        "std": 1./np.sqrt(
-                            number_pairs)})
-            pathway=\
-                (region, pre_mtype, post_mtype)
-            number_connections=\
-                connection_counts_pathway[pathway]
-            self.logger.debug(
-                self.logger.get_source_info(),
-                "condition {}".format(condition.value),
-                "found number pairs {}".format(number_pairs),
-                "found number connections {}".format(number_connections))
-            return\
-                pd.Series({
-                    "mean": number_connections / number_pairs,
-                    "std": np.sqrt(number_connections) / number_pairs})
-                
-        def __get_parameter_values(
-                condition):
-            """..."""
-            region=\
-                condition.get_value(region_label)
-            if region:
-                return(
-                    region,
-                    condition.get_value("pre_mtype"),
-                    condition.get_value("post_mtype"))
-            return (
-                condition.get_value("pre_mtype"),
-                condition.get_value("post_mtype"))
-
-        conditions=\
-            ConditionGenerator(
-                parameters,
-                is_permissible=is_permissible)
-        measurement=\
-            pd.DataFrame(
-                [__get_pathway_connection_probability(condition)
-                 for condition in conditions],
-                index=pd.MultiIndex.from_tuples(
-                    tuples=[__get_parameter_values(condition)
-                            for condition in conditions],
-                    names=["region", "pre_mtype", "post_mtype"]))
+                AtlasRegion(
+                    values=[circuit_model.representative_subregion]),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="pre_mtype"),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="post_mty;e")]
         return\
-            Record(
-                phenomenon=Phenomenon(
-                    "Pathway Connection Probability",
-                    "Probability of connections in an mtype-->mtype pathway.",
-                    group="connectome"),
-                label="in-silico",
-                model_label=circuit_model.get_label(),
-                model_uri=circuit_model.get_uri(),
-                sampling_method="All pathway pairs and connections were used",
-                sample_size=np.nan,
-                measurement_method="Pairs with theirs somas within {}um "
-                "of each other were sampled. Probability was defined as "
-                "#(pathway connections) / #(pathway pairs)"\
-                .format(upper_bound_soma_distance),
-                data=measurement,
-                units="",
-                parameter_groups=[p.label for p in parameters])
-
-    def get_pathway_connection_probability_by_distance(
-            circuit_model,
-            parameters=[],
-            *args,
-            is_permissible=lambda condition: True,
-            **kwargs):
-        """Get pathway connection probability
-        as a function of distance."""
-        distance_parameter=\
-            SomaDistance(
-                lower_bound=0.,
-                upper_bound=500.,
-                number_bins=10)
-        if not parameters:
-             parameters=[
-                 Mtype(
-                     circuit=circuit_model.bluepy_circuit,
-                     label="pre_mtype"),
-                 Mtype(
-                     circuit=circuit_model.bluepy_circuit,
-                     label="post_mtype"),
-                 distance_parameter]
-        random_pairs=\
-            RandomPairs(
+            self.pathway_measurement(
                 circuit_model,
-                binner=distance_parameter,
-                *args, **kwargs
-            ).given(
-                *parameters,
-                **kwargs)
+                connectome_measurements.PairConnection,
+                get_random_variate=RandomPairs,
+                parameters=parameters,
+                *args, **kwargs)
 
     def get_pathway_soma_distance(self,
             circuit_model,

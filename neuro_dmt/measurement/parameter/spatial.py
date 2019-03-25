@@ -40,7 +40,7 @@ class SomaDistance(
     def __init__(self,
             lower_bound = 0.,
             upper_bound = 500., #in micro-meters
-            number_bins = 20,
+            number_bins = 5,
             *args, **kwargs):
         """..."""
         bin_width=\

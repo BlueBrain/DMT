@@ -110,7 +110,3 @@ class DistanceBinner(
             np.mean(
                 self.get_bins(values),
                 axis=1)
-            
-              
-
-

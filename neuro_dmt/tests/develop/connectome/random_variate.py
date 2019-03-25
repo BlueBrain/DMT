@@ -27,7 +27,6 @@ def get_pathway_condition(i):
         Condition([
             ("pre_mtype", pre_mtype),
             ("post_mtype", post_mtype)])
-
 random_cells=\
     RandomCellVariate(
         sscx_circuit_model_nrn)
