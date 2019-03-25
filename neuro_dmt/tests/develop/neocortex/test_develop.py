@@ -44,18 +44,24 @@ def run_sscx_synapse_count_analysis(
               sample_size=200)
 
 def run_sscx_connection_probability_analysis(
-        mtypes):
+        mtypes,
+        sample_size=1000,
+        soma_distance=100,
+        cache_size=100):
     return\
         get_neocortical_analysis_suite_sscx(mtypes)\
           .get_report(
               "pathway_connection_probability",
               region="mc2_Column",
               analysis_type="analysis",
-              sample_size=1000,
-              upper_bound_soma_distance=100,
-              cache_size=100)
+              sample_size=sample_size,
+              upper_bound_soma_distance=soma_distance,
+              cache_size=cache_size)
 def run_isocortex_connection_probability_analysis(
-        mtypes):
+        mtypes,
+        sample_size=1000,
+        soma_distance=100,
+        cache_size=100):
     """..."""
     return\
         get_neocortical_analysis_suite_isocortex(mtypes)\
@@ -63,13 +69,6 @@ def run_isocortex_connection_probability_analysis(
               "pathway_connection_probability",
               region="SSp-ll@left",
               analysis_type="analysis",
-              sample_size=1000,
-              upper_bound_soma_distance=100,
-              cache_size=100)
-
-# neocortical_analysis_suite_iso_bad=\
-#     NeocortexAnalysisSuite(
-#         IsocortexCircuitModel(
-#             "SSp-ll",
-#             use_backup_circuit=True),
-#         mtype_values=mtypes)
+              sample_size=sample_size,
+              upper_bound_soma_distance=soma_distance,
+              cache_size=cache_size)

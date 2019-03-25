@@ -90,8 +90,20 @@ class PairConnection(
             "Existence of a connection between a pair of cells.")
     units= "Count"
     
+    def __init__(self,
+            circuit,
+            *args, **kwargs):
+        """..."""
+        self.__efferent_gids__=\
+            {}
+        super().__init__(
+            circuit,
+            *args, **kwargs)
+
     def __call__(self, pre_gid, post_gid):
         """...Call Me...
+
+        We use caching...
 
         Parameters
         ------------------------------------------------------------------------
@@ -102,8 +114,11 @@ class PairConnection(
         ------------------------------------------------------------------------
         bool #indicating if their is a connection
         """
+        if pre_gid not in self.__efferent_gids__:
+            self.__efferent_gids__[pre_gid]=\
+                self.conn.efferent_gids(pre_gid)
         return\
-            post_gid in self.conn.efferent_gids(pre_gid)
+            post_gid in self.__efferent_gids__[pre_gid]
 
 
 class AfferentSynapseCount(

@@ -73,6 +73,8 @@ from neuro_dmt.models.bluebrain.circuit.measurements\
     import connectome as connectome_measurements
 from neuro_dmt.measurement.parameter.spatial\
     import SomaDistance
+from neuro_dmt.measurement.parameter\
+    import AtlasRegion
 from neuro_dmt.models.bluebrain.circuit.parameters\
     import Mtype\
     ,      MtypePathway
@@ -408,21 +410,9 @@ class BlueBrainModelAdapter(
         """Compute connection probability directly."""
         if not parameters:
             parameters=[
+                AtlasRegion(values=[circuit_model.representative_subregion]),
                 Mtype(circuit_model.bluepy_circuit, label="pre_mtype"),
                 Mtype(circuit_model.bluepy_circuit, label="post_mtype")]
-        parameters_dict={
-            parameter.label: parameters
-            for parameter in parameters}
-        circuit=\
-            circuit_model.bluepy_circuit
-        pre_mtype_parameter=\
-            parameters_dict["pre_mtype"]
-        post_mtype_parameter=\
-            parameters_dict["post_mtype"]
-        conditions=\
-            ConditionGenerator(
-                parameters,
-                is_permissible=is_permissible)
         region_label=\
             circuit_model.region_label
 
@@ -464,10 +454,19 @@ class BlueBrainModelAdapter(
                 np.linalg.norm(
                     positions - origin,
                     axis = 1)
-            result=\
-                cells.index[distances < upper_bound_soma_distance]\
-                     .values
-            return result
+            close_by=\
+                distances < upper_bound_soma_distance
+            self.logger.devnote(
+                self.logger.get_source_info(),
+                "with distance mean {}, std {}"\
+                .format(
+                    np.mean(distances[close_by]),
+                    np.std(distances[close_by])),
+                "with distance min {}, max {}"\
+                .format(
+                    np.nanmin(distances[close_by]),
+                    np.nanmax(distances[close_by])))
+            return cells.index[close_by].values
 
         def __add_to_cache(
                 mtype,
@@ -479,10 +478,6 @@ class BlueBrainModelAdapter(
             if region:
                 cell_type[Cell.REGION]=\
                     region
-            # mtype_gids=\
-            #     __random_sample(
-            #         circuit_model.cells.ids(
-            #             cell_type))
             mtype_gids=\
                 __random_sample(
                     all_cells.index[
@@ -496,7 +491,6 @@ class BlueBrainModelAdapter(
                     len(mtype_gids),
                     mtype,
                     region))
-
             possible_efferent_gids={
                 gid: __filter_close_by(
                     circuit_model.cells.positions(gid).values,
@@ -509,15 +503,6 @@ class BlueBrainModelAdapter(
                           gids for gids in possible_efferent_gids.values()])]\
                   .value_counts()\
                   .to_dict()
-            # possible_post_mtype_counts[mtype]=\
-            #     circuit_model\
-            #       .cells\
-            #       .get(
-            #           np.hstack([
-            #               gids for gids in possible_efferent_gids.values()]),
-            #           Cell.MTYPE)\
-            #       .value_counts()\
-            #       .to_dict()
             
             self.logger.info(
                 self.logger.get_source_info(),
@@ -527,28 +512,12 @@ class BlueBrainModelAdapter(
                 has_efferent_connections_mtype[mtype]=\
                     False
                 return
-            # actual_efferent_gids={
-            #     gid: possible[
-            #         np.in1d(
-            #             possible,
-            #             circuit_model.connectome.efferent_gids(gid))]
-            #     for gid, possible in possible_efferent_gids.items()}
             actual_efferent_gids={
                 gid: possible[
                     np.in1d(
                         possible,
                         circuit_model.connectome.efferent_gids(gid))]
                 for gid, possible in possible_efferent_gids.items()}
-            # actual_post_mtype_counts=\
-            #     circuit_model\
-            #       .cells\
-            #       .get(
-            #           np.hstack([
-            #               gids for gids in actual_efferent_gids.values()]),
-            #           Cell.MTYPE)\
-            #       .value_counts()\
-            #       .to_dict()
-
             actual_post_mtype_counts=\
                 all_cells[Cell.MTYPE]\
                   .loc[
@@ -556,31 +525,6 @@ class BlueBrainModelAdapter(
                           gids for gids in actual_efferent_gids.values()])]\
                   .value_counts()\
                   .to_dict()
-
-            # possible_post_mtype_counts[mtype]=\
-            #     circuit_model\
-            #       .cells\
-            #       .get(
-            #           np.hstack([
-            #               __filter_close_by(
-            #                   circuit_model.cells.positions(gid).values,
-            #                   all_gids)
-            #               for gid in mtype_gids]),
-            #           Cell.MTYPE)\
-            #       .value_counts()\
-            #       .to_dict()
-            # actual_post_mtype_counts=\
-            #     circuit_model\
-            #       .cells\
-            #       .get(
-            #           np.hstack([
-            #               __filter_close_by(
-            #                   circuit_model.cells.positions(gid).values,
-            #                   circuit_model.connectome.efferent_gids(gid))
-            #               for gid in mtype_gids]),
-            #           Cell.MTYPE)\
-            #       .value_counts()\
-            #       .to_dict()
             self.logger.info(
                 self.logger.get_source_info(),
                 "found {} efferent connections"\
@@ -685,7 +629,10 @@ class BlueBrainModelAdapter(
                 condition.get_value("pre_mtype"),
                 condition.get_value("post_mtype"))
 
-       #                   names=[p.label for p in parameters]))
+        conditions=\
+            ConditionGenerator(
+                parameters,
+                is_permissible=is_permissible)
         measurement=\
             pd.DataFrame(
                 [__get_pathway_connection_probability(condition)
@@ -712,7 +659,6 @@ class BlueBrainModelAdapter(
                 data=measurement,
                 units="",
                 parameter_groups=[p.label for p in parameters])
-
 
     def get_pathway_connection_probability_by_distance(
             circuit_model,
@@ -744,9 +690,6 @@ class BlueBrainModelAdapter(
             ).given(
                 *parameters,
                 **kwargs)
-
-
-
 
     def get_pathway_soma_distance(self,
             circuit_model,

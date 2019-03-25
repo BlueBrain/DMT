@@ -47,5 +47,5 @@ random_pairs_sscx_nrn=\
     RandomPairs(
         sscx_circuit_model_nrn,
         distance_binner=DistanceBinner(
-            0., 1000., 5))
+            0., 1000., 10))
 

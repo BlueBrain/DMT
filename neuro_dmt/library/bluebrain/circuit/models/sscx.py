@@ -147,7 +147,7 @@ class SSCxAtlasSpecialization(
     is a list containing locations of circuit configurations."""
 
     def __init__(self,
-            representative_region="S1HL",
+            representative_region="SSp-ll@left",
             *args, **kwargs):
         """Initialize me"""
         self.representative_region=\

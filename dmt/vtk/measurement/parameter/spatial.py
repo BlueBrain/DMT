@@ -83,7 +83,7 @@ class DistanceBinner(
              lower_bound + (i+1) * self._bin_width)
             for i in range(number_bins)])
 
-    def get_bin(self, values):
+    def get_bins(self, values):
         """Which bin for value?"""
         is_scalar=\
             collections.check(values)
@@ -103,6 +103,13 @@ class DistanceBinner(
             self._bins[bin_indexes]
         return\
             bins[0] if is_scalar else bins
+
+    def get_bin_centers(self, values):
+        """..."""
+        return\
+            np.mean(
+                self.get_bins(values),
+                axis=1)
             
               
 
