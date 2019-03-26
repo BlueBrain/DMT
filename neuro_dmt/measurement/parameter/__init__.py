@@ -53,6 +53,7 @@ class BrainCircuitMeasurementParameter(
                             for v in value)
         return self.value_repr.get(value, "{}".format(value))
 
+
 class BrainCircuitSpatialParameter(
         BrainCircuitMeasurementParameter):
     """This class exists to define a type of parameters for measurements
@@ -67,6 +68,7 @@ class BrainCircuitSpatialParameter(
         self.brain_region\
             .add_spatial_parameter(
                 self.__class__)
+
 
 class BrainCircuitConnectomeParameter(
         BrainCircuitMeasurementParameter):

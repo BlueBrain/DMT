@@ -40,6 +40,20 @@ all_mtypes=\
     sorted(
         list(
             sscx_circuit_model_nrn.cells.mtypes))
+def get_parameters(
+        region,
+        mtypes,
+        soma_distance=None):
+    """..."""
+    parameters=[
+        AtlasRegion(label="region", values=[region]),
+        Mtype(label="pre_mtype", values=mtypes),
+        Mtype(label="post_mtype", values=mtypes)]
+    if soma_distance:
+        parameters.append(
+            soma_distance)
+    return parameters
+
 def get_connection_probabilities(
         circuit_model,
         region,
@@ -47,28 +61,28 @@ def get_connection_probabilities(
         upper_bound_soma_distance=300,
         using_connectome_adapter=True,
         cache_size=100,
-        sample_size=200):
+        sample_size=200,
+        soma_distance=None):
     """..."""
+    parameters=[
+        AtlasRegion(label="region", values=[region]),
+        Mtype(label="pre_mtype", values=mtypes),
+        Mtype(label="post_mtype", values=mtypes)]
     if using_connectome_adapter:
         return\
             connectome_adapter\
               .get_pathway_connection_probability(
                   circuit_model,
-                  parameters=[
-                      AtlasRegion(label="region", values=[region]),
-                      Mtype(label="pre_mtype", values=mtypes),
-                      Mtype(label="post_mtype", values=mtypes)],
+                  parameters=parameters,
                   upper_bound_soma_distance=upper_bound_soma_distance,
                   cache_size=cache_size,
                   sample_size=sample_size)
+    if soma_distance:
+        parameters.append(soma_distance)
     return\
         adapter\
           .get_pathway_connection_probability(
               circuit_model,
-              parameters=[
-                  AtlasRegion(label="region", values=[region]),
-                  Mtype(label="pre_mtype", values=mtypes),
-                  Mtype(label="post_mtype", values=mtypes),
-                  SomaDistance(0., 500., 10)],
+              parameters=parameters,
               sample_size=sample_size,
               is_permissible=lambda condition: True)

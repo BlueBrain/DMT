@@ -402,6 +402,7 @@ class BlueBrainModelAdapter(
     def get_pathway_connection_probability(self,
             circuit_model,
             parameters=[],
+            default_soma_distance=SomaDistance(0., 300., 1),
             *args, **kwargs):
         """Get pathway connection probability
         as a function of distance.
@@ -419,28 +420,33 @@ class BlueBrainModelAdapter(
                     label="pre_mtype"),
                 Mtype(
                     circuit_model.bluepy_circuit,
-                    label="post_mtype"),
-                SomaDistance()]
-        soma_distance_params=\
-            [param for param in parameters if param.label == "soma_distance"]
-
+                    label="post_mtype")]
+        soma_distance_params=[
+            param for param in parameters
+            if param.label == "soma_distance"]
         assert len(soma_distance_params) <= 1
-
         if len(soma_distance_params) == 0:
+            soma_distance=\
+                default_soma_distance
             parameters.append(
-                SomaDistance())
-            distance_binner=\
-                SomaDistance()._binner
+                soma_distance)
         else:
-            distance_binner=\
-                soma_distance_params[0]._binner
+            soma_distance=\
+                soma_distance_params[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get pathway connection probability with parameter values",
+            "region: {}".format(parameters[0].values),
+            "pre_mtype: {}".format(parameters[1].values),
+            "post_mtype: {}".format(parameters[2].values),
+            "soma distance: {}".format(soma_distance.values))
         return\
             self.pathway_measurement(
                 circuit_model,
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
                 parameters=parameters,
-                distance_binner=distance_binner,
+                distance_binner=soma_distance._binner,
                 *args, **kwargs)
 
     def get_pathway_soma_distance(self,

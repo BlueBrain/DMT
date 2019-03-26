@@ -671,15 +671,12 @@ class RandomPairs(
                 number=1),
             *args, **kwargs):
         """..."""
+        self.__XYZ=[
+            Cell.X, Cell.Y, Cell.Z]
         self.random_cell=\
             RandomCellVariate(
                 circuit_model,
                 *args, **kwargs)
-        self.cells=\
-            circuit_model\
-              .cells\
-              .get(
-                  properties=[Cell.MTYPE, Cell.X, Cell.Y, Cell.Z])
         self._upper_bound_random_draws=\
             upper_bound_random_draws
         self.__cache_size__=\
@@ -695,7 +692,11 @@ class RandomPairs(
                     [],
                     names=[
                         "region", "pre_mtype", "post_mtype", "soma_distance"]))
-        self.__cache__=\
+        self._sample_cells=\
+            {}
+        self._has_cells=\
+            {}
+        self._sample_pairs=\
             {}
         self._has_pairs=\
             {}
@@ -752,37 +753,23 @@ class RandomPairs(
         return(
             region, pre_mtype, post_mtype, soma_distance)
 
-    def get_distances(self,
-            origin_gid,
-            cell_gids):
+    def _get_distances(self,
+            origin,
+            cells):
         """Distance of cells from origin."""
-        XYZ=[
-            Cell.X, Cell.Y, Cell.Z]
-        origin=\
-            self.cells[XYZ].loc[origin_gid]
-        cell_positions=\
-            self.cells[XYZ].loc[cell_gids]
-        # return\
-        #     self._distance_binner\
-        #         .get_bin_centers(
-        #             np.linalg.norm(
-        #                 cell_positions - origin,
-        #                 axis=1))
         return\
             self._distance_binner\
               .get_bins(
                   np.linalg.norm(
-                      cell_positions - origin,
+                      cells[self.__XYZ].values - origin,
                       axis=1))
 
-    def __random_sample(self, gids):
+    def __random_sample(self, cells):
         """..."""
-        if len(gids) < self.__cache_size__:
-            return gids
+        if cells.shape[0] < self.__cache_size__:
+            return cells
         return\
-            np.random.choice(
-                gids,
-                self.__cache_size__)
+            cells.sample(self.__cache_size__)
 
     def _get_cell_type(self,
             mtype,
@@ -794,6 +781,27 @@ class RandomPairs(
                 self.circuit_model.region_label: region}
         return{
             Cell.MTYPE: mtype}
+
+    def _get_cells(self,
+            mtype,
+            region=None):
+        """..."""
+        region_mtype=\
+            (region, mtype) if region else mtype
+        cell_type=\
+            self._get_cell_type(
+                mtype, region)
+        if region_mtype not in self._sample_cells:
+            self._sample_cells[region_mtype]=\
+                self.__random_sample(
+                    self.circuit_model\
+                        .cells\
+                        .get(
+                            group=cell_type,
+                            properties=self.__XYZ))
+        return\
+            self._sample_cells[
+                region_mtype]
 
     def _get_pairs(self,
             condition):
@@ -813,47 +821,60 @@ class RandomPairs(
                 soma_distance))
         try:
             dataframe=\
-                self.__cache__[pathway]
+                self._sample_pairs[pathway]
         except KeyError as key_error:
             # self.logger.debug(
             #     self.logger.get_source_info(),
             #     "Got key error {}".format(key_error),
             #     "Pathway {} will be cached.".format(condition.value))
-            pre_gids=\
-                self.__random_sample(
-                    self.cells.index[
-                        self.cells[Cell.MTYPE].values == pre_mtype])
-            if len(pre_gids) == 0:
+            pre_cells=\
+                self._get_cells(
+                    pre_mtype,
+                    region)
+            if pre_cells.shape[0] == 0:
                 self.logger.debug(
                     self.logger.get_source_info(),
                     "No gids for mtype {}".format(pre_mtype))
+                self._sample_pairs[pathway]=\
+                    self._empty_dataframe
                 return self._empty_dataframe
-            post_gids=\
-                self.__random_sample(
-                    self.cells.index[
-                        self.cells[Cell.MTYPE].values == post_mtype])
-            if len(post_gids) == 0:
+            post_cells=\
+                self._get_cells(
+                    post_mtype,
+                    region)
+            if post_cells.shape[0] == 0:
                 self.logger.debug(
                     self.logger.get_source_info(),
                     "No gids for mtype {}".format(post_mtype))
+                self._sample_pairs[pathway]=\
+                    self._empty_dataframe
+                return self._empty_dataframe
+            pairs=[
+                [pre_gid, post_gid]
+                for pre_gid in pre_cells.index.values
+                for post_gid in post_cells.index.values]
+            index=\
+                pd.MultiIndex\
+                  .from_tuples(
+                      tuples=[
+                          (region, pre_mtype, post_mtype, dis)
+                          for origin in pre_cells[self.__XYZ].values
+                          for dis in self._get_distances(origin, post_cells)],
+                      names=[
+                          "region","pre_mtype","post_mtype","soma_distance"])
             dataframe=\
                 pd.DataFrame(
-                    [[pre_gid, post_gid]
-                     for pre_gid in pre_gids
-                     for post_gid in post_gids],
+                    pairs,
                     columns=["pre_gid", "post_gid"],
-                    index=pd.MultiIndex.from_tuples(
-                        [(region, pre_mtype, post_mtype, distance)
-                         for pre_gid in pre_gids
-                         for distance in self.get_distances(pre_gid,post_gids)],
-                        names=[
-                            "region","pre_mtype","post_mtype","soma_distance"]))
+                    index=index)
             # self.logger.debug(
             #     self.logger.get_source_info(),
             #     "will cache dataframe {}".format(dataframe))
-            self.__cache__[pathway]=\
+            self._sample_pairs[pathway]=\
                 dataframe
-        return dataframe.loc[query]
+        return\
+            dataframe if dataframe.empty\
+            else dataframe.loc[query]
 
     def sample_one(self,
             condition,

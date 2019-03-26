@@ -195,7 +195,7 @@ class AnalysisMultiFigureReport(
                 "{}_{}.png".format(
                     file_name_base,
                     figure_label))
-        
+
         for figure_label, figure in self.figure.items():
             plot_file_path=\
                 os.path.join(
