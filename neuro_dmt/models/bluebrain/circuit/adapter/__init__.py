@@ -331,9 +331,13 @@ class BlueBrainModelAdapter(
             get_measurement_method,
             get_random_variate,
             parameters={},
+            pathways=set(),
             fill_missing_param_values=False,
             *args, **kwargs):
-        """Meassure (mtype --> mtype) pathways."""
+        """Meassure (mtype --> mtype) pathways.
+        Arguments
+        --------------
+        pathways: List[Tuple(PreMtype, PostMtype)]"""
         if not parameters:
              parameters=[
                  Mtype(
@@ -342,6 +346,19 @@ class BlueBrainModelAdapter(
                  Mtype(
                      circuit=circuit_model.bluepy_circuit,
                      label="post_mtype")]
+        if pathways:
+            is_permissible_0=\
+                kwargs.get(
+                    "is_permissible",
+                    lambda condition: True)
+            conditioned_pathway=\
+                lambda condition:(
+                    condition.get_value("pre_mtype"),
+                    condition.get_value("post_mtype"))
+            kwargs["is_permissible"]=\
+                lambda condition:(
+                    is_permissible_0(condition)
+                    and conditioned_pathway(condition) in pathways)
         return\
             self.statistical_measurement(
                 circuit_model,
@@ -356,6 +373,7 @@ class BlueBrainModelAdapter(
     def get_pathway_synapse_count(self,
             circuit_model,
             parameters=[],
+            pathways=set(),
             *args, **kwargs):
         """Get statistics for number of synapses in a connection."""
         return\
@@ -364,11 +382,13 @@ class BlueBrainModelAdapter(
                 connectome_measurements.PairSynapseCount,
                 get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
+                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_strength(self,
             circuit_model,
             parameters={},
+            pathways=set(),
             *args, **kwargs):
         """Measure the strength of connections in a (mtype->mtype) pathway."""
         return\
@@ -376,11 +396,13 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.ConnectionStrength,
                 parameters=parameters,
+                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_count(self,
             circuit_model,
             parameters=[],
+            pathways=set(),
             *args, **kwargs):
         """Get statistical summary of the number of connections in a
         (mtype --> mtype) pathway.
@@ -396,12 +418,14 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
+                pathways=pathways,
                 parameters=parameters,
                 *args, **kwargs)
 
     def get_pathway_connection_probability(self,
             circuit_model,
             parameters=[],
+            pathways=set(),
             default_soma_distance=SomaDistance(0., 300., 1),
             *args, **kwargs):
         """Get pathway connection probability
@@ -446,12 +470,14 @@ class BlueBrainModelAdapter(
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
                 parameters=parameters,
+                pathways=pathways,
                 distance_binner=soma_distance._binner,
                 *args, **kwargs)
 
     def get_pathway_soma_distance(self,
             circuit_model,
             parameters=[],
+            pathways=set(),
             *args, **kwargs):
         """Get a statistical summary of the distance between cell somas."""
         return\
@@ -459,6 +485,7 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.SomaDistance,
                 parameters=parameters,
+                pathways=pathways,
                 *args, **kwargs)
 
     def cell_group_measurement(self,

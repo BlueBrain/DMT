@@ -52,7 +52,7 @@ class CrossPlotComparison(ComparisonPlot):
         return self
 
     def plot(self,
-            with_customization=None):
+            with_customization={}):
         """
         Compare this ComparisonPlot's data against those in datasets.
 
@@ -84,59 +84,82 @@ class CrossPlotComparison(ComparisonPlot):
             """and comparison data {}"""\
             .format(self.compared_datasets[0].data))
 
-        ys = ydata["mean"].values
-        ys_nan_index = np.isnan(ys)
-        ys_no_nan = ys[np.logical_not(ys_nan_index)]
-        yerr = ydata["std"].values
-        yerr_nan_index = np.isnan(yerr)
-        yerr_no_nan = yerr[np.logical_not(yerr)]
-        if len(ys_no_nan) == 0:
-            raise ValueError(
-            "All Y values are nan!")
+        def __get_nan_removed(axis_data):
+            """..."""
+            axis_means=\
+                axis_data["mean"].values
+            mean_nan_index=\
+                np.isnan(axis_means)
+            mean_no_nan=\
+                axis_means[
+                    np.logical_not(mean_nan_index)]
+            if len(mean_no_nan) == 0:
+                raise ValueError(
+                    "All mean values are NaN!")
+            axis_err=\
+                axis_data["std"].values
+            err_nan_index=\
+                np.isnan(axis_err)
+            err_no_nan=\
+                axis_err[
+                    np.logical_not(err_nan_index)]
+            return(
+                mean_no_nan,
+                err_no_nan)
+
+        def __get_axis_min(axis_data):
+            """..."""
+            mean_values_no_nan, error_values_no_nan=\
+                __get_nan_removed(axis_data)
+            return\
+                0. if np.min(mean_values_no_nan) >= 0. else\
+                (np.nanmin(mean_values_no_nan) + (
+                    0. if len(error_values_no_nan) == 0.
+                    else np.min(error_values_no_nan)))
+
+            
+        def __get_axis_max(axis_data):
+            """..."""
+            mean_values_no_nan, error_values_no_nan=\
+                __get_nan_removed(axis_data)
+            return\
+                np.max(mean_values_no_nan) +\
+                (0. if len(error_values_no_nan) == 0\
+                 else np.max(error_values_no_nan))
+                 
+
+        ys=\
+            ydata["mean"].values
+        yerr=\
+            ydata["std"].values
         ymax=\
-            with_customization.get(
-                "ymax",
-                np.max(ys_no_nan)+\
-                (0. if len(yerr_no_nan) == 0
-                 else np.max(yerr_no_nan)))
+            with_customization\
+            .get("axis", {})\
+            .get("ymax", __get_axis_max(ydata))
         ymin=\
-            with_customization.get(
-                "ymin",
-                0. if np.min(ys_no_nan) >= 0.\
-                else (np.min(ys_no_nan)+\
-                      (0. if len(yerr_no_nan) == 0
-                       else np.min(yerr_no_nan))))
-
-
+            with_customization\
+            .get("axis", {})\
+            .get("ymin", __get_axis_min(ydata))
         xdata=\
             self.compared_datasets[0]\
                 .data.loc[
                     ydata.index]
-        xs = xdata["mean"].values
-        xs_nan_index = np.isnan(xs)
-        xs_no_nan = xs[np.logical_not(xs_nan_index)]
-        xerr = xdata["std"].values
-        xerr_nan_index = np.isnan(xerr)
-        xerr_no_nan = xerr[np.logical_not(xerr_nan_index)]
-        if len(xs_no_nan) == 0:
-            raise ValueError(
-                "All X values are nan!")
+        xs=\
+            xdata["mean"].values
+        xerr=\
+            xdata["std"].values
         xmax=\
-            with_customization.get(
-                "xmax",
-                np.max(xs_no_nan) +\
-                (0. if len(xerr_no_nan) == 0
-                 else np.max(xerr_no_nan)))
+            with_customization\
+            .get("axis", {})\
+            .get("xmax", __get_axis_max(xdata))
         xmin=\
+            with_customization\
+            .get("axis", {})\
+            .get("xmin", __get_axis_min(xdata))
+                
+        color=\
             with_customization.get(
-                "xmin",
-                0. if np.min(xs_no_nan) >= 0.\
-                else (np.min(xs_no_nan) +\
-                      (0. if len(xerr_no_nan) == 0
-                       else np.min(xerr_no_nan))))
-
-
-        color = with_customization.get("color", "blue")
+                "color", "blue")
         self.logger.debug(
             self.logger.get_source_info(),
             "customization colors {}".format(color))
@@ -149,18 +172,20 @@ class CrossPlotComparison(ComparisonPlot):
             else len(xs) * ["blue"]
         for x, y, c in zip(xs, ys, colors):
             plt.scatter([x], [y], c=c, s=160)
-
-        min_val = min(xmin,  ymin)
-        max_val = max(xmax, ymax)
+        min_val=\
+            min(xmin,  ymin)
+        max_val=\
+            max(xmax, ymax)
         self.logger.debug(
             self.logger.get_source_info(),
-            "plot a diagonal from min {} to max {}".format(
-                min_val, max_val))
+            "plot a diagonal from min {} to max {}"\
+            .format(
+                min_val,
+                max_val))
         plt.plot(
             [min_val, max_val],
             [min_val, max_val],
             "-")
-       
         plt.axis([
             xmin, xmax, ymin, ymax])
         plt.title(

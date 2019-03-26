@@ -91,6 +91,8 @@ class Plot(ABC):
         self._given=\
             kwargs.get(
                 "given", {})
+        self._axis=\
+            {}
         self.set_customization(
             measurement)
 
@@ -198,6 +200,11 @@ class Plot(ABC):
     def ylabel(self):
         """..."""
         return self._yvar if self._yvar else self._ylabel
+
+    @property
+    def axis(self):
+        """..."""
+        return self._axis
 
     def analyzing(self,
             analyzed_quantity):

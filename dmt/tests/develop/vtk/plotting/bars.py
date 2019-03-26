@@ -28,11 +28,11 @@ test_bar_plot=\
         output_dir_path=os.path.join(
             os.getcwd(),
             "test_analysis_bar_plot"))
-plot_figure=\
-    test_bar_plot.plot()
-test_bar_plot.save(
-    plot_figure,
-    file_name="test_bar_plot.png")
+
+def make_bar_plot():
+    test_bar_plot.save(
+        test_bar_plot.plot(),
+        file_name="test_bar_plot.png")
 
 test_line_plot=\
     LinePlot(
@@ -43,11 +43,13 @@ test_line_plot=\
         output_dir_path=os.path.join(
             os.getcwd(),
             "test_analysis_line_plot"))
-line_plot_figure=\
-    test_line_plot.plot()
-test_line_plot.save(
-    line_plot_figure,
-    file_name="test_line_plot.png")
+
+def make_simple_line_plot():
+    return\
+        test_line_plot.save(
+            test_line_plot.plot(),
+            file_name="test_line_plot.png")
+
 samples=\
     pd.DataFrame({
         "test": np.random.randint(0, 100, 100)})
@@ -66,9 +68,11 @@ summary_bar_plot=\
         output_dir_path=os.path.join(
             os.getcwd(),
             "test_summary_statistics_plot"))
-summary_bar_plot.save(
-    summary_bar_plot.plot(),
-    file_name="test_summary_statistics_plot.png")
+def make_summary_bar_plot():
+    return\
+        summary_bar_plot.save(
+            summary_bar_plot.plot(),
+            file_name="test_summary_statistics_plot.png")
 
 multi_dataframe=\
     pd.DataFrame(
@@ -97,7 +101,37 @@ line_plotter=\
         title="Test plot MultiIndexed DataFrame",
         output_dir_path=os.path.join(
             os.getcwd(),
-            "test_multi_dataframe_plot"))
-line_plotter.save(
-    line_plotter.plot(),
-    file_name="test_multi_dataframe.png")
+            "test_multi_dataframe_plot"),
+        axis={
+            "xmin": 0.,
+            "xmax": 1.,
+            "ymin": np.min(multi_dataframe["mean"].values),
+            "ymax": np.max(multi_dataframe["mean"].values)})
+
+def make_line_plot():
+    return\
+        line_plotter.save(
+            line_plotter.plot(),
+            file_name="test_multi_dataframe.png")
+
+dataframe_onepoint=\
+    pd.DataFrame(
+        dict(
+            mean=[0.1],
+            std=[0.01],
+        index=pd.Index(
+            ["L{}".format(i) for i in range(1,2)])))
+test_line_plot_one=\
+    LinePlot(
+        Record(
+            data=dataframe_onepoint,
+            label="test"),
+        title="Test Plot",
+        output_dir_path=os.path.join(
+            os.getcwd(),
+            "test_analysis_one_line_plot"))
+def make_one_point_line_plot():
+    return\
+        test_line_plot_one.save(
+            test_line_plot_one.plot(),
+            file_name="line_plot_with_1_point.png")
