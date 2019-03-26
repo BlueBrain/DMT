@@ -303,7 +303,7 @@ class ConditionedRandomVariate(
                 self.logger.get_source_info(),
                 """No condition generator, will pass empty conditions,
                 that should be interpreted as no conditions.""")
-            conditions = {}
+            conditions = []
         if not self.is_valid(conditions):
             self.logger.warn(
                 self.logger.get_source_info(),

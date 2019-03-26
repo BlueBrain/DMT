@@ -872,9 +872,21 @@ class RandomPairs(
             #     "will cache dataframe {}".format(dataframe))
             self._sample_pairs[pathway]=\
                 dataframe
+        if dataframe.empty:
+            return dataframe
+        try:
+            query_dataframe=\
+                dataframe.loc[query]
+            return\
+                dataframe\
+                if isinstance(query_dataframe, pd.Series)\
+                   else query_dataframe
+        except KeyError as key_error:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "no pairs for pathway {}".format(query))
         return\
-            dataframe if dataframe.empty\
-            else dataframe.loc[query]
+            self._empty_dataframe
 
     def sample_one(self,
             condition,
@@ -898,7 +910,10 @@ class RandomPairs(
         #     "found {} pairs for pathway".format(
         #         pairs.shape,
         #         condition.value))
-        return pairs.sample(size, replace=True)
+        return\
+            pairs.sample(size, replace=False)\
+            if pairs.shape[0] > size\
+               else pairs
 
     def __call__(self,
             condition,

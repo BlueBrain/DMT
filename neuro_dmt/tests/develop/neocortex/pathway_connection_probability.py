@@ -47,4 +47,25 @@ def get_pathway_connection_probability_analysis(
                 model_label="in-silico"),
             *args, **kwargs)
 
-
+def top_(number, pandas_series):
+    """..."""
+    return\
+        list(
+            pandas_series\
+              .value_counts()\
+              .iloc[:number]\
+              .index\
+              .values\
+              .astype(str))
+            
+interesting_mtypes=[
+    mtype for layer in range(1, 7)
+    for mtype in top_(
+            2,
+            sscx_circuit_model_nrn.cells.get(
+                {"layer": layer},
+                "mtype"))]
+interesting_pathways=\
+    [(pre_mtype, post_mtype)
+     for pre_mtype in interesting_mtypes
+     for post_mtype in interesting_mtypes]
