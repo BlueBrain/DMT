@@ -314,12 +314,15 @@ class ConditionedRandomVariate(
         dataframes_for_conditions=[
             self.sample_one(condition, size=size)
             for condition in conditions]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Problem here, dataframes_for_condition is array? {}"""\
+            .format(dataframes_for_conditions))
         if len(dataframes_for_conditions) == 0:
             return pd.DataFrame([])
         return\
             pd.concat(
                 dataframes_for_conditions)
-
 
     def transform(self,
             mapping):

@@ -333,37 +333,31 @@ class RandomCellVariate(
             "random cell gids were sampled for given {}".format(
                ", ".join( self.condition_type.fields))
 
-    def __get_cells(self,
-            condition):
+    def _random_choice(self,
+            condition,
+            size=None):
         """..."""
         if not condition.hash_id in self.__gid_cache__:
             self.__gid_cache__[condition.hash_id]=\
                 self.circuit_model\
                     .cells.ids(
                         condition.as_dict)
-        return\
-            self.__gid_cache__[condition.hash_id]
-
-    def sample_one(self,
-            condition,
-            size=20):
-        """Override"""
         cell_gids=\
-            self.__get_cells(
-                condition)
+            self.__gid_cache__[
+                condition.hash_id]
         if len(cell_gids) == 0:
-            return np.array([])
+            return np.array([]) if size else None
         return\
-            np.random.choice(
-                cell_gids,
-                size)
+            np.random.choice(cell_gids, size)\
+            if size else\
+            np.random.choice(cell_gids)
 
     def __call__(self,
             condition,
             *args, **kwargs):
         """...Call Me..."""
         return\
-            self.sample_one(
+            self._random_choice(
                 condition,
                 *args, **kwargs)
 

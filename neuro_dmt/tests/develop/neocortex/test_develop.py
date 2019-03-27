@@ -31,7 +31,8 @@ def get_neocortical_analysis_suite_isocortex(
                 hemisphere=hemisphere,
                 direction=direction),
             mtype_values=mtypes,
-            region_values=["region@{}".format(hemisphere)],
+            region_values=[
+                "{}@{}".format(region, hemisphere)],
             *args, **kwargs)
 def run_sscx_synapse_count_analysis(
         mtypes):
