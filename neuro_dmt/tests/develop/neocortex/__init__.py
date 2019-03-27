@@ -459,6 +459,3 @@ class NeocortexAnalysisSuite(
                                 phenomenon_label]),
                         "subregion-{}".format(region))))
         return report
-
-
-

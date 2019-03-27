@@ -61,6 +61,14 @@ class ByMtypePathwayConnectomeAnalysis(
             function of either cell-type (for example mtype) or a
             cell-type --> cell-type pathway. Most often we will use mtype
             as cell-type.""")
+    pathways_to_analyze=\
+        Field(
+            __name__="pathways_to_analyze",
+            __type__=set,
+            __typecheck__=Field.typecheck.collection(tuple),
+            __default__=set(),
+            __doc__="""Set of pathways as pre/post mtype pairs to be analyzed.
+            Empty set will be interpreted as all possible pathways.""")
     Plotter=\
         Field(
             __name__ = "Plotter",

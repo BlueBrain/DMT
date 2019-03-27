@@ -105,22 +105,26 @@ class PathwayConnectionProbabilityAnalysis(
             """assuming that there is only one region in model_measurement"""
             return\
                 LinePlot(
-                    model_measurement)\
-                .plotting(\
-                    "Pathway Connection Probability")\
-                .versus(
-                    "Soma Distance")\
-                .given(
+                    model_measurement
+                ).plotting(
+                    "Connection Probability"
+                ).versus(
+                    "Soma Distance"
+                ).given(
                     region=region,
                     pre_mtype=pre_mtype,
-                    post_mtype=post_mtype)\
-                .with_customization(
+                    post_mtype=post_mtype
+                ).with_customization(
                     title="Pathway {}-->{} in region".format(
                         pre_mtype,
                         post_mtype,
                         region),
-                    **kwargs)\
-                .plot()
+                    ylabel="Connection Probability",
+                    axis={
+                        "ymin": 0.,
+                        "ymax": 1.},
+                    **kwargs
+                ).plot()
         measurement_index=\
             model_measurement\
               .data\
@@ -144,4 +148,5 @@ class PathwayConnectionProbabilityAnalysis(
                 .get_pathway_connection_probability(
                     circuit_model,
                     parameters=self.measurement_parameters,
+                    pathways=self.pathways_to_analyze,
                     *args, **kwargs)

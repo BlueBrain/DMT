@@ -72,10 +72,50 @@ class ByMtypeConnectomeValidation(
         return np.nan
 
 
+def get_pathway_colors(measurement):
+    """..."""
+    measurement_index=\
+        measurement\
+        .data\
+        .index\
+        .to_frame()
+    pathways=\
+        zip(
+            measurement_index["pre_mtype"],
+            measurement_index["post_mtype"])
+    def __get_pathway_color(
+            pre_mtype,
+            post_mtype):
+        """..."""
+        if "PC" in pre_mtype:
+            if "PC" in post_mtype:
+                return "xkcd:lightgreen"
+            return "xkcd:green"
+        if "PC" in post_mtype:
+            return "xkcd:red"
+        return "xkcd:magenta"
+    return[
+        __get_pathway_color(pre_mtype, post_mtype)
+         for pre_mtype, post_mtype in pathways]
+
+
 class PairSynapseCountValidation(
         ByMtypeConnectomeValidation,
         PairSynapseCountAnalysis):
-    pass
+
+    def plot(self,
+            model_measurement,
+            compared_quantity="dataset",
+            *args, **kwargs):
+        """Override to customize color scheme."""
+        kwargs["color"]=\
+            get_pathway_colors(
+                model_measurement)
+        return\
+            super().plot(
+                model_measurement,
+                compared_quantity=compared_quantity,
+                *args, **kwargs)
 
 
 class PairConnectionValidation(
@@ -88,6 +128,9 @@ class PairConnectionValidation(
             with_full_axis_range=False,
             *args, **kwargs):
         """..."""
+        kwargs["color"]=\
+            get_pathway_colors(
+                model_measurement)
         if with_full_axis_range:
             kwargs["ymin"] = 0.
             kwargs["ymax"] = 1.
@@ -110,11 +153,15 @@ class PathwayConnectionProbabilityValidation(
             with_full_axis_range=False,
             *args, **kwargs):
         """..."""
+        kwargs["color"]=\
+            get_pathway_colors(
+                model_measurement)
         if with_full_axis_range:
-            kwargs["ymin"] = 0.
-            kwargs["ymax"] = 1.
-            kwargs["xmin"] = 0.
-            kwargs["xmax"] = 1.
+            kwargs["axis"]={
+                "xmin": 0.,
+                "xmax": 1.,
+                "ymin": 0.,
+                "ymax": 1.}
         return\
             super().plot(
                 model_measurement,
@@ -127,13 +174,18 @@ class CellBoutonDensityValidation(
         CellBoutonDensityAnalysis):
     """Validate cell bouton densities."""
 
-
     def plot(self,
             model_measurement,
             compared_quantity="dataset",
             *args, **kwargs):
-        """..."""
-        mtypes = model_measurement.data.index.to_frame()["mtype"].values
+        """Override to customize color scheme."""
+        mtypes=\
+            model_measurement\
+            .data\
+            .index\
+            .to_frame()[
+                "mtype"]\
+            .values
         kwargs["color"]=[
             "green" if "PC" in mtype else "red"
             for mtype in mtypes]

@@ -246,8 +246,3 @@ class AnalysisMultiFigureReport(
             return self._save_default(
                 output_dir_path,
                 file_name_base)
-
-
-                    
-
-    

@@ -17,6 +17,6 @@
       #for $image_name in $image_names
           <img src="./$image_name" alt="apologies.png"/>
       #end for
-    <\br>
+    </br>
   </body
 </html>
