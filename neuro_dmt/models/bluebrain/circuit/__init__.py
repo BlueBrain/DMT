@@ -605,7 +605,7 @@ class BlueBrainModelHelper:
 
     def spine_count_density(self,
             region_of_interest,
-            queried_spine_type=[
+            queried_neurite_type=[
                 nm.BASAL_DENDRITE,
                 nm.APICAL_DENDRITE],
             spine_density_per_unit_len_mean=1.05,
@@ -619,10 +619,10 @@ class BlueBrainModelHelper:
         segment_lengths=\
             self.segment_lengths(
                 region_of_interest)
-        total_spine_length=\
+        total_segment_length=\
             np.sum([
                 segment_lengths[neurite_type]
-                for neurite_type in queried_spine_type])
+                for neurite_type in queried_neurite_type])
         if not total_spine_length:
             return 0.
 
@@ -634,4 +634,4 @@ class BlueBrainModelHelper:
         
         return\
             scale_factor * random_spine_density() *\
-            total_spine_length/(1.e-9 * region_of_interest.volume)
+            total_segment_length/(1.e-9 * region_of_interest.volume)

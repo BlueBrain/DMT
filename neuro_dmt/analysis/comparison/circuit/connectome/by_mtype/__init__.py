@@ -25,9 +25,18 @@ class ByMtypeConnectomeComparison(
         Field(
             __name__ = "Plotter",
             __typecheck__ = Field.typecheck.subtype(ComparisonPlot),
-            __default__ = CrossPlotComparison,
             __doc__ = """A subclass of {} to plot comparison results.""".format(
                 ComparisonPlot))
+
+    def __init__(self,
+            *args, **kwargs):
+        """Initialize Me, and pass on to supers..."""
+        kwargs["Plotter"]=\
+            kwargs.get(
+                "Plotter",
+                CrossPlotComparison)
+        super().__init__(
+            *args, **kwargs)
 
 
 class PairSynapseCountComparison(

@@ -77,7 +77,6 @@ class ByMtypePathwayConnectomeAnalysis(
             __typecheck__ = Field.typecheck.subtype(Plot),
             __default__ = HeatMap,
             __doc__ = """Plot results""".format(Plot))
-                
 
     def __init__(self,
             phenomenon,
@@ -89,6 +88,19 @@ class ByMtypePathwayConnectomeAnalysis(
         super().__init__(
             phenomenon,
             *args, **kwargs)
+
+    def plot(self,
+            model_measurement,
+            *args, **kwargs):
+        """Override to get pre_mtype and post_mtype
+        along the y and x axis respectively."""
+        kwargs.update({
+            "xvar": "post_mtype" ,
+            "yvar": "pre_mtype"})
+        return\
+            super().plot(
+                model_measurement,
+                *args, **kwargs)
 
 
 from neuro_dmt.analysis.circuit.connectome.by_mtype.synapse_count\

@@ -225,10 +225,10 @@ class Plot(ABC):
             measurement\
             if measurement is not None else\
                self._measurement
-        self._logger.debug(
-            self._logger.get_source_info(),
-            "Get plotting dataframe for the measurement: {}"\
-            .format(measurement.data))
+        # self._logger.debug(
+        #     self._logger.get_source_info(),
+        #     "Get plotting dataframe for the measurement: {}"\
+        #     .format(measurement.data))
         if not isinstance(measurement.data.columns, pd.MultiIndex):
             dataframe=\
                 measurement.data
@@ -237,12 +237,12 @@ class Plot(ABC):
                 dataframe=\
                     measurement.data[
                         self._analyzed_quantity]
-            except KeyError as e:
+            except KeyError as key_error:
                 self._logger.error(
                     self._logger.get_source_info(),
                     "Expected {} not found in dataframe columns"\
                     .format(self._yvar))
-                raise e
+                raise key_error
         if not isinstance(dataframe.index, pd.MultiIndex):
             return dataframe
         for level, value in self._given.items():

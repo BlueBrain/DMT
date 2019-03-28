@@ -146,7 +146,8 @@ class BrainCircuitAnalysis(
                     **kwargs))\
             .with_customization(
                 **kwargs)\
-            .plot()
+            .plot(
+                with_customization=kwargs)
 
     def get_report(self,
             model_measurement,

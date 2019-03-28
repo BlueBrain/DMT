@@ -203,10 +203,15 @@ class BlueBrainModelConnectomeAdapter(
                 "condition {}".format(condition.value),
                 "found number of pairs {}".format(number_pairs),
                 "found number of connections {}".format(number_connections))
+            probability_mean=\
+                number_connections / number_pairs
+            probability_var=\
+                    probability_mean * (1. - probability_mean)
             return\
                 pd.Series({
-                    "mean": number_connections / number_pairs,
-                    "std": np.sqrt(number_connections) / number_pairs})
+                    "mean": probability_mean,
+                    "std": np.sqrt(probability_var/number_pairs)})
+
         def __get_parameter_values(
                 condition):
             """..."""

@@ -58,6 +58,7 @@ def get_connection_probabilities(
         circuit_model,
         region,
         mtypes,
+        pathways=set(),
         upper_bound_soma_distance=300,
         using_connectome_adapter=True,
         cache_size=100,
@@ -74,6 +75,7 @@ def get_connection_probabilities(
               .get_pathway_connection_probability(
                   circuit_model,
                   parameters=parameters,
+                  pathways=pathways,
                   upper_bound_soma_distance=upper_bound_soma_distance,
                   cache_size=cache_size,
                   sample_size=sample_size)
@@ -84,5 +86,7 @@ def get_connection_probabilities(
           .get_pathway_connection_probability(
               circuit_model,
               parameters=parameters,
+              pathways=pathways,
               sample_size=sample_size,
-              is_permissible=lambda condition: True)
+              is_permissible=lambda condition: True,
+              upper_bound_soma_distance=upper_bound_soma_distance)

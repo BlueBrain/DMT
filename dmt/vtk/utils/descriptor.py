@@ -364,8 +364,12 @@ class Field:
             """..."""
             def check(instance, candidate_attr_value):
                 """..."""
-                t = Field.typecheck.get_type(instance, type_arg)
-                return issubclass(candidate_attr_value, type_arg)
+                return\
+                    issubclass(
+                        candidate_attr_value,
+                        Field.typecheck.get_type(
+                            instance,
+                            type_arg))
             return check
 
 
