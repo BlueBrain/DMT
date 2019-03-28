@@ -1045,7 +1045,8 @@ class RandomConnectionVariate(
             number_connections=\
                 len(pre_post_pairs)
             if number_connections == 0:
-                self.__pathways_without_connections.add(pathway)
+                self.__pathways_without_connections\
+                    .add(pathway)
                 return self._empty_dataframe
             self.logger.info(
                 self.logger.get_source_info(),
@@ -1102,7 +1103,8 @@ class RandomConnectionVariate(
         """Override"""
         self.logger.info(
             self.logger.get_source_info(),
-            """Sample condition {}""".format(condition.value))
+            """Sample condition {}"""\
+            .format(condition.value))
         connections=\
             self.__get_connections(
                 condition)

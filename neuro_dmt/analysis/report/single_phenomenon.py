@@ -111,11 +111,19 @@ class AnalysisReport(
             self.logger.get_source_info(),
             "Generating {}".format(plot_file_path))
 
-        self.figure.savefig(
-            plot_file_path, dpi=100)
-        
+        try:
+            self.figure.savefig(
+                plot_file_path, dpi=100)
+        except AttributeError as attribute_error:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """Missing figure (Field) in {} instance."""\
+                .format(self.__class__.__name__),
+                """Error caught: {}"""\
+                .format(attribute_error))
         try:
             #the following is ugly
+            #
             #Cheetah template are not exactly the same attributes as this report
             template_dict = self.__report_dict__
             template_dict.update(dict(
@@ -155,7 +163,7 @@ class AnalysisMultiFigureReport(
         AnalysisReport):
     """For analysis that produce multiple figures."""
     figure=\
-        Field.Optional(
+        Field(
             __name__="figure",
             __type__=dict,
             __doc__="""A dict mapping label to figure""")
