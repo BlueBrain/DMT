@@ -63,8 +63,8 @@ class HeatMap(Plot):
                     "Plot dataframe's index has more than 2 levels:\n {}"\
                     .format(dataframe.index))
             self._index_values=\
-                list({k for tup in dataframe.index.values for k in tup})
-
+                sorted(list({
+                    k for tup in dataframe.index.values for k in tup}))
         return self._index_values
 
     def _get_value(self,
@@ -81,10 +81,10 @@ class HeatMap(Plot):
         """To make a heat-map we need a matrix."""
         if self._matrix is None:
             self._matrix=\
-                np.array(
-                    [[self._get_value(x, y, column="mean")
-                      for x in self.index_values]
-                     for y in self.index_values])
+                np.array([
+                    [self._get_value(x, y, column="mean")
+                     for x in self.index_values]
+                    for y in self.index_values])
         return self._matrix
 
     def get_color_limits(self,

@@ -18,30 +18,37 @@ class PathwayConnectionProbabilityAnalysis(
     """Analyze probability of connections by mytpe --> mtype pathway."""
 
     def __init__(self,
-            by_distance=True,
             *args, **kwargs):
         """Initialize Me"""
         self._by_distance=\
-            by_distance
-        if not by_distance:
-            super().__init__(
-                Phenomenon(
-                    "Pathway Connection Probability",
-                    "Probability of connections in an mtype --> mtype pathway.",
-                    group="connectome"),
-                ReportType=AnalysisReport,
-                Plotter=HeatMap,
-                *args, **kwargs)
-        else:
-            super().__init__(
-                Phenomenon(
-                    "Pathway Connection Probability by Distance",
-                    """Probability of connections in an mtype --> mtype
-                    pathway conditioned by soma-distance""",
-                    group="connectome"),
-                ReportType=AnalysisMultiFigureReport,
-                Plotter=LinePlot,
-                *args, **kwargs)
+            kwargs.get(
+                "by_distance",
+                True)
+        phenomenon=\
+            Phenomenon(
+                "Pathway Connection Probability by Distance",
+                """Probability of connections in an mtype --> mtype
+                pathway conditioned by soma-distance""",
+                group="connectome")\
+                if self._by_distance else\
+                   Phenomenon(
+                       "Pathway Connection Probability by Distance",
+                       """Probability of connections in an mtype --> mtype
+                       pathway conditioned by soma-distance""",
+                       group="connectome")
+        ReportType=\
+            AnalysisMultiFigureReport\
+            if self._by_distance else\
+               AnalysisReport
+        Plotter=\
+            LinePlot\
+            if self._by_distance else\
+               HeatMap
+        super().__init__(
+            phenomenon,
+            ReportType=ReportType,
+            Plotter=Plotter,
+            *args, **kwargs)
 
 
     class AdapterInterface(

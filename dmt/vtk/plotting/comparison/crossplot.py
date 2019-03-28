@@ -126,7 +126,6 @@ class CrossPlotComparison(ComparisonPlot):
                 np.max(mean_values_no_nan) +\
                 (0. if len(error_values_no_nan) == 0\
                  else np.max(error_values_no_nan))
-                 
 
         ys=\
             ydata["mean"].values
@@ -156,7 +155,6 @@ class CrossPlotComparison(ComparisonPlot):
             with_customization\
             .get("axis", {})\
             .get("xmin", __get_axis_min(xdata))
-                
         color=\
             with_customization.get(
                 "color", "blue")
@@ -197,6 +195,11 @@ class CrossPlotComparison(ComparisonPlot):
         plt.xlabel(
             self.compared_datasets[0].label,
             fontsize=20)
+        legend=\
+            with_customization\
+            .get("legend", None)
+        if legend:
+            plt.legend(**legend)
 
         fontP = FontProperties()
         fontP.set_size('small')

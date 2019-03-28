@@ -962,16 +962,16 @@ class RandomConnectionVariate(
     def __random_sample(self,
             gids):
         """..."""
-        if len(gids) == 0:
-            return np.array([])
+        if len(gids) <= self.__cache_size__:
+            return gids
         if not self.__cache_size__:
             return gids
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "sample {} gids out of {}"\
-            .format(
-                self.__cache_size__,
-                len(gids)))
+        # self.logger.debug(
+        #     self.logger.get_source_info(),
+        #     "sample {} gids out of {}"\
+        #     .format(
+        #         self.__cache_size__,
+        #         len(gids)))
         return\
             np.random.choice(
                 gids,
