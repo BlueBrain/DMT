@@ -46,7 +46,7 @@ def get_pathway_connection_probability_analysis(
                 sampled_box_shape=50. * np.ones(3),
                 spatial_random_variate=RandomRegionOfInterest,
                 model_label="in-silico"),
-            pathways=pathways,
+            pathways_to_analyze=pathways,
             *args, **kwargs)
 
 def top_(number, pandas_series):
