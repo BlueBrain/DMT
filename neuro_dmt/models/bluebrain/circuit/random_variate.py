@@ -195,11 +195,12 @@ class RandomRegionOfInterest(
             sampled_box_shape=None,
             *args, **kwargs):
         """..."""
-        half_box\
-            = (sampled_box_shape if sampled_box_shape
-               else self.sampled_box_shape / 2.)
-        position\
-            = self.random_position(
+        half_box=\
+            sampled_box_shape / 2.\
+            if sampled_box_shape else\
+               self.sampled_box_shape / 2.
+        position=\
+            self.random_position(
                 condition,
                 *args, **kwargs)
         if position is None:

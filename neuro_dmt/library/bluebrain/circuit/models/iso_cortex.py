@@ -29,6 +29,16 @@ class IsoCortexAtlasSpecialization(
             region_label=Cell.REGION,
             *args, **kwargs)
 
+    def _with_hemishpere(self,
+            region):
+        """..."""
+        if not region:
+            return None
+        return\
+            (region, None) if not "@" in region\
+            else (region[0:region.index("@")],
+                  region[region.index("@") + 1:])
+
     def _get_atlas_region_acronyms(self,
             condition):
         """Isocortex circuit's atlas (circa 20190212)
@@ -36,12 +46,14 @@ class IsoCortexAtlasSpecialization(
         layers=\
             condition.get_value(
                 Cell.LAYER)
-        region=\
-            condition.get_value(
-                Cell.REGION)
+        region, hemisphere=\
+            self._with_hemishpere(
+                condition.get_value(
+                    Cell.REGION))
         if not region:
-            region=\
-                self.representative_region
+            region, hemisphere=\
+                self._with_hemishpere(
+                    self.representative_region)
         if not layers:
             return [region]
         if not collections.check(layers):
