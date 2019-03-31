@@ -623,7 +623,7 @@ class BlueBrainModelHelper:
             np.sum([
                 segment_lengths[neurite_type]
                 for neurite_type in queried_neurite_type])
-        if not total_spine_length:
+        if not total_segment_length:
             return 0.
 
         def random_spine_density():
