@@ -5,13 +5,24 @@ from abc import ABC, abstractmethod
 import copy
 import numpy as np
 import pandas as pd
-from dmt.vtk.utils.descriptor import Field
-from dmt.vtk.measurement.parameter import Parameter
-from dmt.vtk.measurement.condition import Condition, ConditionGenerator
-from dmt.vtk.utils import collections
-from dmt.vtk.utils.collections import Record, take
-from dmt.vtk.utils.logging import Logger, with_logging
-from dmt.vtk.utils.descriptor import WithFCA
+from dmt.vtk.utils.descriptor\
+    import Field
+from dmt.vtk.measurement.parameter\
+    import Parameter
+from dmt.vtk.measurement.condition\
+    import Condition\
+    ,      ConditionGenerator
+from dmt.vtk.utils\
+    import collections\
+    ,      utils
+from dmt.vtk.utils.collections\
+    import Record\
+    ,      take
+from dmt.vtk.utils.logging\
+    import Logger\
+    ,      with_logging
+from dmt.vtk.utils.descriptor\
+    import WithFCA
 
 
 @with_logging(Logger.level.STUDY)
@@ -120,7 +131,7 @@ class ConditionedRandomVariate(
                 f in condition_generator.labels
                 for f in fields )
             and all(
-                issubclass(
+                utils.check_subclass(
                     condition_generator.value_type(f),
                     self.condition_type.get(f))
                 for f in fields))
@@ -186,17 +197,24 @@ class ConditionedRandomVariate(
                     """Illegal conditioning variable {}.\n
                     Variable {} does not appear in
                     {} instance condition_type."""\
-                    .format(variable.label,
-                            variable.label,
-                            self.__class__.__name__))
-            if not issubclass(variable.value_type,
-                              self.condition_type.get(
-                                  variable.label)):
+                    .format(
+                        variable.label,
+                        variable.label,
+                        self.__class__.__name__))
+            #the following does not work when variables are a collection type.
+            #we may abandon this type-checking,
+            #or define a class to handle the possibility that a variable's type
+            #may be a collection type such as Tuple<float, float>
+            if not utils.check_subclass(
+                    variable.value_type,
+                    self.condition_type.get(
+                        variable.label)):
                 raise AttributeError(
                     """Unsupported type for conditioning variable {} 
                     in {} instance condition_type."""\
-                    .format(variable.label,
-                            self.__class__.__name__))
+                    .format(
+                        variable.label,
+                        self.__class__.__name__))
         return\
             self.__with_condition_generator(
                 ConditionGenerator(
@@ -285,7 +303,7 @@ class ConditionedRandomVariate(
                 self.logger.get_source_info(),
                 """No condition generator, will pass empty conditions,
                 that should be interpreted as no conditions.""")
-            conditions = {}
+            conditions = []
         if not self.is_valid(conditions):
             self.logger.warn(
                 self.logger.get_source_info(),
@@ -296,12 +314,15 @@ class ConditionedRandomVariate(
         dataframes_for_conditions=[
             self.sample_one(condition, size=size)
             for condition in conditions]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """Problem here, dataframes_for_condition is array? {}"""\
+            .format(dataframes_for_conditions))
         if len(dataframes_for_conditions) == 0:
             return pd.DataFrame([])
         return\
             pd.concat(
                 dataframes_for_conditions)
-
 
     def transform(self,
             mapping):

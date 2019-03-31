@@ -3,6 +3,8 @@
 import copy
 import numpy as np
 import pandas as pd
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 from dmt.vtk.utils.descriptor\
     import Field\
     ,      document_fields
@@ -71,11 +73,79 @@ class ByMtypeConnectomeValidation(
         """Suppressed for now."""
         return np.nan
 
+red_patch = mpatches.Patch(color='red', label='The red data')
+plt.legend(handles=[red_patch])
+
+def get_pathway_colors(measurement):
+    """..."""
+    measurement_index=\
+        measurement\
+        .data\
+        .index\
+        .to_frame()
+    pathways=\
+        zip(
+            measurement_index["pre_mtype"],
+            measurement_index["post_mtype"])
+    colors=dict(
+        EXC=dict(
+            EXC="xkcd:lightgreen",
+            INH="xkcd:green"),
+        INH=dict(
+            EXC="xkcd:red",
+            INH="xkcd:magenta"))
+    def __get_synapse_type(mtype):
+        """..."""
+        return\
+            "EXC" if "PC" in mtype else "INH"
+    def __get_pathway_color(pathway):
+        """..."""
+        pre_stype=\
+            __get_synapse_type(
+                pathway[0])
+        post_stype=\
+            __get_synapse_type(
+                pathway[1])
+        return\
+            colors[pre_stype][post_stype]
+    return{
+        "color":[
+            __get_pathway_color(pathway)
+            for pathway in pathways],
+        "legend":{
+            "handles": [
+                mpatches.Patch(
+                    color=colors["EXC"]["EXC"],
+                    label="EXC-->EXC"),
+                mpatches.Patch(
+                    color=colors["EXC"]["INH"],
+                    label="EXC-->INH"),
+                mpatches.Patch(
+                    color=colors["INH"]["EXC"],
+                    label="INH-->EXC"),
+                mpatches.Patch(
+                    color=colors["INH"]["INH"],
+                    label="INH-->INH")]}}
+
+
 
 class PairSynapseCountValidation(
         ByMtypeConnectomeValidation,
         PairSynapseCountAnalysis):
-    pass
+
+    def plot(self,
+            model_measurement,
+            compared_quantity="dataset",
+            *args, **kwargs):
+        """Override to customize color scheme."""
+        kwargs.update(
+            get_pathway_colors(
+                model_measurement))
+        return\
+            super().plot(
+                model_measurement,
+                compared_quantity=compared_quantity,
+                *args, **kwargs)
 
 
 class PairConnectionValidation(
@@ -88,6 +158,9 @@ class PairConnectionValidation(
             with_full_axis_range=False,
             *args, **kwargs):
         """..."""
+        kwargs.update(
+            get_pathway_colors(
+                model_measurement))
         if with_full_axis_range:
             kwargs["ymin"] = 0.
             kwargs["ymax"] = 1.
@@ -110,11 +183,15 @@ class PathwayConnectionProbabilityValidation(
             with_full_axis_range=False,
             *args, **kwargs):
         """..."""
+        kwargs.update(
+            get_pathway_colors(
+                model_measurement))
         if with_full_axis_range:
-            kwargs["ymin"] = 0.
-            kwargs["ymax"] = 1.
-            kwargs["xmin"] = 0.
-            kwargs["xmax"] = 1.
+            kwargs["axis"]={
+                "xmin": 0.,
+                "xmax": 1.,
+                "ymin": 0.,
+                "ymax": 1.}
         return\
             super().plot(
                 model_measurement,
@@ -127,16 +204,22 @@ class CellBoutonDensityValidation(
         CellBoutonDensityAnalysis):
     """Validate cell bouton densities."""
 
-
     def plot(self,
             model_measurement,
             compared_quantity="dataset",
             *args, **kwargs):
-        """..."""
-        mtypes = model_measurement.data.index.to_frame()["mtype"].values
-        kwargs["color"]=[
+        """Override to customize color scheme."""
+        mtypes=\
+            model_measurement\
+            .data\
+            .index\
+            .to_frame()[
+                "mtype"]\
+            .values
+        kwargs.update({
+            "color":[
             "green" if "PC" in mtype else "red"
-            for mtype in mtypes]
+            for mtype in mtypes]})
         return\
             super().plot(
                 model_measurement,

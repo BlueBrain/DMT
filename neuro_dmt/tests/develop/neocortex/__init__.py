@@ -345,10 +345,9 @@ class NeocortexAnalysisSuite(
             region in index.levels[index.names.index(Cell.REGION)]
 
     def _append_measurement(self,
+            phenomenon,
             measurement):
         """..."""
-        phenomenon=\
-            measurement.phenomenon.label
         if phenomenon not in self._measurements:
             self._measurements[phenomenon]=\
                 measurement
@@ -424,6 +423,7 @@ class NeocortexAnalysisSuite(
                         condition.as_dict),
                     **kwargs)
             self._append_measurement(
+                phenomenon,
                 measurement)
             logger.debug(
                 logger.get_source_info(),
@@ -459,6 +459,3 @@ class NeocortexAnalysisSuite(
                                 phenomenon_label]),
                         "subregion-{}".format(region))))
         return report
-
-
-

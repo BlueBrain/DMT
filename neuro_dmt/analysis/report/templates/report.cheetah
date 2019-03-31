@@ -7,7 +7,7 @@
     <h3> Affiliation:  $author_affiliation</h3>
     <br>
     <img src="./$image_name" alt="apologies.png"/>
-    <br>
+    </br>
     <h3>Caption</h3>
     <ul>
       #for $line in $caption

@@ -146,17 +146,36 @@ class BrainCircuitAnalysis(
                     **kwargs))\
             .with_customization(
                 **kwargs)\
-            .plot()
+            .plot(
+                with_customization=kwargs)
 
     def get_report(self,
             model_measurement,
             *args, **kwargs):
         """Create a report.
         A default method is provided here."""
-        figure=\
-            self.plot(
-                model_measurement,
-                *args, **kwargs)
+        try:
+            figure=\
+                self.plot(
+                    model_measurement,
+                    *args, **kwargs)
+        except AttributeError as attribute_error:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                """{} instance  could not plot"""\
+                .format(self.__class__.__name__),
+                """Error caught: {}"""\
+                .format(attribute_error))
+            return\
+                self.ReportType(
+                    model_measurement=model_measurement.data,
+                    phenomenon=self.phenomenon,
+                    author=self.author,
+                    caption=self.get_caption(
+                        model_measurement,
+                        **self._for_given_parameter_values(
+                        **kwargs)))
+
         return\
             self.ReportType(
                 model_measurement=model_measurement.data,

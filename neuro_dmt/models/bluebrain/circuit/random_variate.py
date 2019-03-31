@@ -333,37 +333,31 @@ class RandomCellVariate(
             "random cell gids were sampled for given {}".format(
                ", ".join( self.condition_type.fields))
 
-    def __get_cells(self,
-            condition):
+    def _random_choice(self,
+            condition,
+            size=None):
         """..."""
         if not condition.hash_id in self.__gid_cache__:
             self.__gid_cache__[condition.hash_id]=\
                 self.circuit_model\
                     .cells.ids(
                         condition.as_dict)
-        return\
-            self.__gid_cache__[condition.hash_id]
-
-    def sample_one(self,
-            condition,
-            size=20):
-        """Override"""
         cell_gids=\
-            self.__get_cells(
-                condition)
+            self.__gid_cache__[
+                condition.hash_id]
         if len(cell_gids) == 0:
-            return np.array([])
+            return np.array([]) if size else None
         return\
-            np.random.choice(
-                cell_gids,
-                size)
+            np.random.choice(cell_gids, size)\
+            if size else\
+            np.random.choice(cell_gids)
 
     def __call__(self,
             condition,
             *args, **kwargs):
         """...Call Me..."""
         return\
-            self.sample_one(
+            self._random_choice(
                 condition,
                 *args, **kwargs)
 
@@ -671,6 +665,8 @@ class RandomPairs(
                 number=1),
             *args, **kwargs):
         """..."""
+        self.__XYZ=[
+            Cell.X, Cell.Y, Cell.Z]
         self.random_cell=\
             RandomCellVariate(
                 circuit_model,
@@ -679,8 +675,6 @@ class RandomPairs(
             upper_bound_random_draws
         self.__cache_size__=\
             cache_size
-        self.__cache__=\
-            {}
         self._distance_binner=\
             distance_binner
         self._empty_dataframe=\
@@ -692,7 +686,11 @@ class RandomPairs(
                     [],
                     names=[
                         "region", "pre_mtype", "post_mtype", "soma_distance"]))
-        self.__was_cached__=\
+        self._sample_cells=\
+            {}
+        self._has_cells=\
+            {}
+        self._sample_pairs=\
             {}
         self._has_pairs=\
             {}
@@ -703,13 +701,13 @@ class RandomPairs(
             *args, **kwargs)
 
     @property
-    def sampling_mehtod(self):
+    def sampling_method(self):
         """describe the method usef to generate random pairs."""
-        return\
+        return(
             "Pairs of cell gids were sampled for given pre and post mtypes, "
-            "in the specified region and soma distance bins."
+            "in the specified region and soma distance bins.")
 
-    def _get_pathway(self,
+    def _read_condition(self,
             condition):
         """get pathway out of a condition.
         Data is held in this class as a dataframe,
@@ -724,7 +722,7 @@ class RandomPairs(
         """
         region=\
             condition.get_value(
-                self.circuit_model.region_lable)
+                self.circuit_model.region_label)
         if not region:
             region=\
                 "Any"
@@ -749,26 +747,23 @@ class RandomPairs(
         return(
             region, pre_mtype, post_mtype, soma_distance)
 
-    def get_distances(self,
-            origin_gid,
-            cell_gids):
+    def _get_distances(self,
+            origin,
+            cells):
         """Distance of cells from origin."""
-        origin=\
-            self.circuit_model\
-                .cells\
-                .positions(origin_gid)\
-                .values
-        cell_positions=\
-            self.circuit_model\
-                .cells\
-                .positions(cell_gids)\
-                .values
         return\
             self._distance_binner\
-                .get_bin_centers(
-                    np.linalg.norm(
-                        cell_positions - origin,
-                        axis=1))
+              .get_bins(
+                  np.linalg.norm(
+                      cells[self.__XYZ].values - origin,
+                      axis=1))
+
+    def __random_sample(self, cells):
+        """..."""
+        if cells.shape[0] < self.__cache_size__:
+            return cells
+        return\
+            cells.sample(self.__cache_size__)
 
     def _get_cell_type(self,
             mtype,
@@ -781,59 +776,111 @@ class RandomPairs(
         return{
             Cell.MTYPE: mtype}
 
+    def _get_cells(self,
+            mtype,
+            region=None):
+        """..."""
+        region_mtype=\
+            (region, mtype) if region else mtype
+        cell_type=\
+            self._get_cell_type(
+                mtype, region)
+        if region_mtype not in self._sample_cells:
+            self._sample_cells[region_mtype]=\
+                self.__random_sample(
+                    self.circuit_model\
+                        .cells\
+                        .get(
+                            group=cell_type,
+                            properties=self.__XYZ))
+        return\
+            self._sample_cells[
+                region_mtype]
+
     def _get_pairs(self,
             condition):
         """..."""
+        query=\
+            self._read_condition(condition)
+        region, pre_mtype, post_mtype, soma_distance=\
+            query
         pathway=\
-            self._get_pathway(condition)
+            (pre_mtype, post_mtype)
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """get pairs for pathway {} in region {}, at distance {}"""\
+            .format(
+                pathway,
+                region,
+                soma_distance))
         try:
-            return\
-                self.__cache__.loc[pathway]
+            dataframe=\
+                self._sample_pairs[pathway]
         except KeyError as key_error:
-            self.logger.info(
-                self.logger.get_source_info(),
-                "Pathway {} will be cached.".format(condition.value))
-            region, pre_mtype, post_mtype, soma_distance=\
-                pathway
-            pre_gids=\
-                self.random_cell(
-                    Condition.from_dict(
-                        self._get_cell_type(
-                            pre_mtype,
-                            region)),
-                    size=self.__cache_size__)
-            if len(pre_gids) == 0:
+            # self.logger.debug(
+            #     self.logger.get_source_info(),
+            #     "Got key error {}".format(key_error),
+            #     "Pathway {} will be cached.".format(condition.value))
+            pre_cells=\
+                self._get_cells(
+                    pre_mtype,
+                    region)
+            if pre_cells.shape[0] == 0:
                 self.logger.debug(
                     self.logger.get_source_info(),
-                    "No pre gids for {}".format(pre_mtype))
+                    "No gids for mtype {}".format(pre_mtype))
+                self._sample_pairs[pathway]=\
+                    self._empty_dataframe
                 return self._empty_dataframe
-            post_gids=\
-                self.random_cell(
-                    Condition.from_dict(
-                        self._get_cell_type(
-                            post_mtype,
-                            region)),
-                    size=self.__cache_size__)
+            post_cells=\
+                self._get_cells(
+                    post_mtype,
+                    region)
+            if post_cells.shape[0] == 0:
+                self.logger.debug(
+                    self.logger.get_source_info(),
+                    "No gids for mtype {}".format(post_mtype))
+                self._sample_pairs[pathway]=\
+                    self._empty_dataframe
+                return self._empty_dataframe
+            pairs=[
+                [pre_gid, post_gid]
+                for pre_gid in pre_cells.index.values
+                for post_gid in post_cells.index.values]
+            index=\
+                pd.MultiIndex\
+                  .from_tuples(
+                      tuples=[
+                          (region, pre_mtype, post_mtype, dis)
+                          for origin in pre_cells[self.__XYZ].values
+                          for dis in self._get_distances(origin, post_cells)],
+                      names=[
+                          "region","pre_mtype","post_mtype","soma_distance"])
             dataframe=\
                 pd.DataFrame(
-                    [[pre_gid, post_gid]
-                     for pre_gid in pre_gids
-                     for post_gid in post_gids],
+                    pairs,
                     columns=["pre_gid", "post_gid"],
-                    index=pd.MultiIndex.from_tuples(
-                        [(region, pre_mtype, post_mtype, distance)
-                         for pre_gid in pre_gids
-                         for distance in self.get_distances(pre_gid,post_gids)],
-                        names=["region","pre_gid","post_gid","soma_distance"]))
-            if self.__cache__.empty:
-                self.__cache__=\
-                    dataframe
-            else:
-                self.__cache__=\
-                    pd.concat([
-                        self.__cache__,
-                        dataframe])
-        return self.__cache__.loc[pathway]
+                    index=index)
+            # self.logger.debug(
+            #     self.logger.get_source_info(),
+            #     "will cache dataframe {}".format(dataframe))
+            self._sample_pairs[pathway]=\
+                dataframe
+        if dataframe.empty:
+            return dataframe
+        try:
+            query_dataframe=\
+                dataframe.loc[query]
+            return\
+                dataframe\
+                if isinstance(query_dataframe, pd.Series)\
+                   else query_dataframe
+        except KeyError as key_error:
+            self.logger.alert(
+                self.logger.get_source_info(),
+                "no pairs for pathway {}".format(query))
+        return\
+            self._empty_dataframe
 
     def sample_one(self,
             condition,
@@ -849,7 +896,7 @@ class RandomPairs(
         if pairs.shape[0] == 0:
             self.logger.alert(
                 self.logger.get_source_info(),
-                "no pairs found for pathway".format(
+                "no pairs found for pathway {}".format(
                     condition.value))
             return self._empty_dataframe
         self.logger.debug(
@@ -857,8 +904,19 @@ class RandomPairs(
             "found {} pairs for pathway".format(
                 pairs.shape,
                 condition.value))
-        return pairs.sample(size, replace=True)
+        return\
+            pairs.sample(size, replace=False)\
+            if pairs.shape[0] > size\
+               else pairs
 
+    def __call__(self,
+            condition,
+            *args, **kwargs):
+        """Call Me"""
+        raise NotImplementedError(
+            """Need to think about sampling with or without replacement 
+            for a random variate with a finite number of possible values.
+            However, a method 'sample_one' is provided below.""")
 
 class RandomConnectionVariate(
         CircuitPropertyRandomVariate):
@@ -904,16 +962,16 @@ class RandomConnectionVariate(
     def __random_sample(self,
             gids):
         """..."""
-        if len(gids) == 0:
-            return np.array([])
+        if len(gids) <= self.__cache_size__:
+            return gids
         if not self.__cache_size__:
             return gids
-        self.logger.debug(
-            self.logger.get_source_info(),
-            "sample {} gids out of {}"\
-            .format(
-                self.__cache_size__,
-                len(gids)))
+        # self.logger.debug(
+        #     self.logger.get_source_info(),
+        #     "sample {} gids out of {}"\
+        #     .format(
+        #         self.__cache_size__,
+        #         len(gids)))
         return\
             np.random.choice(
                 gids,
@@ -987,7 +1045,8 @@ class RandomConnectionVariate(
             number_connections=\
                 len(pre_post_pairs)
             if number_connections == 0:
-                self.__pathways_without_connections.add(pathway)
+                self.__pathways_without_connections\
+                    .add(pathway)
                 return self._empty_dataframe
             self.logger.info(
                 self.logger.get_source_info(),
@@ -1044,7 +1103,8 @@ class RandomConnectionVariate(
         """Override"""
         self.logger.info(
             self.logger.get_source_info(),
-            """Sample condition {}""".format(condition.value))
+            """Sample condition {}"""\
+            .format(condition.value))
         connections=\
             self.__get_connections(
                 condition)

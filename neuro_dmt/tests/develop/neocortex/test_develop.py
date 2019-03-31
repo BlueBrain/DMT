@@ -17,6 +17,7 @@ def get_neocortical_analysis_suite_sscx(
             mtype_values=mtypes,
             region_values=["mc2_Column"],
             *args, **kwargs)
+
 def get_neocortical_analysis_suite_isocortex(
         mtypes=all_mtypes,
         region="SSp-ll",
@@ -31,8 +32,10 @@ def get_neocortical_analysis_suite_isocortex(
                 hemisphere=hemisphere,
                 direction=direction),
             mtype_values=mtypes,
-            region_values=["region@{}".format(hemisphere)],
+            region_values=[
+                "{}@{}".format(region, hemisphere)],
             *args, **kwargs)
+
 def run_sscx_synapse_count_analysis(
         mtypes):
     return\
@@ -57,6 +60,7 @@ def run_sscx_connection_probability_analysis(
               sample_size=sample_size,
               upper_bound_soma_distance=soma_distance,
               cache_size=cache_size)
+
 def run_isocortex_connection_probability_analysis(
         mtypes,
         sample_size=1000,

@@ -1,4 +1,4 @@
-"""Analysis of a circuit's connectome."""
+""Analysis of a circuit's connectome."""
 
 import os
 from dmt.vtk.utils.descriptor\
