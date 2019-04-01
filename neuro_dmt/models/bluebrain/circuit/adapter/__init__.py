@@ -487,6 +487,8 @@ class BlueBrainModelAdapter(
             parameters=[],
             pathways=set(),
             upper_bound_soma_distance=100.,
+            cache_size=None,
+            distance_binner=SomaDistance(0., 2000., 50.)._binner,
             *args, **kwargs):
         """Get number of outgoing connections in a pathway.
         For now, a cut-paste solution, will be cleaned up"""
@@ -522,8 +524,144 @@ class BlueBrainModelAdapter(
             "post_mtype: {}".format(parameters[2].values),
             "soma distance: {}".format(soma_distance.values))
 
-        raise NotImplementedError
 
+        def __random_sample(gids):
+            """..."""
+            return\
+                np.random_choice(gids, cache_size)\
+                if cache_size else\
+                   gids
+
+        XYZ=[
+            Cell.X, Cell.Y, Cell.Z]
+        empty_dataframe=\
+            pd.DataFrame(
+                [],
+                columns=["mean", "std"])
+        was_cached=\
+            set()
+        connection_count_pathway=\
+            {}
+        number_cells_mtype=\
+            {}
+        has_efferent_connections=\
+            {}
+
+        def __get_distances(
+                origin,
+                cells):
+            """..."""
+            return\
+                distance_binner\
+                .get_bins(
+                    np.linalg.norm(
+                        cells[XYZ].values - origin,
+                        axis=1))
+
+        def __get_efferent_mtype_counts(
+                pre_mtype,
+                pre_gid,
+                all_cells):
+            """..."""
+            post_gids=\
+                circuit_model\
+                .connectome\
+                .efferent_gids(pre_gid)
+            post_mtype_counts=\
+                all_cells.loc[post_gids][Cell.MTYPE]\
+                         .value_counts()
+            return pd.DataFrame(
+                post_mtype_counts.values,
+                index=pd.MultiIndex.from_tuples(
+                    tuples=[
+                        (pre_mtype, post_mtype)
+                        for post_mtype in post_mtype_counts.index],
+                    names=["pre_mtype", "post_mtype"]))
+
+        def __add_to_cache(
+                mtype,
+                region,
+                all_cells):
+            """..."""
+            cell_type={
+                Cell.MTYPE: mtype}
+            if region:
+                cell_type[Cell.REGION]=\
+                    region
+            mtype_gids=\
+                __random_sample(
+                    all_cells.index[
+                        all_cells[Cell.MTYPE].values == mtype])
+            number_cells_mtype[mtype]=\
+                len(mtype_gids)
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "cache {} mtype {} cells, region {}"\
+                .format(
+                    len(mtype_gids),
+                    mtype,
+                    region))
+            if len(mtype_gids) == 0:
+                has_efferent_connections[mtype]=\
+                    False
+                return
+            efferent_mtype_counts=\
+                pd.concat([
+                    __get_efferent_mtype_counts(gid)
+                    for gid in mtype_gids])\
+                  .groupby("post_mtype")\
+                  .agg(["mean", "std"])
+
+
+        def __get_cell_type(
+                mtype,
+                region):
+            """..."""
+            return\
+                {Cell.MTYPE: mtype,
+                 region_label: region}\
+                 if region else\
+                    {Cell.MTYPE: mtype}
+
+        def __get_pathway_efferent_connection_count(
+                condition):
+            """..."""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "get pathway connection probability for condition {}"\
+                .format(condition.value))
+            pre_mtype=\
+                condition.get_value(
+                    "pre_mtype")
+            post_mtype=\
+                condition.get_value(
+                    "post_mtype")
+            region=\
+                condition.get_value(
+                    region_label)
+            pre_cell_type=\
+                __get_cell_type(
+                    pre_mtype, region)
+            post_cell_type=\
+                __get_cell_type(
+                    post_mtype, region)
+            pathway=\
+                (region, pre_mtype, post_mtype)
+            all_cells=\
+                circuit_model\
+                  .cells\
+                  .get(
+                      group={region_label: region} if region else None,
+                      properties=[Cell.MTYPE] + XYZ)
+            if pre_mtype not in was_cached:
+                __add_to_cache(
+                    pre_mtype,
+                    region,
+                    all_cells)
+            count_mean=\
+                w
+
+        raise NotImplementedError
 
     def get_pathway_soma_distance(self,
             circuit_model,
