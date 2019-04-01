@@ -90,3 +90,32 @@ def get_connection_probabilities(
               sample_size=sample_size,
               is_permissible=lambda condition: True,
               upper_bound_soma_distance=upper_bound_soma_distance)
+
+def get_efferent_connections(
+        circuit_model,
+        region,
+        mtypes,
+        pathways=set(),
+        cache_size=100,
+        sample_size=200,
+        soma_distance=SomaDistance(0., 2000., 20),
+        upper_bound_soma_distance=100):
+    """..."""
+    parameters=[
+        AtlasRegion(label="region", values=[region]),
+        Mtype(label="pre_mtype", values=mtypes),
+        Mtype(label="post_mtype", values=mtypes)]
+    if soma_distance:
+        parameters.append(soma_distance)
+    return\
+        adapter\
+          .get_pathway_efferent_connection_count(
+              circuit_model,
+              parameters=parameters,
+              pathways=pathways,
+              sample_size=sample_size,
+              is_permissible=lambda condition: True,
+              upper_bound_soma_distance=upper_bound_soma_distance)
+
+
+
