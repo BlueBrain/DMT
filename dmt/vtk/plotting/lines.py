@@ -27,11 +27,11 @@ class LinePlot(Plot):
         """Make the line plot.
         """
 
-        self._logger.debug(
-            self._logger.get_source_info(),
-            "{} instance will plot data: ".format(
-                self.__class__.__name__),
-            "{}".format(self._data))
+        # self._logger.debug(
+        #     self._logger.get_source_info(),
+        #     "{} instance will plot data: ".format(
+        #         self.__class__.__name__),
+        #     "{}".format(self._data))
         dataframe=\
             self.get_plotting_dataframe()
         figure=\

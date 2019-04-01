@@ -1,4 +1,5 @@
 """Analyze connection probabilty by mtype -> mtype pathway."""
+import pandas as pd
 from dmt.model.interface\
     import Interface
 from dmt.vtk.phenomenon\
@@ -24,30 +25,37 @@ class PathwayConnectionProbabilityAnalysis(
             kwargs.get(
                 "by_distance",
                 True)
+        if not self._by_distance:
+            self._upper_bound_soma_distance=\
+                kwargs.get(
+                    "upper_bound_soma_distance",
+                    300.)
         phenomenon=\
             Phenomenon(
-                "Pathway Connection Probability by Distance",
+                "Pathway Connection Probability",
                 """Probability of connections in an mtype --> mtype
-                pathway conditioned by soma-distance""",
+                pathway conditioned by soma-distance.""",
                 group="connectome")\
                 if self._by_distance else\
                    Phenomenon(
-                       "Pathway Connection Probability by Distance",
+                       "Pathway Connection Probability",
                        """Probability of connections in an mtype --> mtype
-                       pathway conditioned by soma-distance""",
+                       pathway conditioned.""",
                        group="connectome")
-        ReportType=\
-            AnalysisMultiFigureReport\
-            if self._by_distance else\
-               AnalysisReport
-        Plotter=\
-            LinePlot\
-            if self._by_distance else\
-               HeatMap
+        kwargs["ReportType"]=\
+            kwargs.get(
+                "ReportType",
+                AnalysisMultiFigureReport\
+                if self._by_distance else\
+                AnalysisReport)
+        kwargs["Plotter"]=\
+            kwargs.get(
+                "Plotter",
+                LinePlot\
+                if self._by_distance else\
+                HeatMap)
         super().__init__(
             phenomenon,
-            ReportType=ReportType,
-            Plotter=Plotter,
             *args, **kwargs)
 
 
@@ -96,11 +104,23 @@ class PathwayConnectionProbabilityAnalysis(
             *args, **kwargs):
         """Override to consider distance dependence."""
         if not self._by_distance:
+            # data=\
+            #     model_measurement.data
+            # index_tuples=[
+            #     (region, pre_mtype, post_mtype)
+            #     for region, pre_mtype, post_mtype,_ in data.index.values]
+            # model_measurement.data=\
+            #     pd.DataFrame(
+            #         data.values,
+            #         columns=data.columns,
+            #         index=pd.MultiIndex.from_tuples(
+            #             tuples=index_tuples,
+            #             names=["region", "pre_mtype", "post_mtype"]))
             return\
                 super().plot(
                     model_measurement,
                     *args, **kwargs)
-        #make line plots
+
         yvar=\
             model_measurement.phenomenon.label
         title_common=\
@@ -150,6 +170,11 @@ class PathwayConnectionProbabilityAnalysis(
             circuit_model,
             *args, **kwargs):
         """Get a (statistical) measurement  of the phenomenon analyzed."""
+        if not self._by_distance:
+            kwargs["upper_bound_soma_distance"]=\
+                kwargs.get(
+                    "upper_bound_soma_distance",
+                    self._upper_bound_soma_distance)
         return\
             self.adapter\
                 .get_pathway_connection_probability(
