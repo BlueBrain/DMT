@@ -6,7 +6,8 @@ from dmt.vtk.phenomenon\
     import Phenomenon
 from dmt.vtk.plotting\
     import HeatMap\
-    ,      LinePlot
+    ,      LinePlot\
+    ,      BarPlot
 from neuro_dmt.analysis.report.single_phenomenon\
     import AnalysisReport\
     ,      AnalysisMultiFigureReport
@@ -25,11 +26,10 @@ class PathwayConnectionProbabilityAnalysis(
             kwargs.get(
                 "by_distance",
                 True)
-        if not self._by_distance:
-            self._upper_bound_soma_distance=\
-                kwargs.get(
-                    "upper_bound_soma_distance",
-                    300.)
+        self._upper_bound_soma_distance=\
+            kwargs.get("upper_bound_soma_distance", 300.)\
+            if not self._by_distance else\
+               None
         phenomenon=\
             Phenomenon(
                 "Pathway Connection Probability",
@@ -39,8 +39,7 @@ class PathwayConnectionProbabilityAnalysis(
                 if self._by_distance else\
                    Phenomenon(
                        "Pathway Connection Probability",
-                       """Probability of connections in an mtype --> mtype
-                       pathway conditioned.""",
+                       "Probability of connections in an mtype --> mtype.""",
                        group="connectome")
         kwargs["ReportType"]=\
             kwargs.get(

@@ -16,6 +16,7 @@ def get_pathway_connection_probability_analysis(
         output_dir_path=os.getcwd(),
         sample_size=200,
         pathways=set(),
+        upper_bound_soma_distance=300.,
         *args, **kwargs):
     """..."""
     regions=\
@@ -24,18 +25,20 @@ def get_pathway_connection_probability_analysis(
         Mtype(label="pre_mtype", values=mtypes)
     post_mtypes=\
         Mtype(label="post_mtype", values=mtypes)
-    soma_distances=\
-        soma_distances\
+    measurement_parameters=\
+        [regions, pre_mtypes, post_mtypes, soma_distances]\
         if soma_distances else\
-           SomaDistance(0., 300., 1)
+           [regions, pre_mtypes, post_mtypes]
+    plotter_parameters=\
+        ["pre_mtype", "post_mtype", "soma_distance"]\
+        if soma_distances else\
+           ["pre_mtype", "post_mtype"]
     return\
         PathwayConnectionProbabilityAnalysis(
             animal="mouse",
             brain_region=circuit_model.brain_region,
-            measurement_parameters=[
-                regions, pre_mtypes, post_mtypes, soma_distances],
-            plotted_parameters=[
-                "pre_mtype", "post_mtype", "soma_distance"],
+            measurement_parameters=measurement_parameters,
+            plotted_parameters=plotter_parameters,
             cell_group_parameter=Mtype(values=mtypes),
             pathway_parameters=[
                 pre_mtypes, post_mtypes],

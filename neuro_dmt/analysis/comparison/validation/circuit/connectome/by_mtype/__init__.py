@@ -73,6 +73,7 @@ class ByMtypeConnectomeValidation(
         """Suppressed for now."""
         return np.nan
 
+    @staticmethod
     def get_pathway_colors(measurement):
         """..."""
         measurement_index=\

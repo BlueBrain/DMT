@@ -426,7 +426,7 @@ class BlueBrainModelAdapter(
             circuit_model,
             parameters=[],
             pathways=set(),
-            upper_bound_soma_distance=300.,
+            upper_bound_soma_distance=100.,
             *args, **kwargs):
         """Get pathway connection probability
         as a function of distance.
@@ -481,6 +481,48 @@ class BlueBrainModelAdapter(
                     (0., upper_bound_soma_distance),
                     level=soma_distance.label)
         return measurement
+
+    def get_pathway_efferent_connection_count(
+            circuit_model,
+            parameters=[],
+            pathways=set(),
+            upper_bound_soma_distance=100.,
+            *args, **kwargs):
+        """Get number of outgoing connections in a pathway.
+        For now, a cut-paste solution, will be cleaned up"""
+        if not parameters:
+            parameters=[
+                AtlasRegion(
+                    values=[circuit_model.representative_subregion]),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="pre_mtype"),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="post_mtype")]
+        soma_distance_params=[
+            param for param in parameters
+            if param.label == "soma_distance"]
+        assert len(soma_distance_params) <= 1
+        by_distance=\
+            len(soma_distance_params) == 1
+        if not by_distance:
+            soma_distance=\
+                SomaDistance(0., 2 * upper_bound_soma_distance, 2)
+            parameters.append(
+                soma_distance)
+        else:
+            soma_distance=\
+                soma_distance_params[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get pathway efferent connection count with parameter values",
+            "region: {}".format(parameters[0].values),
+            "pre_mtype: {}".format(parameters[1].values),
+            "post_mtype: {}".format(parameters[2].values),
+            "soma distance: {}".format(soma_distance.values))
+
+        raise NotImplementedError
 
 
     def get_pathway_soma_distance(self,
