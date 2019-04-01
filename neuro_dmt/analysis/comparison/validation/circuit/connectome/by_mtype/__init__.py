@@ -73,60 +73,56 @@ class ByMtypeConnectomeValidation(
         """Suppressed for now."""
         return np.nan
 
-red_patch = mpatches.Patch(color='red', label='The red data')
-plt.legend(handles=[red_patch])
-
-def get_pathway_colors(measurement):
-    """..."""
-    measurement_index=\
-        measurement\
-        .data\
-        .index\
-        .to_frame()
-    pathways=\
-        zip(
-            measurement_index["pre_mtype"],
-            measurement_index["post_mtype"])
-    colors=dict(
-        EXC=dict(
-            EXC="xkcd:lightgreen",
-            INH="xkcd:green"),
-        INH=dict(
-            EXC="xkcd:red",
-            INH="xkcd:magenta"))
-    def __get_synapse_type(mtype):
+    def get_pathway_colors(measurement):
         """..."""
-        return\
-            "EXC" if "PC" in mtype else "INH"
-    def __get_pathway_color(pathway):
-        """..."""
-        pre_stype=\
-            __get_synapse_type(
+        measurement_index=\
+            measurement\
+            .data\
+            .index\
+            .to_frame()
+        pathways=\
+            zip(
+                measurement_index["pre_mtype"],
+                measurement_index["post_mtype"])
+        colors=dict(
+            EXC=dict(
+                EXC="xkcd:cerulean",
+                INH="xkcd:orange"),
+            INH=dict(
+                EXC="xkcd:grass",
+                INH="xkcd:scarlet"))
+        def __get_synapse_type(mtype):
+            """..."""
+            return\
+                "EXC" if "PC" in mtype else "INH"
+        def __get_pathway_color(pathway):
+            """..."""
+            pre_stype=\
+                __get_synapse_type(
                 pathway[0])
-        post_stype=\
-            __get_synapse_type(
+            post_stype=\
+                __get_synapse_type(
                 pathway[1])
-        return\
-            colors[pre_stype][post_stype]
-    return{
-        "color":[
-            __get_pathway_color(pathway)
-            for pathway in pathways],
-        "legend":{
-            "handles": [
-                mpatches.Patch(
-                    color=colors["EXC"]["EXC"],
-                    label="EXC-->EXC"),
-                mpatches.Patch(
-                    color=colors["EXC"]["INH"],
-                    label="EXC-->INH"),
-                mpatches.Patch(
-                    color=colors["INH"]["EXC"],
-                    label="INH-->EXC"),
-                mpatches.Patch(
-                    color=colors["INH"]["INH"],
-                    label="INH-->INH")]}}
-
+            return\
+                colors[pre_stype][post_stype]
+        return{
+            "color":[
+                __get_pathway_color(pathway)
+                for pathway in pathways],
+            "legend":{
+                "handles": [
+                    mpatches.Patch(
+                        color=colors["EXC"]["EXC"],
+                        label="EXC-->EXC"),
+                    mpatches.Patch(
+                        color=colors["EXC"]["INH"],
+                        label="EXC-->INH"),
+                    mpatches.Patch(
+                        color=colors["INH"]["EXC"],
+                        label="INH-->EXC"),
+                    mpatches.Patch(
+                        color=colors["INH"]["INH"],
+                        label="INH-->INH")]}}
 
 
 class PairSynapseCountValidation(
@@ -139,7 +135,7 @@ class PairSynapseCountValidation(
             *args, **kwargs):
         """Override to customize color scheme."""
         kwargs.update(
-            get_pathway_colors(
+            self.get_pathway_colors(
                 model_measurement))
         return\
             super().plot(
@@ -159,7 +155,7 @@ class PairConnectionValidation(
             *args, **kwargs):
         """..."""
         kwargs.update(
-            get_pathway_colors(
+            self.get_pathway_colors(
                 model_measurement))
         if with_full_axis_range:
             kwargs["ymin"] = 0.
@@ -184,7 +180,7 @@ class PathwayConnectionProbabilityValidation(
             *args, **kwargs):
         """..."""
         kwargs.update(
-            get_pathway_colors(
+            self.get_pathway_colors(
                 model_measurement))
         if with_full_axis_range:
             kwargs["axis"]={

@@ -381,7 +381,6 @@ class NeocortexAnalysisSuite(
             .append(report_path)
         return self._reports
 
-
     def get_report(self,
             phenomenon,
             region,
@@ -389,6 +388,7 @@ class NeocortexAnalysisSuite(
             reference_data=None,
             save=True,
             sample_size=20,
+            output_dir_path=os.getcwd(),
             *args, **kwargs):
         """..."""
         phenomenon_label=\
@@ -446,16 +446,19 @@ class NeocortexAnalysisSuite(
                 region=region,
                 *args, **kwargs)
         if save:
+            output_path=\
+                os.path.join(
+                    output_dir_path,
+                    analysis._get_output_dir(
+                        model_measurement=self._measurements[
+                            phenomenon_label]),
+                    "subregion-{}".format(region))
+            logger.debug(
+                logger.get_source_info(),
+                """Save analysis report at {}""".format(output_path))
             self._save_report(
                 analysis,
                 report,
                 region,
-                output_dir_path=os.path.join(
-                    os.getcwd(),
-                    analysis._get_output_dir(
-                        os.getcwd(),
-                        analysis._get_output_dir(
-                            model_measurement=self._measurements[
-                                phenomenon_label]),
-                        "subregion-{}".format(region))))
+                output_dir_path=output_path)
         return report
