@@ -113,6 +113,7 @@ def get_efferent_connections(
               circuit_model,
               parameters=parameters,
               pathways=pathways,
+              cache_size=cache_size,
               sample_size=sample_size,
               is_permissible=lambda condition: True,
               upper_bound_soma_distance=upper_bound_soma_distance)

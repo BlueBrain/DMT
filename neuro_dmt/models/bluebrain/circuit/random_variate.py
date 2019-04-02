@@ -754,10 +754,10 @@ class RandomPairs(
         """Distance of cells from origin."""
         return\
             self._distance_binner\
-              .get_bins(
-                  np.linalg.norm(
-                      cells[self.__XYZ].values - origin,
-                      axis=1))
+                .get_bins(
+                    np.linalg.norm(
+                        cells[self.__XYZ].values - origin,
+                        axis=1))
 
     def __random_sample(self, cells):
         """..."""

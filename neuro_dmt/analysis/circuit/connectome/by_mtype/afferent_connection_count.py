@@ -19,7 +19,7 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import ByMtypePathwayConnectomeAnalysis
 
 
-class EfferentConnectionCount(
+class AfferentConnectionCount(
         ByMtypePathwayConnectomeAnalysis):
     """Analyze probability of connections by mytpe --> mtype pathway."""
 
@@ -54,7 +54,7 @@ class EfferentConnectionCount(
             """
             pass
 
-        def get_pathway_efferent_connection_count(self,
+        def get_pathway_afferent_connection_count(self,
                 circuit_model,
                 parameters=[],
                 pathways=set(),
@@ -107,24 +107,24 @@ class EfferentConnectionCount(
             assert len(regions) == 1
             region=\
                 regions.pop()
-        def __get_efferent_mtypes(mtype):
+        def __get_afferent_mtypes(mtype):
             return {
-                post_mtype
+                pre_mtype
                 for pre_mtype, post_mtype in self.pathways_to_analyze
-                if pre_mtype == mtype}
-        def __get_plot(pre_mtype):
+                if post_mtype == mtype}
+        def __get_plot(post_mtype):
             figure=\
                 golden_figure(
                     height=kwargs.get("height", 8),
                     width=kwargs.get("width", None))
-            post_mtypes=\
-                __get_efferent_mtypes(pre_mtype)
+            pre_mtypes=\
+                __get_afferent_mtypes(post_mtype)
             colors=\
                 plt.cm.RdYlBu(
                     np.linspace(
-                        1., 0., len(post_mtypes)))
-            for color, post_mtype in zip(colors, post_mtypes):
-                efferent_counts=\
+                        1., 0., len(pre_mtypes)))
+            for color, pre_mtype in zip(colors, pre_mtypes):
+                afferent_counts=\
                     measurement_data[["mean", "std"]]\
                     .xs((region, pre_mtype, post_mtype),
                         level=("region", "pre_mtype", "post_mtype"))\
@@ -132,9 +132,9 @@ class EfferentConnectionCount(
                     .fillna(0.)
                 plt.bar(
                     x_positions,
-                    efferent_counts["mean"],
+                    afferent_counts["mean"],
                     width=delta_x,
-                    yerr=efferent_counts["std"],
+                    yerr=afferent_counts["std"],
                     label=post_mtype,
                     alpha=0.75,
                     color="white",
@@ -147,17 +147,17 @@ class EfferentConnectionCount(
                 rotation=90)
             plt.legend()
             plt.title(
-                "{}: EFF".format(pre_mtype))
+                "{}: EFF".format(post_mtype))
             plt.ylabel(
                 "Number of Connections")
             plt.xlabel(
                 "Soma Distance")
             return figure
-        pre_mtypes={
-            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
+        post_mtypes={
+            post_mtype for _, post_mtype in self.pathways_to_analyze}
         return {
-            "{}: EFF".format(pre_mtype): __get_plot(pre_mtype)
-            for pre_mtype in pre_mtypes}
+            "{}: AFF".format(post_mtype): __get_plot(post_mtype)
+            for post_mtype in post_mtypes}
 
     def get_measurement(self,
             circuit_model,
@@ -165,7 +165,7 @@ class EfferentConnectionCount(
         """Get a (statistical) measurement  of the phenomenon analyzed."""
         return\
             self.adapter\
-                .get_pathway_efferent_connection_count(
+                .get_pathway_afferent_connection_count(
                     circuit_model,
                     parameters=self.measurement_parameters,
                     pathways=self.pathways_to_analyze,
