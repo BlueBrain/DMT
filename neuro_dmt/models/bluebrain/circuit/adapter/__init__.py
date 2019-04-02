@@ -187,7 +187,7 @@ class BlueBrainModelAdapter(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with kwargs {}"""\
             .format(list(kwargs.keys())))
-        if not "is_permissible" in kwargs:
+        if not "jis_permissible" in kwargs:
             raise ValueError(
                 "statistical measurement called without is_permissible")
         measurement=\
@@ -326,6 +326,20 @@ class BlueBrainModelAdapter(
                 parameters=spatial_parameters,
                 *args, **kwargs)
 
+    def _get_pathways_permissible(self,
+            is_permissible,
+            pathways):
+        """..."""
+        def pathways_permissible(condition):
+            """..."""
+            pathway=(
+                condition.get_value("pre_mtype"),
+                condition.get_value("post_mtype"))
+            return\
+                is_permissible(condition) and\
+                pathway in pathways
+
+
     def pathway_measurement(self,
             circuit_model,
             get_measurement_method,
@@ -347,18 +361,10 @@ class BlueBrainModelAdapter(
                      circuit=circuit_model.bluepy_circuit,
                      label="post_mtype")]
         if pathways:
-            is_permissible_0=\
-                kwargs.get(
-                    "is_permissible",
-                    lambda condition: True)
-            conditioned_pathway=\
-                lambda condition:(
-                    condition.get_value("pre_mtype"),
-                    condition.get_value("post_mtype"))
             kwargs["is_permissible"]=\
-                lambda condition:(
-                    is_permissible_0(condition)
-                    and conditioned_pathway(condition) in pathways)
+                self._get_pathways_permissible(
+                    is_permissible,
+                    pathways)
         return\
             self.statistical_measurement(
                 circuit_model,
@@ -563,10 +569,11 @@ class BlueBrainModelAdapter(
                 pre_gid,
                 all_cells):
             """..."""
-            post_gids=\
-                circuit_model\
-                .connectome\
-                .efferent_gids(pre_gid)
+            post_cells=\
+                all_cells.loc[
+                    circuit_model\
+                    .connectome\
+                    .efferent_gids(pre_gid)]
             post_mtype_counts=\
                 all_cells.loc[post_gids][Cell.MTYPE]\
                          .value_counts()
