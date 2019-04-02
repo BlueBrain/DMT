@@ -1,4 +1,5 @@
 """Analyze number of efferent connections by mtype -> mtype pathway."""
+import numpy as np
 import pandas as pd
 from dmt.model.interface\
     import Interface
@@ -22,41 +23,19 @@ class EfferentConnectionCount(
     def __init__(self,
             *args, **kwargs):
         """Initialize Me"""
-        self._by_distance=\
-            kwargs.get(
-                "by_distance",
-                True)
-        self._upper_bound_soma_distance=\
-            kwargs.get("upper_bound_soma_distance", 300.)\
-            if not self._by_distance else\
-               None
         phenomenon=\
             Phenomenon(
                 "Pathway Efferent Connection Count",
-                """Number of efferent connections in an mtype --> mtype
-                pathway conditioned by soma-distance.""",
-                group="connectome")\
-                if self._by_distance else\
-                   Phenomenon(
-                       "Pathway Efferent Connection Count",
-                       "Number of efferent connections in an mtype --> mtype.",
-                       group="connectome")
+                """Number of efferent connections in an mtype --> mtype,
+                by distance.""",
+                group="connectome")
         kwargs["ReportType"]=\
-            kwargs.get(
-                "ReportType",
-                AnalysisMultiFigureReport\
-                if self._by_distance else\
-                AnalysisReport)
+            AnalysisMultiFigureReport
         kwargs["Plotter"]=\
-            kwargs.get(
-                "Plotter",
-                BarPlot\
-                if self._by_distance else\
-                HeatMap)
+            BarPlot
         super().__init__(
             phenomenon,
             *args, **kwargs)
-
 
     class AdapterInterface(
             Interface):
@@ -75,6 +54,8 @@ class EfferentConnectionCount(
         def get_pathway_efferent_connection_count(self,
                 circuit_model,
                 parameters=[],
+                pathways=set(),
+                cache_size=100,
                 *args, **kwargs):
             """Get statistical summary of the number of synapses between
             pre- and post-synaptic cells in an mtype --> mtype pathway.
@@ -98,70 +79,60 @@ class EfferentConnectionCount(
             """
             pass
 
-    def plot(self,
+        def plot(self,
             model_measurement,
             *args, **kwargs):
-        """Override to consider distance dependence."""
-        if not self._by_distance:
-            return\
-                super().plot(
-                    model_measurement,
-                    *args, **kwargs)
+            """Override to consider distance dependence."""
+            measurement_data=\
+                model_measurement.data
+            measurement_index=\
+                model_measurement.data.index
+            soma_distances=\
+                np.unique(
+                    measurement_index.to_frame()["soma_distance"].values)
+            pre_mtypes={
+                pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
+            def __get_efferent_mtypes(mtype):
+                return {
+                    post_mtype
+                    for pre_mtype, post_mtype in self.pathways_to_analyze
+                    if pre_mtype == mtype}
+            xtick_positions=\
+                np.arange(len(soma_distances))
+            for pre_mtype in pre_mtypes:
+                post_mtypes=\
+                    __get_efferent_mtypes(pre_mtype)
 
-        yvar=\
-            model_measurement.phenomenon.label
-        title_common=\
-            model_measurement.phenomenon.name
-        def __get_plot(
-                region,
-                pre_mtype,
-                post_mtype):
-            """assuming that there is only one region in model_measurement"""
-            return\
-                BarPlot(
-                    model_measurement
-                ).plotting(
-                    "Efferent Connection Count"
-                ).versus(
-                    "Soma Distance"
-                ).given(
-                    region=region,
-                    pre_mtype=pre_mtype,
-                    post_mtype=post_mtype
-                ).with_customization(
-                    title="Pathway {}-->{} in region".format(
-                        pre_mtype,
-                        post_mtype,
-                        region),
-                    ylabel="Efferent Connection Count",
-                    axis={
-                        "ymin": 0.,
-                        "ymax": 1.},
-                    **kwargs
-                ).plot()
-        measurement_index=\
-            model_measurement\
-              .data\
-              .index\
-              .to_frame()[
-                  ["region", "pre_mtype", "post_mtype"]]\
-              .values
-        figure_parameters=[
-            tuple(xs) for xs in measurement_index] 
-        return {
-            parameters: __get_plot(*parameters)
-            for parameters in figure_parameters}
+            
+            some_post_mtypes=\
+                ["L5_TPC:A", "L5_TPC:B", "L4_TPC", "L3_TPC:A", "L3_TPC:B", "L2_TPC:A"]
 
-
+            colors = plt.cm.RdYlBu(np.linspace(1., 0., len(some_post_mtypes)))
+            for color, post_mtype in zip(colors, some_post_mtypes):
+                df = eccm_ssp.data[["mean", "std"]].xs(
+                    ("SSp-ll@left", "L2_TPC:A", post_mtype),
+                level=("region", "pre_mtype", "post_mtype"))
+                plt.bar(
+                    np.arange(df.shape[0]),
+                    df["mean"],
+                    width=1.0,
+                    #yerr=df["std"],
+                    label=post_mtype,
+                    alpha=0.2,
+                    color=color,
+                    edgecolor="black",
+                    linewidth=1,
+                linestyle="dashed")
+                plt.xticks(
+                    xtick_positions,
+                    l2tpca_l5tpca.index,
+                rotation=90)
+                plt.legend()
+                
     def get_measurement(self,
             circuit_model,
             *args, **kwargs):
         """Get a (statistical) measurement  of the phenomenon analyzed."""
-        if not self._by_distance:
-            kwargs["upper_bound_soma_distance"]=\
-                kwargs.get(
-                    "upper_bound_soma_distance",
-                    self._upper_bound_soma_distance)
         return\
             self.adapter\
                 .get_pathway_efferent_connection_count(
