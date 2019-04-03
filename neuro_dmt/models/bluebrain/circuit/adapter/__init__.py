@@ -364,7 +364,9 @@ class BlueBrainModelAdapter(
         if pathways:
             kwargs["is_permissible"]=\
                 self._get_pathways_permissible(
-                    is_permissible,
+                    kwargs.get(
+                        "is_permissible",
+                        lambda condition: True),
                     pathways)
         return\
             self.statistical_measurement(

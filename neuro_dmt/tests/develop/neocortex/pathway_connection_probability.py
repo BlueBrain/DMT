@@ -54,6 +54,17 @@ L5_PCs=\
 L6_PCs=\
     [mtype for mtype in all_mtypes
      if "L6" in mtype and "PC" in mtype]
+pc_mtypes=\
+    L23_PCs + L4_PCs + L5_PCs
+eff_pathways={
+    (X, Y)
+    for X in ["L2_TPC:A", "L2_TPC:B"]
+    for Y in L23_PCs + L4_PCs + L5_PCs}
+aff_pathways={
+    (Y,X) for X,Y in eff_pathways}
+pc_pathways=\
+    eff_pathways.union(
+        aff_pathways)
 connectome_algo_paper_pathways=\
     get_pathways(
         pre_mtypes=["L23_BTC", "L23_LBC", "L23_MC", "L23_NBC", "L23_SBC"],
