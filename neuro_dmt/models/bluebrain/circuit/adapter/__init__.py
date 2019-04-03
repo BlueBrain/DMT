@@ -532,6 +532,8 @@ class BlueBrainModelAdapter(
 
         def __random_sample(gids):
             """..."""
+            if len(gids) == 0:
+                return np.array([])
             return\
                 np.random.choice(gids, cache_size)\
                 if cache_size else gids
@@ -726,6 +728,275 @@ class BlueBrainModelAdapter(
                 is_permissible=is_permissible))
         condition_dataframe_list=[
             (condition, __get_pathway_efferent_connection_count(condition))
+            for condition in conditions]
+        measurement=\
+            pd.concat([
+                dataframe for _, dataframe in condition_dataframe_list
+                if not dataframe.empty])\
+              .set_index(
+                  pd.MultiIndex.from_tuples(
+                      [__get_parameter_values(condition)
+                       for condition, dataframe in condition_dataframe_list
+                       if not dataframe.empty],
+                      names=[
+                          "region","pre_mtype","post_mtype","soma_distance"]))
+        return\
+            Record(
+                phenomenon=Phenomenon(
+                    "Pathway Efferent Connection Count",
+                    "Number of efferent connections in an mtype-->mtype pathway.",
+                    group="connectome"),
+                label="in-silico",
+                model_label=circuit_model.get_label(),
+                model_uri=circuit_model.get_uri(),
+                sampling_method="All pathway pairs and connections were used",
+                sample_size=np.nan,
+                measurement_method="""Pre-mtype cells were sampled randomly,
+                and their efferent connections grouped by mtype and
+                soma distance and counted.""",
+                data=measurement,
+                units="",
+                parameter_groups=[p.label for p in parameters])
+
+
+    def get_pathway_afferent_connection_count(self,
+            circuit_model,
+            parameters=[],
+            pathways=set(),
+            upper_bound_soma_distance=100.,
+            cache_size=None,
+            *args, **kwargs):
+        """Get number of outgoing connections in a pathway.
+        For now, a cut-paste solution, will be cleaned up"""
+        if not parameters:
+            parameters=[
+                AtlasRegion(
+                    values=[circuit_model.representative_subregion]),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="pre_mtype"),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="post_mtype")]
+        soma_distance_params=[
+            param for param in parameters
+            if param.label == "soma_distance"]
+        assert len(soma_distance_params) <= 1
+        by_distance=\
+            len(soma_distance_params) == 1
+        if not by_distance:
+            soma_distance=\
+                SomaDistance(0., 2 * upper_bound_soma_distance, 2)
+            parameters.append(
+                soma_distance)
+        else:
+            soma_distance=\
+                soma_distance_params[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get pathway afferent connection count with parameter values",
+            "region: {}".format(parameters[0].values),
+            "pre_mtype: {}".format(parameters[1].values),
+            "post_mtype: {}".format(parameters[2].values),
+            "soma distance: {}".format(soma_distance.values))
+
+        def __random_sample(gids):
+            """..."""
+            return\
+                np.random.choice(gids, cache_size)\
+                if cache_size else gids
+                   
+        region_label=\
+            circuit_model.region_label
+        XYZ=[
+            Cell.X, Cell.Y, Cell.Z]
+        empty_dataframe=\
+            pd.DataFrame(
+                [],
+                columns=["mean", "std"])
+        was_cached=\
+            set()
+        number_cells_mtype=\
+            {}
+        has_afferent_connections=\
+            {}
+        connection_counts=\
+            {}
+
+        def __get_distances(
+                origin,
+                cells):
+            """..."""
+            return\
+                soma_distance._binner\
+                .get_bins(
+                    np.linalg.norm(
+                        cells[XYZ].values - origin,
+                        axis=1))
+
+        def __get_afferent_mtype_counts(
+                post_gid,
+                all_cells):
+            """..."""
+            origin=\
+                all_cells.loc[post_gid][XYZ]\
+                         .values\
+                         .astype(float)
+            pre_gids=\
+                circuit_model\
+                .connectome\
+                .afferent_gids(post_gid)
+            pre_cells=\
+                all_cells\
+                .reindex(pre_gids)\
+                .dropna()
+            N = pre_cells.shape[0]
+            return\
+                pd.DataFrame(
+                    {"count": np.ones(N),
+                     "pre_mtype": pre_cells[Cell.MTYPE].values,
+                     "soma_distance": __get_distances(origin, pre_cells)})\
+                  .groupby(["pre_mtype", "soma_distance"])\
+                  .agg(sum)\
+                  .dropna()
+
+        def __add_to_cache(
+                mtype,
+                region,
+                all_cells):
+            """..."""
+            cell_type={
+                Cell.MTYPE: mtype}
+            if region:
+                cell_type[Cell.REGION]=\
+                    region
+            mtype_gids=\
+                __random_sample(
+                    all_cells.index[
+                        all_cells[Cell.MTYPE].values == mtype])
+            number_cells_mtype[mtype]=\
+                len(mtype_gids)
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "cache {} mtype {} cells, region {}"\
+                .format(
+                    len(mtype_gids),
+                    mtype,
+                    region))
+            if len(mtype_gids) > 0:
+                has_afferent_connections[mtype]=\
+                    True
+                connection_counts[(region, mtype)]=\
+                    pd.concat([
+                        __get_afferent_mtype_counts(gid, all_cells)
+                        for gid in mtype_gids])\
+                      .groupby(["pre_mtype", "soma_distance"])\
+                      .agg(["mean", "std"])\
+                      .dropna()\
+                      ["count"]
+            else:
+                has_afferent_connections[mtype]=\
+                    False
+            was_cached.add(mtype)
+
+        def __get_cell_type(
+                mtype,
+                region):
+            """..."""
+            return\
+                {Cell.MTYPE: mtype,
+                 region_label: region}\
+                 if region else\
+                    {Cell.MTYPE: mtype}
+
+        def __get_pathway_afferent_connection_count(
+                condition):
+            """..."""
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "get pathway connection probability for condition {}"\
+                .format(condition.value))
+            region=\
+                condition.get_value(
+                    region_label)
+            pre_mtype=\
+                condition.get_value(
+                    "pre_mtype")
+            post_mtype=\
+                condition.get_value(
+                    "post_mtype")
+            soma_distance=\
+                condition.get_value(
+                    "soma_distance")
+            pre_cell_type=\
+                __get_cell_type(
+                    pre_mtype, region)
+            post_cell_type=\
+                __get_cell_type(
+                    post_mtype, region)
+            pathway=\
+                (region, pre_mtype, post_mtype)
+            all_cells=\
+                circuit_model\
+                  .cells\
+                  .get(
+                      group={region_label: region} if region else None,
+                      properties=[Cell.MTYPE] + XYZ)
+            if post_mtype not in was_cached:
+                __add_to_cache(
+                    post_mtype,
+                    region,
+                    all_cells)
+            if not (region, post_mtype) in connection_counts:
+                return empty_dataframe
+            try:
+                dataframe=\
+                    connection_counts[
+                        (region, post_mtype)]
+                return\
+                    dataframe.xs(
+                        (pre_mtype, soma_distance),
+                        level=("pre_mtype", "soma_distance"))
+            except KeyError as key_error:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    "KeyError {}".format(key_error),
+                    "while looking for pre_mtype {}, soma_distance{}"\
+                    .format(
+                        pre_mtype,
+                        soma_distance))
+                return empty_dataframe
+
+        def __get_parameter_values(
+                condition ):
+            """..."""
+            region=\
+                condition.get_value(
+                    region_label)
+            if not region:
+                return(
+                    "Any",
+                    condition.get_value("pre_mtype"),
+                    condition.get_value("post_mtype"),
+                    condition.get_value("soma_distance"))
+            return(
+                region,
+                condition.get_value("pre_mtype"),
+                condition.get_value("post_mtype"),
+                condition.get_value("soma_distance"))
+        
+        is_permissible=\
+            self._get_pathways_permissible(
+                kwargs.get(
+                    "is_permissible",
+                    lambda condition: True),
+                pathways)
+        conditions = list(
+            ConditionGenerator(
+                parameters,
+                is_permissible=is_permissible))
+        condition_dataframe_list=[
+            (condition, __get_pathway_afferent_connection_count(condition))
             for condition in conditions]
         measurement=\
             pd.concat([

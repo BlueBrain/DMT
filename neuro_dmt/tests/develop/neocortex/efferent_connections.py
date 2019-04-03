@@ -3,6 +3,14 @@ from neuro_dmt.tests.develop.neocortex.pathway_connection_probability\
 from neuro_dmt.analysis.circuit.connectome.by_mtype.efferent_connection_count\
     import EfferentConnectionCount
 
+some_mtypes=\
+    L23_PCs + L4_PCs + L5_PCs
+some_pathways={
+    (X, Y)
+    for X in ["L2_TPC:A", "L2_TPC:B"]
+    for Y in L23_PCs + L4_PCs + L5_PCs}
+
+
 def get_efferent_connection_count_analysis(
         circuit_model,
         region,
@@ -41,11 +49,3 @@ def get_efferent_connection_count_analysis(
                 model_label="in-silico"),
             pathways_to_analyze=pathways,
             *args, **kwargs)
-
-
-
-
-
-
-
-
