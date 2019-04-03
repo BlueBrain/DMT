@@ -125,6 +125,12 @@ class PathwayConnectionProbabilityAnalysis(
             model_measurement.phenomenon.name
         def __get_plot(
                 region,
+                pre_mtype):
+            """assuming that there is only one region in model_measurement"""
+            
+
+        def __get_plot(
+                region,
                 pre_mtype,
                 post_mtype):
             """assuming that there is only one region in model_measurement"""

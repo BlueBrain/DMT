@@ -187,7 +187,7 @@ class BlueBrainModelAdapter(
             self.logger.get_source_info(),
             """get statitistical measurement from adapter with kwargs {}"""\
             .format(list(kwargs.keys())))
-        if not "jis_permissible" in kwargs:
+        if not "is_permissible" in kwargs:
             raise ValueError(
                 "statistical measurement called without is_permissible")
         measurement=\

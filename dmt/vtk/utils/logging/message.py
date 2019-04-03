@@ -141,16 +141,18 @@ class Failure(Message):
 class SourceCodeInfo(Message):
     """..."""
     label = "SOURCE"
-    def __init__(self, *msgs, level=0, **kwargs):
+
+    def __init__(self,
+            *msgs, level=0, **kwargs):
         self._level = level
-        super().__init__(*msgs, **kwargs)
+        super().__init__(
+            *msgs, **kwargs)
 
     @property
     def level(self):
         """..."""
         return self._level
     
-
 
 class Validation:
     """Explains an exception. What happened?
@@ -181,8 +183,6 @@ class Validation:
     def passed(self):
         """did it pass?"""
         return self.exception is not None
-
-
 
 
 class ContextualMessage(Message):
