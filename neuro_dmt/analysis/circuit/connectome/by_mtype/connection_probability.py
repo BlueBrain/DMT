@@ -1,5 +1,7 @@
 """Analyze connection probabilty by mtype -> mtype pathway."""
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from dmt.model.interface\
     import Interface
 from dmt.vtk.phenomenon\
@@ -7,7 +9,8 @@ from dmt.vtk.phenomenon\
 from dmt.vtk.plotting\
     import HeatMap\
     ,      LinePlot\
-    ,      BarPlot
+    ,      BarPlot\
+    ,      golden_figure
 from neuro_dmt.analysis.report.single_phenomenon\
     import AnalysisReport\
     ,      AnalysisMultiFigureReport
@@ -100,74 +103,180 @@ class PathwayConnectionProbabilityAnalysis(
 
     def plot(self,
             model_measurement,
+            region=None,
             *args, **kwargs):
         """Override to consider distance dependence."""
-        if not self._by_distance:
-            # data=\
-            #     model_measurement.data
-            # index_tuples=[
-            #     (region, pre_mtype, post_mtype)
-            #     for region, pre_mtype, post_mtype,_ in data.index.values]
-            # model_measurement.data=\
-            #     pd.DataFrame(
-            #         data.values,
-            #         columns=data.columns,
-            #         index=pd.MultiIndex.from_tuples(
-            #             tuples=index_tuples,
-            #             names=["region", "pre_mtype", "post_mtype"]))
-            return\
-                super().plot(
-                    model_measurement,
-                    *args, **kwargs)
-        yvar=\
-            model_measurement.phenomenon.label
-        title_common=\
-            model_measurement.phenomenon.name
-        def __get_plot(
-                region,
-                pre_mtype):
-            """assuming that there is only one region in model_measurement"""
-            
-
-        def __get_plot(
-                region,
-                pre_mtype,
-                post_mtype):
-            """assuming that there is only one region in model_measurement"""
-            return\
-                LinePlot(
-                    model_measurement
-                ).plotting(
-                    "Connection Probability"
-                ).versus(
-                    "Soma Distance"
-                ).given(
-                    region=region,
-                    pre_mtype=pre_mtype,
-                    post_mtype=post_mtype
-                ).with_customization(
-                    title="Pathway {}-->{} in region".format(
-                        pre_mtype,
-                        post_mtype,
-                        region),
-                    ylabel="Connection Probability",
-                    axis={
-                        "ymin": 0.,
-                        "ymax": 1.},
-                    **kwargs
-                ).plot()
-        measurement_index=\
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "plot conn prob from data {}".format(model_measurement.data))
+        measurement_data=\
             model_measurement\
-              .data\
-              .index\
-              .to_frame()[
-                  ["region", "pre_mtype", "post_mtype"]]\
-              .values
-        figure_parameters=[
-            tuple(xs) for xs in measurement_index] 
+            .data\
+            [model_measurement.label]\
+            .sort_values(by="soma_distance")\
+            [["mean", "std"]]
+        measurement_index=\
+            model_measurement.data.index.to_frame()
+        soma_distances=\
+            sorted(list(set(
+                measurement_index["soma_distance"].values)))
+        x_positions=[
+            np.mean(bin) for bin in soma_distances]
+        assert len(x_positions) >= 2
+        delta_x=\
+            x_positions[1] - x_positions[0]
+        if not region:
+            regions=\
+                set(measurement_index["region"].values)
+            if len(regions) != 1:
+                self.logger.error(
+                    self.logger.get_source_info(),
+                    """Current implementation of {}
+                    allows only 1 region in measured data.
+                    Measured data had {}"""\
+                    .format(
+                        self.__class__.__name__,
+                        len(regions)))
+                raise ValueError(
+                    """Current implementation of {}
+                    allows only 1 region in measured data"""\
+                    .format(self.__class__.__name__))
+            region=\
+                regions.pop()
+        efferent_mtypes=\
+            self._get_aggregated_pathways(
+                model_measurement,
+                direction="EFF")
+        def __get_plot(pre_mtype):
+            self.logger.info(
+                self.logger.get_source_info(),
+                """plot {} for pre mtype {}"""\
+                .format(
+                    self.__class__.__name__,
+                    pre_mtype))
+            figure=\
+                golden_figure(
+                    height=kwargs.get("height", None),
+                    width=kwargs.get("width", 14))
+            axes=\
+                figure.subplots()
+            post_mtypes=\
+                efferent_mtypes[pre_mtype]
+            colors=\
+                plt.cm.RdYlBu(
+                    np.linspace(
+                        1., 0., len(post_mtypes)))
+            pre_mtype_data=\
+                measurement_data.xs(
+                    (region, pre_mtype),
+                    level=("region", "pre_mtype"))
+            for color, post_mtype in zip(colors, post_mtypes):
+                efferent_counts=\
+                    pre_mtype_data\
+                    .reindex(
+                        pd.MultiIndex.from_product(
+                            [[post_mtype], soma_distances],
+                            names=["post_mtype", "soma_distance"]))\
+                    .fillna(0.)\
+                    .xs(post_mtype, level="post_mtype")
+                plt.bar(
+                    x_positions,
+                    efferent_counts["mean"],
+                    width=delta_x,
+                    yerr=efferent_counts["std"],
+                    label=post_mtype,
+                    alpha=0.75,
+                    color="white",
+                    edgecolor=color,
+                    linewidth=4,
+                    linestyle="solid")
+            plt.xticks(
+                x_positions,
+                soma_distances,
+                rotation=90,
+                fontsize=8)
+            plt.legend()
+            plt.title(
+                "{}: EFF".format(pre_mtype),
+                fontsize=24)
+            axes.set_ylabel(
+                "Number of Connections",
+                fontsize=16)
+            axes.set_xlabel(
+                "Soma Distance",
+                fontsize=16)
+            plt.tight_layout()
+            return figure
+        pre_mtypes={
+            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
         return {
-            parameters: __get_plot(*parameters)
-            for parameters in figure_parameters}
+            "{}: EFF".format(pre_mtype): __get_plot(pre_mtype)
+            for pre_mtype in pre_mtypes}
+
+    # def plot(self,
+    #         model_measurement,
+    #         *args, **kwargs):
+    #     """Override to consider distance dependence."""
+    #     if not self._by_distance:
+    #         # data=\
+    #         #     model_measurement.data
+    #         # index_tuples=[
+    #         #     (region, pre_mtype, post_mtype)
+    #         #     for region, pre_mtype, post_mtype,_ in data.index.values]
+    #         # model_measurement.data=\
+    #         #     pd.DataFrame(
+    #         #         data.values,
+    #         #         columns=data.columns,
+    #         #         index=pd.MultiIndex.from_tuples(
+    #         #             tuples=index_tuples,
+    #         #             names=["region", "pre_mtype", "post_mtype"]))
+    #         return\
+    #             super().plot(
+    #                 model_measurement,
+    #                 *args, **kwargs)
+    #     yvar=\
+    #         model_measurement.phenomenon.label
+    #     title_common=\
+    #         model_measurement.phenomenon.name
+    #     def __get_plot(
+    #             region,
+    #             pre_mtype,
+    #             post_mtype):
+    #         """assuming that there is only one region in model_measurement"""
+    #         return\
+    #             LinePlot(
+    #                 model_measurement
+    #             ).plotting(
+    #                 "Connection Probability"
+    #             ).versus(
+    #                 "Soma Distance"
+    #             ).given(
+    #                 region=region,
+    #                 pre_mtype=pre_mtype,
+    #                 post_mtype=post_mtype
+    #             ).with_customization(
+    #                 title="Pathway {}-->{} in region".format(
+    #                     pre_mtype,
+    #                     post_mtype,
+    #                     region),
+    #                 ylabel="Connection Probability",
+    #                 axis={
+    #                     "ymin": 0.,
+    #                     "ymax": 1.},
+    #                 **kwargs
+    #             ).plot()
+    #     measurement_index=\
+    #         model_measurement\
+    #           .data\
+    #           .index\
+    #           .to_frame()[
+    #               ["region", "pre_mtype", "post_mtype"]]\
+    #           .values
+    #     figure_parameters=[
+    #         tuple(xs) for xs in measurement_index] 
+    #     return {
+    #         parameters: __get_plot(*parameters)
+    #         for parameters in figure_parameters}
 
 
     def get_measurement(self,
