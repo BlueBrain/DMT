@@ -89,6 +89,46 @@ class ByMtypePathwayConnectomeAnalysis(
             phenomenon,
             *args, **kwargs)
 
+    def _get_pathways(self,
+            model_measurement):
+        """..."""
+        data=\
+            getattr(
+                model_measurement,
+                "data",
+                model_measurement)
+        pre_index=\
+            data.index.names.index("pre_mtype")
+        post_index=\
+            post.index.names.index("post_mtype")
+        return[
+            (index_value[pre_index], index_value[post_index])
+            for index_value in data.index.values]
+
+    def _get_aggregated_pathways(self,
+            model_measurement,
+            direction="EFF"): #or "AFF"
+        """..."""
+        pathways=\
+            self.pathways_to_analyze if self.pathways_to_analyze else\
+            self._get_pathways(model_measurement)
+        efferent_pathways = lambda: {
+            mtype: sorted(list({
+                post_mtype for pre_mtype, post_mtype in pathways
+                if pre_mtype == mtype}))
+            for mtype in sorted(list({
+                    pre_mtype for pre_mtype, _ in pathways}))}
+        afferent_pathways = lambda: {
+            mtype: sorted(list({
+                pre_mtype for pre_mtype, _ in pathways
+                if post_mtype == mtype}))
+            for mtype in sorted(list({
+                    post_mtype for _, post_mtype in pathways}))}
+        return\
+            efferent_pathways()\
+            if direction == "EFF" else\
+               afferent_pathways()
+
     def plot(self,
             model_measurement,
             *args, **kwargs):

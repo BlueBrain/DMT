@@ -90,7 +90,8 @@ class EfferentConnectionCount(
         measurement_data=\
             model_measurement\
             .data\
-            .sort_values(by="soma_distance")
+            .sort_values(by="soma_distance")\
+            [["mean", "std"]]
         measurement_index=\
             model_measurement.data.index.to_frame()
         soma_distances=\
@@ -104,32 +105,62 @@ class EfferentConnectionCount(
         if not region:
             regions=\
                 set(measurement_index["region"].values)
-            assert len(regions) == 1
+            if len(regions) != 1:
+                self.logger.error(
+                    self.logger.get_source_info(),
+                    """Current implementation of {}
+                    allows only 1 region in measured data.
+                    Measured data had {}"""\
+                    .format(
+                        self.__class__.__name__,
+                        len(regions)))
+                raise ValueError(
+                    """Current implementation of {}
+                    allows only 1 region in measured data"""\
+                    .format(self.__class__.__name__))
             region=\
                 regions.pop()
-        def __get_efferent_mtypes(mtype):
-            return {
-                post_mtype
-                for pre_mtype, post_mtype in self.pathways_to_analyze
-                if pre_mtype == mtype}
+        # def __get_efferent_mtypes(mtype):
+        #     return {
+        #         post_mtype
+        #         for pre_mtype, post_mtype in self.pathways_to_analyze
+        #         if pre_mtype == mtype}
+        efferent_mtypes=\
+            self._get_aggregated_pathways(
+                model_measurement,
+                direction="EFF")
         def __get_plot(pre_mtype):
+            self.logger.info(
+                self.logger.get_source_info(),
+                """make {} plot for pre mtype {}"""\
+                .format(
+                    self.__class__.__name__,
+                    pre_mtype))
             figure=\
                 golden_figure(
-                    height=kwargs.get("height", 8),
-                    width=kwargs.get("width", None))
+                    height=kwargs.get("height", None),
+                    width=kwargs.get("width", 14))
+            axes=\
+                figure.subplots()
             post_mtypes=\
-                __get_efferent_mtypes(pre_mtype)
+                efferent_mtypes[pre_mtype]
             colors=\
                 plt.cm.RdYlBu(
                     np.linspace(
                         1., 0., len(post_mtypes)))
+            pre_mtype_data=\
+                measurement_data.xs(
+                    (region, pre_mtype),
+                    level=("region", "pre_mtype"))
             for color, post_mtype in zip(colors, post_mtypes):
                 efferent_counts=\
-                    measurement_data[["mean", "std"]]\
-                    .xs((region, pre_mtype, post_mtype),
-                        level=("region", "pre_mtype", "post_mtype"))\
-                    .reindex(soma_distances)\
-                    .fillna(0.)
+                    pre_mtype_data\
+                    .reindex(
+                        pd.MultiIndex.from_product(
+                            [[post_mtype], soma_distances],
+                            names=["post_mtype", "soma_distance"]))\
+                    .fillna(0.)\
+                    .xs(post_mtype, level="post_mtype")
                 plt.bar(
                     x_positions,
                     efferent_counts["mean"],
@@ -141,17 +172,23 @@ class EfferentConnectionCount(
                     edgecolor=color,
                     linewidth=4,
                     linestyle="solid")
+                    
             plt.xticks(
                 x_positions,
                 soma_distances,
-                rotation=90)
+                rotation=90,
+                fontsize=8)
             plt.legend()
             plt.title(
-                "{}: EFF".format(pre_mtype))
-            plt.ylabel(
-                "Number of Connections")
-            plt.xlabel(
-                "Soma Distance")
+                "{}: EFF".format(pre_mtype),
+                fontsize=24)
+            axes.set_ylabel(
+                "Number of Connections",
+                fontsize=16)
+            axes.set_xlabel(
+                "Soma Distance",
+                fontsize=16)
+            plt.tight_layout()
             return figure
         pre_mtypes={
             pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
