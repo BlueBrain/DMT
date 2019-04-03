@@ -120,7 +120,7 @@ class ByMtypePathwayConnectomeAnalysis(
                     pre_mtype for pre_mtype, _ in pathways}))}
         afferent_pathways = lambda: {
             mtype: sorted(list({
-                pre_mtype for pre_mtype, _ in pathways
+                pre_mtype for pre_mtype, post_mtype in pathways
                 if post_mtype == mtype}))
             for mtype in sorted(list({
                     post_mtype for _, post_mtype in pathways}))}

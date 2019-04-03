@@ -21,15 +21,15 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype\
 
 class AfferentConnectionCount(
         ByMtypePathwayConnectomeAnalysis):
-    """Analyze probability of connections by mytpe --> mtype pathway."""
+    """Analyze number of connections by mytpe --> mtype pathway."""
 
     def __init__(self,
             *args, **kwargs):
         """Initialize Me"""
         phenomenon=\
             Phenomenon(
-                "Pathway Efferent Connection Count",
-                """Number of efferent connections in an mtype --> mtype,
+                "Pathway Afferent Connection Count",
+                """Number of afferent connections in an mtype --> mtype,
                 by distance.""",
                 group="connectome")
         kwargs["ReportType"]=\
@@ -104,38 +104,63 @@ class AfferentConnectionCount(
         if not region:
             regions=\
                 set(measurement_index["region"].values)
-            assert len(regions) == 1
+            if len(regions) != 1:
+                self.logger.error(
+                    self.logger.get_source_info(),
+                    """Current implementation of {}
+                    allows only 1 region in measured data.
+                    Measured data had {}"""\
+                    .format(
+                        self.__class__.__name__,
+                        len(regions)))
+                raise ValueError(
+                    """Current implementation of {}
+                    allows only 1 region in measured data"""\
+                    .format(self.__class__.__name__))
             region=\
                 regions.pop()
-        def __get_afferent_mtypes(mtype):
-            return {
-                pre_mtype
-                for pre_mtype, post_mtype in self.pathways_to_analyze
-                if post_mtype == mtype}
+        afferent_mtypes=\
+            self._get_aggregated_pathways(
+                model_measurement,
+                direction="AFF")
         def __get_plot(post_mtype):
+            self.logger.info(
+                self.logger.get_source_info(),
+                "plot {} for post mtype {}"\
+                .format(
+                    self.__class__.__name__,
+                    post_mtype))
             figure=\
                 golden_figure(
-                    height=kwargs.get("height", 8),
-                    width=kwargs.get("width", None))
+                    height=kwargs.get("height", None),
+                    width=kwargs.get("width", 14))
+            axes=\
+                figure.subplots()
             pre_mtypes=\
-                __get_afferent_mtypes(post_mtype)
+                afferent_mtypes[post_mtype]
             colors=\
                 plt.cm.RdYlBu(
                     np.linspace(
                         1., 0., len(pre_mtypes)))
+            post_mtype_data=\
+                measurement_data.xs(
+                    (region, post_mtype),
+                    level=("region", "post_mtype"))
             for color, pre_mtype in zip(colors, pre_mtypes):
                 afferent_counts=\
-                    measurement_data[["mean", "std"]]\
-                    .xs((region, pre_mtype, post_mtype),
-                        level=("region", "pre_mtype", "post_mtype"))\
-                    .reindex(soma_distances)\
-                    .fillna(0.)
+                    post_mtype_data\
+                    .reindex(
+                        pd.MultiIndex.from_product(
+                            [[pre_mtype], soma_distances],
+                            names=["pre_mtype", "soma_distance"]))\
+                    .fillna(0.)\
+                    .xs(pre_mtype, level="pre_mtype")
                 plt.bar(
                     x_positions,
                     afferent_counts["mean"],
                     width=delta_x,
                     yerr=afferent_counts["std"],
-                    label=post_mtype,
+                    label=pre_mtype,
                     alpha=0.75,
                     color="white",
                     edgecolor=color,
@@ -144,14 +169,16 @@ class AfferentConnectionCount(
             plt.xticks(
                 x_positions,
                 soma_distances,
-                rotation=90)
+                rotation=90,
+                fontsize=8)
             plt.legend()
             plt.title(
-                "{}: EFF".format(post_mtype))
-            plt.ylabel(
+                "{}: AFF".format(post_mtype))
+            axes.set_ylabel(
                 "Number of Connections")
-            plt.xlabel(
+            axes.set_xlabel(
                 "Soma Distance")
+            plt.tight_layout()
             return figure
         post_mtypes={
             post_mtype for _, post_mtype in self.pathways_to_analyze}

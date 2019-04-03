@@ -120,11 +120,6 @@ class EfferentConnectionCount(
                     .format(self.__class__.__name__))
             region=\
                 regions.pop()
-        # def __get_efferent_mtypes(mtype):
-        #     return {
-        #         post_mtype
-        #         for pre_mtype, post_mtype in self.pathways_to_analyze
-        #         if pre_mtype == mtype}
         efferent_mtypes=\
             self._get_aggregated_pathways(
                 model_measurement,
@@ -132,7 +127,7 @@ class EfferentConnectionCount(
         def __get_plot(pre_mtype):
             self.logger.info(
                 self.logger.get_source_info(),
-                """make {} plot for pre mtype {}"""\
+                """plot {} for pre mtype {}"""\
                 .format(
                     self.__class__.__name__,
                     pre_mtype))
@@ -172,7 +167,6 @@ class EfferentConnectionCount(
                     edgecolor=color,
                     linewidth=4,
                     linestyle="solid")
-                    
             plt.xticks(
                 x_positions,
                 soma_distances,
