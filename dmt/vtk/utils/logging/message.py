@@ -5,10 +5,15 @@ from using rest of our code base, other than code in this module 'logging'.
 With the exception of 'Record', which we think is more fundamental than Logging.
 Of course, we cannot use Logging from Record."""
 
-from abc import ABC, abstractmethod, abstractclassmethod
+from abc\
+    import ABC\
+    ,      abstractmethod\
+    ,      abstractclassmethod
 import sys
 import os
 import time
+from dmt.vtk.utils\
+    import logging
 
 
 class Message(ABC):
@@ -55,27 +60,30 @@ class Message(ABC):
 
 class Funda(Message):
     """A single unit of fundamental understanding."""
-    level = 0
+    level = logging.LEVEL.STUDY
     label = "FUNDA"
 
 class Info(Message):
     """General info, can be anything."""
-    level = 1
+    level = logging.LEVEL.INFO
     label = "INFO"
+
+class ProgressInfo(Info):
+    label = "PROGRESS"
 
 class Explanation(Message):
     """Explain something"""
-    level = 1
-    label = "EXPLAINATION"
+    level = logging.LEVEL.DEBUG
+    label = "EXPLANATION"
 
 class Note(Message):
     """Note may be used for testing."""
-    level = 0
+    level = logging.LEVEL.DEVELOP
     label = "NOTE"
 
 class DevNote(Message):
     """Developer may need """
-    level = 0
+    level = logging.LEVEL.DEVELOP
     label = "DEVNOTE"
 
 class Remark(Info):
@@ -83,18 +91,19 @@ class Remark(Info):
     just allows the user to remark if they are feeling like it!"""
     label = "REMARK"
 
-class Advice(Message):
+class Advice(DevNote):
     """Another type of Info?"""
     label = "ADVICE"
 
-class DebugInfo(Info):
+class DebugInfo(Message):
     """Another type of Info"""
+    level = logging.LEVEL.DEBUG
     label = "DEBUGINFO"
 
 class Alert(Message): #Warning is reserved by the language
     """..."""
-    level = 2
-    label = "WARNING"
+    level = logging.LEVEL.PROD
+    label = "ALERT"
 
 class Notice(Alert):
     """..."""
@@ -106,27 +115,27 @@ class Attention(Alert):
 
 class Error(Message):
     """..."""
-    level = 3
+    level = logging.LEVEL.PROD
     label = "ERROR"
 
 class Assertion(Message):
     """..."""
-    level = 4
+    level = logging.LEVEL.PROD
     label = "ASSERTION"
 
 class Test(Message):
     """..."""
-    level = 2
+    level = logging.LEVEL.TEST
     label="TEST"
 
 class Success(Message):
     """..."""
-    level = 2
+    level = logging.LEVEL.PROD
     label = "SUCCESS"
 
 class Failure(Message):
     """..."""
-    level = 3
+    level = logging.LEVEL.PROD
     label = "FAILURE"
 
 class SourceCodeInfo(Message):

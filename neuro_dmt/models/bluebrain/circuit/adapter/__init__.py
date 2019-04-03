@@ -522,7 +522,7 @@ class BlueBrainModelAdapter(
         else:
             soma_distance=\
                 soma_distance_params[0]
-        self.logger.debug(
+        self.logger.progress(
             self.logger.get_source_info(),
             "get pathway efferent connection count with parameter values",
             "region: {}".format(parameters[0].values),
@@ -608,7 +608,7 @@ class BlueBrainModelAdapter(
                         all_cells[Cell.MTYPE].values == mtype])
             number_cells_mtype[mtype]=\
                 len(mtype_gids)
-            self.logger.debug(
+            self.logger.progress(
                 self.logger.get_source_info(),
                 "cache {} mtype {} cells, region {}"\
                 .format(
@@ -726,6 +726,10 @@ class BlueBrainModelAdapter(
             ConditionGenerator(
                 parameters,
                 is_permissible=is_permissible))
+        self.logger.info(
+            self.logger.get_source_info(),
+            "Efferent connection count given {} conditions will be computed"\
+            .format(len(conditions)))
         condition_dataframe_list=[
             (condition, __get_pathway_efferent_connection_count(condition))
             for condition in conditions]

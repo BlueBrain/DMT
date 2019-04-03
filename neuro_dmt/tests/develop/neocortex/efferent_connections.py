@@ -1,7 +1,13 @@
+from dmt.vtk.utils.logging\
+    import Logger
 from neuro_dmt.tests.develop.neocortex.pathway_connection_probability\
     import *
 from neuro_dmt.analysis.circuit.connectome.by_mtype.efferent_connection_count\
     import EfferentConnectionCount
+
+logger=\
+    Logger(
+        "Test develop efferent connections.")
 
 some_mtypes=\
     L23_PCs + L4_PCs + L5_PCs
@@ -31,6 +37,13 @@ def get_efferent_connection_count_analysis(
         [regions, pre_mtypes, post_mtypes, soma_distance]
     plotted_parameters=\
         ["pre_mtype", "post_mtype", "soma_distance"]
+    logger.info(
+        logger.get_source_info(),
+        """get efferent connection count analysis: """,
+        "regions : {}".format(regions.values),
+        "pre_mtypes : {}".format(pre_mtypes),
+        "soma distances : {}".format(soma_distance.values),
+        "pathways to analyze : {}".format(pathways))
     return\
         EfferentConnectionCount(
             animal="mouse",

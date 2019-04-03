@@ -153,7 +153,7 @@ class Field:
         if not instance is None:
             return getattr(instance, self.instance_storage_name)
         if not self.__field_name__ in dir(owner):
-            self.logger.info(
+            self.logger.debug(
                 self.logger.get_source_info(),
                 "{} is not a Field member of {}"\
                 .format(self.__field_name__, owner.__name__))

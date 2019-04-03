@@ -119,7 +119,6 @@ class PathwayConnectionProbabilityAnalysis(
                 super().plot(
                     model_measurement,
                     *args, **kwargs)
-
         yvar=\
             model_measurement.phenomenon.label
         title_common=\

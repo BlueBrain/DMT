@@ -46,7 +46,7 @@ class Parameter(
             *args, **kwargs):
         """...
         """
-        self.logger.info(
+        self.logger.debug(
             self.logger.get_source_info(),
             "initialize {} instance with kwargs: {}"\
             .format(
