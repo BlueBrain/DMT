@@ -19,7 +19,7 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype\
     import ByMtypePathwayConnectomeAnalysis
 
 
-class AfferentConnectionCount(
+class AfferentConnectionCountAnalysis(
         ByMtypePathwayConnectomeAnalysis):
     """Analyze number of connections by mytpe --> mtype pathway."""
 

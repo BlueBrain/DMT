@@ -392,7 +392,6 @@ class BlueBrainModelAdapter(
                 connectome_measurements.PairSynapseCount,
                 get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
-                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_strength(self,
@@ -405,7 +404,6 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.ConnectionStrength,
                 parameters=parameters,
-                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_count(self,
@@ -426,7 +424,6 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
-                pathways=pathways,
                 parameters=parameters,
                 *args, **kwargs)
 
@@ -720,7 +717,9 @@ class BlueBrainModelAdapter(
                 kwargs.get(
                     "is_permissible",
                     lambda condition: True),
-                pathways)
+                kwargs.get(
+                    "pathways",
+                    set()))
         conditions = list(
             ConditionGenerator(
                 parameters,
@@ -992,7 +991,9 @@ class BlueBrainModelAdapter(
                 kwargs.get(
                     "is_permissible",
                     lambda condition: True),
-                pathways)
+                kwargs.get(
+                    "pathways",
+                    set()))
         conditions = list(
             ConditionGenerator(
                 parameters,

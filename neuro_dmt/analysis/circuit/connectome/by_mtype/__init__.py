@@ -50,6 +50,16 @@ class ByMtypeConnectomeAnalysis(
             phenomenon,
             *args, **kwargs)
 
+    def plot(self,
+            model_measurement,
+            *args, **kwargs):
+        """..."""
+        kwargs["xticks_rotation"] = 90
+        return super().plot(
+            model_measurement,
+            *args, **kwargs)
+
+
 
 class ByMtypePathwayConnectomeAnalysis(
         OfSinglePhenomenon,
@@ -154,3 +164,7 @@ from neuro_dmt.analysis.circuit.connectome.by_mtype.connection_probability\
     import PathwayConnectionProbabilityAnalysis
 from neuro_dmt.analysis.circuit.connectome.by_mtype.bouton_density\
     import CellBoutonDensityAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.efferent_connection_count\
+    import EfferentConnectionCountAnalysis
+from neuro_dmt.analysis.circuit.connectome.by_mtype.afferent_connection_count\
+    import AfferentConnectionCountAnalysis

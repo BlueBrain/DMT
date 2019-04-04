@@ -38,10 +38,12 @@ class BarPlot(Plot):
             fontsize=24)
         plt.xlabel(
             self.xlabel,
-            fontsize=20)
+            fontsize=24)
         plt.xticks(
             np.arange(dataframe.shape[0]),
-            dataframe.index)
+            dataframe.index,
+            fontsize=12,
+            rotation=with_customization.get("xticks_rotation", 0))
         plt.ylabel(
             self.ylabel,
             fontsize=20)
