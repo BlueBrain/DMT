@@ -138,6 +138,11 @@ class Failure(Message):
     level = logging.LEVEL.PROD
     label = "FAILURE"
 
+class Dialog(Message):
+    """Use this to interact with the (shell) user."""
+    level = logging.LEVEL.PROD
+    label = "DIALOG"
+
 class SourceCodeInfo(Message):
     """..."""
     label = "SOURCE"

@@ -818,10 +818,12 @@ class RandomPairs(
             dataframe=\
                 self._sample_pairs[pathway]
         except KeyError as key_error:
-            # self.logger.debug(
-            #     self.logger.get_source_info(),
-            #     "Got key error {}".format(key_error),
-            #     "Pathway {} will be cached.".format(condition.value))
+            self.logger.info(
+                self.logger.get_source_info(),
+                "Pairs with pre_mtype {} post_mtype {} will be cached"\
+                .format(
+                    pre_mtype,
+                    post_mtype))
             pre_cells=\
                 self._get_cells(
                     pre_mtype,
@@ -862,9 +864,9 @@ class RandomPairs(
                     pairs,
                     columns=["pre_gid", "post_gid"],
                     index=index)
-            # self.logger.debug(
-            #     self.logger.get_source_info(),
-            #     "will cache dataframe {}".format(dataframe))
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "will cache dataframe {}".format(dataframe))
             self._sample_pairs[pathway]=\
                 dataframe
         if dataframe.empty:
@@ -888,7 +890,7 @@ class RandomPairs(
             size=20,
             *args, **kwargs):
         """Override"""
-        self.logger.info(
+        self.logger.debug(
             self.logger.get_source_info(),
             "Sample condition {}.".format(condition.value))
         pairs=\

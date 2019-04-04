@@ -106,7 +106,7 @@ class PathwayConnectionProbabilityAnalysis(
             measurement_data,
             region,
             soma_distances,
-            *args, **kwargs):
+            width=14):
         """..."""
         measurement_index=\
             measurement_data.index.to_frame()
@@ -128,8 +128,7 @@ class PathwayConnectionProbabilityAnalysis(
                     pre_mtype))
             figure=\
                 golden_figure(
-                    height=kwargs.get("height", None),
-                    width=kwargs.get("width", 14))
+                    width=width)
             axes=\
                 figure.subplots()
             post_mtypes=\
@@ -176,7 +175,8 @@ class PathwayConnectionProbabilityAnalysis(
                 "Probability that two cells are connected.",
                 fontsize=16)
             axes.set_ylim(
-                0., 1.)
+                0.,
+                np.nanmax(pre_mtype_data["mean"]) + 0.1)
             axes.set_xlabel(
                 "Soma Distance",
                 fontsize=16)
@@ -188,12 +188,11 @@ class PathwayConnectionProbabilityAnalysis(
             "{}: EFF".format(pre_mtype): __get_plot(pre_mtype)
             for pre_mtype in pre_mtypes}
 
-    
     def __plot_afferent_view(self,
             measurement_data,
             region,
             soma_distances,
-            *args, **kwargs):
+            width=14):
         """..."""
         measurement_index=\
             measurement_data.index.to_frame()
@@ -215,8 +214,7 @@ class PathwayConnectionProbabilityAnalysis(
                     post_mtype))
             figure=\
                 golden_figure(
-                    height=kwargs.get("height", None),
-                    width=kwargs.get("width", 14))
+                    width=width)
             axes=\
                 figure.subplots()
             pre_mtypes=\
@@ -263,7 +261,8 @@ class PathwayConnectionProbabilityAnalysis(
                 "Probability that two cells are connected.",
                 fontsize=16)
             axes.set_ylim(
-                0., 1.)
+                0.,
+                np.nanmax(post_mtype_data["mean"]) + 0.1)
             axes.set_xlabel(
                 "Soma Distance",
                 fontsize=16)
@@ -287,6 +286,7 @@ class PathwayConnectionProbabilityAnalysis(
             return\
                 super().plot(
                     model_measurement,
+                    region=region,
                     *args, **kwargs)
         measurement_data=\
             model_measurement\
@@ -326,14 +326,12 @@ class PathwayConnectionProbabilityAnalysis(
             self.__plot_efferent_view(
                 measurement_data,
                 region,
-                soma_distances,
-                *args, **kwargs)
+                soma_distances)
         figures.update(
             self.__plot_afferent_view(
                 measurement_data,
                 region,
-                soma_distances,
-                *args, **kwargs))
+                soma_distances))
         return figures
 
     # def plot(self,
