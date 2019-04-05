@@ -400,7 +400,6 @@ class BlueBrainModelHelper:
             cells[
                 by_cell_property
             ].value_counts()
-        
 
     def get_cell_counts_by_cell_type(self,
             region_of_interest):

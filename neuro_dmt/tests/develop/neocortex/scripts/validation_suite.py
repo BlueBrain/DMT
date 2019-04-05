@@ -54,8 +54,8 @@ if __name__=="__main__":
                  "region=",
                  "analyze",
                  "validate",
-                 "sample_size=",
-                 "cache_size=",
+                 "sample-size=",
+                 "cache-size=",
                  "pathways=",
                  "mtypes=",
                  "by-distance",
@@ -111,9 +111,9 @@ if __name__=="__main__":
             region = a
         if o == "--analyze":
             analysis_type = "analysis"
-        if o == "--sample_size":
+        if o == "--sample-size":
             sample_size = int(a)
-        if o == "--cache_size":
+        if o == "--cache-size":
             cache_size = int(a)
         if o == "--pathways":
             pathways_data=\
