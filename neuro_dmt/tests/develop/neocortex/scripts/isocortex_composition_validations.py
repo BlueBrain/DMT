@@ -7,8 +7,8 @@ from dmt.vtk.utils\
     import datasets
 from dmt.vtk.utils.logging\
     import Logger
-from dmt.vtk.utils.utils\
-    import timestamp
+from dmt.vtk.utils\
+    import utils
 from neuro_dmt.tests.develop.neocortex\
     import *
 
@@ -68,6 +68,10 @@ if __name__ == "__main__":
                 datasets.load_yaml(
                     os.getcwd(),
                     a).iso_regions
+            logger.info(
+                "following regions will be studied",
+                *["{}) {}".format(index, region)
+                  for index, region in enumerate(regions)])
         if o in ("-s", "--sample-size"):
             sample_size = a
 
@@ -83,6 +87,8 @@ if __name__ == "__main__":
         args[1]
 
     
+    timestamp=\
+        utils.timestamp()
     for region in regions:
         for hemisphere in hemispheres:
             neocortical_analysis_suite=\
@@ -91,8 +97,6 @@ if __name__ == "__main__":
                     hemisphere,
                     circuits_dir=circuits_dir,
                     output_dir_path=output_path)
-            timestamp=\
-                timestamp()
             log_file_dir=\
                 os.path.join(
                     output_path,

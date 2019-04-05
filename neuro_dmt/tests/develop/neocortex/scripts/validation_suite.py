@@ -8,12 +8,16 @@ Options:
 """
 
 import sys, os, getopt
+from contextlib\
+    import redirect_stdout\
+    ,      redirect_stderr
 from dmt.vtk.utils.collections\
     import POD
 from dmt.vtk.utils.logging\
     import Logger
 from dmt.vtk.utils\
-    import datasets
+    import datasets\
+    ,      utils
 from neuro_dmt.tests.develop.neocortex\
     import *
 from neuro_dmt.measurement.parameter.spatial\
