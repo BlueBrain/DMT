@@ -200,6 +200,7 @@ if __name__=="__main__":
             analysis_type=analysis_type,
             sample_size=sample_size,
             cache_size=cache_size,
+            by_distance=by_distance,
             soma_distances=soma_distances,
             pathways=pathways)
 

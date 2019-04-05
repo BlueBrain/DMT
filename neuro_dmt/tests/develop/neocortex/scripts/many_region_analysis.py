@@ -13,19 +13,19 @@ regions_thr="SSp-un SSs TEa TEa VISC VISa VISal VISam VISl VISli VISp VISpl VISp
 
 for region in $regions_one; do
     echo "run for region "$region@left
-    sbatch region_validations.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_validations.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done
 for region in $regions_two; do
     echo "run for region "$region@left
-    sbatch region_validations.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_validations.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done
 for region in $regions_thr; do
     echo "run for region "$region@left
-    sbatch region_validations.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_validations.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done

@@ -317,6 +317,9 @@ class NeocortexAnalysisSuite(
             pathways=set(),
             **kwargs):
         """..."""
+        logger.info(
+            logger.get_source_info(),
+            """get {}-mtype parameter""".format(end))
         assert not end or end in ("pre", "post")
         if pathways:
             return\
@@ -375,9 +378,12 @@ class NeocortexAnalysisSuite(
                     Mtype(
                         values=mtypes)]
             if pathways:
+                mtypes=\
+                    self._get_mtype_parameter("pre", pathways).values\
+                    + self._get_mtype_parameter("post", pathways).values
                 return[
                     Mtype(
-                        values=self._get_mtype_parameter(pathways))]
+                        values=mtypes)]
         return [self._mtype_parameter]
     
     def _get_plotted_parameters(self,
@@ -423,8 +429,8 @@ class NeocortexAnalysisSuite(
                 "pathway_connection_probability",
                 "efferent_connection_count",
                 "afferent_connection_count"):
-            kwargs["by_distance"]=\
-                "soma_distances" in kwargs or "soma_distance" in kwargs
+            # kwargs["by_distance"]=\
+            #     "soma_distances" in kwargs or "soma_distance" in kwargs
             kwargs["pathways_to_analyze"]=\
                 pathways
         return kwargs

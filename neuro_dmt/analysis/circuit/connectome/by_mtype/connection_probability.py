@@ -268,11 +268,11 @@ class PathwayConnectionProbabilityAnalysis(
                 fontsize=16)
             plt.tight_layout()
             return figure
-        pre_mtypes={
-            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
+        post_mtypes={
+            post_mtype for _, post_mtype in self.pathways_to_analyze}
         return {
-            "{}: AFF".format(pre_mtype): __get_plot(pre_mtype)
-            for pre_mtype in pre_mtypes}
+            "{}: AFF".format(post_mtype): __get_plot(post_mtype)
+            for post_mtype in post_mtypes}
 
     def plot(self,
             model_measurement,

@@ -491,6 +491,7 @@ class BlueBrainModelAdapter(
             parameters=[],
             upper_bound_soma_distance=100.,
             cache_size=None,
+            default_value=0.0,
             *args, **kwargs):
         """Get number of outgoing connections in a pathway.
         For now, a cut-paste solution, will be cleaned up"""
@@ -637,6 +638,18 @@ class BlueBrainModelAdapter(
                  if region else\
                     {Cell.MTYPE: mtype}
 
+        def __get_default(
+                post_mtype,
+                soma_distance):
+            """..."""
+            return\
+                pd.DataFrame(
+                    [{"mean": 0., "std": 0.}],
+                    index=pd.MultiIndex.from_tuples(
+                        [(post_mtype, soma_distance)],
+                        names=[
+                            "post_mtype","soma_distance"]))
+                               
         def __get_pathway_efferent_connection_count(
                 condition):
             """..."""
@@ -676,7 +689,8 @@ class BlueBrainModelAdapter(
                     region,
                     all_cells)
             if not (region, pre_mtype) in connection_counts:
-                return empty_dataframe
+                return __get_default(
+                    post_mtype, soma_distance)
             try:
                 dataframe=\
                     connection_counts[(region, pre_mtype)]
@@ -692,7 +706,8 @@ class BlueBrainModelAdapter(
                     .format(
                         post_mtype,
                         soma_distance))
-                return empty_dataframe
+                return __get_default(
+                    post_mtype, soma_distance)
 
         def __get_parameter_values(
                 condition ):
@@ -731,17 +746,27 @@ class BlueBrainModelAdapter(
         condition_dataframe_list=[
             (condition, __get_pathway_efferent_connection_count(condition))
             for condition in conditions]
-        measurement=\
-            pd.concat([
-                dataframe for _, dataframe in condition_dataframe_list
-                if not dataframe.empty])\
-              .set_index(
-                  pd.MultiIndex.from_tuples(
-                      [__get_parameter_values(condition)
-                       for condition, dataframe in condition_dataframe_list
-                       if not dataframe.empty],
-                      names=[
-                          "region","pre_mtype","post_mtype","soma_distance"]))
+        non_empty_dataframes=[
+            dataframe for _, dataframe in condition_dataframe_list
+            if not dataframe.empty]
+        if len(non_empty_dataframes) > 0:
+            measurement=\
+                pd.concat(
+                    non_empty_dataframes)\
+                  .set_index(
+                      pd.MultiIndex.from_tuples(
+                          [__get_parameter_values(condition)
+                           for condition, dataframe in condition_dataframe_list
+                           if not dataframe.empty],
+                          names=[
+                              "region",
+                              "pre_mtype",
+                              "post_mtype",
+                              "soma_distance"]))
+        else:
+            measurement=\
+                empty_dataframe
+
         return\
             Record(
                 phenomenon=Phenomenon(
@@ -766,6 +791,7 @@ class BlueBrainModelAdapter(
             parameters=[],
             upper_bound_soma_distance=100.,
             cache_size=None,
+            default_value=0.,
             *args, **kwargs):
         """Get number of outgoing connections in a pathway.
         For now, a cut-paste solution, will be cleaned up"""
@@ -805,7 +831,7 @@ class BlueBrainModelAdapter(
             """..."""
             return\
                 np.random.choice(gids, cache_size)\
-                if cache_size else gids
+                if len(gids) > 0 and cache_size else gids
                    
         region_label=\
             circuit_model.region_label
@@ -910,6 +936,19 @@ class BlueBrainModelAdapter(
                  if region else\
                     {Cell.MTYPE: mtype}
 
+        def __get_default(
+                pre_mtype,
+                soma_distance):
+            """..."""
+            return\
+                pd.DataFrame(
+                    [{"mean": 0., "std": 0.}],
+                    index=pd.MultiIndex.from_tuples(
+                        [(pre_mtype, soma_distance)],
+                        names=[
+                            "pre_mtype","soma_distance"]))
+                               
+
         def __get_pathway_afferent_connection_count(
                 condition):
             """..."""
@@ -949,7 +988,8 @@ class BlueBrainModelAdapter(
                     region,
                     all_cells)
             if not (region, post_mtype) in connection_counts:
-                return empty_dataframe
+                return __get_default(
+                    pre_mtype, soma_distance)
             try:
                 dataframe=\
                     connection_counts[
@@ -962,11 +1002,14 @@ class BlueBrainModelAdapter(
                 self.logger.alert(
                     self.logger.get_source_info(),
                     "KeyError {}".format(key_error),
-                    "while looking for pre_mtype {}, soma_distance{}"\
+                    """while looking for pre_mtype {},
+                    post_mtype {}, soma_distance{}"""\
                     .format(
                         pre_mtype,
+                        post_mtype,
                         soma_distance))
-                return empty_dataframe
+                return __get_default(
+                    pre_mtype, soma_distance)
 
         def __get_parameter_values(
                 condition ):
@@ -1001,22 +1044,31 @@ class BlueBrainModelAdapter(
         condition_dataframe_list=[
             (condition, __get_pathway_afferent_connection_count(condition))
             for condition in conditions]
-        measurement=\
-            pd.concat([
-                dataframe for _, dataframe in condition_dataframe_list
-                if not dataframe.empty])\
-              .set_index(
-                  pd.MultiIndex.from_tuples(
-                      [__get_parameter_values(condition)
-                       for condition, dataframe in condition_dataframe_list
-                       if not dataframe.empty],
-                      names=[
-                          "region","pre_mtype","post_mtype","soma_distance"]))
+        non_empty_dataframes=[
+            dataframe for _, dataframe in condition_dataframe_list
+            if not dataframe.empty]
+        if len(non_empty_dataframes) > 0:
+            measurement=\
+                pd.concat(
+                    non_empty_dataframes)\
+                  .set_index(
+                      pd.MultiIndex.from_tuples(
+                          [__get_parameter_values(condition)
+                           for condition, dataframe in condition_dataframe_list
+                           if not dataframe.empty],
+                          names=[
+                              "region",
+                              "pre_mtype",
+                              "post_mtype",
+                              "soma_distance"]))
+        else:
+            measurement=\
+                empty_dataframe
         return\
             Record(
                 phenomenon=Phenomenon(
-                    "Pathway Efferent Connection Count",
-                    "Number of efferent connections in an mtype-->mtype pathway.",
+                    "Pathway Afferent Connection Count",
+                    "Number of afferent connections in an mtype-->mtype pathway.",
                     group="connectome"),
                 label="in-silico",
                 model_label=circuit_model.get_label(),

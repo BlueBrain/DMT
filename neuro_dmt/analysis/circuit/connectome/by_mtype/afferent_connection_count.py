@@ -173,11 +173,14 @@ class AfferentConnectionCountAnalysis(
                 fontsize=8)
             plt.legend()
             plt.title(
-                "{}: AFF".format(post_mtype))
+                "{}: AFF".format(post_mtype),
+                fontsize=24)
             axes.set_ylabel(
-                "Number of Connections")
+                "Number of Connections",
+                fontsize=16)
             axes.set_xlabel(
-                "Soma Distance")
+                "Soma Distance",
+                fontsize=16)
             plt.tight_layout()
             return figure
         post_mtypes={
