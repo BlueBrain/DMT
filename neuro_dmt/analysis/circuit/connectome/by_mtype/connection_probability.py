@@ -101,6 +101,179 @@ class PathwayConnectionProbabilityAnalysis(
             """
             pass
 
+
+    def __plot_efferent_view(self,
+            measurement_data,
+            region,
+            soma_distances,
+            width=14):
+        """..."""
+        measurement_index=\
+            measurement_data.index.to_frame()
+        x_positions=[
+            np.mean(bin) for bin in soma_distances]
+        assert len(x_positions) >= 2
+        delta_x=\
+            x_positions[1] - x_positions[0]
+        efferent_mtypes=\
+            self._get_aggregated_pathways(
+                measurement_data,
+                direction="EFF")
+        def __get_plot(pre_mtype):
+            self.logger.info(
+                self.logger.get_source_info(),
+                """plot {} for pre mtype {}"""\
+                .format(
+                    self.__class__.__name__,
+                    pre_mtype))
+            figure=\
+                golden_figure(
+                    width=width)
+            axes=\
+                figure.subplots()
+            post_mtypes=\
+                efferent_mtypes[pre_mtype]
+            colors=\
+                plt.cm.RdYlBu(
+                    np.linspace(
+                        1., 0., len(post_mtypes)))
+            pre_mtype_data=\
+                measurement_data.xs(
+                    (region, pre_mtype),
+                    level=("region", "pre_mtype"))
+            for color, post_mtype in zip(colors, post_mtypes):
+                efferent_counts=\
+                    pre_mtype_data\
+                    .reindex(
+                        pd.MultiIndex.from_product(
+                            [[post_mtype], soma_distances],
+                            names=["post_mtype", "soma_distance"]))\
+                    .fillna(0.)\
+                    .xs(post_mtype, level="post_mtype")
+                plt.bar(
+                    x_positions,
+                    efferent_counts["mean"],
+                    width=delta_x,
+                    #yerr=efferent_counts["std"],
+                    label="{}-->{}".format(pre_mtype, post_mtype),
+                    alpha=0.75,
+                    color="white",
+                    edgecolor=color,
+                    linewidth=4,
+                    linestyle="solid")
+            plt.xticks(
+                x_positions,
+                soma_distances,
+                rotation=90,
+                fontsize=8)
+            plt.legend()
+            plt.title(
+                "{} Efferent View".format(
+                    pre_mtype),
+                fontsize=24)
+            axes.set_ylabel(
+                "Probability that two cells are connected.",
+                fontsize=16)
+            axes.set_ylim(
+                0.,
+                np.nanmax(pre_mtype_data["mean"]) + 0.1)
+            axes.set_xlabel(
+                "Soma Distance",
+                fontsize=16)
+            plt.tight_layout()
+            return figure
+        pre_mtypes={
+            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
+        return {
+            "{}: EFF".format(pre_mtype): __get_plot(pre_mtype)
+            for pre_mtype in pre_mtypes}
+
+    def __plot_afferent_view(self,
+            measurement_data,
+            region,
+            soma_distances,
+            width=14):
+        """..."""
+        measurement_index=\
+            measurement_data.index.to_frame()
+        x_positions=[
+            np.mean(bin) for bin in soma_distances]
+        assert len(x_positions) >= 2
+        delta_x=\
+            x_positions[1] - x_positions[0]
+        afferent_mtypes=\
+            self._get_aggregated_pathways(
+                measurement_data,
+                direction="AFF")
+        def __get_plot(post_mtype):
+            self.logger.info(
+                self.logger.get_source_info(),
+                """plot {} for post mtype {}"""\
+                .format(
+                    self.__class__.__name__,
+                    post_mtype))
+            figure=\
+                golden_figure(
+                    width=width)
+            axes=\
+                figure.subplots()
+            pre_mtypes=\
+                afferent_mtypes[post_mtype]
+            colors=\
+                plt.cm.RdYlBu(
+                    np.linspace(
+                        1., 0., len(pre_mtypes)))
+            post_mtype_data=\
+                measurement_data.xs(
+                    (region, post_mtype),
+                    level=("region", "post_mtype"))
+            for color, pre_mtype in zip(colors, pre_mtypes):
+                afferent_counts=\
+                    post_mtype_data\
+                    .reindex(
+                        pd.MultiIndex.from_product(
+                            [[pre_mtype], soma_distances],
+                            names=["pre_mtype", "soma_distance"]))\
+                    .fillna(0.)\
+                    .xs(pre_mtype, level="pre_mtype")
+                plt.bar(
+                    x_positions,
+                    afferent_counts["mean"],
+                    width=delta_x,
+                    #yerr=efferent_counts["std"],
+                    label="{}-->{}".format(pre_mtype, post_mtype),
+                    alpha=0.75,
+                    color="white",
+                    edgecolor=color,
+                    linewidth=4,
+                    linestyle="solid")
+            plt.xticks(
+                x_positions,
+                soma_distances,
+                rotation=90,
+                fontsize=8)
+            plt.legend()
+            plt.title(
+                "{} Afferent View".format(
+                    post_mtype),
+                fontsize=24)
+            axes.set_ylabel(
+                "Probability that two cells are connected.",
+                fontsize=16)
+            axes.set_ylim(
+                0.,
+                np.nanmax(post_mtype_data["mean"]) + 0.1)
+            axes.set_xlabel(
+                "Soma Distance",
+                fontsize=16)
+            plt.tight_layout()
+            return figure
+        pre_mtypes={
+            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
+        return {
+            "{}: AFF".format(pre_mtype): __get_plot(pre_mtype)
+            for pre_mtype in pre_mtypes}
+
     def plot(self,
             model_measurement,
             region=None,
@@ -109,6 +282,12 @@ class PathwayConnectionProbabilityAnalysis(
         self.logger.debug(
             self.logger.get_source_info(),
             "plot conn prob from data {}".format(model_measurement.data))
+        if not self._by_distance:
+            return\
+                super().plot(
+                    model_measurement,
+                    region=region,
+                    *args, **kwargs)
         measurement_data=\
             model_measurement\
             .data\
@@ -143,75 +322,17 @@ class PathwayConnectionProbabilityAnalysis(
                     .format(self.__class__.__name__))
             region=\
                 regions.pop()
-        efferent_mtypes=\
-            self._get_aggregated_pathways(
-                model_measurement,
-                direction="EFF")
-        def __get_plot(pre_mtype):
-            self.logger.info(
-                self.logger.get_source_info(),
-                """plot {} for pre mtype {}"""\
-                .format(
-                    self.__class__.__name__,
-                    pre_mtype))
-            figure=\
-                golden_figure(
-                    height=kwargs.get("height", None),
-                    width=kwargs.get("width", 14))
-            axes=\
-                figure.subplots()
-            post_mtypes=\
-                efferent_mtypes[pre_mtype]
-            colors=\
-                plt.cm.RdYlBu(
-                    np.linspace(
-                        1., 0., len(post_mtypes)))
-            pre_mtype_data=\
-                measurement_data.xs(
-                    (region, pre_mtype),
-                    level=("region", "pre_mtype"))
-            for color, post_mtype in zip(colors, post_mtypes):
-                efferent_counts=\
-                    pre_mtype_data\
-                    .reindex(
-                        pd.MultiIndex.from_product(
-                            [[post_mtype], soma_distances],
-                            names=["post_mtype", "soma_distance"]))\
-                    .fillna(0.)\
-                    .xs(post_mtype, level="post_mtype")
-                plt.bar(
-                    x_positions,
-                    efferent_counts["mean"],
-                    width=delta_x,
-                    yerr=efferent_counts["std"],
-                    label=post_mtype,
-                    alpha=0.75,
-                    color="white",
-                    edgecolor=color,
-                    linewidth=4,
-                    linestyle="solid")
-            plt.xticks(
-                x_positions,
-                soma_distances,
-                rotation=90,
-                fontsize=8)
-            plt.legend()
-            plt.title(
-                "{}: EFF".format(pre_mtype),
-                fontsize=24)
-            axes.set_ylabel(
-                "Number of Connections",
-                fontsize=16)
-            axes.set_xlabel(
-                "Soma Distance",
-                fontsize=16)
-            plt.tight_layout()
-            return figure
-        pre_mtypes={
-            pre_mtype for pre_mtype, _ in self.pathways_to_analyze}
-        return {
-            "{}: EFF".format(pre_mtype): __get_plot(pre_mtype)
-            for pre_mtype in pre_mtypes}
+        figures=\
+            self.__plot_efferent_view(
+                measurement_data,
+                region,
+                soma_distances)
+        figures.update(
+            self.__plot_afferent_view(
+                measurement_data,
+                region,
+                soma_distances))
+        return figures
 
     # def plot(self,
     #         model_measurement,
@@ -277,7 +398,6 @@ class PathwayConnectionProbabilityAnalysis(
     #     return {
     #         parameters: __get_plot(*parameters)
     #         for parameters in figure_parameters}
-
 
     def get_measurement(self,
             circuit_model,

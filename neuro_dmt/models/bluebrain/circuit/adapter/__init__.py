@@ -346,13 +346,15 @@ class BlueBrainModelAdapter(
             get_measurement_method,
             get_random_variate,
             parameters={},
-            pathways=set(),
             fill_missing_param_values=False,
             *args, **kwargs):
         """Meassure (mtype --> mtype) pathways.
         Arguments
         --------------
         pathways: List[Tuple(PreMtype, PostMtype)]"""
+        pathways=\
+            kwargs.get(
+                "pathways", set())
         if not parameters:
              parameters=[
                  Mtype(
@@ -382,7 +384,6 @@ class BlueBrainModelAdapter(
     def get_pathway_synapse_count(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
             *args, **kwargs):
         """Get statistics for number of synapses in a connection."""
         return\
@@ -391,13 +392,11 @@ class BlueBrainModelAdapter(
                 connectome_measurements.PairSynapseCount,
                 get_random_variate=RandomConnectionVariate,
                 parameters=parameters,
-                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_strength(self,
             circuit_model,
             parameters={},
-            pathways=set(),
             *args, **kwargs):
         """Measure the strength of connections in a (mtype->mtype) pathway."""
         return\
@@ -405,13 +404,11 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.ConnectionStrength,
                 parameters=parameters,
-                pathways=pathways,
                 *args, **kwargs)
 
     def get_pathway_connection_count(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
             *args, **kwargs):
         """Get statistical summary of the number of connections in a
         (mtype --> mtype) pathway.
@@ -427,23 +424,22 @@ class BlueBrainModelAdapter(
                 circuit_model,
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
-                pathways=pathways,
                 parameters=parameters,
                 *args, **kwargs)
 
     def get_pathway_connection_probability(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
-            upper_bound_soma_distance=100.,
             *args, **kwargs):
         """Get pathway connection probability
         as a function of distance.
         """
         self.logger.debug(
             self.logger.get_source_info(),
-            "get_pathway_connection_probability kwargs {}"\
-            .format(kwargs))
+            *["{}:{}".format(key, value) for key, value in kwargs.items()])
+        upper_bound_soma_distance=\
+            kwargs.get(
+                "upper_bound_soma_distance", 250.)
         if not parameters:
             parameters=[
                 AtlasRegion(
@@ -481,7 +477,6 @@ class BlueBrainModelAdapter(
                 connectome_measurements.PairConnection,
                 get_random_variate=RandomPairs,
                 parameters=parameters,
-                pathways=pathways,
                 distance_binner=soma_distance._binner,
                 *args, **kwargs)
         if not by_distance:
@@ -494,7 +489,6 @@ class BlueBrainModelAdapter(
     def get_pathway_efferent_connection_count(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
             upper_bound_soma_distance=100.,
             cache_size=None,
             *args, **kwargs):
@@ -723,7 +717,9 @@ class BlueBrainModelAdapter(
                 kwargs.get(
                     "is_permissible",
                     lambda condition: True),
-                pathways)
+                kwargs.get(
+                    "pathways",
+                    set()))
         conditions = list(
             ConditionGenerator(
                 parameters,
@@ -768,7 +764,6 @@ class BlueBrainModelAdapter(
     def get_pathway_afferent_connection_count(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
             upper_bound_soma_distance=100.,
             cache_size=None,
             *args, **kwargs):
@@ -996,7 +991,9 @@ class BlueBrainModelAdapter(
                 kwargs.get(
                     "is_permissible",
                     lambda condition: True),
-                pathways)
+                kwargs.get(
+                    "pathways",
+                    set()))
         conditions = list(
             ConditionGenerator(
                 parameters,
@@ -1036,7 +1033,6 @@ class BlueBrainModelAdapter(
     def get_pathway_soma_distance(self,
             circuit_model,
             parameters=[],
-            pathways=set(),
             *args, **kwargs):
         """Get a statistical summary of the distance between cell somas."""
         return\

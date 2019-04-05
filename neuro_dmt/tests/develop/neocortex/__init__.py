@@ -47,9 +47,11 @@ from neuro_dmt.analysis.comparison.validation.circuit.connectome.by_mtype\
     ,      PathwayConnectionProbabilityValidation\
     ,      CellBoutonDensityAnalysis\
     ,      CellBoutonDensityValidation
+from neuro_dmt.analysis.circuit.connectome.by_mtype\
+    import EfferentConnectionCountAnalysis\
+    ,      AfferentConnectionCountAnalysis
 from neuro_dmt.tests.develop.circuits\
     import *
-
 
 logger=\
     Logger(
@@ -95,9 +97,21 @@ class NeocortexAnalysisSuite(
         "pathway_connection_probability"\
         : Phenomenon(
             "Pathway Connection Probability",
-            "Proabability that a mtype-->mtype pathway cell pair \
+            "Probability that a mtype-->mtype pathway cell pair \
             is connected",
             group="connectome"),
+        "efferent_connection_count"\
+        : Phenomenon(
+                "Pathway Efferent Connection Count",
+                """Number of efferent connections in an mtype --> mtype,
+                by distance.""",
+                group="connectome"),
+        "afferent_connection_count"\
+        : Phenomenon(
+                "Pathway Efferent Connection Count",
+                """Number of efferent connections in an mtype --> mtype,
+                by distance.""",
+                group="connectome"),
         "bouton_density"\
         : Phenomenon(
             "Bouton Density",
@@ -118,6 +132,10 @@ class NeocortexAnalysisSuite(
         : PairConnectionAnalysis,
         "pathway_connection_probability"\
         : PathwayConnectionProbabilityAnalysis,
+        "efferent_connection_count"\
+        : EfferentConnectionCountAnalysis,
+        "afferent_connection_count"\
+        : AfferentConnectionCountAnalysis,
         "bouton_density"\
         : CellBoutonDensityAnalysis}
     Validation={
@@ -238,6 +256,14 @@ class NeocortexAnalysisSuite(
                 self._region_parameter,
                 self._pre_mtype_parameter,
                 self._post_mtype_parameter],
+            "efferent_connection_count":[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
+            "afferent_connection_count":[
+                self._region_parameter,
+                self._pre_mtype_parameter,
+                self._post_mtype_parameter],
             "bouton_density":[
                 self._region_parameter,
                 self._mtype_parameter]}
@@ -259,16 +285,167 @@ class NeocortexAnalysisSuite(
             "pathway_connection_probability":[
                 self._pre_mtype_parameter.label,
                 self._post_mtype_parameter.label],
+            "efferent_connection_count":[
+                self._pre_mtype_parameter.label,
+                self._post_mtype_parameter.label],
+            "afferent_connection_count":[
+                self._pre_mtype_parameter.label,
+                self._post_mtype_parameter.label],
             "bouton_density":[
                 self._mtype_parameter.label]}
-        
+
+    @staticmethod
+    def _get_mtypes(
+            pathways,
+            end=None):
+        """..."""
+        if end=="pre":
+            return sorted(list({
+                mtype for mtype, _ in pathways}))
+        if end=="post":
+            return sorted(list({
+                mtype for _, mtype in pathways}))
+        return sorted(list({
+            mtype for pre_post_mtypes in pathways
+            for mtype in pre_post_mtypes}))
+
+    def _get_mtype_parameter(self,
+            end=None,
+            pathways=set(),
+            **kwargs):
+        """..."""
+        assert not end or end in ("pre", "post")
+        if pathways:
+            return\
+                Mtype(
+                    label="{}_mtype".format(end) if end else "mtype",
+                    values=self._get_mtypes(pathways, end))
+        if end == "pre":
+            return\
+                self._pre_mtype_parameter
+        if end == "post":
+            return\
+                self._post_mtype_parameter
+        return\
+            self._mtype_parameter
+
+    def _get_measurement_parameters(self,
+            phenomenon,
+            pathways=set(),
+            soma_distances=None,
+            **kwargs):
+        """..."""
+        if phenomenon in (
+                "pathway_connection_probability",
+                "efferent_connection_count",
+                "afferent_connection_count"):
+            regions=\
+                self._region_parameter
+            pre_mtypes=\
+                self._get_mtype_parameter(
+                    end="pre",
+                    pathways=pathways,
+                    **kwargs)
+            post_mtypes=\
+                self._get_mtype_parameter(
+                    end="post",
+                    pathways=pathways,
+                    **kwargs)
+            return\
+                [regions, pre_mtypes, post_mtypes, soma_distances]\
+                if soma_distances else\
+                   [regions, pre_mtypes, post_mtypes]
+        return self._measurement_parameters[phenomenon]
+
+    def _get_cell_group_parameters(self,
+            phenomenon,
+            mtypes=None,
+            pathways=set(),
+            **kwargs):
+        """..."""
+        if phenomenon in (
+                "pathway_connection_probability",
+                "efferent_connection_count",
+                "afferent_connection_count"):
+            if mtypes:
+                return[
+                    Mtype(
+                        values=mtypes)]
+            if pathways:
+                return[
+                    Mtype(
+                        values=self._get_mtype_parameter(pathways))]
+        return [self._mtype_parameter]
+    
+    def _get_plotted_parameters(self,
+            phenomenon,
+            **kwargs):
+        """..."""
+        if phenomenon in (
+                "pathway_connection_probability",
+                "efferent_connection_count",
+                "afferent_connection_count"):
+            return\
+                ["pre_mtype", "post_mtype", "soma_distance"]\
+                if "soma_distances" in kwargs or "soma_distance" in kwargs\
+                   else ["pre_mtype", "post_mtype"]
+        return\
+                self._plotted_parameters[
+                    phenomenon]
+    def _get_pathway_parameters(self,
+            phenomenon,
+            **kwargs):
+        """..."""
+        if phenomenon in (
+                "pathway_connection_probability",
+                "efferent_connection_count",
+                "afferent_connection_count"):
+            return[
+                self._get_mtype_parameter(
+                    end="pre",
+                    **kwargs),
+                self._get_mtype_parameter(
+                    end="post",
+                    **kwargs)]
+        return[
+            self._pre_mtype_parameter,
+            self._post_mtype_parameter]
+
+    def _get_phenomenon_kwargs(self,
+            phenomenon,
+            pathways=set(),
+            **kwargs):
+        """..."""
+        if phenomenon in (
+                "pathway_connection_probability",
+                "efferent_connection_count",
+                "afferent_connection_count"):
+            kwargs["by_distance"]=\
+                "soma_distances" in kwargs or "soma_distance" in kwargs
+            kwargs["pathways_to_analyze"]=\
+                pathways
+        return kwargs
+
+    def _get_spatial_parameters(self,
+            phenomenon,
+            **kwargs):
+        """..."""
+        return[
+            self._region_parameter, 
+            self._layer_parameter]
+
     def get_instance(self,
             phenomenon,
-            circuit_regions=None,
             analysis_type="validation", #or "analysis"
+            circuit_regions=None,
             reference_data=None,
             *args, **kwargs):
         """..."""
+        logger.debug(
+            logger.get_source_info(),
+            "get instance with kwargs: ",
+            *["{}: {}".format(key, value)
+              for key, value in kwargs.items()])
         phenomenon_label=\
             getattr(
                 phenomenon,
@@ -277,27 +454,48 @@ class NeocortexAnalysisSuite(
         circuit_region_parameter=\
             circuit_regions if circuit_regions\
             else self._circuit_region_parameter
+        measurement_parameters=\
+            self._get_measurement_parameters(
+                phenomenon_label,
+                **kwargs)
+        plotted_parameters=\
+            self._get_plotted_parameters(
+                phenomenon_label,
+                **kwargs)
+        cell_group_parameters=\
+            self._get_cell_group_parameters(
+                phenomenon,
+                **kwargs)
+        pathway_parameters=\
+            self._get_pathway_parameters(
+                phenomenon_label,
+                **kwargs)
+        spatial_parameters=\
+            self._get_spatial_parameters(
+                phenomenon_label,
+                **kwargs)
+        kwargs=\
+            self._get_phenomenon_kwargs(
+                phenomenon,
+                **kwargs)
+        logger.debug(
+            logger.get_source_info(),
+            "phenomenon kwargs: ",
+            *["{}: {}".format(key, value)
+              for key, value in kwargs.items()])
         if analysis_type=="analysis":
             return\
                 self.Analysis[phenomenon_label](
                     animal=self._circuit_model.animal,
                     brain_region=self._circuit_model.brain_region,
-                    measurement_parameters=self._measurement_parameters[
-                        phenomenon_label],
-                    plotted_parameters=self._plotted_parameters[
-                        phenomenon_label],
-                    cell_group_parameters=[
-                        self._mtype_parameter],
-                    pathway_parameters=[
-                        self._pre_mtype_parameter,
-                        self._post_mtype_parameter],
-                    spatial_parameters=[
-                        self._region_parameter, 
-                        self._layer_parameter],
+                    measurement_parameters=measurement_parameters,
+                    plotted_parameters=plotted_parameters,
+                    cell_group_parameters=cell_group_parameters,
+                    pathway_parameters=pathway_parameters,
+                    spatial_parameters=spatial_parameters,
                     output_dir_path=self._output_dir_path,
                     adapter=self._adapter,
                     *args, **kwargs)
-
         reference_data=\
             reference_data if reference_data\
             else self.reference_data[phenomenon_label]()
@@ -306,18 +504,11 @@ class NeocortexAnalysisSuite(
                 phenomenon=self.phenomenon[phenomenon_label],
                 animal=self._circuit_model.animal,
                 brain_region=self._circuit_model.brain_region,
-                measurement_parameters=self._measurement_parameters[
-                    phenomenon_label],
-                plotted_parameters=self._plotted_parameters[
-                    phenomenon_label],
-                cell_group_parameters=[
-                    self._mtype_parameter],
-                pathway_parameters=[
-                    self._pre_mtype_parameter,
-                    self._post_mtype_parameter],
-                spatial_parameters=[
-                    self._region_parameter, 
-                    self._layer_parameter],
+                measurement_parameters=measurement_parameters,
+                plotted_parameters=plotted_parameters,
+                cell_group_parameters=cell_group_parameters,
+                pathway_parameters=pathway_parameters,
+                spatial_parameters=spatial_parameters,
                 reference_data=reference_data,
                 output_dir_path=self._output_dir_path,
                 adapter=self._adapter,
@@ -327,6 +518,7 @@ class NeocortexAnalysisSuite(
             phenomenon,
             region):
         """..."""
+        return False #disable, for now
         if not self._measurements:
             return False
         phenomenon_label=\
@@ -385,6 +577,7 @@ class NeocortexAnalysisSuite(
             phenomenon,
             region,
             analysis_type="validation",
+            pathways=set(),
             reference_data=None,
             save=True,
             sample_size=20,
@@ -407,6 +600,7 @@ class NeocortexAnalysisSuite(
                 circuit_regions=AtlasRegion(
                     values=[region]),
                 analysis_type=analysis_type,
+                pathways=pathways,
                 reference_data=reference_data,
                 *args, **kwargs)
         if not self._already_measured(phenomenon_label, region):
@@ -453,7 +647,11 @@ class NeocortexAnalysisSuite(
                         model_measurement=self._measurements[
                             phenomenon_label]),
                     "subregion-{}".format(region))
-            logger.debug(
+            logger.info(
+                logger.get_source_info(),
+                "NAS get report output dir path {}"\
+                .format(output_dir_path))
+            logger.info(
                 logger.get_source_info(),
                 """Save analysis report at {}""".format(output_path))
             self._save_report(

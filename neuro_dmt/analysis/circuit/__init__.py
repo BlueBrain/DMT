@@ -108,11 +108,11 @@ class BrainCircuitAnalysis(
 
     def _for_given_parameter_values(self,
             **kwargs):
-        return {
+        return{
             parameter.label: kwargs[parameter.label]
             for parameter in self.measurement_parameters
-            if (parameter.label not in self.plotted_parameters
-                and parameter.label in kwargs)}
+            if (parameter.label in kwargs and
+                parameter.label not in self.plotted_parameters)}
 
     def _get_plotting_parameter_label(self):
         """..."""
@@ -134,6 +134,10 @@ class BrainCircuitAnalysis(
         we used 'model_measurement.phenomenon' to determine what will
         be plotted along the y-axis.
         """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            """circuit analysis with kwargs""",
+            *["{}={}".format(key, value) for key, value in kwargs.items()])
         return self\
             .Plotter(
                 model_measurement)\

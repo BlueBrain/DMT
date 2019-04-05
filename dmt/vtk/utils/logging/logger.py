@@ -95,7 +95,7 @@ class Logger:
         self._level=\
             self.get_level(os.environ[self._level_environment_var])\
             if self._level_environment_var in os.environ else\
-               (level if level else Logger.level.PROD)
+               (level if level is not None else Logger.level.PROD)
         self._client=\
             client
         self._name=\
@@ -157,11 +157,9 @@ class Logger:
                         self.timestamp(
                             time.localtime()),
                         message.labelstamp)
-            
             formatted_message=\
                 "{}".format(
                     message.value)
-
             Logger.err_print(
                 Logger.with_color(
                     Logger.Color.UNDERLINE,
@@ -170,11 +168,12 @@ class Logger:
                 Logger.with_color(
                     color,
                     formatted_message))
-            Logger.err_print(80*"=")
-
+            Logger.err_print(
+                80*"=")
             if self._in_file:
                 with open(self._in_file, "a")  as f:
-                    f.write(title)
+                    f.write(
+                        title)
                     f.write(
                         Logger.with_color(
                             Logger.Color.OKGREEN,
@@ -268,6 +267,11 @@ class Logger:
     def failure(self, *msgs):
         """..."""
         return self._log_message(Failure(*msgs), color=Logger.Color.FAIL)
+
+    def dialog(self, *msgs):
+        """..."""
+        return self._log_message(
+            Dialog(*msgs), color=Logger.Color.OKBLUE)
 
     def assertion(self, success, *msgs):
         """...
