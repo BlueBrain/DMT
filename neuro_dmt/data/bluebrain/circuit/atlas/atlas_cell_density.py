@@ -108,6 +108,8 @@ class AtlasBasedEIRatioData(AtlasBasedInSilicoConstraint):
             None
         self._inhibitory_density=\
             None
+        self._total_density=\
+            None
         self._ratio=\
             None
         super().__init__(
@@ -125,7 +127,9 @@ class AtlasBasedEIRatioData(AtlasBasedInSilicoConstraint):
                 self.nan_filled(
                     self.atlas.load_data(
                         "[cell_density]INH").raw)
+            self._total_density=\
+                self._inhibitory_density + self._excitatory_density
             self._ratio=\
-                self._inhibitory_density / (1.e-9 + self._excitatory_density)
+                self._inhibitory_density / (1.e-9 + self._total_density)
         return\
             self._ratio[mask]

@@ -1,4 +1,4 @@
-mtypes:
+"mtypes":
   - 'L1_DAC'
   - 'L1_HAC'
   - 'L1_LAC'
@@ -60,7 +60,7 @@ mtypes:
   - 'L6_TPC:C'
   - 'L6_UPC'
 
-pathways:
+"pathways":
   "L2_TPC:A":
     - "L2_IPC"
     - "L2_TPC:A"

@@ -77,9 +77,10 @@ class Logger:
                 two_char(now.tm_sec))
 
     @staticmethod
-    def err_print(*args, **kwargs):
+    def err_print(
+            *args, **kwargs):
         """Print to stderr"""
-        print(*args, file=sys.stderr, **kwargs)
+        print(*args, file=sys.stdout, **kwargs)
 
     def __init__(self,
             client,

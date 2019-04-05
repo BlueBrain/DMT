@@ -22,7 +22,7 @@ from neuro_dmt.measurement.parameter.spatial\
 logger=\
     Logger(
         "Validation Suit",
-        level=Logger.level.DEBUG)
+        level=Logger.level.INFO)
 
 def usage():
     logger.info(
