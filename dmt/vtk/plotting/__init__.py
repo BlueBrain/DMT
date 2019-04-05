@@ -275,12 +275,14 @@ class Plot(ABC):
     def with_xvar(self,
             variable):
         """The x-variable to plot against."""
-        self._xvar= variable
+        self._xvar=\
+            variable
         try:
             self._xlabel=\
-                getattr(variable,
-                        "label",
-                        str(variable))
+                getattr(
+                    variable,
+                    "label",
+                    str(variable))
         except:
             pass
         return self

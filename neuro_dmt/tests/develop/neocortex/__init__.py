@@ -25,6 +25,9 @@ from neuro_dmt.data.bluebrain.circuit.mouse.cortex.sscx.composition\
     import MouseSSCxCompositionData
 from neuro_dmt.data.bluebrain.circuit.rat.cortex.sscx.composition\
     import RatSSCxCompositionData
+from neuro_dmt.data.bluebrain.circuit.atlas.atlas_cell_density\
+    import AtlasBasedCellDensityData\
+    ,      AtlasBasedEIRatioData
 from neuro_dmt.analysis.comparison.validation.circuit.composition.by_layer\
     import CellDensityAnalysis\
     ,      CellDensityValidation\
@@ -434,6 +437,40 @@ class NeocortexAnalysisSuite(
             self._region_parameter, 
             self._layer_parameter]
 
+    def _get_reference_data(self,
+            phenomenon,
+            circuit_model,
+            region,
+            reference_data=None):
+        """..."""
+        if reference_data:
+            return reference_data
+        reference_data=\
+            self.reference_data[phenomenon]()
+        if circuit_model.brain_region.label == "somatosensory_cortex":
+            return reference_data
+        if phenomenon in ("cell_density", "cell_ratio"):
+            try:
+                atlas_path=\
+                    circuit_model\
+                    .atlas_path
+            except AttributeError:
+                atlas_path=\
+                    circuit_model\
+                    .bluepy_circuit\
+                    .atlas\
+                    .dirpath
+            region=\
+                region.split("@")[0]
+            atlas_data=\
+                AtlasBasedCellDensityData(atlas_path, region)\
+                if phenomenon == "cell_density" else\
+                   AtlasBasedEIRatioData(atlas_path, region)
+            reference_data.add_dataset(
+                dataset=atlas_data,
+                dataset_label="insilico-constraint")
+        return reference_data
+
     def get_instance(self,
             phenomenon,
             analysis_type="validation", #or "analysis"
@@ -454,6 +491,7 @@ class NeocortexAnalysisSuite(
         circuit_region_parameter=\
             circuit_regions if circuit_regions\
             else self._circuit_region_parameter
+        assert len(circuit_region_parameter.values) == 1
         measurement_parameters=\
             self._get_measurement_parameters(
                 phenomenon_label,
@@ -497,8 +535,10 @@ class NeocortexAnalysisSuite(
                     adapter=self._adapter,
                     *args, **kwargs)
         reference_data=\
-            reference_data if reference_data\
-            else self.reference_data[phenomenon_label]()
+            self._get_reference_data(
+                phenomenon,
+                self._circuit_model,
+                circuit_region_parameter.values[0]) #assuming single region
         return\
             self.Validation[phenomenon_label](
                 phenomenon=self.phenomenon[phenomenon_label],

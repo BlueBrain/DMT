@@ -68,6 +68,8 @@ class CircuitPhenomenonComparison(
                 xvar= "not-available"
         else:
             xvar= "not-available"
+        kwargs["xlabel"]=\
+            xvar if xvar != "not-available" else "X"
         kwargs["ylabel"]=\
             "{} / [{}]".format(
                 "mean {}".format(
