@@ -76,6 +76,10 @@ class ValidationTestCase:
                     {n: data[n].data for n in dataset_names},
                     names=["dataset"]
                 )[["mean", "std"]]
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "flattened index names {}"
+                .format(flattened_dataframe.index.names))
             return\
                 flattened_dataframe.set_index(
                     pd.MultiIndex(

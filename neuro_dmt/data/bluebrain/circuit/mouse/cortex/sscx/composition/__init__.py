@@ -16,6 +16,7 @@ from neuro_dmt.measurement.parameter\
 from neuro_dmt.data.bluebrain.circuit.cortex.sscx.composition\
     import SSCxCompositionData
 
+
 class MouseSSCxCompositionData(
         SSCxCompositionData):
     """..."""
