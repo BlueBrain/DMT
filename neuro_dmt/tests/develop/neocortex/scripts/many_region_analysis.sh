@@ -7,25 +7,27 @@ source $ME/.vmgr_repo/nix36/bin/activate
 
 export ISODIR=/gpfs/bbp.cscs.ch/project/proj68/circuits/Isocortex/20190307/connectome/functional
 
+ANALYSIS=$1
+
 regions_one="ACAd ACAv AId AIp AIv AUDd AUDp AUDv ECT FRP GU ILA MOp MOs ORBl"
-regions_two="ORBm ORBv PERI PL RSPagl RSPd RSPv SSp-ll SSp-m SSp-n SSp-tr SSp-ul"
+regions_two="ORBm ORBvl PERI PL RSPagl RSPd RSPv SSp-ll SSp-m SSp-n SSp-tr SSp-ul"
 regions_thr="SSp-un SSs TEa TEa VISC VISa VISal VISam VISl VISli VISp VISpl VISpm VISpor VISrl"
 
 for region in $regions_one; do
     echo "run for region "$region@left
-    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done
 for region in $regions_two; do
     echo "run for region "$region@left
-    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done
 for region in $regions_thr; do
     echo "run for region "$region@left
-    sbatch region_analysis.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@left $ISODIR/$region@left/CircuitConfig-eff
     echo "run for region "$region@right
-    sbatch region_analysis.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
+    sbatch $ANALYSIS.sbatch $region@right $ISODIR/$region@right/CircuitConfig-eff
 done

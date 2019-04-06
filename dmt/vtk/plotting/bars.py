@@ -18,7 +18,7 @@ class BarPlot(Plot):
             *args, **kwargs)
 
     def plot(self,
-            with_customization=None):
+            with_customization={}):
         """Make the bar plot.
         """
         dataframe=\
@@ -31,7 +31,8 @@ class BarPlot(Plot):
             plt.bar(
                 np.arange(dataframe.shape[0]),
                 dataframe["mean"].values,
-                color=self._colors[0],
+                color=with_customization.get(
+                    "color", self._colors[0]),
                 yerr=dataframe["std"].values)
         plt.title(
             self.title,
@@ -49,9 +50,12 @@ class BarPlot(Plot):
             fontsize=20)
         fontP=\
             FontProperties()
-        plt.legend(
-            prop=fontP,
-            loc=self._legend_loc)
+        try:
+            plt.legend(
+                **with_customization["legend"])
+        except:
+            plt.legend(
+                prop=fontP, loc=self._legend_loc)
         return figure
 
 

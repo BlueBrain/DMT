@@ -189,6 +189,7 @@ if __name__=="__main__":
         NeocortexAnalysisSuite(
             circuit_model,
             region_values=[region],
+            mtypes=mtypes,
             output_dir_path=output_path)
     soma_distances=\
         None if not by_distance\
@@ -202,8 +203,4 @@ if __name__=="__main__":
             cache_size=cache_size,
             by_distance=by_distance,
             soma_distances=soma_distances,
-            pathways=pathways)
-
-
-
-
+            pathways=set(pathways))

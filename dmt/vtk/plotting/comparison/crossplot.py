@@ -196,8 +196,8 @@ class CrossPlotComparison(ComparisonPlot):
             self.compared_datasets[0].label,
             fontsize=20)
         legend=\
-            with_customization\
-            .get("legend", None)
+            with_customization.get(
+                "legend", None)
         if legend:
             plt.legend(**legend)
 

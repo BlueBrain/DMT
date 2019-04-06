@@ -1,4 +1,5 @@
 """Analysis of bouton density, by mtype"""
+import matplotlib.patches as mpatches
 from dmt.model.interface\
     import Interface
 from dmt.vtk.phenomenon\
@@ -58,6 +59,38 @@ class CellBoutonDensityAnalysis(
             """
             pass
 
+
+    def plot(self,
+            model_measurement,
+            *args, **kwargs):
+        """..."""
+        try:
+            measurement_index=\
+                model_measurement\
+                .data\
+                .index\
+                .to_frame()
+            colors={
+                "EXC": "xkcd:azure",
+                "INH": "xkcd:orangered"}
+                
+            kwargs.update({
+                "color":[
+                    colors["EXC"] if "PC" in mtype else colors["INH"]
+                    for mtype in measurement_index["mtype"]],
+                "legend":{
+                    "handles":[
+                        mpatches.Patch(
+                            label=synapse_type,
+                            color=color)
+                        for synapse_type, color in colors.items()]}})
+        except KeyError:
+            color={
+            }
+        return\
+            super().plot(
+                model_measurement,
+                *args, **kwargs)
 
     def get_measurement(self,
             circuit_model,
