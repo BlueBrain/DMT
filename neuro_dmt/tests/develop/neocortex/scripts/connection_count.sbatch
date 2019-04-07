@@ -8,20 +8,58 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --account=proj68
 
-export REGION=$1
-export ISOCIRCUIT=$2
+REGION=$1
+ISOCIRCUIT=$2
 
-export SCRIPT=/gpfs/bbp.cscs.ch/home/sood/work/validations/dmt/neuro_dmt/tests/develop/neocortex/scripts/validation_suite.py
-export NEOVALARXIV=/gpfs/bbp.cscs.ch/home/sood/work/validations/release/neocortex-2019/arxiv
+WORK=/gpfs/bbp.cscs.ch/home/sood/work
+DMT=$WORK/validations/dmt
+SCRIPT=$DMT/neuro_dmt/tests/develop/neocortex/scripts/validation_suite.py
+NEOVALARXIV=$WORK/validations/release/neocortex-2019/arxiv
 echo "Analyze circuit "$ISOCIRCUIT
 echo "Region "$REGION
 echo "Save results at"$NEOVALARXIV
 
 echo "Launch afferent connection count analysis"
-python $SCRIPT --analyze --region=$REGION --phenomenon=afferent_connection_count --sample-size=100 --cache-size=100 --pathways=to_pc_pathways --by-distance $ISOCIRCUIT $NEOVALARXIV 
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=afferent_connection_count\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=to_pc_pathways\
+       --by-distance\
+       $ISOCIRCUIT\
+       $NEOVALARXIV
 echo "Launch efferent connection count analysis"
-python $SCRIPT --analyze --region=$REGION --phenomenon=efferent_connection_count --sample-size=100 --cache-size=100 --pathways=to_pc_pathways --by-distance $ISOCIRCUIT $NEOVALARXIV 
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=efferent_connection_count\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=to_pc_pathways\
+       --by-distance\
+       $ISOCIRCUIT\
+       $NEOVALARXIV
 echo "Launch afferent connection count analysis"
-python $SCRIPT --analyze --region=$REGION --phenomenon=afferent_connection_count --sample-size=100 --cache-size=100 --pathways=from_pc_pathways --by-distance $ISOCIRCUIT $NEOVALARXIV 
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=afferent_connection_count\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=from_pc_pathways\
+       --by-distance\
+       $ISOCIRCUIT\
+       $NEOVALARXIV
 echo "Launch efferent connection count analysis"
-python $SCRIPT --analyze --region=$REGION --phenomenon=efferent_connection_count --sample-size=100 --cache-size=100 --pathways=from_pc_pathways --by-distance $ISOCIRCUIT $NEOVALARXIV 
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=efferent_connection_count\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=from_pc_pathways\
+       --by-distance\
+       $ISOCIRCUIT\
+       $NEOVALARXIV

@@ -98,7 +98,8 @@ class EfferentConnectionCountAnalysis(
             sorted(list(set(
                 measurement_index["soma_distance"].values)))
         x_positions=[
-            np.mean(bin) for bin in soma_distances]
+            bin[1] for bin in soma_distances]
+            #np.mean(bin) for bin in soma_distances]
         assert len(x_positions) >= 2
         delta_x=\
             x_positions[1] - x_positions[0]
@@ -156,25 +157,38 @@ class EfferentConnectionCountAnalysis(
                             names=["post_mtype", "soma_distance"]))\
                     .fillna(0.)\
                     .xs(post_mtype, level="post_mtype")
-                plt.bar(
+                max_count=\
+                    np.nanmax(
+                        efferent_counts["mean"])
+                if max_count == 0.:
+                    continue
+                label=\
+                    post_mtype if max_count > 1.\
+                    else "_nolegend_"
+                plt.step(
                     x_positions,
                     efferent_counts["mean"],
-                    width=delta_x,
-                    yerr=efferent_counts["std"],
-                    label=post_mtype,
+                    #width=delta_x,
+                    #yerr=efferent_counts["std"],
+                    label=label,
                     alpha=0.75,
-                    color="white",
-                    edgecolor=color,
+                    color=color,
+                    #color="white",
+                    #edgecolor=color,
                     linewidth=4,
                     linestyle="solid")
             plt.xticks(
                 x_positions,
-                soma_distances,
+                x_positions,
+                #soma_distances,
                 rotation=90,
                 fontsize=8)
             plt.legend()
             plt.title(
-                "{}: EFF".format(pre_mtype),
+                "Region {} Mtype {}:EFF"\
+                .format(
+                    region,
+                    pre_mtype),
                 fontsize=24)
             axes.set_ylabel(
                 "Number of Connections",

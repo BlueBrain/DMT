@@ -431,8 +431,7 @@ class NeocortexAnalysisSuite(
                 "afferent_connection_count"):
             # kwargs["by_distance"]=\
             #     "soma_distances" in kwargs or "soma_distance" in kwargs
-            kwargs["pathways_to_analyze"]=\
-                pathways
+            kwargs["pathways_to_analyze"] = pathways
         return kwargs
 
     def _get_spatial_parameters(self,

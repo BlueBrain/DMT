@@ -33,6 +33,10 @@ class PathwayConnectionProbabilityAnalysis(
             kwargs.get("upper_bound_soma_distance", 300.)\
             if not self._by_distance else\
                None
+        self._plot_view=\
+            kwargs.get(
+                "plot_view",
+                "Both")
         phenomenon=\
             Phenomenon(
                 "Pathway Connection Probability",
@@ -111,7 +115,8 @@ class PathwayConnectionProbabilityAnalysis(
         measurement_index=\
             measurement_data.index.to_frame()
         x_positions=[
-            np.mean(bin) for bin in soma_distances]
+            bin[1] for bin in soma_distances]
+       #     np.mean(bin) for bin in soma_distances]
         assert len(x_positions) >= 2
         delta_x=\
             x_positions[1] - x_positions[0]
@@ -142,7 +147,7 @@ class PathwayConnectionProbabilityAnalysis(
                     (region, pre_mtype),
                     level=("region", "pre_mtype"))
             for color, post_mtype in zip(colors, post_mtypes):
-                efferent_counts=\
+                efferent_probs=\
                     pre_mtype_data\
                     .reindex(
                         pd.MultiIndex.from_product(
@@ -150,25 +155,37 @@ class PathwayConnectionProbabilityAnalysis(
                             names=["post_mtype", "soma_distance"]))\
                     .fillna(0.)\
                     .xs(post_mtype, level="post_mtype")
-                plt.bar(
+                max_prob=\
+                    np.nanmax(
+                        efferent_probs["mean"])
+                if max_prob == 0.:
+                    continue
+                label=\
+                    "{}-->{}".format(pre_mtype, post_mtype)\
+                    if max_prob > 0.05\
+                    else "_nolegend_"
+                plt.step(
                     x_positions,
-                    efferent_counts["mean"],
-                    width=delta_x,
+                    efferent_probs["mean"],
+                    #width=delta_x,
                     #yerr=efferent_counts["std"],
-                    label="{}-->{}".format(pre_mtype, post_mtype),
+                    label=label,
                     alpha=0.75,
-                    color="white",
-                    edgecolor=color,
+                    color=color,
+                    #color="white",
+                    #edgecolor=color,
                     linewidth=4,
                     linestyle="solid")
             plt.xticks(
                 x_positions,
-                soma_distances,
+                x_positions,
+                #soma_distances,
                 rotation=90,
                 fontsize=8)
             plt.legend()
             plt.title(
-                "{} Efferent View".format(
+                "Region {} {} Efferent View".format(
+                    region,
                     pre_mtype),
                 fontsize=24)
             axes.set_ylabel(
@@ -194,10 +211,9 @@ class PathwayConnectionProbabilityAnalysis(
             soma_distances,
             width=14):
         """..."""
-        measurement_index=\
-            measurement_data.index.to_frame()
         x_positions=[
-            np.mean(bin) for bin in soma_distances]
+            bin[1] for bin in soma_distances]
+            #np.mean(bin) for bin in soma_distances]
         assert len(x_positions) >= 2
         delta_x=\
             x_positions[1] - x_positions[0]
@@ -228,7 +244,7 @@ class PathwayConnectionProbabilityAnalysis(
                     (region, post_mtype),
                     level=("region", "post_mtype"))
             for color, pre_mtype in zip(colors, pre_mtypes):
-                afferent_counts=\
+                afferent_probs=\
                     post_mtype_data\
                     .reindex(
                         pd.MultiIndex.from_product(
@@ -236,25 +252,37 @@ class PathwayConnectionProbabilityAnalysis(
                             names=["pre_mtype", "soma_distance"]))\
                     .fillna(0.)\
                     .xs(pre_mtype, level="pre_mtype")
-                plt.bar(
+                max_prob=\
+                    np.nanmax(
+                        afferent_probs["mean"])
+                if max_prob == 0.:
+                    continue
+                label=\
+                    "{}-->{}".format(pre_mtype, post_mtype)\
+                    if max_prob > 0.01 else\
+                       "_nolegend_"
+                plt.step(
                     x_positions,
-                    afferent_counts["mean"],
-                    width=delta_x,
+                    afferent_probs["mean"],
+                    #width=delta_x,
                     #yerr=efferent_counts["std"],
-                    label="{}-->{}".format(pre_mtype, post_mtype),
+                    label=label,
                     alpha=0.75,
-                    color="white",
-                    edgecolor=color,
+                    color=color,
+                    #color="white",
+                    #edgecolor=color,
                     linewidth=4,
                     linestyle="solid")
             plt.xticks(
                 x_positions,
-                soma_distances,
+                x_positions,
+                #soma_distances,
                 rotation=90,
                 fontsize=8)
             plt.legend()
             plt.title(
-                "{} Afferent View".format(
+                "Region {} {} Afferent View".format(
+                    region,
                     post_mtype),
                 fontsize=24)
             axes.set_ylabel(
@@ -322,16 +350,28 @@ class PathwayConnectionProbabilityAnalysis(
                     .format(self.__class__.__name__))
             region=\
                 regions.pop()
-        figures=\
-            self.__plot_efferent_view(
+
+        figures_efferent=\
+            lambda: self.__plot_efferent_view(
                 measurement_data,
                 region,
                 soma_distances)
-        figures.update(
-            self.__plot_afferent_view(
+        figures_afferent=\
+            lambda: self.__plot_afferent_view(
                 measurement_data,
                 region,
-                soma_distances))
+                soma_distances)
+        if self._plot_view == "EFF":
+            figures=\
+                figures_efferent()
+        elif self._plot_view == "AFF":
+            figures=\
+                figures_afferent()
+        else:
+            figures=\
+                figures_efferent()
+            figures.udpate(
+                figures_afferent())
         return figures
 
     # def plot(self,

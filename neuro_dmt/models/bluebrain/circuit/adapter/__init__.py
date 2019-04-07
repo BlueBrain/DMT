@@ -587,7 +587,7 @@ class BlueBrainModelAdapter(
                      "soma_distance": __get_distances(origin, post_cells)})\
                   .groupby(["post_mtype", "soma_distance"])\
                   .agg(sum)\
-                  .dropna()
+                  .fillna(0.)
 
         def __add_to_cache(
                 mtype,
@@ -621,7 +621,7 @@ class BlueBrainModelAdapter(
                         for gid in mtype_gids])\
                       .groupby(["post_mtype", "soma_distance"])\
                       .agg(["mean", "std"])\
-                      .dropna()\
+                      .fillna(0.)\
                       ["count"]
             else:
                 has_efferent_connections[mtype]=\
@@ -885,7 +885,7 @@ class BlueBrainModelAdapter(
                      "soma_distance": __get_distances(origin, pre_cells)})\
                   .groupby(["pre_mtype", "soma_distance"])\
                   .agg(sum)\
-                  .dropna()
+                  .fillna(0.)
 
         def __add_to_cache(
                 mtype,
@@ -919,7 +919,7 @@ class BlueBrainModelAdapter(
                         for gid in mtype_gids])\
                       .groupby(["pre_mtype", "soma_distance"])\
                       .agg(["mean", "std"])\
-                      .dropna()\
+                      .fillna(0.)\
                       ["count"]
             else:
                 has_afferent_connections[mtype]=\
@@ -954,7 +954,7 @@ class BlueBrainModelAdapter(
             """..."""
             self.logger.debug(
                 self.logger.get_source_info(),
-                "get pathway connection probability for condition {}"\
+                "get pathway afferent connections for condition {}"\
                 .format(condition.value))
             region=\
                 condition.get_value(

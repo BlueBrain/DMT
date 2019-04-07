@@ -11,14 +11,35 @@
 export REGION=$1
 export ISOCIRCUIT=$2
 
-export SCRIPT=/gpfs/bbp.cscs.ch/home/sood/work/validations/dmt/neuro_dmt/tests/develop/neocortex/scripts/validation_suite.py
-export NEOVALARXIV=/gpfs/bbp.cscs.ch/home/sood/work/validations/release/neocortex-2019/arxiv
+WORK=/gpfs/bbp.cscs.ch/home/sood/work
+DMT=$WORK/validations/dmt
+SCRIPT=$DMT/neuro_dmt/tests/develop/neocortex/scripts/validation_suite.py
+NEOVALARXIV=$WORK/validations/release/neocortex-2019/arxiv
 echo "Analyze circuit "$ISOCIRCUIT
 echo "Region "$REGION
 echo "Save results at"$NEOVALARXIV
 
-echo "Launch connection probability analysis, by distance"
-python $SCRIPT --analyze --region=$REGION --phenomenon=pathway_connection_probability --by-distance --sample-size=100 --cache-size=100 --pathways=to_pc_pathways $ISOCIRCUIT $NEOVALARXIV
-echo "Launch connection probability analysis, by distance"
-python $SCRIPT --analyze --region=$REGION --phenomenon=pathway_connection_probability --by-distance --sample-size=100 --cache-size=100 --pathways=from_pc_pathways $ISOCIRCUIT $NEOVALARXIV
-echo "Launch afferent connection count analysis"
+echo "Launch connection probability analysis to PC pathways, by distance"
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=pathway_connection_probability\
+       --by-distance\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=to_pc_pathways\
+       --view="EFF"\
+       $ISOCIRCUIT\
+       $NEOVALARXIV
+echo "Launch connection probability analysis from PC pathways, by distance"
+python $SCRIPT\
+       --analyze\
+       --region=$REGION\
+       --phenomenon=pathway_connection_probability\
+       --by-distance\
+       --sample-size=100\
+       --cache-size=100\
+       --pathways=from_pc_pathways\
+       --view="AFF"\
+       $ISOCIRCUIT\
+       $NEOVALARXIV

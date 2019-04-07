@@ -63,7 +63,8 @@ if __name__=="__main__":
                  "pathways=",
                  "mtypes=",
                  "by-distance",
-                 "number-bins="])
+                 "number-bins=",
+                 "view="])
     except getopt.GetoptError as err:
         print(str(err))
         usage()
@@ -92,7 +93,9 @@ if __name__=="__main__":
     by_distance=\
         False
     number_bins=\
-        100
+        75
+    plot_view=\
+        "Both"
     for o, a in opts:
         if o in ("-h", "--help"):
             help()
@@ -137,6 +140,8 @@ if __name__=="__main__":
             by_distance = True
         if o == "--number-bins":
             number_bins = int(a)
+        if o == "--view":
+            plot_view = a
 
     if len(args) == 0:
         raise ValueError(
@@ -193,7 +198,7 @@ if __name__=="__main__":
             output_dir_path=output_path)
     soma_distances=\
         None if not by_distance\
-        else SomaDistance(0., 2000., number_bins)
+        else SomaDistance(0., 1500., number_bins)
     neocortical_analysis_suite\
         .get_report(
             phenomenon,
@@ -203,4 +208,5 @@ if __name__=="__main__":
             cache_size=cache_size,
             by_distance=by_distance,
             soma_distances=soma_distances,
-            pathways=set(pathways))
+            pathways=set(pathways),
+            plot_view=plot_view)
