@@ -231,7 +231,7 @@ def summary_statistic(
     parameter columns in the measurement to be summarized, as well as it can
     summarize more than one measurement columns."""
     aggregators=\
-        ["mean", "std"]
+        ["mean", "std", "size"]
     if measurement_sample.shape[0] == 0:
         return pd.DataFrame(
             [],
