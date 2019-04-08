@@ -11,7 +11,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L23_NBC'
+  'L23_NBC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -23,7 +23,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L2_TPC:A'
+  'L2_TPC:A':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -35,7 +35,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L3_TPC:B'
+  'L3_TPC:B':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -47,7 +47,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L4_NBC'
+  'L4_NBC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -59,7 +59,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L4_TPC'
+  'L4_TPC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -71,7 +71,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L4_UPC'
+  'L4_UPC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -83,7 +83,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L5_LBC'
+  'L5_LBC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -95,7 +95,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L5_TPC:A'
+  'L5_TPC:A':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -107,7 +107,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L6_NGC'
+  'L6_NGC':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"
@@ -119,7 +119,7 @@
     - 'L6_BPC'
     - 'L6_HPC'
     - 'L6_TPC:A'
-  'L6_TPC:C'
+  'L6_TPC:C':
     - "L2_IPC"
     - "L2_TPC:A"
     - "L3_TPC:B"

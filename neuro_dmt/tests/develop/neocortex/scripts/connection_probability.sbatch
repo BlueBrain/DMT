@@ -19,18 +19,18 @@ echo "Analyze circuit "$ISOCIRCUIT
 echo "Region "$REGION
 echo "Save results at"$NEOVALARXIV
 
-echo "Launch connection probability analysis to PC pathways, by distance"
-python $SCRIPT\
-       --analyze\
-       --region=$REGION\
-       --phenomenon=pathway_connection_probability\
-       --by-distance\
-       --sample-size=100\
-       --cache-size=100\
-       --pathways=to_pc_pathways\
-       --view="EFF"\
-       $ISOCIRCUIT\
-       $NEOVALARXIV
+%echo "Launch connection probability analysis to PC pathways, by distance"
+% python $SCRIPT\
+%        --analyze\
+%        --region=$REGION\
+%        --phenomenon=pathway_connection_probability\
+%        --by-distance\
+%        --sample-size=100\
+%        --cache-size=100\
+%        --pathways=to_pc_pathways\
+%        --view="EFF"\
+%        $ISOCIRCUIT\
+%        $NEOVALARXIV
 echo "Launch connection probability analysis from PC pathways, by distance"
 python $SCRIPT\
        --analyze\

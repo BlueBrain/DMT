@@ -63,6 +63,7 @@ if __name__=="__main__":
                  "pathways=",
                  "mtypes=",
                  "by-distance",
+                 "upper-bound-soma-distance=",
                  "number-bins=",
                  "view="])
     except getopt.GetoptError as err:
@@ -94,6 +95,8 @@ if __name__=="__main__":
         False
     number_bins=\
         75
+    upper_bound_soma_distance=\
+        None
     plot_view=\
         "Both"
     for o, a in opts:
@@ -140,6 +143,8 @@ if __name__=="__main__":
             by_distance = True
         if o == "--number-bins":
             number_bins = int(a)
+        if o == "--upper-bound-soma-distance":
+            upper_bound_soma_distance = float(a)
         if o == "--view":
             plot_view = a
 
@@ -208,5 +213,6 @@ if __name__=="__main__":
             cache_size=cache_size,
             by_distance=by_distance,
             soma_distances=soma_distances,
+            upper_bound_soma_distance=upper_bound_soma_distance,
             pathways=set(pathways),
             plot_view=plot_view)

@@ -209,7 +209,7 @@ class AfferentConnectionCountAnalysis(
         """Get a (statistical) measurement  of the phenomenon analyzed."""
         return\
             self.adapter\
-                .get_pathway_afferent_connection_count(
+                .get_pathway_afferent_connection_count_by_distance(
                     circuit_model,
                     parameters=self.measurement_parameters,
                     pathways=self.pathways_to_analyze,

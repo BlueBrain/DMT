@@ -30,7 +30,7 @@ class PathwayConnectionProbabilityAnalysis(
                 "by_distance",
                 True)
         self._upper_bound_soma_distance=\
-            kwargs.get("upper_bound_soma_distance", 300.)\
+            kwargs.get("upper_bound_soma_distance", 250.)\
             if not self._by_distance else\
                None
         self._plot_view=\
@@ -310,18 +310,23 @@ class PathwayConnectionProbabilityAnalysis(
         self.logger.debug(
             self.logger.get_source_info(),
             "plot conn prob from data {}".format(model_measurement.data))
-        if not self._by_distance:
-            return\
-                super().plot(
-                    model_measurement,
-                    region=region,
-                    *args, **kwargs)
         measurement_data=\
             model_measurement\
             .data\
             [model_measurement.label]\
             .sort_values(by="soma_distance")\
             [["mean", "std"]]
+        measurement_data=\
+            measurement_data[
+                ~np.isnan(measurement_data["std"])]
+        model_measurement.data=\
+            mweasurement_data
+        if not self._by_distance:
+            return\
+                super().plot(
+                    model_measurement,
+                    region=region,
+                    *args, **kwargs)
         measurement_index=\
             model_measurement.data.index.to_frame()
         soma_distances=\
