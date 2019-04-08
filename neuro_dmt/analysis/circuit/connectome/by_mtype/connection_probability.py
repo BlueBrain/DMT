@@ -310,23 +310,21 @@ class PathwayConnectionProbabilityAnalysis(
         self.logger.debug(
             self.logger.get_source_info(),
             "plot conn prob from data {}".format(model_measurement.data))
-        measurement_data=\
-            model_measurement\
-            .data\
-            [model_measurement.label]\
-            .sort_values(by="soma_distance")\
-            [["mean", "std"]]
-        measurement_data=\
-            measurement_data[
-                ~np.isnan(measurement_data["std"])]
         model_measurement.data=\
-            mweasurement_data
+            model_measurement.data.dropna()
         if not self._by_distance:
             return\
                 super().plot(
                     model_measurement,
                     region=region,
                     *args, **kwargs)
+        measurement_data=\
+            model_measurement\
+            .data\
+            [model_measurement.label]\
+            .sort_values(by="soma_distance")\
+            [["mean", "std"]]
+        model_measurement.data=\
         measurement_index=\
             model_measurement.data.index.to_frame()
         soma_distances=\
