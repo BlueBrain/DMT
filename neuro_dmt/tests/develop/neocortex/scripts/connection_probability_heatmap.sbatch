@@ -3,7 +3,7 @@
 #SBATCH --job-name=ConnProbHeatMap
 #SBATCH --output="connprob_heatmap-%j.out"
 #SBATCH --time=16:00:00
-#SBATCH --mem=32G
+#SBATCH --mem=64G
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=1
 #SBATCH --account=proj68
