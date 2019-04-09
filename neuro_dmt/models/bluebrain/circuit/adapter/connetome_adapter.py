@@ -20,11 +20,47 @@ class BlueBrainModelConnectomeAdapter(
         """
         if not parameters:
             parameters=[
-                AtlasRegion(values=[circuit_model.representative_subregion]),
-                Mtype(circuit_model.bluepy.circuit, label="pre_mtype"),
-                Mtype(circuit_model.bluepy.circuit, label="post_mty;e")]
+                AtlasRegion(
+                    values=[circuit_model.representative_subregion]),
+                Mtype(
+                    circuit_model.bluepy.circuit,
+                    label="pre_mtype"),
+                Mtype(
+                    circuit_model.bluepy.circuit,
+                    label="post_mtype")]
+        soma_distance_params=[
+            param for param in parameters
+            if param.label == "soma_distance"]
+        assert len(soma_distance_params) <= 1
+        by_distance=\
+            len(soma_distance_params) == 1
+        if not by_distance:
+            soma_distance=\
+                SomaDistance(0., 2 * upper_bound_soma_distance, 2)
+            parameters.append(
+                soma_distance)
+        else:
+            soma_distance=\
+                soma_distance_params[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get pathway connection probability with parameter values",
+            "region: {}".format(parameters[0].values),
+            "pre_mtype: {}".format(parameters[1].values),
+            "post_mtype: {}".format(parameters[2].values),
+            "soma distance: {}".format(soma_distance.values))
         region_label=\
             circuit_model.region_label
+
+        pathways=\
+            kwargs.get(
+                "pathways", set())
+        kwargs["is_permissible"]=\
+            self._get_pathways_permissible(
+                is_permissible,
+                pathways)\
+                if pathways else\
+                   is_permissible
 
         def __random_sample(gids):
             """..."""

@@ -538,7 +538,7 @@ class WithFCA:
                         .format(field, cls.__name__) )
                 setattr(self, field, value)
             elif value is None:
-                self.logger.info(
+                self.logger.debug(
                     self.logger.get_source_info(),
                     "No value to assign for optional field {}".format(field),
                     "WILL NOT set attribute {}".format(field) )

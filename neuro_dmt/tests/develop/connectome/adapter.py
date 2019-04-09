@@ -60,7 +60,7 @@ def get_connection_probabilities(
         mtypes,
         pathways=set(),
         upper_bound_soma_distance=300,
-        using_connectome_adapter=True,
+        using_connectome_adapter=False,
         cache_size=100,
         sample_size=200,
         soma_distance=None):
@@ -72,7 +72,7 @@ def get_connection_probabilities(
     if using_connectome_adapter:
         return\
             connectome_adapter\
-              .get_pathway_connection_probability(
+              .get_pathway_connection_probability_directly(
                   circuit_model,
                   parameters=parameters,
                   pathways=pathways,

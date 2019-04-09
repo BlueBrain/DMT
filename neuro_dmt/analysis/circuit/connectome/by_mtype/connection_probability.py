@@ -37,6 +37,10 @@ class PathwayConnectionProbabilityAnalysis(
             kwargs.get(
                 "plot_view",
                 "Both")
+        self._measurement_data_size_cutoff=\
+            kwargs.get(
+                "measurement_data_size_cutoff",
+                20)
         phenomenon=\
             Phenomenon(
                 "Pathway Connection Probability",
@@ -310,8 +314,20 @@ class PathwayConnectionProbabilityAnalysis(
         self.logger.debug(
             self.logger.get_source_info(),
             "plot conn prob from data {}".format(model_measurement.data))
-        model_measurement.data=\
-            model_measurement.data.dropna()
+        data=\
+            model_measurement.data[
+                model_measurement.label]
+
+        try:
+            model_measurement.data=\
+                model_measurement.data[
+                    data["size"] >= self._measurement_data_size_cutoff]
+        except KeyError as key_error:
+            self.logger.info(
+                self.logger.get_source_info(),
+                """Could not filter by size:""",
+                """{}""".format(key_error),
+                "data:\n {}".format(data))
         if not self._by_distance:
             return\
                 super().plot(
@@ -451,6 +467,10 @@ class PathwayConnectionProbabilityAnalysis(
                 kwargs.get(
                     "upper_bound_soma_distance",
                     self._upper_bound_soma_distance)
+        if "pre_mtype_sample_size" not in kwargs:
+            kwargs["pre_mtype_sample_size"] = 100
+        if "post_cells_sample_size" not in kwargs:
+            kwargs["post_cells_sample_size"] = 10000
         return\
             self.adapter\
                 .get_pathway_connection_probability(

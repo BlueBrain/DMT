@@ -486,6 +486,210 @@ class BlueBrainModelAdapter(
                     level=soma_distance.label)
         return measurement
 
+    def get_pathway_connection_probability_directly(self,
+            circuit_model,
+            parameters=[],
+            pre_mtype_sample_size=100,
+            post_cells_sample_size=100000,
+            *args, **kwargs):
+        """Get pathway connection probability
+        as a function of distance.
+        """
+        self.logger.debug(
+            self.logger.get_source_info(),
+            *["{}:{}".format(key, value) for key, value in kwargs.items()])
+        upper_bound_soma_distance=\
+            kwargs.get(
+                "upper_bound_soma_distance", 250.)
+        if not parameters:
+            parameters=[
+                AtlasRegion(
+                    values=[circuit_model.representative_subregion]),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="pre_mtype"),
+                Mtype(
+                    circuit_model.bluepy_circuit,
+                    label="post_mtype")]
+        region_params=[
+            param for param in parameters
+            if param.label == "region"]
+        assert len(region_params) == 1
+        region_parameter=\
+            region_params[0]
+        assert len(region_parameter.values) == 1
+        region=\
+            region_parameter.values[0]
+        pre_mtype_params=[
+            param for param in parameters
+            if param.label == "pre_mtype"]
+        assert len(pre_mtype_params) == 1
+        pre_mtype_parameter=\
+            pre_mtype_params[0]
+        post_mtype_params=[
+            param for param in parameters
+            if param.label == "post_mtype"]
+        assert len(post_mtype_params) == 1
+        post_mtype_parameter=\
+            post_mtype_params[0]
+        soma_distance_params=[
+            param for param in parameters
+            if param.label == "soma_distance"]
+        assert len(soma_distance_params) <= 1
+        by_distance=\
+            len(soma_distance_params) == 1
+        if not by_distance:
+            soma_distance=\
+                SomaDistance(0., 2 * upper_bound_soma_distance, 2)
+            parameters.append(
+                soma_distance)
+        else:
+            soma_distance=\
+                soma_distance_params[0]
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "get pathway connection probability with parameter values",
+            "region: {}".format(parameters[0].values),
+            "pre_mtype: {}".format(parameters[1].values),
+            "post_mtype: {}".format(parameters[2].values),
+            "soma distance: {}".format(soma_distance.values))
+
+        Cell.XYZ = [Cell.X, Cell.Y, Cell.Z]
+
+        def _random_sample(
+                size,
+                mtype=None,
+                with_gid=True):
+            """..."""
+            cell_type=\
+                {Cell.MTYPE: mtype, Cell.REGION: region}\
+                if mtype else\
+                   {Cell.REGION: region}
+            all_cells=\
+                circuit_model.cells.get(
+                    cell_type,
+                    properties=[Cell.MTYPE] + Cell.XYZ)
+            result=\
+                all_cells if all_cells.shape[0] <= size\
+                else all_cells.sample(size)
+            return\
+                result.assign(gid=result.index.values.astype(int))\
+                if with_gid else result
+
+        circuit_cells_sample=\
+            _random_sample(
+                size=post_cells_sample_size)\
+                .rename(
+                    columns={
+                        Cell.MTYPE: "post_mtype",
+                        "gid": "post_gid"})
+
+        def _get_distances(origin):
+            """..."""
+            return\
+                circuit_cells_sample\
+                .assign(
+                    soma_distance=soma_distance._binner.get_bins(
+                        np.linalg.norm(
+                            circuit_cells_sample[Cell.XYZ] - origin,
+                            axis=1)),
+                    post_gid=circuit_cells_sample.index)\
+                [["post_mtype", "soma_distance", "post_gid"]]
+
+        def _get_pre_gid_connectivity(pre_gid):
+            """..."""
+            pre_mtype=\
+                circuit_model\
+                .cells.get(pre_gid, properties=Cell.MTYPE)
+            origin=\
+                circuit_model\
+                .cells.get(pre_gid, properties=Cell.XYZ)\
+                .values.astype(float)
+            distances=\
+                _get_distances(origin)
+            return\
+                distances.assign(
+                    connected=np.in1d(
+                        distances["post_gid"].values.astype(int),
+                        circuit_model.connectome.efferent_gids(pre_gid)))
+
+        def _get_pre_mtype_connectivity(pre_mtype):
+            """..."""
+            self.logger.info(
+                self.logger.get_source_info(),
+                """compute pre mtype {} connectivity""".format(pre_mtype))
+            pre_cells=\
+                _random_sample(
+                    size=pre_mtype_sample_size,
+                    mtype=pre_mtype)
+            pre_gid_connectivity=\
+                pd.concat([
+                    _get_pre_gid_connectivity(pre_gid)
+                    for pre_gid in pre_cells.index.values])
+            self.logger.debug(
+                self.logger.get_source_info(),
+                """found\n {} """.format(pre_gid_connectivity.head()),
+                "of shape {}".format(pre_gid_connectivity.shape))
+            post_mtypes=list(sorted(
+                set(post_mtype_parameter.values)\
+                .intersection(
+                    pre_gid_connectivity["post_mtype"].unique())))
+            result=\
+                pre_gid_connectivity[
+                    ["post_mtype", "soma_distance", "connected"]]\
+                .set_index("post_mtype")\
+                .loc[post_mtypes]\
+                .groupby(["post_mtype", "soma_distance"])\
+                .agg(["size", "mean", "std"])\
+                ["connected"]
+            self.logger.debug(
+                self.logger.get_source_info(),
+                "result ",
+                "{}".format(result))
+            return result
+
+        pre_post_mtype_connectivity=\
+            pd.concat(
+                [_get_pre_mtype_connectivity(pre_mtype)
+                 for pre_mtype in pre_mtype_parameter.values],
+                keys=pre_mtype_parameter.values,
+                names=["pre_mtype"])
+        region_connectivity=\
+            pd.concat(
+                [pre_post_mtype_connectivity],
+                keys=[region],
+                names=["region"])
+        measurement=\
+            pd.concat(
+                [region_connectivity if by_distance\
+                 else region_connectivity.xs(
+                         (0., upper_bound_soma_distance),
+                         level="soma_distance")],
+                axis=1,
+                keys=["in-silico"])
+                
+        return\
+            Record(
+                phenomenon=Phenomenon(
+                    "Pathway Connection Probability",
+                    "Probability of connections in an mtype-->mtype pathway.",
+                    group="connectome"),
+                label="in-silico",
+                model_label=circuit_model.get_label(),
+                model_uri=circuit_model.get_uri(),
+                sampling_method="All pathway pairs and connections were used",
+                sample_size=np.nan,
+                measurement_method="Please fill in",
+                data=measurement,
+                units="",
+                parameter_groups=[p.label for p in parameters])
+
+             
+
+
+            
+
+
     def get_pathway_efferent_connection_count(self,
             circuit_model,
             parameters=[],
@@ -776,8 +980,10 @@ class BlueBrainModelAdapter(
                 label="in-silico",
                 model_label=circuit_model.get_label(),
                 model_uri=circuit_model.get_uri(),
-                sampling_method="All pathway pairs and connections were used",
-                sample_size=np.nan,
+                sampling_method="""A sample of pre-gids with a specified
+                pre-mtype was used. For each pre-gid all of its efferent gids
+                were grouped by their mtype and soma distances, and counted""",
+                sample_size=cache_size,
                 measurement_method="""Pre-mtype cells were sampled randomly,
                 and their efferent connections grouped by mtype and
                 soma distance and counted.""",
@@ -1073,8 +1279,10 @@ class BlueBrainModelAdapter(
                 label="in-silico",
                 model_label=circuit_model.get_label(),
                 model_uri=circuit_model.get_uri(),
-                sampling_method="All pathway pairs and connections were used",
-                sample_size=np.nan,
+                sampling_method="""A sample of post-gids with a specified
+                post-mtype was used. For each post-gid all of its afferent gids
+                were grouped by their mtype and soma distances, and counted""",
+                sample_size=cache_size,
                 measurement_method="""Pre-mtype cells were sampled randomly,
                 and their efferent connections grouped by mtype and
                 soma distance and counted.""",

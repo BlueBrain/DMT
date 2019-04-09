@@ -25,17 +25,17 @@ python $SCRIPT\
        --region=$REGION\
        --phenomenon=pathway_connection_probability\
        --upper-bound-soma-distance=100\
-       --sample-size=1000\
-       --cache-size=1000\
+       --sample-size=100\
+       --cache-size=100\
        $ISOCIRCUIT\
        $NEOVALARXIV
-echo "Launch connection probability analysis, between cells within 200um"
-python $SCRIPT\
-       --analyze\
-       --region=$REGION\
-       --phenomenon=pathway_connection_probability\
-       --upper-bound-soma-distance=200\
-       --sample-size=1000\
-       --cache-size=1000\
-       $ISOCIRCUIT\
-       $NEOVALARXIV
+# echo "Launch connection probability analysis, between cells within 200um"
+# python $SCRIPT\
+#        --analyze\
+#        --region=$REGION\
+#        --phenomenon=pathway_connection_probability\
+#        --upper-bound-soma-distance=200\
+#        --sample-size=1000\
+#        --cache-size=1000\
+#        $ISOCIRCUIT\
+#        $NEOVALARXIV

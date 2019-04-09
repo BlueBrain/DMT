@@ -8,7 +8,7 @@ source $ME/.vmgr_repo/nix36/bin/activate
 ANALYSIS=$1
 HEMISPHERE=$2
 CONNECTOMEDIRECTION=$3
-REGIONS=$4
+REGIONS="ACAd ACAv AId AIp AIv AUDd AUDp AUDv ECT FRP GU ILA MOp MOs ORBl"
 
 PROJ68=/gpfs/bbp.cscs.ch/project/proj68
 ISODIR=$PROJ68/circuits/Isocortex/20190307/connectome/functional
