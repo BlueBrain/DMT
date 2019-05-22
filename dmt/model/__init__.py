@@ -81,7 +81,6 @@ def is_required_method(method):
     return (isinstance(method, FunctionType) and
             getattr(method, '__isrequiredmethod__', False))
 
-
 def is_adapter_method(method):
     """Specify the Protocol that an Adapter should implement a method. This
     method will be listed in an AdapterInterface."""
@@ -89,9 +88,10 @@ def is_adapter_method(method):
             getattr(method, '__isinterfacemethod__', False))
 
 
+
 class AIMeta(ABCMeta, ClassAttributeMeta):
     """A metaclass that will add an AdapterInterface."""
-    def __new__(mcs, name, bases, dct):
+    def __new__(mcs, name, bases, attribute_dict):
         """Give an AdapterInterface to class 'cls' only if it does not
         have one already.
 
@@ -105,23 +105,22 @@ class AIMeta(ABCMeta, ClassAttributeMeta):
         base-class of a newly defined AdapterInterface.
         """
         #print("construct {} with AIMeta and methods {}".format(name, dct.keys()))
-        if 'AdapterInterface' not in dct:
+        if 'AdapterInterface' not in attribute_dict:
             ainame = "{}AdapterInterface".format(name)
-            adapter_interface = get_interface(dct, name=ainame)
+            adapter_interface = get_interface(attribute_dict, name=ainame)
             if adapter_interface is not None:
-                dct['AdapterInterface'] = adapter_interface
+                attribute_dict['AdapterInterface'] = adapter_interface
             else:
                 print("""WARNING!!! 
                 AIMeta could not find or create an AdapterInterface
                 for {}
                 """.format(name))
-        cls = super(AIMeta, mcs).__new__(mcs, name, bases, dct)
-        return cls
+        return super(AIMeta, mcs).__new__(mcs, name, bases, attribute_dict)
 
-    def __init__(cls, name, bases, dct):
+    def __init__(cls, name, bases, attribute_dict):
         """No specific metalcass initialization for now.
         """
-        super(AIMeta, cls).__init__(name, bases, dct)
+        super(AIMeta, cls).__init__(name, bases, attribute_dict)
 
 
 def adapter_documentation(cls):

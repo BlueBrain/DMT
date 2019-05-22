@@ -138,7 +138,6 @@ class Field:
                 .format(self.__field_name__,
                         self.__type__.__name__,
                         value))
-            raise error
         return
 
     def __set__(self, instance, value):
@@ -412,7 +411,7 @@ def initialize_fields(cls):
     return cls
 
 
-#now Field at the class level
+#Field at the class level
 class ClassAttribute:
     """An non-method attribute that should be defined by a deriving class
     as a class attribute."""
@@ -441,7 +440,7 @@ class ClassAttribute:
 
 
 class ClassAttributeMeta(type):
-   """Checks if a sub class definition contains the required fields.""" 
+   """Checks if a sub class definition contains the required fields."""
 
    def __init__(cls, name, bases, namespace):
        for b in cls.__bases__:
