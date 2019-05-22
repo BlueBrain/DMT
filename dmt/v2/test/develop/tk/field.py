@@ -30,7 +30,15 @@ class Position(WithFields):
             *args, **kwargs)
 
 
-def test():
+class RelativisticPosition(Position):
+    """Position in time and space"""
+    T = Field(
+        __doc__="""Position T dimension""",
+        __type__=float,
+        __validation__=lambda t: t >= 0.)
+
+
+def test_initialization():
     """
     Initialization of a class based on WithFields 
     """
@@ -83,5 +91,25 @@ def test():
             """Setting Z to 1 should fail as 1 is not the correct type (float)."""
     except TypeError:
         pass
+
+
+def test_mixing():
+    """
+    Class mixins based on WithFields
+    """
+    try:
+        position = RelativisticPosition(X=0., Y=0., Z=0.)
+        assert False, """
+        Initialization should fail because field T has not been provided
+        in kwargs."""
+    except:
+        pass
+
+    try:
+        position = RelativisticPosition(X=0., Y=0., Z=0., T=0.)
+    except Exception as error:
+        assert False, """
+        RelativisticPosition should have been initialized.
+        """
 
 

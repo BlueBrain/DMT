@@ -20,9 +20,20 @@ class Field:
         self.__type__ = __type__
         self.__validation__ = __validation__
         self.__required__ = required
+        self.__field_name__ = None
 
-    def assert_validity(self,
-            value):
+    def get_instance_attribute_name(self, instance):
+        """
+        The attribute name that an instance of a class with
+        this Field instance will store its value with.
+        """
+        if self.__field_name__ is None:
+            raise ValueError(
+                """Cannot provide instance attribute's name if
+                this Field's '__field_name__' attribute has not been set.""")
+        return "${}_{}".format(self.__type__.__name__, self.__field_name__)
+
+    def assert_validity(self, value):
         """Is 'value' valid value of this Field?"""
         if not isinstance(value, self.__type__):
             raise TypeError(
@@ -41,8 +52,24 @@ class Field:
                     value))
         return True
 
+    def __set__(self, instance, value):
+        """
+        Set the value of this Field in an class instance.
+        """
+        self.assert_validity(value)
+        setattr(instance, self.get_instance_attribute_name(instance), value)
 
-
+    def __get__(self, instance, owner):
+        """
+        Get the value of this Field stored in an instance of the class that
+        has this Field.
+        """
+        if instance:
+            return getattr(
+                instance,
+                self.get_instance_attribute_name(instance))
+        #assuming owner is the class in which this Field was defined...
+        return self
 
 class WithFields:
     """
@@ -118,6 +145,7 @@ class WithFields:
 
             return None
 
+
         for field in self.get_fields():
             class_field = getattr(self.__class__, field, None)
             setattr(class_field, "__field_name__", field)
@@ -153,7 +181,3 @@ class WithFields:
         return [
             attr for attr in dir(cls)
             if isinstance(getattr(cls, attr), Field)]
-    
-
-
-
