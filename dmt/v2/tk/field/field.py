@@ -15,24 +15,41 @@ class Field:
             __doc__: str,#documentation for this Field is required
             __type__=object,
             __validation__=lambda x: True,
-            required=True):
+            __required__=True,
+            __default_value__=None):
         """Initialize Me"""
         self.__class__.__doc__ = __doc__.strip()
         self.__type__ = __type__
         self.__validation__ = __validation__
-        self.__required__ = required
+        self.__required__ = __required__
         self.__attr_name__ = None
+        self.__default_value__ = __default_value__
 
     def __get_instance_attribute_name(self, instance):
         """
         The attribute name that an instance of a class with
         this Field instance will store its value with.
         """
+        self.__check_name()
+        type_prefix =\
+            self.__type__.__name__ if not isinstance(self.__type__, tuple)\
+            else '_'.join(t.__name__ for t in self.__type__)
+        return "${}_{}".format(type_prefix, self.__attr_name__)
+
+    def __check_name(self):
+        """
+        Has this Field instance been given a name?
+        The intended use of Field is through the associated
+        WithFields baseclass. Fields are initialized, and given a name in the
+        initializer method of WithFields. So if a Field instance does not have
+        a name, it could mean that the class where this Field has been defined
+        does not derive from WithFields.
+        """
         if self.__attr_name__ is None:
-            raise ValueError(
-                """Cannot provide instance attribute's name if
-                this Field's '__attr_name__' attribute has not been set.""")
-        return "${}_{}".format(self.__type__.__name__, self.__attr_name__)
+            raise ValueError("""
+              Field instance does not have a name (__attr_name__).
+              Check if the containing class was based on WithFields.
+              """)
 
     def assert_validity(self, value):
         """Is 'value' valid value of this Field?"""

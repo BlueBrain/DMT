@@ -9,6 +9,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 
 """
 
+from sys import stdout
 from .field import Field
 from .class_attribute import ClassAttribute
 
@@ -85,8 +86,8 @@ class WithFields:
                 #did not find Field in kwargs
                 return None
 
-            if hasattr(class_field, "default_value"):
-                return class_field.default_value
+            if hasattr(class_field, "__default_value__"):
+                return class_field.__default_value__
 
             return None
 
@@ -104,16 +105,22 @@ class WithFields:
             if class_field.__required__:
                 if value is None:
                     print(
-                        "Please provide Field {}: {}".format(
+                        """Please provide Field '{}':
+                        {}""".format(
                             field,
-                            class_field.__doc__),
-                        file=sys.stdout)
+                            class_field.__doc__.replace('\n', "\n\t\t")),
+                        file=stdout)
                     raise ValueError(
-                        """Cannot create an instance of {} without field {}.
-                        Please proivde Field {}: {} """.format(
-                            self.__class__.__name__,
-                            field,
-                            field, class_field.__doc__))
+                    """Cannot create '{}' instance without required Field '{}'.
+                    Please provide a value as a keyword argument in your 
+                    instance initialization.
+                    Missing Field '{}':
+                    \t{}
+                    """.format(
+                        self.__class__.__name__,
+                        field,
+                        field,
+                        class_field.__doc__.replace('\n', "\n\t\t")))
                 setattr(self, field, value)
             elif value is None:
                 #Value is not required
