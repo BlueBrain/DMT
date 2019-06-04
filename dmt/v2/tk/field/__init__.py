@@ -10,6 +10,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 """
 
 from sys import stdout
+from abc import ABCMeta
 from .field import Field
 from .class_attribute import ClassAttribute
 
@@ -148,3 +149,18 @@ class WithFields:
             attr for attr in dir(cls)
             if isinstance(getattr(cls, attr), ClassAttribute)]
 
+
+class FieldMeta(ABCMeta):
+    """
+    A meta class to construct classes that must provide class attributes
+    described as Fields.
+    """
+    def __init__(cls, name, bases, namespace):
+        """..."""
+        for base in cls.__bases__:
+            for attribute, value in base.__dict__.items():
+                if isinstance(value, Field):
+                    cls_value = getattr(cls, attribute)
+                    if not isinstance(cls_value, Field):
+                        value.assert_validity(cls_value)
+        super().__init__(name, bases,  namespace)

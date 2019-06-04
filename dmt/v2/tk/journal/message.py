@@ -3,6 +3,7 @@
 from abc import\
     ABC, abstractmethod
 import time
+import copy
 from . import utils, Level
 
 class Message(ABC):
@@ -12,6 +13,8 @@ class Message(ABC):
         """Initialize Me"""
         self._value = '\n'.join(msgs)
         self._time_creation  = time.localtime()
+        self._line_length = kwargs.get("line_length", 80)
+        self._line_char = kwargs.get("line_char", '-')
 
     @property
     @abstractmethod
@@ -57,6 +60,18 @@ class Message(ABC):
                 self.labelstamp,
                 self.value)
 
+    def __add__(self, that):
+        """
+        Add the contents of the other message to this message,
+        and return a new instance.
+
+        Arguments
+        -----------
+        ~   other_message :: Message or String"""
+        return self.__class__(
+            self._value,
+            that._value if isinstance(that, Message) else that)
+
 
 class Funda(Message):
     """A single unit of fundamental understanding."""
@@ -67,6 +82,11 @@ class Info(Message):
     """General Info, can be anything."""
     level = Level.INFO
     label = "INFO"
+
+class Suggestion(Message):
+    """Suggest the user how to do something."""
+    level = Level.INFO
+    label = "SUGGESTION"
 
 class ProgressInfo(Info):
     """Info about progress"""

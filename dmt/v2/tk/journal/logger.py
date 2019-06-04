@@ -211,6 +211,11 @@ class Logger:
         """..."""
         return self.info(*messages)
 
+    def suggest(self, *messages):
+        """..."""
+        return self._log_message(
+            Suggestion(*messages))
+
     def study(self, *messages):
         """..."""
         return self._log_message(

@@ -261,9 +261,9 @@ class BlueBrainModelAdapter(
                 *args, **kwargs)
 
     def get_mtype_cell_density(self,
-                circuit_model,
-                spatial_parameters=[],
-                *args, **kwargs):
+            circuit_model,
+            spatial_parameters=[],
+            *args, **kwargs):
         """..."""
         return\
             self.spatial_measurement(
