@@ -14,7 +14,6 @@ from abc import ABCMeta
 from .field import Field
 from .class_attribute import ClassAttribute
 
-
 class WithFields:
     """
         A base class that will add declared Fields.
@@ -57,7 +56,7 @@ class WithFields:
                         self.__class__.__name__,
                         field.__attr_name__,
                         value))
-            pass
+            return True
 
         def __get_value(field):
             """..."""
@@ -100,7 +99,7 @@ class WithFields:
                 continue
             value = __get_value(field)
 
-            if value:
+            if value is not None:
                 __check_validity(class_field, value)
 
             if class_field.__required__:
@@ -150,17 +149,94 @@ class WithFields:
             if isinstance(getattr(cls, attr), ClassAttribute)]
 
 
-class FieldMeta(ABCMeta):
+class FieldMetaBase(ABCMeta):
     """
     A meta class to construct classes that must provide class attributes
     described as Fields.
     """
+
+    def __new__(mcs, name, bases, namespace):
+        """
+        Arguments
+        ---------
+        mcs :: Metaclass based on FieldMetaBase, that we expect to have Fields.
+        name :: Name of the class to be created by mcs
+        bases :: tuple of bases of class to be created
+        namespace :: dict of class attributes of class to be created
+        """
+        
+        def __check_validity(field, value):
+            """..."""
+            try:
+                field.assert_validity(value)
+            except TypeError as error:
+                raise TypeError(
+                """{}\n\t{} field {} value {} type {} is inadmissible.
+                Expected type is {}."""\
+                    .format(
+                        error,
+                        mcs.__name__,
+                        value,
+                        field.__attr_name__,
+                        type(value),
+                        field.__type__))
+            except ValueError as error:
+                raise ValueError(
+                    """{}\n\t{}instance field {} value {} is invalid."""\
+                    .format(
+                        error,
+                        mcs.__name__,
+                        field.__attr_name__,
+                        value))
+            return True
+        description_field = {}
+        for field in [attr for attr in dir(mcs)
+                      if isinstance(getattr(mcs, attr, None), Field)]:
+            metaclass_field = getattr(mcs, field)
+            setattr(metaclass_field, "__attr_name__", field)
+            description_field[field] = metaclass_field.description
+            value = namespace.get(field, None)
+            if value is not None:
+                __check_validity(metaclass_field, value)
+            
+            if metaclass_field.__required__:
+                if value is None:
+                    print("""
+                    Please provide Field '{}':
+                    {}""".format(
+                        field,
+                        metaclass_field.__doc__.replace('\n', "\n\t\t")),
+                          file=stdout)
+                    raise ValueError(
+                    """Cannot create '{}' instance without required Field '{}'.
+                    Please provide a value as a keyword argument in your 
+                    instance initialization.
+                    Missing Field '{}':
+                    \t{}
+                    """.format(
+                        mcs.__name__,
+                        field,
+                        field,
+                        metaclass_field.__doc__.replace('\n', "\n\t\t")))
+                else:
+                    #value is valid and will be set as class attribute
+                    pass
+            elif value is None:
+                #Value is not required, so
+                pass
+            else:
+                #value is not required and valid, and will be set, so
+                pass
+
+        namespace["__description__"] = description_field  #descirption of Fields
+
+        return super().__new__(
+            mcs, name, bases, namespace)
+
     def __init__(cls, name, bases, namespace):
         """..."""
-        for base in cls.__bases__:
-            for attribute, value in base.__dict__.items():
-                if isinstance(value, Field):
-                    cls_value = getattr(cls, attribute)
-                    if not isinstance(cls_value, Field):
-                        value.assert_validity(cls_value)
-        super().__init__(name, bases,  namespace)
+        super().__init__(
+            name, bases, namespace)
+
+
+
