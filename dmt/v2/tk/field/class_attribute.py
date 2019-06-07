@@ -6,37 +6,46 @@ import sys
 import collections
 from .field import Field
 
-class ClassAttribute(Field):
+class ClassAttribute:
     """
     ClassAttribute of a class is defined on the class itself, not an instance.
     """
     def __init__(self,
-            __value__,
-            __doc__:str):
+            __doc__,
+            __type__=object,
+            __required__=True,
+            __validation__=lambda value: True):
         """Initialize Me
         Arguments:
         ~   __doc__ :: A string describing this ClassAttribute
         ~   __value__ :: The (initial) value for this class attribute
         """
         self.__doc__ = __doc__
-        self.__value__ = __value__
+        self.__type__ = __type__
         self.__number_retrieval__ = 0
-
-    def __set__(self, instance, value):
-        """Value of a class attribute cannot be set on a class instance."""
-        raise Exception(
-            "Setting a class attribute of an instance.")
+        self.__required__ = __required__
+        self.__validation__ = __validation__
 
     @property
     def description(self):
         """Describe this ClassAttribute"""
         return "ClassAttribute<{}>".format(self.__doc__)
 
-    def __get__(self, instance, owner):
-        """The effective value of this class attribute."""
-        #print("get class attribute with {} retrievals".format(self.__number_retrieval__))
-        self.__number_retrieval__ += 1
-        if self.__number_retrieval__ <= 2:
-            return self
-        setattr(owner, self.__attr_name__, self.__value__)
-        return self.__value__
+    def assert_validity(self, value):
+        """Is 'value' valid value of this Field?"""
+        if not isinstance(value, self.__type__):
+            raise TypeError(
+                "Cannot set field '{}' of type '{}' to value '{}' of type '{}'"\
+                .format(
+                    self.__attr_name__,
+                    self.__type__.__name__,
+                    value,
+                    str(type(value))))
+        if not self.__validation__(value):
+            raise ValueError(
+                "Field '{}' of type '{}' cannot be an invalid value."\
+                .format(
+                    self.__attr_name__,
+                    self.__type__.__name__,
+                    value))
+        return True

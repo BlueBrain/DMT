@@ -13,6 +13,7 @@ from sys import stdout
 from abc import ABCMeta
 from .field import Field
 from .class_attribute import ClassAttribute
+from ..journal import Logger
 
 class WithFields:
     """
@@ -82,14 +83,8 @@ class WithFields:
 
             if field in kwargs:
                 return kwargs[field]
-            else:
-                #did not find Field in kwargs
-                return None
 
-            if hasattr(class_field, "__default_value__"):
-                return class_field.__default_value__
-
-            return None
+            return getattr(class_field, "__default_value__", None)
 
         for field in self.get_fields():
             class_field = getattr(self.__class__, field, None)
@@ -128,11 +123,27 @@ class WithFields:
             else:
                 setattr(self, field, value)
 
+        if not hasattr(self, "_logger"):
+            self._logger = Logger(
+                client=self.__class__.__name__,
+                level=kwargs.get("log_level", None))
+
         try:
             super().__init__(
                 *args, **kwargs)
         except TypeError as error:
             pass
+
+    def describe(self, field):
+        """
+        Describe a Field
+        """
+        self._logger.info(
+            """{}: {}""".format(
+                field,
+                self.__description__.get(
+                    field,
+                    "Description not available")))
 
     @classmethod
     def get_fields(cls):
@@ -141,15 +152,8 @@ class WithFields:
             attr for attr in dir(cls)
             if isinstance(getattr(cls, attr), Field)]
 
-    @classmethod
-    def get_class_attributes(cls):
-        """..."""
-        return [
-            attr for attr in dir(cls)
-            if isinstance(getattr(cls, attr), ClassAttribute)]
 
-
-class FieldMetaBase(ABCMeta):
+class ClassAttributeMetaBase(type):
     """
     A meta class to construct classes that must provide class attributes
     described as Fields.
@@ -164,7 +168,7 @@ class FieldMetaBase(ABCMeta):
         bases :: tuple of bases of class to be created
         namespace :: dict of class attributes of class to be created
         """
-        
+
         def __check_validity(field, value):
             """..."""
             try:
@@ -189,46 +193,48 @@ class FieldMetaBase(ABCMeta):
                         field.__attr_name__,
                         value))
             return True
-        description_field = {}
-        for field in [attr for attr in dir(mcs)
-                      if isinstance(getattr(mcs, attr, None), Field)]:
-            metaclass_field = getattr(mcs, field)
-            setattr(metaclass_field, "__attr_name__", field)
-            description_field[field] = metaclass_field.description
-            value = namespace.get(field, None)
-            if value is not None:
-                __check_validity(metaclass_field, value)
-            
-            if metaclass_field.__required__:
-                if value is None:
-                    print("""
-                    Please provide Field '{}':
-                    {}""".format(
-                        field,
-                        metaclass_field.__doc__.replace('\n', "\n\t\t")),
-                          file=stdout)
-                    raise ValueError(
-                    """Cannot create '{}' instance without required Field '{}'.
-                    Please provide a value as a keyword argument in your 
-                    instance initialization.
-                    Missing Field '{}':
-                    \t{}
-                    """.format(
-                        mcs.__name__,
-                        field,
-                        field,
-                        metaclass_field.__doc__.replace('\n', "\n\t\t")))
-                else:
-                    #value is valid and will be set as class attribute
-                    pass
-            elif value is None:
-                #Value is not required, so
-                pass
-            else:
-                #value is not required and valid, and will be set, so
-                pass
 
-        namespace["__description__"] = description_field  #descirption of Fields
+        if not namespace.get("__metaclass_front_base__", False):
+            description_field = {}
+            for field in [attr for attr in dir(mcs)
+                          if isinstance(getattr(mcs, attr, None), ClassAttribute)]:
+                metaclass_field = getattr(mcs, field)
+                setattr(metaclass_field, "__attr_name__", field)
+                description_field[field] = metaclass_field.description
+                value = namespace.get(field, None)
+                if value is not None:
+                    __check_validity(metaclass_field, value)
+
+                    if metaclass_field.__required__:
+                        if value is None:
+                            print("""
+                            Please provide Field '{}':
+                            {}""".format(
+                                field,
+                                metaclass_field.__doc__.replace('\n', "\n\t\t")),
+                            file=stdout)
+                            raise ValueError(
+                                """Cannot create '{}' instance without required Field '{}'.
+                                Please provide a value as a keyword argument in your 
+                                instance initialization.
+                                Missing Field '{}':
+                                \t{}
+                                """.format(
+                                    mcs.__name__,
+                                    field,
+                                    field,
+                            metaclass_field.__doc__.replace('\n', "\n\t\t")))
+                        else:
+                            #value is valid and will be set as class attribute
+                            pass
+                    elif value is None:
+                        #Value is not required, so
+                        pass
+                    else:
+                        #value is not required and valid, and will be set, so
+                        pass
+
+                namespace["__description__"] = description_field  #descirption of Fields
 
         return super().__new__(
             mcs, name, bases, namespace)
@@ -237,6 +243,4 @@ class FieldMetaBase(ABCMeta):
         """..."""
         super().__init__(
             name, bases, namespace)
-
-
 

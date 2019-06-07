@@ -1,0 +1,3 @@
+"""
+Utilities to register assets.
+"""

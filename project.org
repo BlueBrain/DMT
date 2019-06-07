@@ -1062,8 +1062,13 @@
      such a communication. We can say
 
      #+begin_src python
-     cell_density = self.adapter.get_cell_density(circuit_model, by=cortical_layer)
+       cell_density =\
+           self.adapter\
+               .get_cell_density(
+                   circuit_model,
+                   by=cortical_layer)
      #+end_src
+     
      Here ~cortical_layer~ is a ~Parameter~ because it defines the scope of the
      measurement being requested in that method call.
 
@@ -1072,6 +1077,9 @@
     The name ~cortical_layer~ is fairly clear to read, but the computer should
     be able to translate the /code/ of ~cortical_layer~ into behavior.
      
+*** Observation
+    M. Fowler talks considers ~Observation~ as a super-type of ~Measurement~,
+    that covers categorical variables in addition to quantitative variables.
      
 
 

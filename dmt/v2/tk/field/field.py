@@ -18,7 +18,7 @@ class Field:
             __required__=True,
             __default_value__=None):
         """Initialize Me"""
-        self.__class__.__doc__ = __doc__.strip()
+        self.__doc__ = __doc__
         self.__type__ = __type__
         self.__validation__ = __validation__
         self.__required__ = __required__
@@ -72,7 +72,7 @@ class Field:
 
     @property
     def description(self):
-        """Describe this ClassAttribute"""
+        """Describe this Field"""
         return "Field<{}>".format(self.__doc__)
 
     def __set__(self, instance, value):

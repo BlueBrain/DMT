@@ -4,12 +4,35 @@ Prototype for Data.
 from abc import ABCMeta
 import pandas as pd
 from dmt.v2.tk.journal import Logger
-from dmt.v2.tk.field import Field, WithFields, FieldMeta
+from dmt.v2.tk.field import\
+    Field,\
+    ClassAttribute,\
+    WithFields,\
+    ClassAttributeMetaBase
 
 
 def is_data_base_class(cls):
     """???"""
     return getattr(cls, "__data_base_class__", False)
+
+
+class DataClassMeta(ClassAttributeMetaBase):
+    """
+    A metaclass to construct Data classes
+    """
+    index = ClassAttribute("""
+    A dict mapping the name of an index variable to its description.
+    The names will be used to name the dataframe index,
+    and the description to provide documentation.
+    """,
+        __type__=dict)
+    measurements = ClassAttribute("""
+    A dict mapping the name of measurement variable to its description.
+    The names will be used to name the dataframe columns, 
+    and the description to provide documentation.
+    """,
+        __type__=dict)
+
 
 class DataClassConstructor(type):
     """
@@ -62,22 +85,30 @@ class DataClassConstructor(type):
 
 class Data(
         WithFields,
-        metaclass=DataClassConstructor):
+        metaclass=DataClassMeta):
     """A base class to define DataClasses."""
 
     __data_base_class__ = True
 
-    label = Field("""
-        A string to name a Data instance
-        """,
-        __type__=str,
-        __required__=False)
+    __metaclass_front_base__ = True
+
     data = Field("""
-        A list of dicts that can be used to construct a pandas.DataFrame.
-        """,
+    A list of dicts that can be used to construct a pandas.DataFrame.
+    Each dict should have keys for all the index and measurement columns of
+    the dataframe. An exception will be raised if any columns are missing.
+    """,
         __type__=list,
         __required__=True)
-
+    label = Field("""
+        A string to name a Data instance. 
+        """,
+        __type__=str,
+        __required__=True)
+    provenance = Field("""
+    Description of the origin of this data.
+    """,
+        __type__=object,
+        __default_value__="Unknown")
 
     def __init__(self,
             data,
@@ -105,14 +136,21 @@ class Data(
         """
         return pd.DataFrame(self.data)\
                  .set_index(list(self.index))
-   
+
     @property
     def loc(self):
         """..."""
         return self.dataframe.loc
-        
+
     @property
     def iloc(self):
         """..."""
         return self.dataframe.iloc
 
+    @property
+    def what(self):
+        """Needs improvement"""
+        return "{}\n Provided by {}"\
+            .format(
+                self.__class__.__doc__.strip(),
+                self.provenance)
