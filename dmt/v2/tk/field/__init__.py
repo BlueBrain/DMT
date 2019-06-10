@@ -15,6 +15,30 @@ from .field import Field
 from .class_attribute import ClassAttribute
 from ..journal import Logger
 
+def set_name(
+        field_or_class_attribute,
+        name):
+    """
+    Set name of a field or class attribute.
+    """
+    setattr(
+        field_or_class_attribute,
+        "__attr_name__",
+        name)
+
+
+def get_value(
+        key_values,
+        field_or_class_attribute):
+    """
+    Get value of a field or class attribute from a dictionary.
+    """
+    return\
+        key_values.get(
+            field_or_class_attribute.__attr_name__,
+            field_or_class_attribute.__default_value__)
+
+
 class WithFields:
     """
         A base class that will add declared Fields.
@@ -88,7 +112,7 @@ class WithFields:
 
         for field in self.get_fields():
             class_field = getattr(self.__class__, field, None)
-            setattr(class_field, "__attr_name__", field)
+            set_name(class_field, field)
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
                 continue
@@ -194,48 +218,51 @@ class ClassAttributeMetaBase(type):
                         value))
             return True
 
-        if not namespace.get("__metaclass_front_base__", False):
-            description_field = {}
-            for field in [attr for attr in dir(mcs)
-                          if isinstance(getattr(mcs, attr, None), ClassAttribute)]:
+        description_field = {}
+
+        if not namespace.pop("__metaclass_base__", False):
+            for field in [
+                    attr for attr in dir(mcs)
+                    if isinstance(getattr(mcs, attr, None), ClassAttribute)]:
+
                 metaclass_field = getattr(mcs, field)
-                setattr(metaclass_field, "__attr_name__", field)
+
+                set_name(metaclass_field, field)
                 description_field[field] = metaclass_field.description
-                value = namespace.get(field, None)
+                value = get_value(namespace, metaclass_field)
+                        
                 if value is not None:
                     __check_validity(metaclass_field, value)
 
-                    if metaclass_field.__required__:
-                        if value is None:
-                            print("""
-                            Please provide Field '{}':
-                            {}""".format(
+                if metaclass_field.__required__:
+                    if value is None:
+                        print("""
+                        Please provide Field '{}':
+                        {}""".format(
+                            field,
+                            metaclass_field.__doc__.replace('\n', "\n\t\t")),
+                              file=stdout)
+                        raise ValueError(
+                            """Cannot create '{}' instance without required Field '{}'.
+                            Please provide a value as a keyword argument in your 
+                            instance initialization.
+                            Missing Field '{}':
+                            \t{}
+                            """.format(
+                                mcs.__name__,
                                 field,
-                                metaclass_field.__doc__.replace('\n', "\n\t\t")),
-                            file=stdout)
-                            raise ValueError(
-                                """Cannot create '{}' instance without required Field '{}'.
-                                Please provide a value as a keyword argument in your 
-                                instance initialization.
-                                Missing Field '{}':
-                                \t{}
-                                """.format(
-                                    mcs.__name__,
-                                    field,
-                                    field,
-                            metaclass_field.__doc__.replace('\n', "\n\t\t")))
-                        else:
-                            #value is valid and will be set as class attribute
-                            pass
-                    elif value is None:
-                        #Value is not required, so
-                        pass
+                                field,
+                                metaclass_field.__doc__.replace('\n', "\n\t\t")))
                     else:
-                        #value is not required and valid, and will be set, so
+                        #value is valid and will be set as class attribute
                         pass
+                elif value is None:#and is not required
+                    pass
+                else:#value is not required and valid, but will be set
+                    pass
 
-                namespace["__description__"] = description_field  #descirption of Fields
 
+        namespace["__description__"] = description_field
         return super().__new__(
             mcs, name, bases, namespace)
 

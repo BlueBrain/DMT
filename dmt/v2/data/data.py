@@ -1,7 +1,6 @@
 """
 Prototype for Data.
 """
-from abc import ABCMeta
 import pandas as pd
 from dmt.v2.tk.journal import Logger
 from dmt.v2.tk.field import\
@@ -34,6 +33,7 @@ class DataClassMeta(ClassAttributeMetaBase):
         """,
         __type__=dict)
 
+        
 
 class DataClassConstructor(type):
     """
@@ -91,9 +91,7 @@ class Data(
         metaclass=DataClassMeta):
     """A base class to define DataClasses."""
 
-    __data_base_class__ = True
-
-    __metaclass_front_base__ = True
+    __metaclass_base__ = True
 
     data = Field("""
     A list of dicts that can be used to construct a pandas.DataFrame.

@@ -14,7 +14,8 @@ class ClassAttribute:
             __doc__,
             __type__=object,
             __required__=True,
-            __validation__=lambda value: True):
+            __validation__=lambda value: True,
+            __default_value__=None):
         """Initialize Me
         Arguments:
         ~   __doc__ :: A string describing this ClassAttribute
@@ -25,6 +26,7 @@ class ClassAttribute:
         self.__number_retrieval__ = 0
         self.__required__ = __required__
         self.__validation__ = __validation__
+        self.__default_value__ = __default_value__
 
     @property
     def description(self):
