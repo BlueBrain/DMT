@@ -10,7 +10,6 @@ from dmt.v2.tk.field import\
     WithFields,\
     ClassAttributeMetaBase
 
-
 def is_data_base_class(cls):
     """???"""
     return getattr(cls, "__data_base_class__", False)
@@ -20,23 +19,19 @@ class DataClassMeta(ClassAttributeMetaBase):
     """
     A metaclass to construct Data classes
     """
-    index = ClassAttribute(dict,
-    """
-    "A dict mapping the name of an index variable to its description.
-    The names will be used to name the dataframe index, and the descriptions to
-    provide documentation.
-    """)
-    index = ClassAttribute("""
-    A dict mapping the name of an index variable to its description.
-    The names will be used to name the dataframe index,
-    and the description to provide documentation.
-    """,
+    index = ClassAttribute(
+        """
+        A dict mapping the name of an index variable to its description.
+        The names will be used to name the dataframe index,
+        and the description to provide documentation.
+        """,
         __type__=dict)
-    measurements = ClassAttribute("""
-    A dict mapping the name of measurement variable to its description.
-    The names will be used to name the dataframe columns, 
-    and the description to provide documentation.
-    """,
+    measurements = ClassAttribute(
+        """
+        A dict mapping the name of measurement variable to its description.
+        The names will be used to name the dataframe columns, 
+        and the description to provide documentation.
+        """,
         __type__=dict)
 
 
@@ -47,7 +42,9 @@ class DataClassConstructor(type):
 
     def __new__(mcs, name, bases, namespace):
         """..."""
-        logger = Logger(client="DataClassConstructor", level="STUDY")
+        logger = Logger(
+            client="DataClassConstructor",
+            level="STUDY")
         logger.study(
             """Construct new class with
             mcs {},
