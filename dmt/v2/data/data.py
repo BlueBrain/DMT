@@ -20,6 +20,12 @@ class DataClassMeta(ClassAttributeMetaBase):
     """
     A metaclass to construct Data classes
     """
+    index = ClassAttribute(dict,
+    """
+    "A dict mapping the name of an index variable to its description.
+    The names will be used to name the dataframe index, and the descriptions to
+    provide documentation.
+    """)
     index = ClassAttribute("""
     A dict mapping the name of an index variable to its description.
     The names will be used to name the dataframe index,
