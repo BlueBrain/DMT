@@ -18,6 +18,7 @@ from types import FunctionType
 from ..tk.author import Author
 from ..tk.journal.message import Suggestion
 
+
 class InterfaceMeta(type):
      """
      A metaclass to create Classes representing interfaces.
@@ -27,10 +28,8 @@ class InterfaceMeta(type):
      A strict interface should not have any method implementations within its
      body.
      """
-
-
      def __init__(cls, name, bases, attrs):
-         """Initialize Me"""
+         """..."""
          cls.logger =\
              Logger(cls.__name__)
          python_provided_attributes={
@@ -44,18 +43,22 @@ class InterfaceMeta(type):
              cls.__requiredmethods__
          suggestion =\
              Suggestion(
-                 "{} for {} requires you to implement\n".format(
-                     name, cls.__name__))
+                 """
+                 {} for {} requires you to implement.
+                 """.format(name, cls.__name__))
          attr_index = 1
          for attr_name, attr_value in attrs.items():
              if attr_name not in python_provided_attributes:
                  suggestion =\
                      suggestion +\
                      Suggestion(
-                         "\t({}) {}: ".format(str(attr_index), attr_name) +\
-                         attr_value.__doc__ if attr_value.__doc__ else "")
+                         "\t({}) {}: {}".format(
+                              str(attr_index),
+                              attr_name,
+                              getattr(attr_value, __doc__, "no documentation!"))
                  attr_index += 1
-        cls.__implementation_guide__ = Suggestion.formatted
+
+        cls.__implementation_guide__ = suggestion.formatted
 
         super().__init__(
             name, bases, attrs)
@@ -71,9 +74,12 @@ class Interface(
             *args, **kwargs):
         """An Interface cannot be initialized."""
         raise Exception(
-            """Initialization of {}, which is an Interface.
-            An Interface may not be initialized""".format(
-                self.__class__.__name__))
+            """
+            Initialization of {}, which is an Interface.
+            An Interface may not be initialized
+            """.format(self.__class__.__name__))
+                 
+
 
 
 

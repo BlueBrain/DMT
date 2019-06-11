@@ -62,3 +62,36 @@ class StatisticalMeasurement(Measurement):
         store the full observed dataset.
         """
         return self.dataframe
+
+
+def summary_statistic(
+        measurement_sample,
+        parameter_columns=[],
+        measurement_columns=[]):
+    """
+    Summarize a data-frame that contains observations on multiple samples.
+
+    Type of the returned data-frame depends on the type of
+    'measurement_columns'. Thus this method can accommodate more than one
+    parameter columns in the measurement to be summarized, as well as it can
+    summarize more than one measurement columns.
+    """
+    aggregators = ["size", "mean", "std"]
+    if measurement_sample.shape[0] == 0:
+        return pd.DataFrame([], columns=aggregators)
+    if not parameter_columns:
+        return\
+            measurement_sample\
+            .groupby(level=measurement_sample.index.names)\
+            .agg(aggregators)
+    summary=\
+        measurement_sample\
+        .groupby(parameter_columns)\
+        .agg(aggregators)
+    measurement_columns =\
+        measurement_columns if measurement_columns\
+        else summary.columns.levels[0]
+
+    return\
+        summary[measurement_columns[0]] if len(measurement_columns) == 1\
+        else summary[measurement_columns]

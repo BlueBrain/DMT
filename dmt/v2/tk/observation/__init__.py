@@ -257,4 +257,8 @@ class Observation(
         """
         raise NotImplementedError()
 
-from .measurement import Measurement
+
+from .measurement import\
+    Measurement,\
+    summary_statistic
+
