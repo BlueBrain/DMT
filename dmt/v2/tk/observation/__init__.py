@@ -21,10 +21,28 @@ def get_label(something):
     """
     if isinstance(something, str):
         return something
+    if isinstance(something, dict):
+        return something.get("label", "unavailable")
     return getattr(
         something, "label",
         "unavailable_{}".format(
             something.__class__.__name__))
+
+
+class MissingObservationParameter(Exception):
+    """
+    Exception that will be thrown when a data does not provide one of the
+    Observation's parameters.
+    """
+    pass
+
+
+class MissingObservedVariable(Exception):
+    """
+    Exception that will be thrown when a data does not provide an observed
+    variable.
+    """
+    pass
 
 
 class ObservationMetaClass(
@@ -38,14 +56,6 @@ class ObservationMetaClass(
 
     #knowledge level
     #class attributes that define an Observation
-    objectOfObservation = ClassAttribute(
-        """
-        The object that was observed. It is not expected to be a simple object.
-        It may be implemented as a Python object, or as a dict maps all the
-        relevant attribute names to their values, or even an informal string
-        that describes all of the observed object's relevant attributes.
-        """,
-        __default_value__="not-available")
     parameters = ClassAttribute(
         """
         A dict mapping the name of each variable parameterizing this
@@ -84,6 +94,14 @@ class Observation(
 
     #operational level
     #attributes that will depend on the instance 
+    objectOfObservation = Field(
+        """
+        The object that was observed. It is not expected to be a simple object.
+        It may be implemented as a Python object, or as a dict maps all the
+        relevant attribute names to their values, or even an informal string
+        that describes all of the observed object's relevant attributes.
+        """,
+        __default_value__="not-available")
     data = Field(
         """
         Data resulting from this Observation.
@@ -114,56 +132,92 @@ class Observation(
             *args, **kwargs):
         """..."""
         assert self.check_validity(data)
-        kwargs["data"] = data
-
         super().__init__(
-            *args, **kwargs)
+            *args,
+            data=data,
+            **kwargs)
 
-    def check_validity(self, data_value):
+    @property
+    def properties_observed(self):
         """
-        Check the validity of data in data_value.
+        Properties observed.
 
-        Arguments
-        ---------------
-        data_value :: Either a list of dicts or a pandas dataframe
+        Returns
+        -------
+        A list of the properties(variable names) observed.
+        By default, we assume that only a single variable,
+        labeled by the phenomenon is observed. However, if the
+        observation is reported as a statistical summary of a
+        measure of the phenomenon, ['mean', 'error', 'sample_size']
+        make more sense.
         """
-        pheno_label = get_label(self.phenomenon)
-        if isinstance(data_value, list): #a list of dicts
+        return [get_label(self.phenomenon)]
+
+    @staticmethod
+    def _check_variables(data_value, variable_list):
+        """
+        Check that the list of variables in variable_list is
+        provided by data in data_value
+        """
+        if isinstance(data_value, list):#a list of dicts
             for d in data_value:
                 if not isinstance(d, dict):
                     break
-                for p in self.parameters:
-                    if p not in d:
+                for v in variable_list:
+                    if v not in d:
                         raise ValueError(
                             """
-                            Missing (parameter) variable '{}' in dict {}.
-                            """.format(p, d))
-                if  pheno_label not in d:
-                    raise ValueError(
-                    """
-                    Missing (observed) variable '{}' in dict {}. 
-                    """.format(pheno_label, d))
-                return True
+                            '{}' not provided by dict {}.
+                            """.format(v, d))
+            return True
 
         if isinstance(data_value, pd.DataFrame):
-            for p in self.parameters:
+            for p in variable_list:
                 if p not in data_value.columns:
                     raise ValueError(
                         """
-                        Missing column '{}' in dataframe with columns {}.
+                        '{}' not provided by data-frame columns {}
                         """.format(p, data_value.columns))
-                if pheno_label not in data_value.columns:
-                    raise ValueError(
-                        """
-                        Missing column '{}' in dataframe with columns {}.
-                        """.format(pheno_label, data_value.columns))
-                return True
+            return True
 
         raise TypeError(
             """
             Valid data of an Observation should be either a list of dicts,
             or a Pandas DataFrame object. {} is neither.
             """.format(data_value.__class__.__name__))
+    
+    def check_validity(self, data_value):
+        """
+        Check the validity of data in data_value.
+
+        1. Check that all parameters are available in 'data_value'.
+        ~  All Observations will have parameters, so we can check their
+        ~  validity here.
+        2. Check that all the observed variables are in 'data_value'.
+        ~  By default, we assume that this Observation's phenomenon provides
+        ~  the variable name that labels it's associated data in a dict
+        ~  or a data-frame. However, if a statistical summary is provided as
+        ~  data, we should expect 'mean' and 'error' as the observed variables. 
+
+        Arguments
+        ---------------
+        data_value :: Either a list of dicts or a pandas dataframe
+        """
+        try:
+            self._check_variables(data_value, self.parameters)
+        except ValueError as error:
+            raise MissingObservationParameter(*error.args)
+        finally:
+            pass
+
+        try:
+            self._check_variables(data_value, [get_label(self.phenomenon)])
+        except ValueError as error:
+            raise MissingObservedVariable(*error.args)
+        finally:
+            pass
+
+        return True
 
     @property
     def dataframe(self):
@@ -171,7 +225,7 @@ class Observation(
         Data as a dataframe.
         """
         return pd.DataFrame(self.data)\
-                 .set_index(list(self.index))
+                 .set_index(list(self.parameters))
 
     @property
     def loc(self):
@@ -203,13 +257,4 @@ class Observation(
         """
         raise NotImplementedError()
 
-
-class Measurement(Observation):
-    """
-    Measurement is an Observation whose result is quantitative, 
-    which means that it can be measured as a number.
-    """
-    
-    __metaclass_base__ = True
-    
-    pass
+from .measurement import Measurement
