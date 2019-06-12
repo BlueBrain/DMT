@@ -93,7 +93,6 @@ class IntegerMathModelPM(ABC):
         pass
 
 
-
 @modelextension(IntegerMathTest)
 class IntegerMathModelPMTest:
     """The user should need to implement only the methods in,
@@ -105,6 +104,7 @@ class IntegerMathModelPMTest:
 
     def get_subtraction(self, model, x, y):
         return model.minus(x, y)
+
 
 class GoodIntegerMathModel(IntegerMathModelPM):
 

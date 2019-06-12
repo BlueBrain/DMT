@@ -5,31 +5,29 @@ A model can be adapted for an analysis/validation's requirements by
 implementing methods computing these measurements.
 """
 from abc import  ABC
-from ..tk.field import ClassAttribute, WithFields
+from ..tk.field import\
+    ClassAttribute,\
+    ClassAttributeMetaBase
 
-class Adapter(WithFields):
+class Adapter(ABC):
     """Base class for a model adapter class.
     This base class defines the protocol.
     An Adapter adapts a model by implementing an Interface for it.
     """
 
     __adapted_models__ = ClassAttribute(
-        __value__={},
-        __doc__="""A dict mapping name to the class representing the model 
+        """
+        A dict mapping name to the class representing the model
         that this Adapter adapts to an Interface. An Adapter may adapt more
-        than one model.""")
+        than one model.
+        """)
     __implemented_interfaces__ = ClassAttribute(
-        __value__={},
-        __doc__="""Adapter Interfaces implemented by this adapter.""")
-
-    def __init__(self,
-            *args, **kwargs):
-        """Initialize Me"""
-        super().__init__(
-            *args, **kwargs)
+        """
+        Adapter Interfaces implemented by this adapter.
+        """)
 
 
-def adapter(model):
+def adapts(model):
     """
     A class decorator to declare that a class adapts a class model.
     You may use this decorator to mark the classes that adapt models,

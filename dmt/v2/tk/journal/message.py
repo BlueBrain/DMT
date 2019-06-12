@@ -1,4 +1,6 @@
-"""Message, to be passed around and logged into a journal..."""
+"""
+Message, to be passed around and logged into a journal...
+"""
 
 from abc import\
     ABC, abstractmethod
@@ -7,12 +9,16 @@ import copy
 from . import utils, Level
 
 class Message(ABC):
-    """Base Message"""
-
-    def __init__(self, *msgs, **kwargs):
+    """
+    Base Message
+    """
+    def __init__(self,
+            *msgs, 
+            timestamp=time.localtime(),
+            **kwargs):
         """Initialize Me"""
         self._value = '\n'.join(msgs)
-        self._time_creation  = time.localtime()
+        self._timestamp  = timestamp
         self._line_length = kwargs.get("line_length", 80)
         self._line_char = kwargs.get("line_char", '-')
 
@@ -42,7 +48,7 @@ class Message(ABC):
     def timestamp(self):
         """..."""
         return utils.timestamp(
-            time_value=self._time_creation)
+            time_value=self._timestamp)
 
     def formatted(self, caller=None):
         """Message value formatted according to a class 'caller'

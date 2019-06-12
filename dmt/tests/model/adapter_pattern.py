@@ -175,8 +175,6 @@ run_test(timpm, BadIntegerMathModel())
 run_test(timpm, GoodIntegerMathModel())
 
 
-
-
 class IntegerModuloMathModel:
     """Module math."""
     def __init__(self, n):

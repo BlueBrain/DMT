@@ -14,6 +14,7 @@ from dmt.model.interface import \
 from dmt.model.adapter import get_types_adapted
 from dmt.vtk.author import Author
 
+
 class Callable(ABC):
     """A simple extension of ABC,
     with an init method that takes *args and **kwargs,
