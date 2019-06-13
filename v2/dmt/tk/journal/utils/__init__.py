@@ -1,4 +1,6 @@
-"""Journal utilities"""
+"""
+Utilities for journal.
+"""
 import time
 
 class Time:
@@ -34,4 +36,3 @@ class Time:
 def timestamp(time_value=None):
     """..."""
     return Time(time_value).stamp
-
