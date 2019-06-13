@@ -11,9 +11,9 @@ from dmt.vtk.utils.logging\
     import Logger
 from dmt.vtk.utils.collections\
     import Record
-from dmt.vtk.plotting\
-    import golden_figure\
-    ,      Plot
+from dmt.vtk.plotting import \
+    golden_figure,\
+    Plot
 
 
 class HeatMap(Plot):

@@ -4,7 +4,7 @@ Base classes for analyses
 
 import os
 from ..model import AIBase
-from ..tk.fields import Field, WithFields
+from ..tk.field import Field, WithFields
 
 class Analysis(WithFields, AIBase):
     """
