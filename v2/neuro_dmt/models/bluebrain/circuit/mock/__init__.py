@@ -4,22 +4,22 @@ A mock circuit that we can use to test.
 
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Cell
+from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.journal import Logger
 from dmt.tk.field import Field, WithFields
 
 logger = Logger(client=__file__)
 
 cell_properties =[
-    Cell.ID,
-    Cell.LAYER,
-    Cell.MTYPE,
-    Cell.MORPHOLOGY,
-    Cell.MORPH_CLASS,
-    Cell.ME_COMBO,
-    Cell.REGION,
-    Cell.X, Cell.Y, Cell.Z,
-    Cell.SYNAPSE_CLASS]
+    CellProperty.ID,
+    CellProperty.LAYER,
+    CellProperty.MTYPE,
+    CellProperty.MORPHOLOGY,
+    CellProperty.MORPH_CLASS,
+    CellProperty.ME_COMBO,
+    CellProperty.REGION,
+    CellProperty.X, CellProperty.Y, CellProperty.Z,
+    CellProperty.SYNAPSE_CLASS]
 
 
 class CircuitComposition(WithFields):
@@ -46,11 +46,6 @@ class CircuitComposition(WithFields):
         """
         A dict mapping layer label to its density of cells,
         measured in number-cells / cubic-mirco-meters.
-        """)
-    ei_ratio = Field(
-        """
-        A dict mapping layer label to the layer's ratio of excitatory to
-        inhibitory cells.
         """)
 
 

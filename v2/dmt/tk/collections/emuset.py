@@ -1,16 +1,20 @@
-"""EMpty is Universal Set (hence EMUSET)"""
+"""
+emuset : EMpty is Universal set.
+"""
 from functools import reduce
-from dmt.vtk.utils.descriptor import Field
+from ..field import Field
 
 class emuset(set):
-    """EMpty is Universal Set (emuset)
+    """
+    EMpty is Universal set.add
     Behaves like a set that cannot be empty.
-    Instead empty set is treated like the universal set."""
-
+    Instead, if empty, it is treated as a the universal set.
+    """
     elem_type = Field(
-        __name__="elem_type",
-        __type__=type,
-        __doc__="""Type of set elements.""")
+        """
+        Type of the elements contained in this set.
+        """,
+        __type__=type)
 
     def __init__(self,
             arg0,
@@ -32,7 +36,8 @@ class emuset(set):
 
     @staticmethod
     def common_type(type0, *types):
-        """An attempt to find the most common recent ancestor
+        """
+        An attempt to find the most common recent ancestor
         (MRCA) among a sequnce of types. We use the type MROs
         to find their MRCA. We assume that all types are on a
         type inheritance tree. So situations like two types with
@@ -41,7 +46,8 @@ class emuset(set):
         is a path of types going back to 'object'. If T1 is preceded
         by (T2, T3, object), a type T0 deriving from T1 will always
         be preceded by the entire MRO of T1 as in
-        (T0, T1, T2, T3, object)"""
+        (T0, T1, T2, T3, object).
+        """
         types = (type0,) + types
         def common_mro(mro_shorter, mro_longer):
             """..."""

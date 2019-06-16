@@ -2,61 +2,14 @@
 Definitions and methods for cells of a MockCircuit.
 """
 
-import collections
-from dmt.tk.field import Field, WithFields
+from bluepy.v2.enums import Cell as CellProperty
+
+from dmt.tk.field import Field, Property, WithFields
 from . import CircuitComposition
 
-
-class CellProperty(Field):
-    """
-    Fully define a cell property,
-    specifying the key to be used to index data-sets,
-    its value type, and the set of values it may assume.
-    """
-    def __init__(self,
-            __label__=None,
-            __type__=object,
-            __value_set__=set(),#empty means any value
-            *args, **kwargs):
-        """
-        Initialize...
-        """
-        def __is_valid(instance, value):
-            """
-            Validate a value.
-
-            Arguments
-            -------------
-            value :: Either a singleton, or an iterable.
-            If 'value' is a singleton, it should be of the accepted type.
-            If 'value' is an iterable (for e.g. a set of values), each
-            of these values must be of the accepted type.
-            """
-            value_is_collection =\
-                isinstance(value, collections.Iterable) and\
-                not isinstance(value, (str, bytes))
-            if __value_set__:
-                if value_is_collection:
-                    return all(
-                        isinstance(v, __type__) and v in __value_set__
-                        for v in value)
-                return isinstance(value, __type__) and value in __value_set__
-            if value_is_collection:
-                return all(
-                    isinstance(v, __type__)
-                    for v in value)
-            return isinstance(value, __type__)
-
-        if __value_set__:
-            self.__value_set__= emuset(*__value_set__)
-        super().__init__(
-            __is_valid_value__=__is_valid,
-            *args, **kwargs)
-
-
-
-
-
+MTYPE = CellProperty.MTYPE
+REGION = CellProperty.REGION
+LAYER = CellProperty.LAYER
 
 class Cell(WithFields):
     """
@@ -99,7 +52,10 @@ class Cell(WithFields):
         (categorized as mtype). There are at least two morphological classes,
         namely 'PYR' (pyramidal cells) and 'INT' (interneuron cells).
         """)
-    synapse_class = 
+    synapse_class = Field(
+        """
+        Synapse class of a cell is either EXCitatory or INHibitory.
+        """)
 
 
 
@@ -114,23 +70,51 @@ class CircuitBuilder(WithFields):
         """,
         __type__=CircuitComposition)
 
-    def get_number_cells(self, layer):
+    @property
+    def get_cell_density(self,
+            region=None,
+            layer=None,
+            mtype=None):
         """
-        How many cells in a given layer?
+        Density of cells of given 'mtype' in given 'region' and 'layer'.
+        At least one of 'region', 'layer', 'mtype' must be specified.
+        """
+        assert region or layer or mtype,\
+            "region, layer, mtype all invalid."
+        if not mtype:
+            return\
+                self.composition\
+                    .cell_density.xs(
+                        (region, layer) if region else (layer),
+                        label=(REGION, LAYER) if region else (LAYER))
+
+    def get_cell_density(self, mtype, layer, region=None):
+        """
+        Density of cells of given 'mtype' in given 'layer'.
+        """
+        return\
+            self.composition\
+                .cell_density.xs(
+                    (mtype, region, layer) if region else (mtype, layer),
+                    level=(MTYPE, REGION, LAYER) if region else (MTYPE, LAYER))
+
+    def get_number_cells(self, layer, mtype, region=None):
+        """
+        How many cells of given 'mtype' in a given 'layer'?
         """
         volume =\
-            self.composition.layer_thickness[layer] *\
-            self.composition.column_base ** 2
+            self.composition.thickness_layer[layer] *\
+            self.composition.base_column ** 2
         return int(
-            self.composition.cell_density[layer] * volume)
+            self.get_cell_density(region, layer, mtype) * volume)
 
 
-    def place(self):
+    def place_cells(self):
         """
         Place cells.
         1. Generate cells for each layer
         2. Place them.
-        
+
         Arguments
         ------------
         circuit_composition :: CircuitComposition
@@ -150,7 +134,3 @@ class CircuitBuilder(WithFields):
                 for i in range(number_cells())
             }
 
-
-        
-            
-    
