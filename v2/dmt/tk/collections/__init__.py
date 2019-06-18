@@ -2,4 +2,4 @@
 Custom collection classes and methods.
 """
 
-from emuset import emuset
+from .emuset import emuset

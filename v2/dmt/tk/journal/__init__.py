@@ -26,3 +26,14 @@ class Color(Enum):
 from .logger import Logger
 from .message import *
 
+def devnote(docstring):
+    """
+    Document 'docstring'.
+    Keep a text document somewhere in this project repo,
+    and add notes to it - but only in development mode.
+    If in production, ignore.
+    'doctstring' may contain latex --- a latex document can
+    be produced from the code.
+    """
+    raise NotImplementedError
+

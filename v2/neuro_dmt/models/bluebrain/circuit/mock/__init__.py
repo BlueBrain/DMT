@@ -33,14 +33,18 @@ class CircuitComposition(WithFields):
         We set the default assuming a cortical circuit.
         """,
         __default_value__=(1, 2, 3, 4, 5, 6))
-    layer_thickness = Field(
+    thickness_layer = Field(
         """
         A dict mapping layer label to its thickness in the column,
         measured in micro-meters.
         """)
-    column_base = Field(
+    base_column = Field(
         """
         Length of the column's base, measured in micro-meters
+        """)
+    mtypes = Field(
+        """
+        A list of mtypes in the circuit.
         """)
     cell_density = Field(
         """
