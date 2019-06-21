@@ -2,6 +2,7 @@
 Property is a subtype of Field.
 """
 from ..collections import emuset
+from ..field import Field
 
 
 class Property(Field):

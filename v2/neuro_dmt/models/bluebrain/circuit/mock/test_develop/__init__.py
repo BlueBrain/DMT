@@ -36,7 +36,7 @@ __ei_ratio_layer ={
     5: 4.93,
     6: 9.49}
 
-__base_column = 1000
+__base_column = 524.
 
 __mtypes =[
     'L1_DAC',

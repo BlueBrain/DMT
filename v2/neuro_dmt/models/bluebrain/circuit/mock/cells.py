@@ -2,6 +2,8 @@
 Definitions and methods for cells of a MockCircuit.
 """
 
+import numpy as np
+import pandas as pd
 from bluepy.v2.enums import Cell as CellProperty
 
 from dmt.tk.field import Field, Property, WithFields
@@ -66,14 +68,14 @@ class Cell(WithFields):
         Field 'layer' makes sense for brain areas with layers,
         such as the cortex, and the hippocampus.
         """,
-        __required__=None)
+        __default_value__="not-defined")
     nucleus = Field(
         """
         Nucleus of cells among which this cell lies.
         Field 'nucleus' makes sense for brain areas like the thalamus.
         (Check facts, I am making things up.)
         """,
-        __required__=None)
+        __default_value__="not-defined")
     position = Field(
         """
         Position of the cell in  cirucit space.
@@ -89,14 +91,14 @@ class Cell(WithFields):
         The electrical type this cell.
         The etype must be one of several categories.
         """,
-        __required__=None)
+        __default_value__="not-defined")
     morph_class = Field(
         """
         The morphological class of this cell's morphology
         (categorized as mtype). There are at least two morphological classes,
         namely 'PYR' (pyramidal cells) and 'INT' (interneuron cells).
         """,
-        __required__=None)
+        __default_value__="not-defined")
 
     @property
     def synapse_class(self):
@@ -104,6 +106,23 @@ class Cell(WithFields):
         Synapse class of a cell is either EXCitatory or INHibitory.
         """
         return "EXC" if "PC" in self.mtype else "INH"
+
+    @property
+    def as_dict(self):
+        """
+        Convert this Cell instance to a dict.
+        """
+        return dict(
+            region=self.region,
+            layer=self.layer,
+            nucleus=self.nucleus,
+            mtype=self.mtype,
+            etype=self.etype,
+            morph_class=self.morph_class,
+            synapse_class=self.synapse_class,
+            x=self.position.X,
+            y=self.position.Y,
+            z=self.position.Z)
     
 
 class CircuitBuilder(WithFields):
@@ -137,7 +156,7 @@ class CircuitBuilder(WithFields):
             self.composition\
                 .cell_density.xs(
                     (region, layer, mtype) if region else (layer, mtype),
-                    label=(REGION, LAYER, MTYPE) if region else (LAYER, MTYPE))
+                    level=(REGION, LAYER, MTYPE) if region else (LAYER, MTYPE))
 
     def get_number_cells(self, layer, mtype, region=None):
         """
@@ -146,34 +165,23 @@ class CircuitBuilder(WithFields):
         volume =\
             self.composition.thickness_layer[layer] *\
             self.composition.base_column ** 2
-        return int(
-            self.get_cell_density(region, layer, mtype) * volume)
+        density =\
+            self.get_cell_density(
+                region, layer, mtype)["mean"]
+        return int(1.e-9 * density * volume)
 
-        
-
-    def place_cells(self):
+    def get_cells(self):
         """
-        Place cells.
-        1. Generate cells for each layer
-        2. Place them.
-
-        Arguments
-        ------------
-        circuit_composition :: CircuitComposition
+        Create cells for each layer and mtype combination.
         """
-        number_layers =\
-            len(self.composition.layers)
-        number_cells ={
-            layer: self.get_number_cells(layer)
-            for layer in self.composition.layers}
-
-        def __layer_gids_start_value(layer):
-            return sum(number_cells[layer] for )
-            return sum(number_cells[:layer_index + 1])
-
-        cell_gids ={
-            self.composition.layers[l]: [
-                i + __layer_gids_start_value(l)
-                for i in range(number_cells())
-            }
-
+        return [
+            Cell(
+                layer=layer,
+                position=Position.random(
+                    self.composition.x_range(layer, mtype),
+                    self.composition.y_range(layer, mtype),
+                    self.composition.z_range(layer, mtype)),
+                mtype=mtype)
+            for layer in self.composition.layers
+            for mtype in self.composition.mtypes
+            for _ in range(self.get_number_cells(layer, mtype))]

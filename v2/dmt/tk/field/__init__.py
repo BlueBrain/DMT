@@ -12,6 +12,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 from sys import stdout
 from abc import ABCMeta
 from .field import Field
+from .prop import Property
 from .class_attribute import ClassAttribute
 from ..journal import Logger
 
@@ -175,6 +176,22 @@ class WithFields:
         return [
             attr for attr in dir(cls)
             if isinstance(getattr(cls, attr), Field)]
+
+    @property
+    def as_dict(self):
+        """
+        Convert the Fields of this instance into a dict.
+        We assume that no one will ever define a Field whose
+        value type is also a Field.
+        """
+        field_values =(
+            (field, getattr(self, field))
+            for field in self.get_fields()
+            if hasattr(self, field))
+        return {
+            field: value
+            for field, value in field_values
+            if not isinstance(field, Field)}
 
 
 class ClassAttributeMetaBase(type):
