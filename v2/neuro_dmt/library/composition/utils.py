@@ -83,8 +83,14 @@ def drop_data_entries(data, labels):
     return data
 
 
-def _title(uniform_vals):
-    return ','.join([str(v) for v in uniform_vals.values()])
+def _title(measurement, uniform_vals):
+
+    if len(uniform_vals) == 0:
+        return measurement
+
+    return measurement + ' for ' + ','.join(
+        [str(k) + ": " + str(v)
+         for k, v in uniform_vals.items()])
 
 
 def columns(labels, data, measurement=""):
@@ -108,7 +114,7 @@ def columns(labels, data, measurement=""):
         ind += width
 
     data, uniform_vals = drop_uniform_columns(drop_data_entries(data, labels))
-    plt.title(_title(uniform_vals))
+    plt.title(_title(measurement, uniform_vals))
     ax.legend(s, labels)
     ax.set_xlabel(', '.join(str(col) for col in data.columns))
     ax.set_xticklabels([', '.join(str(val) for val in row.values)

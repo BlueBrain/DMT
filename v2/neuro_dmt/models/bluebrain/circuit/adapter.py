@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import bluepy.v2 as bp
 # TODO: what is the most elegant way to require subclasses to define
@@ -29,6 +30,12 @@ class AtlasCircuitAdapter:
 
 class O1Adapter(AtlasCircuitAdapter):
 
+    def _mtypes(self):
+        return self._circuit.cells.mtypes
+
+    def mtypes(self):
+        return [mtype.split("_")[-1] for mtype in self._mtypes]
+
     def _translate_query_cells(self, query):
         cell_query = {}
         # TODO: clean way to abstract this from the adapters?
@@ -38,6 +45,17 @@ class O1Adapter(AtlasCircuitAdapter):
                     value = int(value[1])
                 cell_query[bp.Cell.LAYER] = value
             elif key == MTYPE:
+                spl = value.split("_")
+                if len(spl) > 1:
+                    raise TypeError(
+                        "Mtypes in queries to adapter should not be in form"
+                        "<layer>_<name>, but simply <name>")
+                ql = query.get(LAYER, False)
+                if ql:
+                    value = "_".join([ql, value])
+                else:
+                    value = [mt for mt in self._mtypes()
+                             if mt.split("_")[-1] == value]
                 cell_query[bp.Cell.MTYPE] = value
             elif key == SYN_CLASS:
                 cell_query[bp.Cell.SYNAPSE_CLASS] = value
