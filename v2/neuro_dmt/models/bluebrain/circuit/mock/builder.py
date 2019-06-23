@@ -6,8 +6,10 @@ from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.field import Field, WithFields
 
 from ..geometry import Position
-from .composition import CircuitComposition
 from .cell import Cell
+from .composition import CircuitComposition
+from .connectivity import CircuitConnectivity
+
 
 
 MTYPE = CellProperty.MTYPE
@@ -22,9 +24,14 @@ class CircuitBuilder(WithFields):
 
     composition = Field(
         """
-        Composition of the circuit.
+        An object parameterizing the circuit's composition.
         """,
         __type__=CircuitComposition)
+    connectivity = Field(
+        """
+        An object parameterizing the circuit's connectivity.
+        """,
+        __type__=CircuitConnectivity)
 
     def get_cell_density(self,
             region=None,
