@@ -36,7 +36,7 @@ __ei_ratio_layer ={
     5: 4.93,
     6: 9.49}
 
-__base_column = 524.
+__length_base = 250.
 
 __mtypes =[
     'L1_DAC',
@@ -184,6 +184,6 @@ circuit_composition =\
     CircuitComposition(
         layers=__layers,
         thickness_layer=__thickness_layer,
-        base_column=__base_column,
+        length_base=__length_base,
         mtypes=__mtypes,
         cell_density=__cell_density)

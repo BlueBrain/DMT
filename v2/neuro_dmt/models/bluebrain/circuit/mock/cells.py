@@ -30,6 +30,37 @@ class Position(WithFields):
         """
         Z dimension of position.
         """)
+    value_type = Field(
+        """
+        The type used to represent a position.
+        For example it can simple be a 3-tuple, or np.array.
+        """,
+        __default_value__=np.array)
+
+    @property
+    def value(self):
+        """
+        Value of this Position cast to its value_type
+        """
+        return self.value_type(
+            (self.X, self.Y, self.Z))
+
+    @classmethod
+    def sample(cls,
+            box,
+            n=None):#A rectangular bounding box in which points will be sampled
+        """
+        Sample 'n' random positions in a bounding box.
+        """
+        try:
+            p0, p1 = box.bbox
+        except AttributeError:
+            #not a RegionOfInterest, assume it is a two tuple of positions
+            p0, p1 = box
+        random_in_unit_box =\
+            np.random.random(
+                3 if n is None else [n, 3])
+        return p0 + random_in_unit_box * (p1 - p0)
 
     @classmethod
     def random(cls,
@@ -49,6 +80,20 @@ class Position(WithFields):
             X=__random_float(*Xrange),
             Y=__random_float(*Yrange),
             Z=__random_float(*Zrange))
+
+    @property
+    def as_tuple(self):
+        """
+        As (X, Y, Z)
+        """
+        return (self.X, self.Y, self.Z)
+
+    @property
+    def as_array(self):
+        """
+        As numpy array
+        """
+        return np.array(self.as_tuple)
 
 
 class Cell(WithFields):
@@ -78,9 +123,8 @@ class Cell(WithFields):
         __default_value__="not-defined")
     position = Field(
         """
-        Position of the cell in  cirucit space.
-        """,
-        __type__=Position)
+        Position of the cell in circuit space.
+        """)
     mtype = Field(
         """
         The morphological type of this cell.
@@ -112,6 +156,15 @@ class Cell(WithFields):
         """
         Convert this Cell instance to a dict.
         """
+        try:
+            x = self.position.X
+            y = self.position.Y
+            z = self.position.Z
+        except AttributeError:
+            x = self.position[0]
+            y = self.position[1]
+            z = self.position[2]
+
         return dict(
             region=self.region,
             layer=self.layer,
@@ -120,10 +173,8 @@ class Cell(WithFields):
             etype=self.etype,
             morph_class=self.morph_class,
             synapse_class=self.synapse_class,
-            x=self.position.X,
-            y=self.position.Y,
-            z=self.position.Z)
-    
+            x=x, y=y, z=z)
+
 
 class CircuitBuilder(WithFields):
     """
@@ -164,7 +215,7 @@ class CircuitBuilder(WithFields):
         """
         volume =\
             self.composition.thickness_layer[layer] *\
-            self.composition.base_column ** 2
+            self.composition.length_base ** 2
         density =\
             self.get_cell_density(
                 region, layer, mtype)["mean"]
@@ -177,10 +228,8 @@ class CircuitBuilder(WithFields):
         return [
             Cell(
                 layer=layer,
-                position=Position.random(
-                    self.composition.x_range(layer, mtype),
-                    self.composition.y_range(layer, mtype),
-                    self.composition.z_range(layer, mtype)),
+                position=Position.sample(
+                    self.composition.bounding_box(layer, mtype)),
                 mtype=mtype)
             for layer in self.composition.layers
             for mtype in self.composition.mtypes

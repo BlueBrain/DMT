@@ -288,3 +288,26 @@ class ClassAttributeMetaBase(type):
         super().__init__(
             name, bases, namespace)
 
+
+
+def lazy(instance_property):
+    """
+    Make instance property lazy.
+
+    Parameters
+    ----------------
+    instance_property :: an attribute method of a class marked as @property
+    """
+    property_name =\
+        "_{}".format(instance_property.__name__)
+
+    @property
+    def effective(instance):
+        if not hasattr(instance, property_name):
+            setattr(
+                instance,
+                property_name,
+                instance_property(instance))
+        return getattr(instance, property_name)
+
+    return effective
