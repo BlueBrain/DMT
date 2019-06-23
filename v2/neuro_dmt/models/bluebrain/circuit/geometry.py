@@ -4,6 +4,90 @@ Code for manipulating geometric features of Blue Brain Project circuits.
 import numpy as np
 from bluepy.geometry.roi import ROI
 from bluepy.v2.enums import Cell
+from dmt.tk.field import Field, WithFields
+
+
+class Position(WithFields):
+    """
+    A three dimensional position.
+    """
+    X = Field(
+        """
+        X dimension of position.
+        """)
+    Y = Field(
+        """
+        Y dimension of position.
+        """)
+    Z = Field(
+        """
+        Z dimension of position.
+        """)
+    value_type = Field(
+        """
+        The type used to represent a position.
+        For example it can simple be a 3-tuple, or np.array.
+        """,
+        __default_value__=np.array)
+
+    @property
+    def value(self):
+        """
+        Value of this Position cast to its value_type
+        """
+        return self.value_type(
+            (self.X, self.Y, self.Z))
+
+    @classmethod
+    def sample(cls,
+            box,
+            n=None):#A rectangular bounding box in which points will be sampled
+        """
+        Sample 'n' random positions in a bounding box.
+        """
+        try:
+            p0, p1 = box.bbox
+        except AttributeError:
+            #not a RegionOfInterest, assume it is a two tuple of positions
+            p0, p1 = box
+        random_in_unit_box =\
+            np.random.random(
+                3 if n is None else [n, 3])
+        return p0 + random_in_unit_box * (p1 - p0)
+
+    @classmethod
+    def random(cls,
+            Xrange,
+            Yrange,
+            Zrange):
+        """
+        A random value of Position, with coordinates chosen in the range given
+        by Xrange, Yrange, and Zrange.
+        """
+
+        def __random_float(min_value, max_value):
+            u = np.random.random_sample()
+            return (1. - u) * min_value + u * max_value
+
+        return Position(
+            X=__random_float(*Xrange),
+            Y=__random_float(*Yrange),
+            Z=__random_float(*Zrange))
+
+    @property
+    def as_tuple(self):
+        """
+        As (X, Y, Z)
+        """
+        return (self.X, self.Y, self.Z)
+
+    @property
+    def as_array(self):
+        """
+        As numpy array
+        """
+        return np.array(self.as_tuple)
+
 
 class Cuboid(ROI):
     """
@@ -48,6 +132,7 @@ class Cuboid(ROI):
             np.logical_and(
                 check(self.p0, point),
                 check(self.p1, point)))
+
 
 def rectangular_column(center, cross_section, height, axis=2):
     """
