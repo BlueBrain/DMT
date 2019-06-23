@@ -6,7 +6,7 @@ from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.field import Field, WithFields
 
 from ..geometry import Position
-from .cell import Cell
+from .cell import Cell, CellCollection
 from .composition import CircuitComposition
 from .connectivity import CircuitConnectivity
 
@@ -80,3 +80,22 @@ class CircuitBuilder(WithFields):
             for layer in self.composition.layers
             for mtype in self.composition.mtypes
             for _ in range(self.get_number_cells(layer, mtype))]
+
+    def get_cell_collection(self):
+        """
+        Get a CellCollection.
+        """
+        return CellCollection(self.get_cells())
+
+    def get_connectome(self, cell_collection):
+        """
+        Get this circuit's connectome.
+        """
+        gids_all = np.array(cell_collection.index)
+        return Connectome(
+            afferent_adjacency =[
+                np.random.choice(
+                    gids_all,
+                    self.connectivity.get_efferent_degree(
+                        **cell_properties.to_dict()))
+                for cell_gid, cell_properties in cell_collection.iterrows()]

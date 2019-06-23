@@ -10,27 +10,6 @@ from dmt.tk.field import Field, WithFields
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from .composition import CircuitComposition
 from .builder import CircuitBuilder
+from .circuit import MockCircuit
 
 logger = Logger(client=__file__)
-
-cell_properties =[
-    CellProperty.ID,
-    CellProperty.LAYER,
-    CellProperty.MTYPE,
-    CellProperty.MORPHOLOGY,
-    CellProperty.MORPH_CLASS,
-    CellProperty.ME_COMBO,
-    CellProperty.REGION,
-    CellProperty.X, CellProperty.Y, CellProperty.Z,
-    CellProperty.SYNAPSE_CLASS]
-
-
-class MockCircuit(WithFields):
-    """
-    A class to mock Bluepy circuit.
-    We will try to keep this circuit as close to the real one.
-    This mock circuit mimics a cortical circuit with 6 layers.
-    We assume a simple cuboidal columnar structure, with a square
-    as it's base, and layers stacked along the y-axis.
-    """
-    pass

@@ -4,90 +4,20 @@ Definitions and methods for cells of a MockCircuit.
 
 import numpy as np
 import pandas as pd
-from dmt.tk.field import Field, Property, WithFields
+from bluepy.v2.enums import Cell as CellProperty
+from dmt.tk.field import Field, Property, WithFields, lazy
 from . import CircuitComposition
 
-
-class Position(WithFields):
-    """
-    A three dimensional position.
-    """
-    X = Field(
-        """
-        X dimension of position.
-        """)
-    Y = Field(
-        """
-        Y dimension of position.
-        """)
-    Z = Field(
-        """
-        Z dimension of position.
-        """)
-    value_type = Field(
-        """
-        The type used to represent a position.
-        For example it can simple be a 3-tuple, or np.array.
-        """,
-        __default_value__=np.array)
-
-    @property
-    def value(self):
-        """
-        Value of this Position cast to its value_type
-        """
-        return self.value_type(
-            (self.X, self.Y, self.Z))
-
-    @classmethod
-    def sample(cls,
-            box,
-            n=None):#A rectangular bounding box in which points will be sampled
-        """
-        Sample 'n' random positions in a bounding box.
-        """
-        try:
-            p0, p1 = box.bbox
-        except AttributeError:
-            #not a RegionOfInterest, assume it is a two tuple of positions
-            p0, p1 = box
-        random_in_unit_box =\
-            np.random.random(
-                3 if n is None else [n, 3])
-        return p0 + random_in_unit_box * (p1 - p0)
-
-    @classmethod
-    def random(cls,
-            Xrange,
-            Yrange,
-            Zrange):
-        """
-        A random value of Position, with coordinates chosen in the range given
-        by Xrange, Yrange, and Zrange.
-        """
-
-        def __random_float(min_value, max_value):
-            u = np.random.random_sample()
-            return (1. - u) * min_value + u * max_value
-
-        return Position(
-            X=__random_float(*Xrange),
-            Y=__random_float(*Yrange),
-            Z=__random_float(*Zrange))
-
-    @property
-    def as_tuple(self):
-        """
-        As (X, Y, Z)
-        """
-        return (self.X, self.Y, self.Z)
-
-    @property
-    def as_array(self):
-        """
-        As numpy array
-        """
-        return np.array(self.as_tuple)
+cell_properties =[
+    CellProperty.ID,
+    CellProperty.LAYER,
+    CellProperty.MTYPE,
+    CellProperty.MORPHOLOGY,
+    CellProperty.MORPH_CLASS,
+    CellProperty.ME_COMBO,
+    CellProperty.REGION,
+    CellProperty.X, CellProperty.Y, CellProperty.Z,
+    CellProperty.SYNAPSE_CLASS]
 
 
 class Cell(WithFields):
@@ -168,5 +98,60 @@ class Cell(WithFields):
             morph_class=self.morph_class,
             synapse_class=self.synapse_class,
             x=x, y=y, z=z)
+
+
+class CellCollection(WithFields):
+    """
+    Collection of cells.
+    Cell gids are set here.
+    This collection will be immutable.
+    """
+    def __init__(self, cells):
+        """
+        Initialize
+
+        Arguments
+        --------------
+        cells :: Either a pandas dataframe, or a list of Cells.
+        """
+        if isinstance(cells, pd.DataFrame):
+            self._dataframe = cells
+        else:
+            self._dataframe =\
+                pd.DataFrame([
+                    cell.as_dict for cell in list(cells)])
+        self.size = self._dataframe.shape[0]
+
+    def get_property_filter(self, cell_property, *values):
+        """
+        Get a logical vector that can be used to filter 'cell_property',
+        by applying it to the cell collection dataframe.
+        """
+        if len(values) == 0:
+            return pd.Series(self.size * [True])
+        if len(values) == 1:
+            return self._dataframe[cell_property] == values[0]
+
+        return self._dataframe[cell_property]\
+                   .apply(lambda v: v in set(values))
+
+    def get(self, cell_type=None, properties=None):
+        """
+        Get a dataframe, with cells of 'cell_type' (any cell type if None).
+        Not all but only specified 'properties' will be returned.
+        If no 'properties' are specified, all properties will be returned.
+
+        Arguments
+        -----------------
+        cell_type :: A mapping from cell property to its value (or value set).
+        properties :: A list of properties to get.
+        """
+        cell_filter =\
+            np.logical_and([
+                self.get_property_filter(cell_property, value)
+                for cell_property, value in cell_type.items()])
+        return\
+            self._dataframe[cell_filter] if properties is None\
+            else self._dataframe[properties][cell_filter]
 
 
