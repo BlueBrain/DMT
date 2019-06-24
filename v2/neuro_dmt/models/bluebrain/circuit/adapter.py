@@ -10,6 +10,7 @@ SYN_CLASS = 'sclass'
 MORPH_CLASS = 'mclass'
 
 
+# TODO: get mask rather than acronym from _translate_query_atlas
 class AtlasCircuitAdapter:
 
     def __init__(self, circuit_config):
@@ -28,6 +29,9 @@ class AtlasCircuitAdapter:
         return ncells / nvoxels * voxel_volume
 
 
+# TODO: better to have an atlas component
+#       that can be O1Atlas or BBA or blah, blah
+# TODO: support iterables as query values (e.g. ['L2', 'L3'])
 class O1Adapter(AtlasCircuitAdapter):
 
     def _mtypes(self):

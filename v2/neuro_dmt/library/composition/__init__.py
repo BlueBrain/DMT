@@ -4,7 +4,20 @@ from neuro_dmt.library.composition.utils import DATA_KEYS
 
 
 class SimpleValidation(Analysis):
+    """
+    base class allowing certain validations to be quickly and easily defined
 
+    subclass needs at least a 'measurement' attribute, which is the name of
+    the property being validated. This measurement attribute must be the name
+    of an adapter interfacemethod of the subclass, unless the __call__ method
+    is overwritten.
+
+    TODO: work out and enforce other requirements
+    TODO: make 'by' a method that can be overwritten,
+          defaulting to set based on by kwarg, or else inferred by data
+          this would allow defining validations with this class where 'by'
+          depends on the model passed (such as a by-mtype validation)
+    """
     def __init__(self, *args, by=None,
                  data=None, **kwargs):
         """
@@ -44,6 +57,13 @@ class SimpleValidation(Analysis):
         """
         adapted: the adapted model
         """
+
+        if not (
+            hasattr(self, self.measurement) or not hasattr(
+                getattr(self, self.measurement), "__isinterfacemethod__")):
+            raise ValueError(
+                "measurement must correspond to an interfacemethod")
+
         measured = [[getattr(model, self.measurement)(q) for q in self.by]
                     for model in adapted]
         return self.write_report(*measured)
