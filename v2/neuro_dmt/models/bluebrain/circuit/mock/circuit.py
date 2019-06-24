@@ -8,7 +8,7 @@ from dmt.tk.journal import Logger
 from dmt.tk.field import Field, WithFields
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from .cell import CellCollection
-from .connectome import CircuitConnectome
+from .connectome import Connectome
 
 from .composition import CircuitComposition
 from .builder import CircuitBuilder

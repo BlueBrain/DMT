@@ -2,6 +2,8 @@
 Build a mock circuit.
 """
 
+import numpy as np
+import pandas as pd
 from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.field import Field, WithFields
 
@@ -9,8 +11,7 @@ from ..geometry import Position
 from .cell import Cell, CellCollection
 from .composition import CircuitComposition
 from .connectivity import CircuitConnectivity
-
-
+from .connectome import Connectome
 
 MTYPE = CellProperty.MTYPE
 REGION = CellProperty.REGION
@@ -91,11 +92,27 @@ class CircuitBuilder(WithFields):
         """
         Get this circuit's connectome.
         """
-        gids_all = np.array(cell_collection.index)
+        afferent_gids =[
+            np.random.choice(
+                cell_collection.gids,
+                self.connectivity.get_efferent_degree(**cell_props.to_dict()),
+                replace=False)
+            for _, cell_props in cell_collection.get().iterrows()]
+        mtype_of = np.array(
+            cell_collection.get(properties="mtype"))
+        afferent_synapse_counts =[
+            [self.connectivity.get_synapse_count(
+                mtype_of[pre_gid], mtype_of[post_gid])
+             for post_gid in afferent_gids[pre_gid]]
+            for pre_gid in cell_collection.gids]
+
+        assert len(afferent_gids) == len(afferent_synapse_counts)
+        for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
+            assert len(gids) == len(syn_counts)
+
         return Connectome(
-            afferent_adjacency =[
-                np.random.choice(
-                    gids_all,
-                    self.connectivity.get_efferent_degree(
-                        **cell_properties.to_dict()))
-                for cell_gid, cell_properties in cell_collection.iterrows()]
+            afferent_adjacency=[
+                np.array(list(
+                    zip(afferent_gids[gid], afferent_synapse_counts[gid])))
+                for gid in cell_collection.gids])
+

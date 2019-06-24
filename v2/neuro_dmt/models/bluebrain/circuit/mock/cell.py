@@ -121,19 +121,18 @@ class CellCollection(WithFields):
                 pd.DataFrame([
                     cell.as_dict for cell in list(cells)])
         self.size = self._dataframe.shape[0]
+        self.gids = np.array(self._dataframe.index)
 
-    def get_property_filter(self, cell_property, *values):
+    def get_property_filter(self, cell_property, value):
         """
         Get a logical vector that can be used to filter 'cell_property',
-        by applying it to the cell collection dataframe.
+        by applying it to the cell collectiondef  dataframe.
         """
-        if len(values) == 0:
-            return pd.Series(self.size * [True])
-        if len(values) == 1:
-            return self._dataframe[cell_property] == values[0]
+        check =\
+            lambda v: v == value if not isinstance(value, (set, list))\
+            else lambda v: v in set(value)
 
-        return self._dataframe[cell_property]\
-                   .apply(lambda v: v in set(values))
+        return self._dataframe[cell_property].apply(check)
 
     def get(self, cell_type=None, properties=None):
         """
@@ -146,6 +145,9 @@ class CellCollection(WithFields):
         cell_type :: A mapping from cell property to its value (or value set).
         properties :: A list of properties to get.
         """
+        if cell_type is None:
+            return self._dataframe if properties is None\
+                else self._dataframe[properties]
         cell_filter =\
             np.logical_and([
                 self.get_property_filter(cell_property, value)
