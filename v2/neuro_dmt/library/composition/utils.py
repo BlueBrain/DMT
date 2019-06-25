@@ -10,16 +10,29 @@ STD = "std"
 NSAMPLES = "nsamples"
 
 DATA_KEYS = [SAMPLES, MEAN, STD, NSAMPLES]
+# keys reserved for data in the dataframes
+# TODO: this should be available as an enum. These keys are not specific
+#       to neuroscience, so the logical place would be in dmt.tk
 
 
 def drop_uniform_columns(dataframe):
     """
     drops all columns from a dataframe that have only one unique value
+    (used to ensure uniform columns go into the title rather than the x axis)
+
+    Args:
+        dataframe : pandas DataFrame
+
+    Returns:
+        the dataframe with the uniform columns values dropped
+        dict of {column: value} containing the values of
+        the uniform columns
     """
     cols = [c for c in dataframe.columns
             if len(dataframe[c].unique()) < 2]
-    return (dataframe.drop(columns=cols),
-            {c: dataframe[c].unique()[0] for c in cols})
+    values = {c: dataframe[c].unique()[0] for c in cols}
+    out_dataframe = dataframe.drop(columns=cols)
+    return out_dataframe, values
 
 
 def ensure_mean_and_std(data, labels):
@@ -29,42 +42,41 @@ def ensure_mean_and_std(data, labels):
 
     assumes all are represented in form <label>_<property>
     (e.g. model_mean, bio_samples, etc.)
+
+
+
     """
     data = data.copy()
+
+    def _set_axis(d):
+        return 0 if hasattr(d, "__len__") else None
+
+    def lenor1(d, axis):
+        return len(d) if hasattr(d, "__len__") else 1
+
+    def fill_func_of_datapoints(datapoints, series, func):
+        return series.fillna({
+            ind: func(datapoints[ind], axis=_set_axis(datapoints[ind]))
+            for ind in data.index})
+
     for label in labels:
-        def _set_axis(d):
-            return 0 if hasattr(d, "__len__") else None
-
-        def lenor1(d, axis):
-            try:
-                if axis is None:
-                    raise AttributeError
-                else:
-                    return d.shape[axis]
-            except AttributeError:
-                return len(d) if hasattr(d, "__len__") else 1
-
-        def fill_func_of_datapoints(series, func):
-            return series.fillna({
-                ind: func(datapoints[ind], axis=_set_axis(datapoints[ind]))
-                for ind in data.index})
 
         mean = label + "_" + MEAN
         std = label + "_" + STD
         dps = label + "_" + SAMPLES
         nsamples = label + "_" + NSAMPLES
-        default = pd.Series([np.nan for n in data.index])
+        default = pd.Series([np.nan for n in range(data.shape[0])])
         end_means = data.get(mean, default.copy())
         end_stds = data.get(std, default.copy())
         end_nsamps = data.get(nsamples, default.copy())
         if dps in data:
             datapoints = data[dps]
             end_means = fill_func_of_datapoints(
-                    end_means, np.mean)
+                datapoints, end_means, np.mean)
             end_stds = fill_func_of_datapoints(
-                end_stds, np.std)
+                datapoints, end_stds, np.std)
             end_nsamps = fill_func_of_datapoints(
-                end_nsamps, lenor1)
+                datapoints, end_nsamps, lenor1)
         data[mean] = end_means
         data[std] = end_stds
         data[nsamples] = end_nsamps
@@ -83,23 +95,23 @@ def drop_data_entries(data, labels):
     return data
 
 
-def _title(measurement, uniform_vals):
+def _title(phenomenon, uniform_vals):
 
     if len(uniform_vals) == 0:
-        return measurement
+        return phenomenon
 
-    return measurement + ' for ' + ','.join(
+    return phenomenon + ' for ' + ','.join(
         [str(k) + ": " + str(v)
          for k, v in uniform_vals.items()])
 
 
-def columns(labels, data, measurement=""):
+def columns(labels, data, phenomenon=""):
     """plot multiple column plots on the same axis"""
     print(labels, data)
     data = data.fillna(np.nan)
     fig, ax = golden_figure()
-    # TODO: what to do about units? expect it in measurement?
-    ax.set_ylabel(measurement)
+    # TODO: what to do about units? expect it in phenomenon?
+    ax.set_ylabel(phenomenon)
     ind = np.arange(data.shape[0], dtype=np.float32)
 
     width = 1 / (len(labels) + 1)
@@ -114,7 +126,7 @@ def columns(labels, data, measurement=""):
         ind += width
 
     data, uniform_vals = drop_uniform_columns(drop_data_entries(data, labels))
-    plt.title(_title(measurement, uniform_vals))
+    plt.title(_title(phenomenon, uniform_vals))
     ax.legend(s, labels)
     ax.set_xlabel(', '.join(str(col) for col in data.columns))
     ax.set_xticklabels([', '.join(str(val) for val in row.values)

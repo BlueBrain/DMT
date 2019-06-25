@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 import bluepy.v2 as bp
+from abc import ABCMeta, abstractmethod
 # TODO: what is the most elegant way to require subclasses to define
 #       required methods
 
@@ -11,7 +12,7 @@ MORPH_CLASS = 'mclass'
 
 
 # TODO: get mask rather than acronym from _translate_query_atlas
-class AtlasCircuitAdapter:
+class AtlasCircuitAdapter(metaclass=ABCMeta):
 
     def __init__(self, circuit_config):
         self._circuit = bp.Circuit(circuit_config)
@@ -27,6 +28,14 @@ class AtlasCircuitAdapter:
         #       does the .nrrd contain some info?
         voxel_volume = np.prod(mask.voxel_dimensions) * 1e-9
         return ncells / nvoxels * voxel_volume
+
+    @abstractmethod
+    def _translate_query_atlas(self, query):
+        pass
+
+    @abstractmethod
+    def _translate_query_cells(self, query):
+        pass
 
 
 # TODO: better to have an atlas component

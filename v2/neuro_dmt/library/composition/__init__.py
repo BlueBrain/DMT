@@ -7,8 +7,8 @@ class SimpleValidation(Analysis):
     """
     base class allowing certain validations to be quickly and easily defined
 
-    subclass needs at least a 'measurement' attribute, which is the name of
-    the property being validated. This measurement attribute must be the name
+    subclass needs at least a 'phenomenon' attribute, which is the name of
+    the property being validated. This phenomenon attribute must be the name
     of an adapter interfacemethod of the subclass, unless the __call__ method
     is overwritten.
 
@@ -34,22 +34,19 @@ class SimpleValidation(Analysis):
             self.data = data
 
         if by is None:
-            if data is not None:
-                by = [dict(**row) for i, row in
-                      data.drop(
-                          columns=[k for k in DATA_KEYS if k in data.columns])
-                      .iterrows()]
-            else:
-                raise RuntimeError(
-                    "validation needs to know what data to request from model"
-                    " if kwarg 'by' is not supplied,"
-                    "kwarg 'data' must be supplied")
+            assert data is not None, (
+                "validation needs to know what data to request from model. "
+                "If kwarg 'by' is not supplied, kwarg 'data' must be supplied")
+            by = [dict(**row) for i, row in
+                  data.drop(
+                      columns=[k for k in DATA_KEYS if k in data.columns])
+                  .iterrows()]
 
         self.by = by
 
-        if not hasattr(self, 'measurement'):
-            raise ValueError("must have measurement attribute")
-        # TODO: ensure measurement is an interfacemethod?
+        if not hasattr(self, 'phenomenon'):
+            raise ValueError("must have phenomenon attribute")
+        # TODO: ensure phenomenon is an interfacemethod?
 
         super().__init__(*args, **kwargs)
 
@@ -59,17 +56,18 @@ class SimpleValidation(Analysis):
         """
 
         if not (
-            hasattr(self, self.measurement) or not hasattr(
-                getattr(self, self.measurement), "__isinterfacemethod__")):
+            hasattr(self, 'AdapterInterface') and
+            hasattr(self.AdapterInterface, self.phenomenon)):
             raise ValueError(
-                "measurement must correspond to an interfacemethod")
+                "phenomenon must correspond to an interfacemethod")
 
-        measured = [[getattr(model, self.measurement)(q) for q in self.by]
+        measured = [[getattr(model, self.phenomenon)(q) for q in self.by]
                     for model in adapted]
+
         return self.write_report(*measured)
 
     def write_report(self, *measured):
-        report_dict = {"measurement": self.measurement}
+        report_dict = {"phenomenon": self.phenomenon}
         result = pd.DataFrame(self.by)
         labels = []
         if self.data is not None:
@@ -88,7 +86,7 @@ class SimpleValidation(Analysis):
 
         if hasattr(self, 'plotter'):
             report_dict['plot'] = self.plotter(
-                labels, result, measurement=self.measurement)
+                labels, result, phenomenon=self.phenomenon)
 
         report_dict['data_results'] = result
 
