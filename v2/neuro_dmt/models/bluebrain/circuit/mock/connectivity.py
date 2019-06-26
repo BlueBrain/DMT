@@ -17,9 +17,9 @@ class CircuitConnectivity(ABC):
     """
 
     @abstractmethod
-    def get_efferent_degree(self, mtype):
+    def get_afferent_degree(self, mtype):
         """
-        Out-degree of a cell of given 'mtype'.
+        In-degree of a cell of given 'mtype'.
         """
         raise NotImplementedError
 
@@ -38,10 +38,9 @@ class SimpleUniformRandomConnectivity(
     A circuit in which a neuron has a prescribed efferent degree,
     and is assigned that many randomly chosen efferent neighbors.
     """
-    efferent_degree_mtype = Field(
+    afferent_degree_mtype = Field(
         """
-        A dict mapping mtype to  expected efferent degree for neurons of
-        that mtype.
+        A dict mapping mtype to  expected in-degree for neurons of that mtype.
         """)
     synapse_count_pathway = Field(
         """
@@ -49,16 +48,18 @@ class SimpleUniformRandomConnectivity(
         expected to connect cells in the pathway pre_mtype --> post_mtype.
         """)
 
-    def get_efferent_degree(self, mtype,
+    def get_afferent_degree(self,
+            mtype,
             *args, **kwargs):
         """
         Number of out-going connections of a neuron of given 'mtype'.
         """
         return np.random.poisson(
-            self.efferent_degree_mtype[mtype])
+            self.afferent_degree_mtype[mtype])
 
     def get_synapse_count(self,
-            pre_mtype, post_mtype,
+            pre_mtype,
+            post_mtype,
             *args, **kwargs):
         """
         How many synapses connecting cells in pathway pre_mtype --> post_mtype?

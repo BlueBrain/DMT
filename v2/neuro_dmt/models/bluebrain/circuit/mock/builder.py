@@ -93,13 +93,15 @@ class CircuitBuilder(WithFields):
         Get this circuit's connectome.
         """
         afferent_gids =[
-            np.random.choice(
+            np.sort(np.random.choice(
                 cell_collection.gids,
-                self.connectivity.get_efferent_degree(**cell_props.to_dict()),
-                replace=False)
+                self.connectivity.get_afferent_degree(**cell_props.to_dict()),
+                replace=False))
             for _, cell_props in cell_collection.get().iterrows()]
-        mtype_of = np.array(
-            cell_collection.get(properties="mtype"))
+        mtype_of =\
+            np.array(
+                cell_collection.get(properties="mtype"),
+                dtype=str)
         afferent_synapse_counts =[
             [self.connectivity.get_synapse_count(
                 mtype_of[pre_gid], mtype_of[post_gid])
@@ -107,6 +109,7 @@ class CircuitBuilder(WithFields):
             for pre_gid in cell_collection.gids]
 
         assert len(afferent_gids) == len(afferent_synapse_counts)
+
         for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
             assert len(gids) == len(syn_counts)
 
@@ -115,4 +118,3 @@ class CircuitBuilder(WithFields):
                 np.array(list(
                     zip(afferent_gids[gid], afferent_synapse_counts[gid])))
                 for gid in cell_collection.gids])
-

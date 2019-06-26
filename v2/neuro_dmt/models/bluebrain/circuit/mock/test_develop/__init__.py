@@ -190,7 +190,7 @@ circuit_composition =\
 
 circuit_connectivity =\
     SimpleUniformRandomConnectivity(
-        efferent_degree_mtype={
+        afferent_degree_mtype={
             mtype: 2000 for mtype in __mtypes},
         synapse_count_pathway={
             pre_mtype: {

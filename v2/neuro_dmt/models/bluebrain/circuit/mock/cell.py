@@ -134,7 +134,8 @@ class CellCollection(WithFields):
 
         return self._dataframe[cell_property].apply(check)
 
-    def get(self, cell_type=None, properties=None):
+
+    def get(self, group=None, properties=None):
         """
         Get a dataframe, with cells of 'cell_type' (any cell type if None).
         Not all but only specified 'properties' will be returned.
@@ -142,18 +143,25 @@ class CellCollection(WithFields):
 
         Arguments
         -----------------
-        cell_type :: A mapping from cell property to its value (or value set).
-        properties :: A list of properties to get.
+        group :: Either a cell gid, or a list of gids, or a mapping from
+        cell property to its value (or value set).
+        properties :: A single property or a list of properties to get.
         """
-        if cell_type is None:
-            return self._dataframe if properties is None\
-                else self._dataframe[properties]
-        cell_filter =\
-            np.logical_and([
-                self.get_property_filter(cell_property, value)
-                for cell_property, value in cell_type.items()])
-        return\
-            self._dataframe[cell_filter] if properties is None\
-            else self._dataframe[properties][cell_filter]
-
-
+        def __get_properties(data_frame_or_series):
+            """
+            Only columns corresponding to 'properties' requested.
+            """
+            return data_frame_or_series if properties is None\
+                else data_frame_or_series[properties]
+        
+        if group is None:
+            return __get_properties(self._dataframe)
+        if (isinstance(group, (int, np.integer,)) or
+            isinstance(group, (list, np.ndarray))): #has to be list of ints
+            return __get_properties(self._dataframe.loc[group])
+        
+        return __get_properties(
+            self._dataframe[
+                np.logical_and([
+                    self.get_property_filter(cell_property, value)
+                    for cell_property, value in cell_type.items()])])
