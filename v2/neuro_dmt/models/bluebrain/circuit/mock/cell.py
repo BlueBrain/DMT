@@ -2,6 +2,7 @@
 Definitions and methods for cells of a MockCircuit.
 """
 
+from collections import Mapping
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Cell as CellProperty
@@ -128,16 +129,26 @@ class CellCollection(WithFields):
         Get a logical vector that can be used to filter 'cell_property',
         by applying it to the cell collectiondef  dataframe.
         """
-        check =\
-            lambda v: v == value if not isinstance(value, (set, list))\
-            else lambda v: v in set(value)
-
-        return self._dataframe[cell_property].apply(check)
+        property_values = self._dataframe[cell_property]
+        try:
+            value_set = set(value)
+            return property_values.apply(lambda v: v in value_set)
+        except TypeError:
+            return property_values.apply(lambda v: v == value)
+                
+        raise TypeError(
+            "Unfilterable type of value {}".format(value))
+        # return\
+        #     self._dataframe[cell_property]\
+        #         .apply(
+        #             lambda v: v == value\
+        #             if not isinstance(value, (set, list)) else\
+        #             lambda v: v in set(value))
 
 
     def get(self, group=None, properties=None):
         """
-        Get a dataframe, with cells of 'cell_type' (any cell type if None).
+        Get a dataframe, with cells of 'group' (any cell type if None).
         Not all but only specified 'properties' will be returned.
         If no 'properties' are specified, all properties will be returned.
 
@@ -159,9 +170,10 @@ class CellCollection(WithFields):
         if (isinstance(group, (int, np.integer,)) or
             isinstance(group, (list, np.ndarray))): #has to be list of ints
             return __get_properties(self._dataframe.loc[group])
-        
+
+        assert isinstance(group, Mapping)
         return __get_properties(
             self._dataframe[
                 np.logical_and([
-                    self.get_property_filter(cell_property, value)
-                    for cell_property, value in cell_type.items()])])
+                    self.get_property_filter(cell_property, property_value)
+                    for cell_property, property_value in group.items()])])

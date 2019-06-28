@@ -170,7 +170,7 @@ def __get_cell_density(layer, mtype):
         "mtype": mtype,
         "layer": layer,
         "mean": density,
-        "error": 0.}
+        "std": 0.}
 
 __cell_density =\
     pd.DataFrame([
