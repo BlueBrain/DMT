@@ -4,15 +4,27 @@ Deifinitions and methods for synapses in a MockCircuit.
 from collections import Mapping
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums improt Synapse as SynapseProperty
+from bluepy.v2.enums import Synapse as SynapseProperty
 from dmt.tk.field import Field, Property, WithFields, lazy
-from composition import CircuitComposition
+from .composition import CircuitComposition
 
 class Synapse(WithFields):
     """
     Defines a synapse, and documents it's (data) fields.
     This class is mostly for documenting and learning purposes.
     """
+
+    pre_gid = Field(
+        """
+        Pre-synaptic cell's GID.
+        """,
+        __type__=(int, np.integer))
+    post_gid = Field(
+        """
+        Post-synaptic cell's GID.
+        """,
+        __type__=(int, np.integer))
+
     axonal_delay = Field(
         """
         Scholarapedia
@@ -132,7 +144,13 @@ class Synapse(WithFields):
 
     synapse_type_id = Field(
         """
-        The synapse type Inhibitory < 100 or Excitatory >= 100
+        SYN2
+        -------------------------
+        The synapse type id as used in the recipe.
+
+        NRN
+        -------------------------
+        Inhibitory < 100 or Excitatory >= 100
         (specific value corresponds to the generating recipe.)
         """,
         __required__=False)
@@ -141,12 +159,18 @@ class Synapse(WithFields):
         """
         Number of readily releasable pool of vesicles.
         """,
-        __type__=(integer, np.integer),
+        __type__=(int, np.integer),
         __required__=False)
+    @property
+    def NRRP(self):
+        """
+        NRN label for n_rrp_vesicles
+        """
+        return self.n_rrp_vesicles
 
     morpho_branch_order_post = Field(
         """
-        Branch order of the dendrite (i.e. on the post-synaptic side.)
+        Order of the dendritic tree branch on which this synapse is located.
         """,
         __required__=False)
     @property
@@ -172,8 +196,10 @@ class Synapse(WithFields):
 
     morpho_section_id_post = Field(
         """
-        Specific section on the post-synaptic (dendritic) morphology
-        where this synapse is placed.
+        SYN2
+        -------------------------
+        The section if of the touched segment associated with the post-synaptic
+        neuron. The ID comes associated with the morphology model.
         """,
         __required__=False)
     @property
@@ -185,17 +211,261 @@ class Synapse(WithFields):
 
     morpho_segment_id_post = Field(
         """
+        The id of the touched (by this synapse) segment associated with the
+        post-synaptic neuron. The ID comes associated with the morphology
+        model.
+        """,
+        __type__=(int, np.integer),
+        __required__=False)
+
+    afferent_section_pos = Field(
+        """
+        Sonata
+        ---------------------------
         Given the section of where a synapse is placed on the target node, the
         position along the length of that section (normalized to the range
         [0,1], where 0 is at the start of the section and 1 is at the end.)
-        Post synaptic (dendritic) segment id.
         """,
-        __type__=int,
+        __type__=(float, np.float),
         __required__=False)
 
     morpho_offset_segment_post = Field(
         """
-        
-        """)
+        Given the section and the segment of where a synapse is placed on the
+        target node, the offset further localizes the synapse on the
+        target node morphology.
+        """,
+        __required__=False)
 
+    morpho_branch_order_pre = Field(
+        """
+        Order of the axonal tree branch on which this synapse is located.
+        """,
+        __required__=False)
+    @property
+    def pre_branch_order(self):
+        """
+        NRN label for morpho_branch_order_pre
+        """
+        return self.morpho_branch_order_pre
 
+    morpho_section_id_pre = Field(
+        """
+        Syn2
+        ---------------------
+        The section id of the touched segment associated with the pre-synaptic
+        neuron. The ID comes associated with the morphology model.
+        """,
+        __required__=False)
+    @property
+    def pre_section_id(self):
+        """
+        NRN label for morpho_section_id_pre
+        """
+        return self.morpho_section_id_pre
+
+    morpho_segment_id_pre = Field(
+        """
+        The id of the touched (by this synapse) segment associated with the
+        pre-synaptic neuron. The ID comes associated with the morphology model.
+        """,
+        __type__=(int, np.integer),
+        __required__=False)
+
+    efferent_section_pre = Field(
+        """
+        Sonata
+        --------------------------
+        Given the section of where a synapse is placed on the source node, the
+        position along the length of that section (normalized to the range
+        [0,1], where 0 is the start of the section and 1 is a the end.)
+        """,
+        __required__=False)
+
+    morpho_offset_segment_pre = Field(
+        """
+        Given the section and the segment of where a synapse is placed on the
+        source node, the offset further localizes the synapse on the
+        source node morphology.
+        """,
+        __required__=False)
+
+    efferent_center_x = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'x' position in network global spatial
+        coordinates of the synapse along the axon axis of the pre-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def pre_x_center(self):
+        """
+        NRN label for efferent_center_x
+        """
+        return self.efferent_center_x
+
+    efferent_center_y = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'y' position in network global spatial
+        coordinates of the synapse along the axon axis of the pre-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def pre_y_center(self):
+        """
+        NRN label for efferent_center_y
+        """
+        return self.efferent_center_y
+
+    efferent_center_z = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'z' position in network global spatial
+        coordinates of the synapse along the axonal axis of the pre-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def pre_z_center(self):
+        """
+        NRN label for efferent_center_z
+        """
+        return self.efferent_center_z
+
+    afferent_center_x = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'x' position in network global spatial
+        coordinates of the synapse along the dendrite axis of the post-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def post_x_center(self):
+        """
+        NRN label for afferent_center_x
+        """
+        return self.afferent_center_x
+
+    afferent_center_y = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'y' position in network global spatial
+        coordinates of the synapse along the dendrite axis of the post-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def post_y_center(self):
+        """
+        NRN label for afferent_center_y
+        """
+        return self.afferent_center_y
+
+    afferent_center_z = Field(
+        """
+        Sonata
+        ----------------
+        For edges that represent synapses in morphologically detailed networks,
+        this attribute specifies 'z' position in network global spatial
+        coordinates of the synapse along the dendrite axis of the post-synaptic
+        neuron. For synapses on the soma this location is at the soma center
+        """,
+        __required__=False)
+    @property
+    def post_z_center(self):
+        """
+        NRN label for afferent_center_z
+        """
+        return self.afferent_center_z
+
+    efferent_surface_x = Field(
+        """
+        Same as efferent_center_x, but for the synapse location on the axon
+        surface.
+        """,
+        __required__=False)
+    @property
+    def pre_x_contour(self):
+        """
+        NRN label for efferent_surface_x
+        """
+        return self.efferent_surface_x
+
+    afferent_surface_x = Field(
+        """
+        Same as 'afferent_center_x', but for the synapse location on the soma or
+        dendrite surface.
+        """,
+        __required__=False)
+    @property
+    def post_x_contour(self):
+        """
+        NRN label for afferent_surface x
+        """
+        return self.afferent_surface_x
+
+    efferent_surface_y = Field(
+        """
+        Same as efferent_center_y, but for the synapse location on the axon
+        surface.
+        """,
+        __required__=False)
+    @property
+    def pre_y_contour(self):
+        """
+        NRN label for efferent_surface_y
+        """
+        return self.efferent_surface_y
+
+    afferent_surface_y = Field(
+        """
+        Same as 'afferent_center_y', but for the synapse location on the soma or
+        dendrite surface.
+        """,
+        __required__=False)
+    @property
+    def post_y_contour(self):
+        """
+        NRN label for afferent_surface y
+        """
+        return self.afferent_surface_y
+
+    efferent_surface_z = Field(
+        """
+        Same as efferent_center_z, but for the synapse location on the axon
+        surface.
+        """,
+        __required__=False)
+    @property
+    def pre_z_contour(self):
+        """
+        NRN label for efferent_surface_z
+        """
+        return self.efferent_surface_z
+
+    afferent_surface_z = Field(
+        """
+        Same as 'afferent_center_z', but for the synapse location on the soma or
+        dendrite surface.
+        """,
+        __required__=False)
+    @property
+    def post_z_contour(self):
+        """
+        NRN label for afferent_surface z
+        """
+        return self.afferent_surface_z

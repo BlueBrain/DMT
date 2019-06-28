@@ -79,7 +79,7 @@ class Cell(WithFields):
     @property
     def as_dict(self):
         """
-        Convert this Cell instance to a dict.
+        Property-value pairs of this cell, as a dict.
         """
         try:
             x = self.position.X

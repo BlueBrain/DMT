@@ -171,11 +171,25 @@ class WithFields:
                     "Description not available")))
 
     @classmethod
-    def get_fields(cls):
+    def is_required(cls, field):
+        """
+        Check if Field attribute 'field' is required.
+        """
+        field_attr = getattr(cls, field)
+        return field_attr.__required__
+
+    @classmethod
+    def get_fields(cls, only_required=False):
         """..."""
-        return [
+        fields =[
             attr for attr in dir(cls)
             if isinstance(getattr(cls, attr), Field)]
+        if not only_required:
+            return fields
+        return [
+            field for field in fields
+            if cls.is_required(field)]
+
 
     @property
     def as_dict(self):
