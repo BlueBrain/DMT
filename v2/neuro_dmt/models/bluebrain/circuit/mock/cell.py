@@ -1,5 +1,5 @@
 """
-Definitions and methods for cells of a MockCircuit.
+Definitions and methods for cells in a MockCircuit.
 """
 
 from collections import Mapping
