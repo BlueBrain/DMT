@@ -111,7 +111,9 @@ class CircuitBuilder(WithFields):
         assert len(afferent_gids) == len(afferent_synapse_counts)
 
         for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
-            assert len(gids) == len(syn_counts)
+            assert len(gids) == len(syn_counts),\
+                "Length {} of afferent gids should equal that of synapse counts"\
+                .format(len(gids), len(syn_counts))
 
         return Connectome(
             afferent_adjacency=[

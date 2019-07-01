@@ -156,7 +156,6 @@ def __get_inh_cell_density(layer):
     return\
         total_density * inhibitory_fraction / number_inhibitory_mtypes
 
-
 def __get_cell_density(layer, mtype):
     """
     'mtype' cell density in 'layer'

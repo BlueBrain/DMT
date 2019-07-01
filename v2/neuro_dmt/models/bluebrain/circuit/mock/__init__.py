@@ -12,5 +12,7 @@ from .composition import CircuitComposition
 from .connectivity import CircuitConnectivity, SimpleUniformRandomConnectivity
 from .builder import CircuitBuilder
 from .circuit import MockCircuit
+from .synapse import Synapse
+from .cell import Cell
 
 logger = Logger(client=__file__)
