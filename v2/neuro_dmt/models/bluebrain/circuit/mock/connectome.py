@@ -71,7 +71,7 @@ class Connectome(WithFields):
         """
         self._synapses =\
             self.empty_synapse_holder()
-        self._post_gids_appended = set()
+        self._pre_post_index = {}#to track where pre_gid-->post_gid synapses are
         super().__init__(
             *args, **kwargs)
 
@@ -147,6 +147,7 @@ class Connectome(WithFields):
         return self.pathway_synapses([], [gid], properties)
 
     @staticmethod
+
     def __in_sorted(xs, y):
         """
         Is 'y' in sorted array xs?
@@ -187,20 +188,64 @@ class Connectome(WithFields):
         """
         return self.pathway_synapses([gid], [], properties)
 
+    def _get_pair_synapse_count(self, pre_gid, post_gid):
+        """
+        Get number of synapses pre_gid to post_gid.
+        """
+        pre_gids = self.afferent_gids(post_gid)
+        i = np.searchsorted(pre_gids, pre_gid)
+        return 0 if i >= len(pre_gids) or pre_gids[i] != pre_gid\
+            else self.afferent_adjacency[post_gid][i, 1]
+
+    def _append_synapses(self, pre_gid, post_gid):
+        """
+        Append synapses to the synapse holder, self._synapses.
+        """
+        if pre_gid not in self._pre_post_index:
+            self._pre_post_index[pre_gid] = {}
+
+        if post_gid not in self._pre_post_index[pre_gid]:
+            n_synapses =\
+                self._synapses.shape[0]
+            count =\
+                self._get_pair_synapse_count(pre_gid, post_gid)
+            pre_post_synapses =\
+                pd.DataFrame({
+                    "pre_gid": np.repeat(pre_gid, count),
+                    "post_gid": np.repeat(post_gid, count)})
+            self._synapses =\
+                self._synapses.append(
+                    pre_post_synapses,
+                    sort=True)
+            self._pre_post_index[pre_gid][post_gid] =\
+                slice(
+                    n_synapses,
+                    n_synapses + pre_post_synapses.shape[0])
+
+        return self._pre_post_index[pre_gid][post_gid]
+
     def _append_afferent_synapses(self, gid):
         """
         Append all the afferent synapses of 'gid' to the synapse holder.
+        DEPRECATED, REMOVE IT
         """
-        if gid not in self._post_gids_appended:
-            self._synapses =\
-                self._synapses.append(
+        if gid not in self._pre_post_index:
+            pre_post_synapses =\
                     pd.DataFrame(
                         {"pre_gid": np.hstack([
                             np.repeat(pre_gid, count)
                             for pre_gid,count in self.afferent_adjacency[gid]]),
-                         "post_gid": gid}),
+                         "post_gid": gid})
+            n_synapses =\
+                self._synapses.shape[0]
+            self._pre_post_index[gid] =\
+                slice(
+                    n_synapses,
+                    n_synapses + pre_post_synapses.shape[0])
+            self._synapses =\
+                self._synapses.append(
+                    pre_post_synapses,
                     sort=True)
-            self._post_gids_appended.add(gid)
         return self._synapses
 
     def pair_synapses(self, pre_gid, post_gid, properties=None):
@@ -217,12 +262,10 @@ class Connectome(WithFields):
         ~   pandas.Series indexed by synapse IDs if 'properties' is scalar;
         ~   pandas.DataFrame indexed by synapse IDs if 'properties' is list.
         """
-        if not pre_gid in self._synapses:
-            self._append_afferent_synapses(post_gid)
-
-        return self._synapses\
-                   .loc[(pre_gid, post_gid)]\
-                   .set_index("sid")
+        pre_post_slice =\
+            self._append_synapses(pre_gid, post_gid)
+        return\
+            self._synapses.iloc[pre_post_slice]
 
     def pathway_synapses(self, pre_gids, post_gids, properties=None):
         """
