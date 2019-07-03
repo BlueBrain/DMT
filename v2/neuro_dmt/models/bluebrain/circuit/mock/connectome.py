@@ -4,6 +4,7 @@ The connectome of a circuit.
 
 import numpy as np
 import pandas as pd
+from bluepy.v2.enums import Direction
 from dmt.tk.field import Field, WithFields, lazy
 from dmt.tk.journal import Logger
 from .synapse import Synapse
@@ -310,19 +311,56 @@ class Connectome(WithFields):
                 self._get_synapses(pre_gid, post_gid),
                 properties=properties)
 
+    def _filter_connected(self,
+            gid,
+            candidate_gids,
+            direction=Direction.AFFERENT):
+        """
+        Filter gids from  list of 'possible_pre_gids' that make a synapse
+        onto the post-synaptic neuron with given 'gid'.
+        """
+        connected_gids =\
+            self.afferent_gids(gid)\
+            if direction == Direction.AFFERENT else\
+               self.efferent_gids(gid)
+        return\
+            candidate_gids[
+                np.in1d(candidate_gids, connected_gids)]
+                
     def pathway_synapses(self,
-            pre_gids=[],
-            post_gids=[],
+            pre_gids=np.array([]),
+            post_gids=np.array([]),
             properties=None):
         """
         Synapses in the pathway {pre_gids} -> {post_gids}.
         """
-        if not pre_gids and not post_gids:
+        if len(pre_gids) == 0 and len(post_gids) == 0:
             raise NotImplementedError(
                 "There may be too many synapses to handle.")
+        def __stacked(datas):
+            """
+            Stack either a list of arrays, or dataframes
+            """
+            if len(datas) == 0:
+                return\
+                    self.empty_synapse_holder() if properties\
+                    else np.array([], np.integer)
+            return (pd.concat if properties else np.hstack)(datas)
 
-        raise NotImplementedError
-
+        if len(pre_gids) == 0:
+            return __stacked([
+                self.afferent_synapses(gid)
+                for gid in post_gids])
+        if len(post_gids) == 0:
+            return __stacked([
+                self.efferent_synapses(gid)
+                for gid in pre_gids])
+        return\
+            __stacked([
+                self.pair_synapses(_pre_gid, _post_gid, properties=properties)
+                for _post_gid in post_gids
+                for _pre_gid in self._filter_connected(_post_gid, pre_gids)])
+    
     def iter_connections(self, pre_gids, post_gids, unique_gids, shuffle):
         """
         Iterate through {pre_gids} -> {post_gids} connections.
