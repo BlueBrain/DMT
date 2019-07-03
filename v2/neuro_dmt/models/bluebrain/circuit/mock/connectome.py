@@ -5,8 +5,10 @@ The connectome of a circuit.
 import numpy as np
 import pandas as pd
 from dmt.tk.field import Field, WithFields, lazy
+from dmt.tk.journal import Logger
 from .synapse import Synapse
 
+log = Logger(client=__file__)
 
 class Connection(WithFields):
     """
@@ -28,9 +30,6 @@ class Connection(WithFields):
         """)
 
 
-MAXNEURONSYNS = 10000#maximum number of efferent synapses of a (pre-) neuron
-MAXCONNSYNS = 100#max number of synapses in pre --> post connection.
-
 class Connectome(WithFields):
     """
     The connectome of a circuit.
@@ -48,6 +47,19 @@ class Connectome(WithFields):
         fill it lazily.
         """,
         __default_value__={})
+    cache_synapses = Field(
+        """
+        An object that can cache synapses as they are read.
+        If not provided, synapses will not be cached.
+        """,
+        __required__=False)
+
+    @classmethod
+    def _get_properties(cls, dataframe, properties):
+        """
+        Get only columns in list 'properties' from pandas DataFrame.
+        """
+        return dataframe[properties] if properties else dataframe.index.values
 
     @classmethod
     def empty_synapse_holder(cls):
@@ -55,11 +67,14 @@ class Connectome(WithFields):
          A pandas data-frame containing the synapses defining this Connectome.
          Connectome.synapses will be set lazily.
         """
-        dataframe =\
+        return\
             pd.DataFrame(dict(
                 pre_gid=np.array([], dtype=np.int32),
-                post_gid=np.array([], dtype=np.int32)))
-        return dataframe
+                post_gid=np.array([], dtype=np.int32),
+                synapse_index=np.array([], dtype=np.int32)))\
+              .set_index(
+                  ["pre_gid", "post_gid", "synapse_index"],
+                  drop=False)
 
     def __init__(self,
             *args, **kwargs):
@@ -144,10 +159,12 @@ class Connectome(WithFields):
         ~   pandas.Series indexed by synapse IDs if 'properties' is scalar;
         ~   pandas.DataFrame indexed by synapse IDs if 'properties' is list.
         """
-        return self.pathway_synapses([], [gid], properties)
+        return\
+            self._get_properties(
+                self._get_synapses(post_gid=gid),
+                properties=properties)
 
     @staticmethod
-
     def __in_sorted(xs, y):
         """
         Is 'y' in sorted array xs?
@@ -178,7 +195,7 @@ class Connectome(WithFields):
         Get efferent synapses for given 'gid'.
 
         Arguments:
-        ~   gid: post-synaptic neuron's GID
+        ~   gid: pre-synaptic neuron's GID
         ~   properties: None / 'Synapse' property / list of 'Synapse' properties
 
         Return:
@@ -186,7 +203,10 @@ class Connectome(WithFields):
         ~   pandas.Series indexed by synapse IDs if 'properties' is scalar;
         ~   pandas.DataFrame indexed by synapse IDs if 'properties' is list.
         """
-        return self.pathway_synapses([gid], [], properties)
+        return\
+            self._get_properties(
+                self._get_synapses(pre_gid=gid),
+                properties=properties)
 
     def _get_pair_synapse_count(self, pre_gid, post_gid):
         """
@@ -197,56 +217,79 @@ class Connectome(WithFields):
         return 0 if i >= len(pre_gids) or pre_gids[i] != pre_gid\
             else self.afferent_adjacency[post_gid][i, 1]
 
-    def _append_synapses(self, pre_gid, post_gid):
+    def _read_synapses(self, pre_gid=None, post_gid=None):
         """
-        Append synapses to the synapse holder, self._synapses.
+        Read synapses connecting pre_gid to post_gid.
+        The mock-circuit knows only the pre_gid and post_gid of synapses.
+        We will read other properties when we have implemented them.
         """
-        if pre_gid not in self._pre_post_index:
-            self._pre_post_index[pre_gid] = {}
+        assert not (pre_gid is None and post_gid is None)
 
-        if post_gid not in self._pre_post_index[pre_gid]:
-            n_synapses =\
-                self._synapses.shape[0]
-            count =\
-                self._get_pair_synapse_count(pre_gid, post_gid)
-            pre_post_synapses =\
-                pd.DataFrame({
-                    "pre_gid": np.repeat(pre_gid, count),
-                    "post_gid": np.repeat(post_gid, count)})
-            self._synapses =\
-                self._synapses.append(
-                    pre_post_synapses,
-                    sort=True)
-            self._pre_post_index[pre_gid][post_gid] =\
-                slice(
-                    n_synapses,
-                    n_synapses + pre_post_synapses.shape[0])
+        if post_gid is None:
+            return\
+                pd.concat([
+                    self._read_synapses(pre_gid, _post_gid)
+                    for _post_gid in self.efferent_gids(pre_gid)])
+        if pre_gid is None:
+            return\
+                pd.concat([
+                    self._read_synapses(_pre_gid, post_gid)
+                    for _pre_gid in self.afferent_gids(post_gid)])
+        return\
+            pd.DataFrame({
+                "pre_gid": pre_gid,
+                "post_gid": post_gid,
+                "synapse_index": np.arange(
+                    self._get_pair_synapse_count(pre_gid, post_gid))})\
+              .set_index(
+                  ["pre_gid", "post_gid", "synapse_index"],
+                  drop=False)
 
-        return self._pre_post_index[pre_gid][post_gid]
+    def _get_cached(self, pre_gid=None, post_gid=None):
+        """
+        Get cached synapses pre_gid --> post_gid
+        """
+        try:
+            synapse_cache = self.cache_synapses
+        except AttributeError as error:
+            log.info(
+                "{} instance does not cache synapses: {}."\
+                .format(self.__class__, error))
+            raise KeyError(
+                "Synapses {}-->{} not found in cache."\
+                .format(pre_gid, post_gid))
+        return synapse_cache.get(pre_gid=pre_gid, post_gid=post_gid)
 
-    def _append_afferent_synapses(self, gid):
+    def _cache(self, synapses, pre_gid=None, post_gid=None):
         """
-        Append all the afferent synapses of 'gid' to the synapse holder.
-        DEPRECATED, REMOVE IT
+        Save some synapses
         """
-        if gid not in self._pre_post_index:
-            pre_post_synapses =\
-                    pd.DataFrame(
-                        {"pre_gid": np.hstack([
-                            np.repeat(pre_gid, count)
-                            for pre_gid,count in self.afferent_adjacency[gid]]),
-                         "post_gid": gid})
-            n_synapses =\
-                self._synapses.shape[0]
-            self._pre_post_index[gid] =\
-                slice(
-                    n_synapses,
-                    n_synapses + pre_post_synapses.shape[0])
-            self._synapses =\
-                self._synapses.append(
-                    pre_post_synapses,
-                    sort=True)
-        return self._synapses
+        try:
+            synapses_cache = self.cache_synapses
+        except AttributeError as error:
+            log.info(
+                "{} instance does not cache synapses: {}."\
+                .format(self.__class__, error))
+            return None
+        return synapses_cache.append(synapses, pre_gid, post_gid)
+
+    def _get_synapses(self, pre_gid=None, post_gid=None):
+        """
+        Get synapses pre_gid --> post_gid.
+        """
+        try:
+            return self._get_cached(pre_gid, post_gid)
+        except KeyError:
+            log.info(
+                log.get_source_info(),
+                "No cached synapses {}==>{}".format(
+                    pre_gid if pre_gid is not None else "",
+                    post_gid if post_gid is not None else ""))
+            pass
+        synapses_pre_post =\
+            self._read_synapses(pre_gid=pre_gid, post_gid=post_gid)
+        self._cache(synapses_pre_post, pre_gid=pre_gid, post_gid=post_gid)
+        return synapses_pre_post
 
     def pair_synapses(self, pre_gid, post_gid, properties=None):
         """
@@ -262,15 +305,22 @@ class Connectome(WithFields):
         ~   pandas.Series indexed by synapse IDs if 'properties' is scalar;
         ~   pandas.DataFrame indexed by synapse IDs if 'properties' is list.
         """
-        pre_post_slice =\
-            self._append_synapses(pre_gid, post_gid)
         return\
-            self._synapses.iloc[pre_post_slice]
+            self._get_properties(
+                self._get_synapses(pre_gid, post_gid),
+                properties=properties)
 
-    def pathway_synapses(self, pre_gids, post_gids, properties=None):
+    def pathway_synapses(self,
+            pre_gids=[],
+            post_gids=[],
+            properties=None):
         """
         Synapses in the pathway {pre_gids} -> {post_gids}.
         """
+        if not pre_gids and not post_gids:
+            raise NotImplementedError(
+                "There may be too many synapses to handle.")
+
         raise NotImplementedError
 
     def iter_connections(self, pre_gids, post_gids, unique_gids, shuffle):

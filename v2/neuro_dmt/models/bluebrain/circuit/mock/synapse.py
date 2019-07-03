@@ -5,6 +5,7 @@ from collections import Mapping
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Synapse as SynapseProperty
+from bluepy.v2.enums import Direction
 from dmt.tk.field import Field, Property, WithFields, lazy
 from .composition import CircuitComposition
 
@@ -469,3 +470,23 @@ class Synapse(WithFields):
         NRN label for afferent_surface z
         """
         return self.afferent_surface_z
+
+
+class SynapseCollection(WithFields):
+    """
+    A collection of synapses that stores synapses.
+    SynapseCollection builds on pandas DataFrame to store data
+    in memory, and provides an efficient secondary index on the stored data.
+    If there are two many synapses to store in memory, SynapseCollection will
+    respond to queries by loading the data from disk.
+
+    """
+    adjacency = Field(
+        """
+        List of 2-tuples holding connected cell gid and synapse count.
+        """)
+    direction = Field(
+        """
+        Direction of the connections in 'adjacency' data.
+        """,
+        __type__=Direction)

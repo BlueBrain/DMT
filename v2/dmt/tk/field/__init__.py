@@ -131,7 +131,8 @@ class WithFields:
                             class_field.__doc__.replace('\n', "\n\t\t")),
                         file=stdout)
                     raise ValueError(
-                    """Cannot create '{}' instance without required Field '{}'.
+                    """
+                    Cannot create '{}' instance without required Field '{}'.
                     Please provide a value as a keyword argument in your 
                     instance initialization.
                     Missing Field '{}':
