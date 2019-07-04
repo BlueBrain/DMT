@@ -47,7 +47,7 @@ class O1Adapter(AtlasCircuitAdapter):
         return self._circuit.cells.mtypes
 
     def mtypes(self):
-        return [mtype.split("_")[-1] for mtype in self._mtypes]
+        return [mtype.split("_")[-1] for mtype in self._mtypes()]
 
     def _translate_query_cells(self, query):
         cell_query = {}

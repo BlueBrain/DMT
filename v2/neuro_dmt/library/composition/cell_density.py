@@ -12,7 +12,7 @@ class CellDensityValidation(SimpleValidation):
 
     # wrapper because python is bizarre
     # TODO: make it work like it should
-    def plotter(self, *args, **kwargs):
+    def plot(self, *args, **kwargs):
         return columns(*args, **kwargs)
 
     class AdapterInterface(Interface):
@@ -46,13 +46,15 @@ class CellDensityValidation(SimpleValidation):
             """
             pass
 
+    def get_measurement(self, model, q):
+        return model.cell_density(q)
+
 
 class INHRatioValidation(CellDensityValidation):
 
     phenomenon = "inhibitory_ratio"
 
-    def __call__(self, adapted):
-        measured = [adapted.cell_density(dict(**q, sclass='INH'))
-                    / adapted.cell_density(q)
-                    for q in self.by]
-        return self.write_report(measured)
+    def get_measurement(self, model, q):
+        q_INH = dict(**q)
+        q_INH['sclass'] = 'INH'
+        return model.cell_density(q_INH) / model.cell_density(q)

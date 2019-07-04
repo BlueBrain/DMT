@@ -35,14 +35,13 @@ def drop_uniform_columns(dataframe):
     return out_dataframe, values
 
 
-def ensure_mean_and_std(data, labels):
+def ensure_mean_and_std(data):
     """
     Wherever there is no mean or std but there are datapoints(samples)
     use these datapoints to get mean and std
 
     assumes all are represented in form <label>_<property>
     (e.g. model_mean, bio_samples, etc.)
-
 
 
     """
@@ -59,39 +58,31 @@ def ensure_mean_and_std(data, labels):
             ind: func(datapoints[ind], axis=_set_axis(datapoints[ind]))
             for ind in data.index})
 
-    for label in labels:
-
-        mean = label + "_" + MEAN
-        std = label + "_" + STD
-        dps = label + "_" + SAMPLES
-        nsamples = label + "_" + NSAMPLES
-        default = pd.Series([np.nan for n in range(data.shape[0])])
-        end_means = data.get(mean, default.copy())
-        end_stds = data.get(std, default.copy())
-        end_nsamps = data.get(nsamples, default.copy())
-        if dps in data:
-            datapoints = data[dps]
-            end_means = fill_func_of_datapoints(
-                datapoints, end_means, np.mean)
-            end_stds = fill_func_of_datapoints(
-                datapoints, end_stds, np.std)
-            end_nsamps = fill_func_of_datapoints(
-                datapoints, end_nsamps, lenor1)
-        data[mean] = end_means
-        data[std] = end_stds
-        data[nsamples] = end_nsamps
-
+    default = pd.Series([np.nan for n in range(data.shape[0])])
+    end_means = data.get(MEAN, default.copy())
+    end_stds = data.get(STD, default.copy())
+    end_nsamps = data.get(NSAMPLES, default.copy())
+    if SAMPLES in data:
+        datapoints = data[SAMPLES]
+        end_means = fill_func_of_datapoints(
+            datapoints, end_means, np.mean)
+        end_stds = fill_func_of_datapoints(
+            datapoints, end_stds, np.std)
+        end_nsamps = fill_func_of_datapoints(
+            datapoints, end_nsamps, lenor1)
+    data[MEAN] = end_means
+    data[STD] = end_stds
+    data[NSAMPLES] = end_nsamps
     return data
 
 
-def drop_data_entries(data, labels):
+def drop_data_entries(data):
     """drop all DATA_KEYS from a dataframe"""
     data = data.copy()
-    for label in labels:
-        data.drop(columns=[e for e in
-                           [label + "_" + entry for entry in DATA_KEYS]
-                           if e in data],
-                  inplace=True)
+    data.drop(columns=[e for e in
+                       [entry for entry in DATA_KEYS]
+                       if e in data],
+              inplace=True)
     return data
 
 
@@ -105,30 +96,31 @@ def _title(phenomenon, uniform_vals):
          for k, v in uniform_vals.items()])
 
 
+# TODO: kwarg to plot datapoints
+# TODO: automatically adjust font size to prevent overlap
 def columns(labels, data, phenomenon=""):
     """plot multiple column plots on the same axis"""
-    print(labels, data)
-    data = data.fillna(np.nan)
+    data = [d.fillna(np.nan) for d in data]
     fig, ax = golden_figure()
     # TODO: what to do about units? expect it in phenomenon?
     ax.set_ylabel(phenomenon)
-    ind = np.arange(data.shape[0], dtype=np.float32)
+    # TODO: deal with case where x-values are not same for all data
+    plotby, uniform_vals = drop_uniform_columns(drop_data_entries(data[0]))
+    ind = np.arange(plotby.shape[0], dtype=np.float32)
 
     width = 1 / (len(labels) + 1)
     ax.set_xticks(ind.copy() + ((len(labels) - 1) * 0.5 * width))
-    data = ensure_mean_and_std(data, labels)
     s = []
-    for label in labels:
-
-        s.append(ax.bar(ind, data[label + "_" + MEAN],
-                        yerr=data[label + "_" + STD], width=width))
+    for i, label in enumerate(labels):
+        # TODO: plot confidence interval instead of std
+        s.append(ax.bar(ind, data[i][MEAN],
+                        yerr=data[i][STD], width=width))
 
         ind += width
 
-    data, uniform_vals = drop_uniform_columns(drop_data_entries(data, labels))
     plt.title(_title(phenomenon, uniform_vals))
     ax.legend(s, labels)
-    ax.set_xlabel(', '.join(str(col) for col in data.columns))
+    ax.set_xlabel(', '.join(str(col) for col in plotby.columns))
     ax.set_xticklabels([', '.join(str(val) for val in row.values)
-                        for _, row in data.iterrows()])
-    return fig
+                        for _, row in plotby.iterrows()])
+    return fig, ax

@@ -1,8 +1,12 @@
 import pandas as pd
+import warnings
 from dmt.analysis import Analysis
-from neuro_dmt.library.composition.utils import DATA_KEYS
+from abc import abstractmethod
+from neuro_dmt.library.composition.utils import DATA_KEYS, ensure_mean_and_std
 
 
+# TODO: enums instead of DATA_KEYS
+# TODO: figure out what to do about units
 class SimpleValidation(Analysis):
     """
     base class allowing certain validations to be quickly and easily defined
@@ -18,8 +22,8 @@ class SimpleValidation(Analysis):
           this would allow defining validations with this class where 'by'
           depends on the model passed (such as a by-mtype validation)
     """
-    def __init__(self, *args, by=None,
-                 data=None, **kwargs):
+
+    def __init__(self, *args, data=None, **kwargs):
         """
         by: a list of dicts of (quantities?) determining where to measure
             density. If None, will infer from data recieved.
@@ -27,70 +31,114 @@ class SimpleValidation(Analysis):
 
         data: data to validate against
         """
-
-        if data is None and hasattr(self, 'data'):
-            data = self.data
-        else:
+        if data is not None or not hasattr(self, 'data'):
             self.data = data
-
-        if by is None:
-            assert data is not None, (
-                "validation needs to know what data to request from model. "
-                "If kwarg 'by' is not supplied, kwarg 'data' must be supplied")
-            by = [dict(**row) for i, row in
-                  data.drop(
-                      columns=[k for k in DATA_KEYS if k in data.columns])
-                  .iterrows()]
-
-        self.by = by
-
         if not hasattr(self, 'phenomenon'):
             raise ValueError("must have phenomenon attribute")
-        # TODO: ensure phenomenon is an interfacemethod?
-
         super().__init__(*args, **kwargs)
 
     def __call__(self, *adapted):
         """
         adapted: the adapted model
         """
-
-        if not (
-            hasattr(self, 'AdapterInterface') and
-            hasattr(self.AdapterInterface, self.phenomenon)):
-            raise ValueError(
-                "phenomenon must correspond to an interfacemethod")
-
-        measured = [[getattr(model, self.phenomenon)(q) for q in self.by]
+        # TODO: wrap the adapted model in an 'adapterchecker' which
+        #       checks that all the methods required by the AdapterInterface are there
+        #       forwards all method calls to the adapted model
+        #       raises a warning if a method not declared in the AdapterInterface
+        #       is called on it, and raises an appropriate error when
+        #       a method not declared in AdapterInterface is called and the
+        #       adapted model does not have it
+        # TODO: should query keys be restricted to the values of an enum?
+        #       error message should indicate that to use key you should add it
+        #       to enum
+        measured = [[self.get_measurement(model, q) for q in self.by(model)]
                     for model in adapted]
+        verdict = self.verdict(*measured)
+        return self._write_report(adapted, measured, verdict=verdict)
 
-        return self.write_report(*measured)
+    @abstractmethod
+    def get_measurement(self, model, q):
+        """
+        get the required measurement from the adapted model
 
-    def write_report(self, *measured):
+        data must be retrieved by invoking methods of model
+        required by the AdapterInterface
+
+        """
+        pass
+
+    def by(self, model):
+        """
+        default method for validations: infers 'by' from validation.data
+        """
+        data = self.data
+        if data is None:
+            raise RuntimeError("{} requires data" .format(self.__class__))
+        by = [dict(**row) for i, row in
+              data.drop(
+                  columns=[k for k in DATA_KEYS if k in data.columns])
+              .iterrows()]
+        return by
+        pass
+
+    def stats(self, *measured):
+        """
+        performs statistical tests on the measured quantities
+        returns a p-value for each, and a pooled value
+        default implementation: no stats
+        """
+        return None
+
+    def verdict(self, *measured, stats=None, plot=None):
+        """
+        decides the 'pass' or 'fail' condition of the validation
+
+        returns True if pass, False if fail, None if undecided
+
+        default implementation: no verdict
+
+        other implementations may decide based on
+        some concrete properties of the data, the results of statistical tests,
+        or by presenting the plot and requesting a manual verdict
+        """
+        return None
+
+    # TODO: there may not be just one by to plot by
+    # TODO: change data results and plotting format
+    def _write_report(self, models, measured, verdict=None):
         report_dict = {"phenomenon": self.phenomenon}
-        result = pd.DataFrame(self.by)
         labels = []
+        results = []
+
         if self.data is not None:
-            result['bio_samples'] = self.data['samples']
-            labels.append('bio')
-        if len(measured) == 1:
-            result['model_samples'] = measured[0]
-            model_labels = ['model']
-        else:
-            model_labels = []
-            for i, m in enumerate(measured):
-                result['model{}_samples'.format(i)] = m
-                model_labels.append('model{}'.format(i))
+            bio_label = 'bio'
+            results.append(ensure_mean_and_std(self.data))
+            labels.append(bio_label)
 
-        labels = labels + model_labels
+        for i, m in enumerate(measured):
+            model = models[i]
+            df = pd.DataFrame(self.by(model))
+            try:
+                label = model.label
+            except AttributeError:
+                warnings.warn("model number {}, {} does not have label"
+                              .format(i, model))
+                label = 'model' + str(i)
 
-        if hasattr(self, 'plotter'):
-            report_dict['plot'] = self.plotter(
-                labels, result, phenomenon=self.phenomenon)
+            df['samples'] = m
+            results.append(ensure_mean_and_std(df))
+            labels.append(label)
 
-        report_dict['data_results'] = result
+        report_dict['plot'] = self.plot(
+            labels, results, phenomenon=self.phenomenon)
+
+        report_dict['data_results'] = results
 
         return report_dict
+
+    def plot(self, labels, result, phenomenon):
+        """default plotter, no plot"""
+        return None
 
 
 from neuro_dmt.library.composition.cell_density import CellDensityValidation
