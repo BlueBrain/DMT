@@ -1,11 +1,32 @@
+from abc import ABC, abstractmethod
+from types import MethodType
 import numpy as np
 from warnings import warn
+from voxcell.nexus.voxelbrain import Atlas
+from voxcell import VoxcellError
+# TODO: docstrings, docstrings, docstrings!
 
 
 def compose_atlas_adapter(atlas_dir):
     """..."""
-    return AtlasAdapter(atlas_dir)
-    pass
+    adapter = AtlasAdapter(atlas_dir)
+    if adapter._atlas.load_region_map().find('L1', 'acronym'):
+        adapter._layer_mask = MethodType(LayerMasks.L_number, adapter)
+    else:
+        adapter._layer_mask = MethodType(LayerMasks.column_semicolon_int,
+                                         adapter)
+    try:
+        adapter._atlas.load_data("[cell_density]EXC")
+        adapter.cell_density = MethodType(CellDensities.has_density,
+                                          adapter)
+        adapter._density_filename = MethodType(
+            CellDensities.DensityFilenames.bracketed_prefix,
+            adapter)
+    except VoxcellError:
+        adapter.cell_density = MethodType(CellDensities.no_cell_density,
+                                          adapter)
+
+    return adapter
 
 
 def _list_if_not_list(item):
@@ -25,11 +46,13 @@ def _list_if_not_list(item):
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
-class AtlasAdapter():
+class AtlasAdapter(ABC):
 
-    def __init__(self, atlas_dir):
-        from voxcell.nexus.voxelbrain import Atlas
-        self._atlas = Atlas.open(atlas_dir)
+    def __init__(self, atlas):
+        if isinstance(atlas, Atlas):
+            self._atlas = atlas
+        else:
+            self._atlas = Atlas.open(atlas)
 
     # TODO: should I pass whole query to _translate_layer
     def mask_for_query(self, query):
@@ -53,15 +76,11 @@ class AtlasAdapter():
         return np.all(masks, axis=0)
 
     # TODO: compose
-    def _layer_mask(self, layer):  #
-        # TODO: auto-detect on initialization?
-        return self._atlas.get_region_mask(
-            "@{}$".format(layer), attr="acronym").raw
 
     def _region_mask(self, region):
         warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
                      .format(self)))
-        return self._atlas.get_region_mask("O1").raw
+        return self._atlas.load_data("brain_regions").raw != 0
 
     def _column_mask(self, column):
         return self._atlas.get_region_mask(column + "_Column").raw
@@ -88,23 +107,56 @@ class AtlasAdapter():
     #     density_nrrds = [nrrd for nrrd in all_nrrds if nrrd not in excluded]
     #     return density_nrrds
 
-    def cell_density(self, query):
-        warn(Warning("{} atlas has no cell density, returning NaN"
-                     .format(self)))
-        return np.nan
-
-    # def cell_density(self, query):
-    #     mask = self.mask_for_query(query)
-    #     sclass = query.get('sclass', ['EXC', 'INH'])
-    #     if isinstance(sclass, str):
-    #         sclass = [sclass]
-    #     density_types = self._density_types()
-
     #     return sum(
     #         self._atlas.load_data(self._cell_density_filename(dtype)).raw[mask]
     #         for dtype in sclass)#density_types)
 
 
-# translate layer
-def column_semicolon_int(self, layer):
-    return "@;{}$".format(layer[1]), "acronym"
+class LayerMasks:
+    """just a container for _layer_mask function varieties"""
+
+    def column_semicolon_int(self, layer):
+        return self._atlas.get_region_mask(
+            "@;{}$".format(layer[1]), attr="acronym").raw
+
+    def L_number(self, layer):
+        # TODO: auto-detect on initialization?
+        return self._atlas.get_region_mask(
+            "@{}$".format(layer), attr="acronym").raw
+
+
+# TODO: certain functions here are dependent on other methods being assigned
+#       e.g. _mtype_name , _density_filename
+#       (how) do I enforce this?
+class CellDensities:
+
+    def no_cell_density(self, query):
+        warn(Warning("{} atlas has no cell density, returning NaN"
+                     .format(self)))
+        return np.nan
+
+    def has_density(self, query):
+        mask = self.mask_for_query(query)
+        if 'mtype' in query:
+            density_types = [name
+                             for mtype in _list_if_not_list(query['mtype'])
+                             for name in self._mtype_names(mtype)]
+            if 'sclass' in query:
+                warn(Warning(
+                    'mtype keyword overrides sclass in {}.cell_density'
+                    .format(self)))
+
+        elif 'sclass' in query:
+            density_types = _list_if_not_list(query['mtype'])
+        else:
+            density_types = 'EXC', 'INH'
+
+        return np.nansum([
+            self._atlas.load_data(
+                self._density_filename(density_type)).raw[mask]
+            for density_type in density_types], axis=0)
+
+    class DensityFilenames:
+
+        def bracketed_prefix(self, density_type):
+            return '[cell_density]' + density_type

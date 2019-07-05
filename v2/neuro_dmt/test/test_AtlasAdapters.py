@@ -72,3 +72,69 @@ class Test_compose_atlas_adapter:
             pyt.warns(Warning,
                       self.adapted.cell_density, {'layer': 'L4'})
             assert np.isnan(self.adapted.cell_density({'layer': 'L4'}))
+
+    class Test_Rat_2019_O1:
+        """
+        test for NCX release O1 circuit
+        TODO: replace with dummy atlas mimicing properties"""
+
+        adapted = compose_atlas_adapter(
+            "/gpfs/bbp.cscs.ch/project/proj64/"
+            "dissemination/data/atlas/O1/MEAN/mean")
+        atlas = Atlas.open(
+            "/gpfs/bbp.cscs.ch/project/proj64/"
+            "dissemination/data/atlas/O1/MEAN/mean")
+
+        def test_mask_blank_query(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({}),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+        def test_warns_region(self):
+            pyt.warns(Warning, self.adapted.mask_for_query, {'region': 'SSp'})
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'region': 'SSp'}),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+        def test_mask_layers(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'layer': 'L1'}),
+                self.atlas.get_region_mask("@;1$").raw)
+
+        def test_mask_multiple_layers(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query(
+                    {'layer': ['L2', 'L5']}),
+                np.logical_or(
+                    self.atlas.get_region_mask("@;2$").raw,
+                    self.atlas.get_region_mask("@;5$").raw))
+
+        def test_mask_column(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'column': 'mc0'}),
+                self.atlas.get_region_mask("mc0_Column").raw)
+
+        def test_mask_three_columns(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'column':
+                                             ['mc0', 'mc6', 'mc4']}),
+                np.logical_or(
+                    np.logical_or(
+                        self.atlas.get_region_mask("mc0_Column").raw,
+                        self.atlas.get_region_mask("mc6_Column").raw),
+                    self.atlas.get_region_mask("mc4_Column").raw))
+
+        def test_mask_column_layer(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query(
+                    dict(column=['mc2'], layer=['L2', 'L3'])),
+                np.logical_or(
+                    self.atlas.get_region_mask('mc2;2').raw,
+                    self.atlas.get_region_mask('mc2;3').raw))
+
+        def test_cell_density(self):
+            npt.assert_array_equal(
+                self.adapted.cell_density({'layer': 'L5', 'column': 'mc2'}),
+                (self.atlas.load_data("[cell_density]EXC").raw
+                 + self.atlas.load_data("[cell_density]INH").raw)[
+                     self.atlas.get_region_mask("mc2;5").raw])
