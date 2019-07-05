@@ -98,7 +98,7 @@ def _title(phenomenon, uniform_vals):
 
 # TODO: kwarg to plot datapoints
 # TODO: automatically adjust font size to prevent overlap
-def columns(labels, data, phenomenon=""):
+def plot_columns(labels, data, phenomenon=""):
     """plot multiple column plots on the same axis"""
     data = [d.fillna(np.nan) for d in data]
     fig, ax = golden_figure()

@@ -2,7 +2,7 @@ import pandas as pd
 from dmt.analysis import Analysis
 from dmt.model.interface import interfacemethod, Interface
 from neuro_dmt.library.composition import SimpleValidation
-from neuro_dmt.library.composition.utils import columns
+from neuro_dmt.library.composition.utils import plot_columns
 
 
 class CellDensityValidation(SimpleValidation):
@@ -13,7 +13,7 @@ class CellDensityValidation(SimpleValidation):
     # wrapper because python is bizarre
     # TODO: make it work like it should
     def plot(self, *args, **kwargs):
-        return columns(*args, **kwargs)
+        return plot_columns(*args, **kwargs)
 
     class AdapterInterface(Interface):
 
