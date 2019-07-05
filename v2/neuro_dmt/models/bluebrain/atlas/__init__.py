@@ -8,7 +8,7 @@ from voxcell import VoxcellError
 
 
 def compose_atlas_adapter(atlas_dir):
-    """..."""
+    """generate an adapter for the atlas provided"""
     adapter = AtlasAdapter(atlas_dir)
     if adapter._atlas.load_region_map().find('L1', 'acronym'):
         adapter._layer_mask = MethodType(LayerMasks.L_number, adapter)
@@ -19,8 +19,11 @@ def compose_atlas_adapter(atlas_dir):
         adapter._atlas.load_data("[cell_density]EXC")
         adapter.cell_density = MethodType(CellDensities.has_density,
                                           adapter)
-        adapter._density_filename = MethodType(
-            CellDensities.DensityFilenames.bracketed_prefix,
+        adapter._sclass_filename = MethodType(
+            CellDensities.SclassFilenames.bracketed_prefix,
+            adapter)
+        adapter._mtype_filename = MethodType(
+            CellDensities.MtypeFilenames.layer_prefix,
             adapter)
     except VoxcellError:
         adapter.cell_density = MethodType(CellDensities.no_cell_density,
@@ -85,11 +88,6 @@ class AtlasAdapter(ABC):
     def _column_mask(self, column):
         return self._atlas.get_region_mask(column + "_Column").raw
 
-    # TODO: compose
-    #def _cell_density_filename(self, extension):
-    #    return extension
-    # def _cell_density_filename(self, extension):
-    #      return '[cell_density]' + extension
 
     # # TODO: compose
     # def _density_types(self):
@@ -108,8 +106,12 @@ class AtlasAdapter(ABC):
     #     return density_nrrds
 
     #     return sum(
-    #         self._atlas.load_data(self._cell_density_filename(dtype)).raw[mask]
+    #         self._atlas.load_data(self._cell_sclass_filename(dtype)).raw[mask]
     #         for dtype in sclass)#density_types)
+
+
+# TODO: instead of functions I could use callable classes  which inherit from
+#       a superclass
 
 
 class LayerMasks:
@@ -126,10 +128,10 @@ class LayerMasks:
 
 
 # TODO: certain functions here are dependent on other methods being assigned
-#       e.g. _mtype_name , _density_filename
+#       e.g. _mtype_filename , _sclass_filename
 #       (how) do I enforce this?
 class CellDensities:
-
+    """just a container for cell_density function varieties"""
     def no_cell_density(self, query):
         warn(Warning("{} atlas has no cell density, returning NaN"
                      .format(self)))
@@ -140,23 +142,36 @@ class CellDensities:
         if 'mtype' in query:
             density_types = [name
                              for mtype in _list_if_not_list(query['mtype'])
-                             for name in self._mtype_names(mtype)]
+                             for name in self._mtype_filename(mtype)]
             if 'sclass' in query:
                 warn(Warning(
                     'mtype keyword overrides sclass in {}.cell_density'
                     .format(self)))
 
         elif 'sclass' in query:
-            density_types = _list_if_not_list(query['mtype'])
+            density_types = [self._sclass_filename(sclass)
+                             for sclass in _list_if_not_list(query['sclass'])]
         else:
-            density_types = 'EXC', 'INH'
-
+            density_types = [self._sclass_filename(sclass)
+                             for sclass in ('EXC', 'INH')]
         return np.nansum([
-            self._atlas.load_data(
-                self._density_filename(density_type)).raw[mask]
+            self._atlas.load_data(density_type).raw[mask]
             for density_type in density_types], axis=0)
 
-    class DensityFilenames:
+    class SclassFilenames:
+        """just a container for _sclass_filename function varieties"""
 
         def bracketed_prefix(self, density_type):
             return '[cell_density]' + density_type
+
+    class MtypeFilenames:
+        """just a container for _mtype_filename function varieties"""
+
+        def layer_prefix(self, mtype):
+            from glob import glob
+            from os.path import join, basename
+            allnames = glob(
+                join(self._atlas.dirpath, "*_" + mtype + ".nrrd"))
+            basenames = [basename(name).split(".")[0]
+                         for name in allnames]
+            return basenames

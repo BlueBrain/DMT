@@ -6,6 +6,8 @@ from neuro_dmt.models.bluebrain.atlas import compose_atlas_adapter
 
 
 # TODO: test region X OR layer Y OR column Z
+# TODO: test excludde xyz
+# TODO: test mtype density
 class Test_compose_atlas_adapter:
 
     class Test_NCX_O1:
@@ -138,3 +140,92 @@ class Test_compose_atlas_adapter:
                 (self.atlas.load_data("[cell_density]EXC").raw
                  + self.atlas.load_data("[cell_density]INH").raw)[
                      self.atlas.get_region_mask("mc2;5").raw])
+
+        def test_sclass_density(self):
+            npt.assert_array_equal(
+                self.adapted.cell_density({'sclass': 'EXC'}),
+                self.atlas.load_data("[cell_density]EXC").raw[
+                    self.atlas.load_data("brain_regions").raw != 0]
+                )
+            npt.assert_array_equal(
+                self.adapted.cell_density({'sclass': 'INH'}),
+                self.atlas.load_data("[cell_density]INH").raw[
+                    self.atlas.load_data("brain_regions").raw != 0]
+                )
+
+        def test_mtype_density(self):
+            npt.assert_array_equal(
+                self.adapted.cell_density(
+                    {'mtype': 'MC', 'layer': ['L2', 'L3']}),
+                self.atlas.load_data("[cell_density]L23_MC").raw[
+                    self.atlas.get_region_mask('@;2$|;3$').raw])
+
+    # class Test_Rat_2018_O1:
+    #     """
+    #     test for NCX release O1 circuit
+    #     TODO: replace with dummy atlas mimicing properties"""
+
+    #     adapted = compose_atlas_adapter(
+    #         "/gpfs/bbp.cscs.ch/project/proj64/entities/dev/atlas/"
+    #         "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018")
+    #     atlas = Atlas.open(
+    #         "/gpfs/bbp.cscs.ch/project/proj64/entities/dev/atlas/"
+    #         "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018")
+
+    #     def test_mask_blank_query(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query({}),
+    #             self.atlas.load_data("brain_regions").raw != 0)
+
+    #     def test_warns_region(self):
+    #         pyt.warns(Warning, self.adapted.mask_for_query, {'region': 'SSp'})
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query({'region': 'SSp'}),
+    #             self.atlas.load_data("brain_regions").raw != 0)
+
+    #     def test_mask_layers(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query({'layer': 'L1'}),
+    #             self.atlas.get_region_mask("L1").raw)
+
+    #     def test_mask_multiple_layers(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query(
+    #                 {'layer': ['L2', 'L5']}),
+    #             np.logical_or(
+    #                 self.atlas.get_region_mask("L2").raw,
+    #                 self.atlas.get_region_mask("L5").raw))
+
+    #     def test_mask_column(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query({'column': 'mc0'}),
+    #             self.atlas.get_region_mask("mc0_Column").raw)
+
+    #     def test_mask_three_columns(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query({'column':
+    #                                          ['mc0', 'mc6', 'mc4']}),
+    #             np.logical_or(
+    #                 np.logical_or(
+    #                     self.atlas.get_region_mask("mc0_Column").raw,
+    #                     self.atlas.get_region_mask("mc6_Column").raw),
+    #                 self.atlas.get_region_mask("mc4_Column").raw))
+
+    #     def test_mask_column_layer(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.mask_for_query(
+    #                 dict(column=['mc2'], layer=['L2', 'L3'])),
+    #             np.logical_and(
+    #                 self.atlas.get_region_mask('mc2_Column').raw,
+    #                 np.logical_or(
+    #                     self.atlas.get_region_mask("L2").raw,
+    #                     self.atlas.get_region_mask("L3").raw)))
+
+    #     def test_cell_density(self):
+    #         npt.assert_array_equal(
+    #             self.adapted.cell_density({'layer': 'L5', 'column': 'mc2'}),
+    #             (self.atlas.load_data("[cell_density]EXC").raw
+    #              + self.atlas.load_data("[cell_density]INH").raw)[
+    #                  np.logical_and(
+    #                      self.atlas.get_region_mask("mc2_Column").raw,
+    #                      self.atlas.get_region_mask("@L1$|L2$").raw)])
