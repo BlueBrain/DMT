@@ -26,10 +26,10 @@ class Test_compose_atlas_adapter:
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
-            pyt.warns(Warning, self.adapted.mask_for_query, {'region': 'SSp'})
-            npt.assert_array_equal(
-                self.adapted.mask_for_query({'region': 'SSp'}),
-                self.atlas.load_data("brain_regions").raw != 0)
+            with pyt.warns(Warning):
+                npt.assert_array_equal(
+                    self.adapted.mask_for_query({'region': 'SSp'}),
+                    self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
@@ -70,9 +70,8 @@ class Test_compose_atlas_adapter:
                         self.atlas.get_region_mask("L3").raw)))
 
         def test_cell_density(self):
-            pyt.warns(Warning,
-                      self.adapted.cell_density, {'layer': 'L4'})
-            assert np.isnan(self.adapted.cell_density({'layer': 'L4'}))
+            with pyt.warns(Warning):
+                assert np.isnan(self.adapted.cell_density({'layer': 'L4'}))
 
     class Test_Rat_2019_O1:
         """
@@ -92,10 +91,10 @@ class Test_compose_atlas_adapter:
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
-            pyt.warns(Warning, self.adapted.mask_for_query, {'region': 'SSp'})
-            npt.assert_array_equal(
-                self.adapted.mask_for_query({'region': 'SSp'}),
-                self.atlas.load_data("brain_regions").raw != 0)
+            with pyt.warns(Warning):
+                npt.assert_array_equal(
+                    self.adapted.mask_for_query({'region': 'SSp'}),
+                    self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
@@ -177,10 +176,10 @@ class Test_compose_atlas_adapter:
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
-            pyt.warns(Warning, self.adapted.mask_for_query, {'region': 'SSp'})
-            npt.assert_array_equal(
-                self.adapted.mask_for_query({'region': 'SSp'}),
-                self.atlas.load_data("brain_regions").raw != 0)
+            with pyt.warns(Warning):
+                npt.assert_array_equal(
+                    self.adapted.mask_for_query({'region': 'SSp'}),
+                    self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
@@ -240,10 +239,8 @@ class Test_compose_atlas_adapter:
                                self.atlas.get_region_mask("L5").raw)])
 
         def test_sclass_density(self):
-            pyt.warns(
-                Warning,
-                self.adapted.cell_density, {'sclass': 'EXC'})
-            assert np.isnan(self.adapted.cell_density({'sclass': 'EXC'}))
+            with pyt.warns(Warning):
+                assert np.isnan(self.adapted.cell_density({'sclass': 'EXC'}))
 
         def test_mtype_density(self):
             npt.assert_array_equal(
