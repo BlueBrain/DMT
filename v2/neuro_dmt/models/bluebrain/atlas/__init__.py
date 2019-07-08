@@ -1,10 +1,20 @@
+import os
 from abc import ABC, abstractmethod
 from types import MethodType
 import numpy as np
+import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
 from voxcell import VoxcellError
 # TODO: docstrings, docstrings, docstrings!
+# TODO: currently usng two different methods to get available mtypes
+# TODO: decouple whethe [cell_density] is filename prefix from whether
+#       sclass density is there
+
+BIG_LIST_OF_KNOWN_MTYPES = [
+    "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
+    "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",
+    "SSC", "TPC:A", "TPC:B", "TPC:C", "TPC", "UPC"]
 
 
 def compose_atlas_adapter(atlas_dir):
@@ -15,21 +25,61 @@ def compose_atlas_adapter(atlas_dir):
     else:
         adapter._layer_mask = MethodType(LayerMasks.column_semicolon_int,
                                          adapter)
-    try:
-        adapter._atlas.load_data("[cell_density]EXC")
+    if has_cell_density(atlas_dir):
         adapter.cell_density = MethodType(CellDensities.has_density,
                                           adapter)
-        adapter._sclass_filename = MethodType(
-            CellDensities.SclassFilenames.bracketed_prefix,
-            adapter)
-        adapter._mtype_filename = MethodType(
-            CellDensities.MtypeFilenames.layer_prefix,
-            adapter)
-    except VoxcellError:
+        if has_sclass_densities(atlas_dir):
+            adapter._sclass_filename = MethodType(
+                CellDensities.SclassFilenames.bracketed_prefix,
+                adapter)
+            adapter._total_density = MethodType(
+                CellDensities.TotalDensities.exc_and_inh,
+                adapter)
+        else:
+            adapter._sclass_filename = MethodType(
+                CellDensities.SclassFilenames.has_no_sclass,
+                adapter)
+            adapter._total_density = MethodType(
+                CellDensities.TotalDensities.all_mtypes,
+                adapter)
+
+        if has_layer_prefixed_mtypes(atlas_dir):
+            adapter._mtype_filename = MethodType(
+                CellDensities.MtypeFilenames.layer_prefix,
+                adapter)
+        else:
+            adapter._mtype_filename = MethodType(
+                CellDensities.MtypeFilenames.no_prefix,
+                adapter)
+
+    else:
         adapter.cell_density = MethodType(CellDensities.no_cell_density,
                                           adapter)
 
     return adapter
+
+
+def has_cell_density(atlas_dir):
+    return has_sclass_densities(atlas_dir)\
+        or has_layer_prefixed_mtypes(atlas_dir)\
+        or has_prefixless_mtypes(atlas_dir)
+
+
+def has_sclass_densities(atlas_dir):
+    return len(
+        {'[cell_density]EXC.nrrd', '[cell_density]INH.nrrd',
+         'EXC.nrrd', 'INH.nrrd'}.intersection(set(os.listdir(atlas_dir)))) > 0
+
+
+def has_layer_prefixed_mtypes(atlas_dir):
+    return any(
+        glob.glob(os.path.join(atlas_dir, "*_{}.nrrd".format(mtype)))
+        for mtype in BIG_LIST_OF_KNOWN_MTYPES)
+
+
+def has_prefixless_mtypes(atlas_dir):
+    return len(set(mt + ".nrrd" for mt in BIG_LIST_OF_KNOWN_MTYPES)
+               .intersection(set(os.listdir(atlas_dir)))) > 0
 
 
 def _list_if_not_list(item):
@@ -142,27 +192,61 @@ class CellDensities:
         if 'mtype' in query:
             density_types = [name
                              for mtype in _list_if_not_list(query['mtype'])
-                             for name in self._mtype_filename(mtype)]
+                             for name in
+                             _list_if_not_list(self._mtype_filename(mtype))]
             if 'sclass' in query:
                 warn(Warning(
                     'mtype keyword overrides sclass in {}.cell_density'
                     .format(self)))
 
         elif 'sclass' in query:
-            density_types = [self._sclass_filename(sclass)
-                             for sclass in _list_if_not_list(query['sclass'])]
+            density_types = [scname
+                             for sclass in _list_if_not_list(query['sclass'])
+                             for scname in self._sclass_filename(sclass)]
         else:
-            density_types = [self._sclass_filename(sclass)
-                             for sclass in ('EXC', 'INH')]
-        return np.nansum([
+            density_types = self._total_density()
+
+        densities = [
             self._atlas.load_data(density_type).raw[mask]
-            for density_type in density_types], axis=0)
+            for density_type in density_types]
+        if len(densities) == 0:
+            return np.nan
+        return np.nansum(densities, axis=0)
+
+    class TotalDensities:
+
+        def exc_and_inh(self):
+            return [scname
+                    for sclass in ('EXC', 'INH')
+                    for scname in self._sclass_filename(sclass)]
+
+        def all_mtypes(self):
+            import glob
+            from os.path import basename, join
+            allnrrdnames = [basename(nrrd).split(".")[0] for nrrd in
+                            glob.glob(join(self._atlas.dirpath, "*.nrrd"))]
+
+            mtype_names = [fname for mtype in BIG_LIST_OF_KNOWN_MTYPES
+                           for fname in _list_if_not_list(
+                                   self._mtype_filename(mtype))]
+            all_mtypes = {
+                fname for fname in allnrrdnames if fname in mtype_names}
+
+            return list(all_mtypes)
 
     class SclassFilenames:
         """just a container for _sclass_filename function varieties"""
 
+        def has_no_sclass(self, density_type):
+            warn(Warning("{} has no sclass densities".format(self)))
+            return []
+
         def bracketed_prefix(self, density_type):
-            return '[cell_density]' + density_type
+            # for now assume no UN
+            if density_type in ("EXC", "INH"):
+                return ['[cell_density]' + density_type]
+            else:
+                return []
 
     class MtypeFilenames:
         """just a container for _mtype_filename function varieties"""
@@ -175,3 +259,6 @@ class CellDensities:
             basenames = [basename(name).split(".")[0]
                          for name in allnames]
             return basenames
+
+        def no_prefix(self, mtype):
+            return mtype
