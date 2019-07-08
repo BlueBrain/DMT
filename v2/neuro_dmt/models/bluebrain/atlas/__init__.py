@@ -24,8 +24,9 @@ BIG_LIST_OF_KNOWN_MTYPES = [
 def compose_atlas_adapter(atlas_dir):
     """generate an adapter for the atlas provided"""
     adapter = AtlasAdapter(atlas_dir)
-    if adapter._atlas.load_region_map().find('L1', 'acronym'):
-        adapter._layer_mask = MethodType(LayerMasks.L_number, adapter)
+    if adapter._atlas.load_region_map().find('@L1$', 'acronym')\
+       or adapter._atlas.load_region_map().find("@SP$", 'acronym'):
+        adapter._layer_mask = MethodType(LayerMasks.full_layer, adapter)
     else:
         adapter._layer_mask = MethodType(LayerMasks.column_semicolon_int,
                                          adapter)
@@ -147,6 +148,8 @@ class AtlasAdapter():
 # TODO: perhaps the code to select a method should be contained
 #       in the container class
 
+# TODO: https://en.wikipedia.org/wiki/Delegation_pattern
+
 
 class LayerMasks:
     """just a container for _layer_mask function varieties"""
@@ -155,7 +158,7 @@ class LayerMasks:
         return self._atlas.get_region_mask(
             "@;{}$".format(layer[1]), attr="acronym").raw
 
-    def L_number(self, layer):
+    def full_layer(self, layer):
         # TODO: auto-detect on initialization?
         return self._atlas.get_region_mask(
             "@{}$".format(layer), attr="acronym").raw
