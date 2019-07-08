@@ -7,7 +7,7 @@ from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
 from voxcell import VoxcellError
 # TODO: docstrings, docstrings, docstrings!
-# TODO: currently usng two different methods to get available mtypes
+# TODO: currently usng two different methods to get available mtypes, choose
 # TODO: decouple whethe [cell_density] is filename prefix from whether
 #       sclass density is there
 
@@ -17,6 +17,10 @@ BIG_LIST_OF_KNOWN_MTYPES = [
     "SSC", "TPC:A", "TPC:B", "TPC:C", "TPC", "UPC"]
 
 
+# TODO: should this be a classmethod of AtlasAdapter?
+# TODO: put method adding in a function
+# TODO: mask-generation and density-collection should be to components, each
+#       with their own components
 def compose_atlas_adapter(atlas_dir):
     """generate an adapter for the atlas provided"""
     adapter = AtlasAdapter(atlas_dir)
@@ -88,6 +92,7 @@ def _list_if_not_list(item):
     return [item]
 
 
+# TODO: define a 'NotComposedError' for methods not added to adapter?
 # TODO: what if someone wants to request a property for
 #       region X OR layer Y
 #       OPTION1: accept list of queries and interperet as or
@@ -99,7 +104,7 @@ def _list_if_not_list(item):
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
-class AtlasAdapter(ABC):
+class AtlasAdapter():
 
     def __init__(self, atlas):
         if isinstance(atlas, Atlas):
@@ -128,8 +133,6 @@ class AtlasAdapter(ABC):
 
         return np.all(masks, axis=0)
 
-    # TODO: compose
-
     def _region_mask(self, region):
         warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
                      .format(self)))
@@ -139,29 +142,10 @@ class AtlasAdapter(ABC):
         return self._atlas.get_region_mask(column + "_Column").raw
 
 
-    # # TODO: compose
-    # def _density_types(self):
-    #     import glob
-    #     import os
-    #     all_nrrds = glob.glob(os.path.join(self._atlas.dirpath, "*.nrrd"))
-    #     all_nrrds = [os.path.basename(nrrd).split(".")[0] for nrrd in all_nrrds]
-    #     all_nrrds = [nrrd.split("[cell_density]")[1] if nrrd.startswith("[cell_density]") else nrrd
-    #                 for nrrd in all_nrrds]
-    #     excluded = ['brain_regions', 'orientation', '[PH]y', 'height', 'distance', 'relative_distance', 'depth'] \
-    #     + ['[PH]{}'.format(i) for i in range(1, 7)]\
-    #     + ['thickness:L{}'.format(i) for i in range(1, 7)]\
-    #     + ["EXC", "INH"]
-
-    #     density_nrrds = [nrrd for nrrd in all_nrrds if nrrd not in excluded]
-    #     return density_nrrds
-
-    #     return sum(
-    #         self._atlas.load_data(self._cell_sclass_filename(dtype)).raw[mask]
-    #         for dtype in sclass)#density_types)
-
-
 # TODO: instead of functions I could use callable classes  which inherit from
 #       a superclass
+# TODO: perhaps the code to select a method should be contained
+#       in the container class
 
 
 class LayerMasks:

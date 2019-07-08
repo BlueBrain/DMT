@@ -251,3 +251,6 @@ class Test_compose_atlas_adapter:
                     {'mtype': 'NGC-DA', 'layer': ['L5', 'L1']}),
                 self.atlas.load_data("NGC-DA").raw[
                     self.atlas.get_region_mask('@L5$|L1$').raw])
+
+# TODO: O1 hippocampus
+# TODO: blue_brain_atlas
