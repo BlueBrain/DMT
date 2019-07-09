@@ -1,5 +1,4 @@
 import os
-from types import MethodType
 import numpy as np
 import glob
 from warnings import warn
@@ -18,7 +17,8 @@ from voxcell.nexus.voxelbrain import Atlas
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
-
+# TODO: what if we just store the results of the checks/conditions in adapter
+#       then use if-else conditions on those within the functions themselves
 BIG_LIST_OF_KNOWN_MTYPES = [
     "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
     "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",
@@ -31,75 +31,41 @@ BIG_LIST_OF_KNOWN_MTYPES = [
 def compose_atlas_adapter(atlas_dir):
     """generate an adapter for the atlas provided"""
     adapter = AtlasAdapter(atlas_dir)
-
-    def bind(method):
-        return MethodType(method, adapter)
-
-    if adapter._atlas.load_region_map().find("O1 mosaic", "name"):
-        adapter._region_mask = bind(RegionMasks.O1_no_region_mask)
-        adapter._column_mask = bind(ColumnMasks.O1_column)
-        if adapter._atlas.load_region_map().find('@L1$', 'acronym')\
-           or adapter._atlas.load_region_map().find("@SP$", 'acronym'):
-            adapter._layer_mask = bind(LayerMasks.full_layer)
-        elif adapter._atlas.load_region_map().find("@.*;1$", 'acronym'):
-            adapter._layer_mask = bind(LayerMasks.column_semicolon_int)
-    else:
-        adapter._region_mask = bind(RegionMasks.BBA_ABI_verbatim)
-        adapter._layer_mask = bind(LayerMasks.ABI)
-        adapter._column_mask = bind(ColumnMasks.no_columns)
-
-    if has_cell_density(atlas_dir):
-        adapter.cell_density = bind(CellDensities.has_density)
-
-        if has_sclass_densities(atlas_dir):
-            adapter._sclass_filename = bind(
-                CellDensities.SclassFilenames.bracketed_prefix)
-            adapter._total_density = bind(
-                CellDensities.TotalDensities.exc_and_inh)
-        else:
-            adapter._sclass_filename = bind(
-                CellDensities.SclassFilenames.has_no_sclass)
-            adapter._total_density = bind(
-                CellDensities.TotalDensities.all_mtypes)
-
-        if has_layer_prefixed_mtypes(atlas_dir):
-            adapter._mtype_filename = bind(
-                CellDensities.MtypeFilenames.layer_prefix)
-        else:
-            adapter._mtype_filename = bind(
-                CellDensities.MtypeFilenames.no_prefix)
-
-    else:
-        adapter.cell_density = bind(CellDensities.no_cell_density)
-
     return adapter
 
 
-def has_cell_density(atlas_dir):
+def is_O1_atlas(atlas):
+    return len(atlas.load_region_map().find("O1 mosaic", "name")) > 0
+
+
+def has_cell_density(atlas):
     """checks for any cell density data"""
-    return has_sclass_densities(atlas_dir)\
-        or has_layer_prefixed_mtypes(atlas_dir)\
-        or has_prefixless_mtypes(atlas_dir)
+    return has_sclass_densities(atlas)\
+        or has_layer_prefixed_mtypes(atlas)\
+        or has_prefixless_mtypes(atlas)
 
 
-def has_sclass_densities(atlas_dir):
+def has_sclass_densities(atlas):
     """checks for sclass-specific density"""
+    atlas_dir = atlas.dirpath
     return len(
         {'[cell_density]EXC.nrrd', '[cell_density]INH.nrrd',
          'EXC.nrrd', 'INH.nrrd'}.intersection(set(os.listdir(atlas_dir)))) > 0
 
 
-def has_layer_prefixed_mtypes(atlas_dir):
+def has_layer_prefixed_mtypes(atlas):
     """checks whether mtype densities with
        layer prefixes are present in the atlas"""
+    atlas_dir = atlas.dirpath
     return any(
         glob.glob(os.path.join(atlas_dir, "*_{}.nrrd".format(mtype)))
         for mtype in BIG_LIST_OF_KNOWN_MTYPES)
 
 
-def has_prefixless_mtypes(atlas_dir):
+def has_prefixless_mtypes(atlas):
     """checks whether mtype densities without layer prefix
     are present in the atlas"""
+    atlas_dir = atlas.dirpath
     return len(set(mt + ".nrrd" for mt in BIG_LIST_OF_KNOWN_MTYPES)
                .intersection(set(os.listdir(atlas_dir)))) > 0
 
@@ -112,14 +78,41 @@ def _list_if_not_list(item):
 
 
 class AtlasAdapter():
+    """adapter for a wide set of atlases"""
 
     def __init__(self, atlas):
+        """initialize the adapter for the atlas"""
         if isinstance(atlas, Atlas):
             self._atlas = atlas
         else:
             self._atlas = Atlas.open(atlas)
+        self._mask_generator = _MaskGenerator(self._atlas)
+        self._cell_density_generator = _CellDensityGenerator(self._atlas)
 
     def mask_for_query(self, query):
+        """get a mask corresponding to query"""
+        # delegate
+        return self._mask_generator(query)
+
+    def cell_density(self, query):
+        """get atlas cell density"""
+        density_volume = self._cell_density_generator(query)
+        if np.all(np.isnan(density_volume)):
+            return np.nan
+        return density_volume[self.mask_for_query(query)]
+
+
+class _MaskGenerator:
+    """helper class for AtlasAdapter, handles getting the mask for a query"""
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        self._layer_mask = _LayerMask(atlas)
+        self._region_mask = _RegionMask(atlas)
+        self._column_mask = _ColumnMask(atlas)
+
+    def __call__(self, query):
+        """get the mask for query"""
         masks = [self._atlas.load_data("brain_regions").raw > 0]
         if 'region' in query:
             region_mask = np.any(
@@ -137,19 +130,42 @@ class AtlasAdapter():
                  for column in _list_if_not_list(query['column'])], axis=0)
             masks.append(column_mask)
 
+        print(masks)
         return np.all(masks, axis=0)
 
 
 # TODO: https://en.wikipedia.org/wiki/Delegation_pattern
 
+class _MutateCall:
 
-class LayerMasks:
+    def method(self, q):
+        """the method to execute on call"""
+        # cannot be abstract, as is only assigned after initialization
+        raise NotImplementedError()
+
+    def __call__(self, *args, **kwargs):
+        return self.method(*args, **kwargs)
+
+
+class _LayerMask(_MutateCall):
     """
-    just a container for _layer_mask function varieties
+    manages the functions for getting layer masks
+    the __call__ method will be the function selected for the passed atlas
 
     these functions accept a layer name and return a mask from the atlas
     layer names are provided in their uppercase string forms
     """
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if is_O1_atlas(atlas):
+            if atlas.load_region_map().find('@L1$', 'acronym')\
+               or atlas.load_region_map().find("@SP$", 'acronym'):
+                self.method = self.full_layer
+            elif atlas.load_region_map().find("@.*;1$", 'acronym'):
+                self.method = self.column_semicolon_int
+        else:
+            self.method = self.ABI
 
     def column_semicolon_int(self, layer):
         """layer acronyms are <column>;<layer_number. e.g. mc2;2"""
@@ -178,14 +194,23 @@ class LayerMasks:
                 "@.*{}$".format(layer.lower())).raw
 
 
-class RegionMasks:
+class _RegionMask(_MutateCall):
     """
-    container for _region_mask function varieties
+    manages _region_mask function varieties
+
+    sets its __call__ method
 
     these functions accept a region acronym provided by a query and
     return a mask from the atlas (if relevant)
     acronym provided will be based on ABI/BBA naming conventions
     """
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if is_O1_atlas(atlas):
+            self.method = self.O1_no_region_mask
+        else:
+            self.method = self.BBA_ABI_verbatim
 
     def O1_no_region_mask(self, region):
         """O1 circuits don't have 'region'
@@ -200,13 +225,20 @@ class RegionMasks:
         return self._atlas.get_region_mask(region).raw
 
 
-class ColumnMasks:
+class _ColumnMask(_MutateCall):
     """
     container for _column_mask function varieties
 
     these functions accept a column in the form mc<column_number>
     and return a corresponding mask from the atlas, if relevant
     """
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if is_O1_atlas(atlas):
+            self.method = self.O1_column
+        else:
+            self.method = self.no_columns
 
     def O1_column(self, column):
         """O1 circuits have columns in their regions"""
@@ -221,7 +253,7 @@ class ColumnMasks:
 # TODO: certain functions here are dependent on other methods being assigned
 #       e.g. _mtype_filename , _sclass_filename
 #       (how) do I enforce this?
-class CellDensities:
+class _CellDensityGenerator(_MutateCall):
     """
     just a container for cell_density function varieties
 
@@ -229,6 +261,16 @@ class CellDensities:
     get density (layer, region, column ... ) and what kind (sclass, mtype...)
     and returns a value for each voxel in the target area
     """
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if has_cell_density(atlas):
+            self.method = self.has_density
+            self._total_density = _TotalDensity(atlas, self)
+            self._mtype_filename = _MtypeFilename(atlas)
+            self._sclass_filename = _SclassFilename(atlas)
+        else:
+            self.method = self.no_cell_density
 
     def no_cell_density(self, query):
         """no density data in this atlas"""
@@ -238,7 +280,6 @@ class CellDensities:
 
     def has_density(self, query):
         """get density data from the atlas"""
-        mask = self.mask_for_query(query)
         if 'mtype' in query:
             density_types = [name
                              for mtype in _list_if_not_list(query['mtype'])
@@ -257,86 +298,111 @@ class CellDensities:
             density_types = self._total_density()
 
         densities = [
-            self._atlas.load_data(density_type).raw[mask]
+            self._atlas.load_data(density_type).raw
             for density_type in density_types]
         if len(densities) == 0:
             return np.nan
         return np.nansum(densities, axis=0)
 
-    class TotalDensities:
+
+class _TotalDensity(_MutateCall):
+    """
+    just a container for the _total_density function varieties
+
+    these functions accept no arguments and simply return the list of
+    density filenames that add up to form total density
+    """
+
+    def __init__(self, atlas, _cell_density):
+        self._parent_cd_object = _cell_density
+        self._atlas = atlas
+        if has_sclass_densities(atlas):
+            self.method = self.exc_and_inh
+        else:
+            self.method = self.all_mtypes
+
+    def exc_and_inh(self):
         """
-        just a container for the _total_density function varieties
+        total density is the sum of excitatory and inhibitory density
+        """
+        return [scname
+                for sclass in ('EXC', 'INH')
+                for scname in self._parent_cd_object._sclass_filename(sclass)]
 
-        these functions accept no arguments and simply return the list of
-        density filenames that add up to form total density
+    def all_mtypes(self):
+        """
+        total density is the sum of all mtype densities
+        """
+        import glob
+        from os.path import basename, join
+        allnrrdnames = [basename(nrrd).split(".")[0] for nrrd in
+                        glob.glob(join(self._atlas.dirpath, "*.nrrd"))]
+
+        mtype_names = [fname for mtype in BIG_LIST_OF_KNOWN_MTYPES
+                       for fname in _list_if_not_list(
+                               self._parent_cd_object._mtype_filename(mtype))]
+        all_mtypes = {
+            fname for fname in allnrrdnames if fname in mtype_names}
+
+        return list(all_mtypes)
+
+
+class _SclassFilename(_MutateCall):
+    """
+    just a container for _sclass_filename function varieties
+
+    these functions accept the name of the density type
+    (e.g. the sclass or mtype name) and return a list of filenames that
+    add up to the density for that type.
+    """
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if has_sclass_densities(atlas):
+            self.method = self.bracketed_prefix
+        else:
+            self.method = self.has_no_sclass
+
+    # TODO: split BIG_LIST by sclass, so that sclass density can be
+    #       obtained from mtype densities?
+    def has_no_sclass(self, density_type):
+        """the circuit has no information about sclass density"""
+        warn(Warning("{} has no sclass densities".format(self)))
+        return []
+
+    def bracketed_prefix(self, density_type):
+        """
+        the sclass density is contained in files named
+        [cell_density]<sclass>.nrrd
         """
 
-        def exc_and_inh(self):
-            """
-            total density is the sum of excitatory and inhibitory density
-            """
-            return [scname
-                    for sclass in ('EXC', 'INH')
-                    for scname in self._sclass_filename(sclass)]
-
-        def all_mtypes(self):
-            """
-            total density is the sum of all mtype densities
-            """
-            import glob
-            from os.path import basename, join
-            allnrrdnames = [basename(nrrd).split(".")[0] for nrrd in
-                            glob.glob(join(self._atlas.dirpath, "*.nrrd"))]
-
-            mtype_names = [fname for mtype in BIG_LIST_OF_KNOWN_MTYPES
-                           for fname in _list_if_not_list(
-                                   self._mtype_filename(mtype))]
-            all_mtypes = {
-                fname for fname in allnrrdnames if fname in mtype_names}
-
-            return list(all_mtypes)
-
-    class SclassFilenames:
-        """
-        just a container for _sclass_filename function varieties
-
-        these functions accept the name of the density type
-        (e.g. the sclass or mtype name) and return a list of filenames that
-        add up to the density for that type.
-        """
-
-        # TODO: split BIG_LIST by sclass, so that sclass density can be
-        #       obtained from mtype densities?
-        def has_no_sclass(self, density_type):
-            """the circuit has no information about sclass density"""
-            warn(Warning("{} has no sclass densities".format(self)))
+        # for now assume no UN
+        if density_type in ("EXC", "INH"):
+            return ['[cell_density]' + density_type]
+        else:
             return []
 
-        def bracketed_prefix(self, density_type):
-            """
-            the sclass density is contained in files named
-            [cell_density]<sclass>.nrrd
-            """
 
-            # for now assume no UN
-            if density_type in ("EXC", "INH"):
-                return ['[cell_density]' + density_type]
-            else:
-                return []
+class _MtypeFilename(_MutateCall):
+    """just a container for _mtype_filename function varieties"""
 
-    class MtypeFilenames:
-        """just a container for _mtype_filename function varieties"""
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if has_layer_prefixed_mtypes(atlas):
+            self.method = self.layer_prefix
+        else:
+            self.method = self.no_prefix
 
-        def layer_prefix(self, mtype):
-            """mtype densities are stored with a prefix"""
-            from glob import glob
-            from os.path import join, basename
-            allnames = glob(
-                join(self._atlas.dirpath, "*_" + mtype + ".nrrd"))
-            basenames = [basename(name).split(".")[0]
-                         for name in allnames]
-            return basenames
+    def layer_prefix(self, mtype):
+        """mtype densities are stored with a prefix"""
+        from glob import glob
+        from os.path import join, basename
+        allnames = glob(
+            join(self._atlas.dirpath, "*_" + mtype + ".nrrd"))
+        basenames = [basename(name).split(".")[0]
+                     for name in allnames]
+        return basenames
 
-        def no_prefix(self, mtype):
-            """mtype densities are stored with a direct name"""
-            return mtype
+    def no_prefix(self, mtype):
+        """mtype densities are stored with a direct name"""
+        return mtype
