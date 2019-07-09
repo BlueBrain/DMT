@@ -21,45 +21,50 @@ BIG_LIST_OF_KNOWN_MTYPES = [
 # TODO: put method adding in a function
 # TODO: mask-generation and density-collection should be to components, each
 #       with their own components
+# TODO: should be possible to initialize atlas adapter locked to some region
 def compose_atlas_adapter(atlas_dir):
     """generate an adapter for the atlas provided"""
     adapter = AtlasAdapter(atlas_dir)
-    if adapter._atlas.load_region_map().find('@L1$', 'acronym')\
-       or adapter._atlas.load_region_map().find("@SP$", 'acronym'):
-        adapter._layer_mask = MethodType(LayerMasks.full_layer, adapter)
+
+    def bind(method):
+        return MethodType(method, adapter)
+
+    if adapter._atlas.load_region_map().find("O1 mosaic", "name"):
+        adapter._region_mask = bind(RegionMasks.O1_no_region_mask)
+        adapter._column_mask = bind(ColumnMasks.O1_column)
+        if adapter._atlas.load_region_map().find('@L1$', 'acronym')\
+           or adapter._atlas.load_region_map().find("@SP$", 'acronym'):
+            adapter._layer_mask = bind(LayerMasks.full_layer)
+        elif adapter._atlas.load_region_map().find("@.*;1$", 'acronym'):
+            adapter._layer_mask = bind(LayerMasks.column_semicolon_int)
     else:
-        adapter._layer_mask = MethodType(LayerMasks.column_semicolon_int,
-                                         adapter)
+        adapter._region_mask = bind(RegionMasks.BBA_ABI_verbatim)
+        adapter._layer_mask = bind(LayerMasks.ABI)
+        adapter._column_mask = bind(ColumnMasks.no_columns)
+
     if has_cell_density(atlas_dir):
-        adapter.cell_density = MethodType(CellDensities.has_density,
-                                          adapter)
+        adapter.cell_density = bind(CellDensities.has_density)
+
         if has_sclass_densities(atlas_dir):
-            adapter._sclass_filename = MethodType(
-                CellDensities.SclassFilenames.bracketed_prefix,
-                adapter)
-            adapter._total_density = MethodType(
-                CellDensities.TotalDensities.exc_and_inh,
-                adapter)
+            adapter._sclass_filename = bind(
+                CellDensities.SclassFilenames.bracketed_prefix)
+            adapter._total_density = bind(
+                CellDensities.TotalDensities.exc_and_inh)
         else:
-            adapter._sclass_filename = MethodType(
-                CellDensities.SclassFilenames.has_no_sclass,
-                adapter)
-            adapter._total_density = MethodType(
-                CellDensities.TotalDensities.all_mtypes,
-                adapter)
+            adapter._sclass_filename = bind(
+                CellDensities.SclassFilenames.has_no_sclass)
+            adapter._total_density = bind(
+                CellDensities.TotalDensities.all_mtypes)
 
         if has_layer_prefixed_mtypes(atlas_dir):
-            adapter._mtype_filename = MethodType(
-                CellDensities.MtypeFilenames.layer_prefix,
-                adapter)
+            adapter._mtype_filename = bind(
+                CellDensities.MtypeFilenames.layer_prefix)
         else:
-            adapter._mtype_filename = MethodType(
-                CellDensities.MtypeFilenames.no_prefix,
-                adapter)
+            adapter._mtype_filename = bind(
+                CellDensities.MtypeFilenames.no_prefix)
 
     else:
-        adapter.cell_density = MethodType(CellDensities.no_cell_density,
-                                          adapter)
+        adapter.cell_density = bind(CellDensities.no_cell_density)
 
     return adapter
 
@@ -134,13 +139,7 @@ class AtlasAdapter():
 
         return np.all(masks, axis=0)
 
-    def _region_mask(self, region):
-        warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
-                     .format(self)))
-        return self._atlas.load_data("brain_regions").raw != 0
 
-    def _column_mask(self, column):
-        return self._atlas.get_region_mask(column + "_Column").raw
 
 
 # TODO: instead of functions I could use callable classes  which inherit from
@@ -162,6 +161,36 @@ class LayerMasks:
         # TODO: auto-detect on initialization?
         return self._atlas.get_region_mask(
             "@{}$".format(layer), attr="acronym").raw
+
+    def ABI(self, layer):
+        if layer.startswith('L') and layer[1] in '123456':
+            # cortex
+            return self._atlas.get_region_mask("@.*{}$".format(layer[1:])).raw
+        else:
+            # hippocampus
+            return self._atlas.get_region_mask(
+                "@.*{}$".format(layer.lower())).raw
+
+
+class RegionMasks:
+
+    def O1_no_region_mask(self, region):
+        warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
+                     .format(self)))
+        return self._atlas.load_data("brain_regions").raw != 0
+
+    def BBA_ABI_verbatim(self, region):
+        return self._atlas.get_region_mask(region).raw
+
+
+class ColumnMasks:
+
+    def O1_column(self, column):
+        return self._atlas.get_region_mask(column + "_Column").raw
+
+    def no_columns(self, column):
+        warn(Warning("column is not defined for {}, ignoring".format(self)))
+        return self._atlas.load_data("brain_regions").raw != 0
 
 
 # TODO: certain functions here are dependent on other methods being assigned

@@ -423,10 +423,9 @@ class Test_compose_atlas_adapter:
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_region_mask(self):
-            with pyt.warns(Warning):
-                npt.assert_array_equal(
-                    self.adapted.mask_for_query({'region': 'SSp'}),
-                    self.atlas.get_region_mask("SSp").raw)
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'region': 'SSp'}),
+                self.atlas.get_region_mask("SSp").raw)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
@@ -438,14 +437,16 @@ class Test_compose_atlas_adapter:
                 self.adapted.mask_for_query(
                     {'layer': ['SO', 'L4']}),
                 np.logical_or(
-                    self.atlas.get_region_mask("@.*so$").raw,
+                    np.logical_and(
+                        self.atlas.get_region_mask("@.*so$").raw,
+                        self.atlas.get_region_mask("CA")),
                     self.atlas.get_region_mask("@.*4$").raw))
 
-        def test_warncs_column(self):
+        def test_warns_column(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapter.mask_for_query({'column': 'mc2'}),
-                    self.atlas.load_data("brain_regions").raw)
+                    self.adapted.mask_for_query({'column': 'mc2'}),
+                    self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_region_layer(self):
             npt.assert_array_equal(
