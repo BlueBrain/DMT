@@ -2,13 +2,23 @@ import numpy as np
 import numpy.testing as npt
 import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
-from neuro_dmt.models.bluebrain.atlas import compose_atlas_adapter
+from neuro_dmt.models.bluebrain.atlas import AtlasAdapter
+
+
+def compose_atlas_adapter(atlas):
+    """
+    a wrapper function until the precise interface
+    for atlas initialization is determined.
+    e.g. do we want a .compose or .infer method
+    separate from an __init__ accepting a configuration
+    """
+    return AtlasAdapter(atlas)
 
 
 # TODO: test region X OR layer Y OR column Z
 # TODO: test excludde xyz
 # TODO: test mtype density
-class Test_compose_atlas_adapter:
+class Test_atlas_adapter:
 
     class Test_NCX_O1:
         """
