@@ -485,3 +485,64 @@ class Test_atlas_adapter:
                                "[cell_density]L6_IPC").raw],
                           axis=0)[
                               self.atlas.get_region_mask("MOp").raw])
+
+    class Test_2019_S1:
+        """
+        test for paxinos-watson based S1 atlas of somatosensory cortex
+        TODO: replace with dummy atlas mimicing properties"""
+
+        adapted = compose_atlas_adapter(
+            "/gpfs/bbp.cscs.ch/project/proj68/entities/"
+            "dev/atlas/ccf_2017-50um/20181114")
+        atlas = Atlas.open(
+            "/gpfs/bbp.cscs.ch/project/proj68/entities/"
+            "dev/atlas/ccf_2017-50um/20181114")
+
+        def test_region_mask(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query({'region': 'SSp'}),
+                self.atlas.get_region_mask("SSp").raw)
+
+        def test_mask_multiple_layers(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query(
+                    {'layer': ['L1', 'L4']}),
+                np.logical_or(
+                    self.atlas.get_region_mask("L1").raw,
+                    self.atlas.get_region_mask("L4").raw))
+
+        def test_warns_column(self):
+            with pyt.warns(Warning):
+                npt.assert_array_equal(
+                    self.adapted.mask_for_query({'column': 'mc2'}),
+                    self.atlas.load_data("brain_regions").raw != 0)
+
+        def test_mask_region_layer(self):
+            npt.assert_array_equal(
+                self.adapted.mask_for_query(
+                    dict(region="SSp-ll", layer=['L1', 'L4'])),
+                np.logical_and(
+                    self.atlas.get_region_mask("S1HL").raw,
+                    np.logical_or(
+                        self.atlas.get_region_mask("L1").raw,
+                        self.atlas.get_region_mask("L4").raw)))
+
+        def test_cell_density(self):
+            npt.assert_array_equal(
+                self.adapted.cell_density({"region": "SSp-m"}),
+                np.sum([
+                    self.atlas.load_data("[cell_density]{}".format(sc)).raw
+                    for sc in ("EXC", "INH")], axis=0)[
+                            self.atlas.get_region_mask("S1J").raw])
+
+        def test_mtype_density(self):
+            npt.assert_array_equal(
+                self.adapted.cell_density({
+                    "mtype": "IPC",
+                    "region": "SS"}),
+                np.nansum([self.atlas.load_data(
+                    "[cell_density]L2_IPC").raw,
+                           self.atlas.load_data(
+                               "[cell_density]L6_IPC").raw],
+                          axis=0)[
+                              self.atlas.get_region_mask("SSCtx").raw])
