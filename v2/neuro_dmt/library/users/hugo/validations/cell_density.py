@@ -1,8 +1,8 @@
 import pandas as pd
 from dmt.analysis import Analysis
 from dmt.model.interface import interfacemethod, Interface
-from neuro_dmt.library.composition import SimpleValidation
-from neuro_dmt.library.composition.utils import plot_columns
+from neuro_dmt.library.users.hugo.validations import SimpleValidation
+from neuro_dmt.library.users.hugo.utils import plot_columns
 
 
 class CellDensityValidation(SimpleValidation):
@@ -17,15 +17,14 @@ class CellDensityValidation(SimpleValidation):
 
     class AdapterInterface(Interface):
 
-        @interfacemethod
         def cell_density(adapter_self, query):
             """
             return the cell density of the adapted model
             for parameters specified by query
 
             Args:
-            adapter_self: the adapted model. Will be implicitly passed when
-                         the adaptermethod is invoked
+                adapter_self: the adapted model. Will be implicitly passed when
+                              the adaptermethod is invoked
             query: a dict or dict-like object with key-value pairs specifying
                   where to get cell density, and of what cell types
                   # TODO: document keys in a reusable enum
@@ -42,19 +41,24 @@ class CellDensityValidation(SimpleValidation):
                                layer prefix ('IPC', rather than 'L2_IPC')
                                to specify layer or region, use the associated
                                keys
-            Returns: One or more samples of cell density (float)
+
+            Returns:
+               One or more samples of cell density (float)
             """
             pass
 
-    def get_measurement(self, model, q):
-        return model.cell_density(q)
+    def get_measurement(self, model, query):
+        """get cell density for model with properties in  query"""
+        return model.cell_density(query)
 
 
 class INHRatioValidation(CellDensityValidation):
 
     phenomenon = "inhibitory_ratio"
 
-    def get_measurement(self, model, q):
-        q_INH = dict(**q)
+    def get_measurement(self, model, query):
+        """get inhibitory density divided by total density
+        from model with properties in query"""
+        q_INH = dict(**query)
         q_INH['sclass'] = 'INH'
-        return model.cell_density(q_INH) / model.cell_density(q)
+        return model.cell_density(q_INH) / model.cell_density(query)
