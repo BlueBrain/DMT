@@ -6,6 +6,13 @@ from neuro_dmt.library.users.hugo.utils import\
     DATA_KEYS, ensure_mean_and_std
 
 
+class VERDICT:
+    """enum for verdict results"""
+    PASS = "PASS"
+    FAIL = "FAIL"
+    NA = "UNDECIDED"
+
+
 # TODO: enums instead of DATA_KEYS
 # TODO: figure out what to do about units
 class SimpleValidation(Analysis, ABC):
@@ -24,8 +31,7 @@ class SimpleValidation(Analysis, ABC):
         Arguments:
             data: DataFrame: data to validate against
         """
-        if data is not None or not hasattr(self, 'data'):
-            self.data = data
+        self.data = data
         if not hasattr(self, 'phenomenon'):
             warnings.warn(Warning(
                 "{} does not have a phenomenon, defaulting to 'Not Provided'"
@@ -106,14 +112,25 @@ class SimpleValidation(Analysis, ABC):
             plot: plot of validation results
 
         Returns:
-            True, False, or None
+            VERDICT.PASS, VERDICT.FAIL, or VERDICT.NA
         """
-        return None
+        return VERDICT.NA
 
     # TODO: there may not be just one by to plot by
     # TODO: change data results and plotting format
-    def _get_report(self, models, measurements):
-        report_dict = {"phenomenon": self.phenomenon}
+    def _get_report(self, measurements):
+        """
+        write and return a report of the validation
+
+        Arguments:
+            measurements: the measured quantities for each model, pd.DataFrame
+
+        Returns
+            a Report instance with attributes of plotting, etc.
+        """
+
+        report = Report()
+        report.phenomenon = self.phenomenon
         labels = []
         results = []
 
@@ -122,33 +139,22 @@ class SimpleValidation(Analysis, ABC):
             results.append(ensure_mean_and_std(self.data))
             labels.append(bio_label)
 
-        for i, m in enumerate(measurements):
-            model = models[i]
-            df = pd.DataFrame(self.by(model))
-            try:
-                label = model.label
-            except AttributeError:
-                warnings.warn("model number {}, {} does not have label"
-                              .format(i, model))
-                label = 'model' + str(i)
-
-            df['samples'] = m
-            results.append(ensure_mean_and_std(df))
+        for label, measurement in measurements:
+            results.append(ensure_mean_and_std(measurement))
             labels.append(label)
 
         plot = self.plot(
             labels, results, phenomenon=self.phenomenon)
         stats = self.get_stats(*measurements)
-        report_dict['plot'] = plot
-        report_dict['stats'] = stats
-        report_dict['data_results'] = results
+        report.plot = plot
+        report.stats = stats
+        report.data_results = results
 
         # TODO: should verdict be passed the whole report?
         #       it would allow e.g. showing plot and requesting user verdict
-        report_dict['verdict'] = self.get_verdict(*measurements,
-                                              stats=stats, plot=plot)
-
-        return report_dict
+        report.verdict = self.get_verdict(*measurements,
+                                          stats=stats, plot=plot)
+        return report
 
     def plot(self, labels, result, phenomenon):
         """default plotter, no plot"""
@@ -169,10 +175,29 @@ class SimpleValidation(Analysis, ABC):
         # TODO: should query keys be restricted to the values of an enum?
         #       error message should indicate that to use key you should add it
         #       to enum
-        measurements = [[self.get_measurement(model, q)
-                         for q in self.by(model)]
-                        for model in adapted]
-        return self._get_report(adapted, measurements)
+        models_measurements = []
+        for i, model in enumerate(adapted):
+            by = self.by(model)
+            try:
+                label = model.label
+            except AttributeError:
+                warnings.warn("model number {}, {} does not have label"
+                              .format(i, model))
+                label = 'model' + str(i)
+
+            model_measurements = (label, pd.DataFrame(by).assign(
+                samples=[self.get_measurement(model, q)
+                         for q in self.by(model)]))
+            models_measurements.append(model_measurements)
+
+        return self._get_report(models_measurements)
+
+
+class Report:
+    """validation report,
+    for now just contains the results of the validation"""
+    pass
+
 
 
 from .cell_density import CellDensityValidation, INHRatioValidation
