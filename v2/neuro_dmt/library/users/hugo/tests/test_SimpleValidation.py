@@ -1,8 +1,16 @@
 import pandas as pd
 import numpy as np
 import pytest as pyt
+from pandas.testing import assert_frame_equal as afq
 from neuro_dmt.library.users.hugo.validations import \
     SimpleValidation, Report, VERDICT
+
+
+def assert_frame_equal(df1, df2):
+    print(df1)
+    print(df2)
+    return afq(df1, df2, check_like=True)
+
 
 class _TestValidation(SimpleValidation):
     phenomenon = "Test"
@@ -81,9 +89,6 @@ class TestSimpleValidation:
                 def v(self, q):
                     return 1.0
 
-            def dfeq(df1, df2):
-                return all(df1[c].equals(df2[c]) for c in df1.columns)
-
             data = pd.DataFrame({'mean': [1.0], 'b': [1.0]})
             report = _TestValidation(data=data)(DummyModel())
             assert isinstance(report, Report)
@@ -91,12 +96,12 @@ class TestSimpleValidation:
             assert report.plot is None
             assert report.stats is None
             assert report.data_results[0][0] == 'bio'
-            assert dfeq(
+            assert_frame_equal(
                 report.data_results[0][1],
                 pd.DataFrame({'mean': [1.0], 'std': [np.nan],
                               'nsamples': [np.nan], 'b': [1.0]}))
             assert report.data_results[1][0] == 'dummy'
-            assert dfeq(
+            assert_frame_equal(
                 report.data_results[1][1],
-                pd.DataFrame({'mean': [1.0], 'std': [np.nan], 'nsamples': [1],
+                pd.DataFrame({'mean': [1.0], 'std': [0.0], 'nsamples': [1.],
                               'b': [1.0], 'samples': [1.0]}))

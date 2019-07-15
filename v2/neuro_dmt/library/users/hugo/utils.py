@@ -70,6 +70,7 @@ def ensure_mean_and_std(data):
     default = pd.Series([np.nan for n in range(data.shape[0])])
     end_means = data.get(MEAN, default.copy())
     end_stds = data.get(STD, default.copy())
+    # TODO: pandas24 allows nan integer
     end_nsamps = data.get(NSAMPLES, default.copy())
     if SAMPLES in data:
         datapoints = data[SAMPLES]
