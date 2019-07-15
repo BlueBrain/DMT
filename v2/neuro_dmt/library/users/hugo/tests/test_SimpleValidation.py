@@ -95,11 +95,8 @@ class TestSimpleValidation:
                 report.data_results[0][1],
                 pd.DataFrame({'mean': [1.0], 'std': [np.nan],
                               'nsamples': [np.nan], 'b': [1.0]}))
-            print(report.data_results[1][1])
-            print(pd.DataFrame({'mean': [1.0], 'std': [0.0], 'nsamples': [1.0],
-                                'b': [1.0], 'samples': [1.0]}))
             assert report.data_results[1][0] == 'dummy'
             assert dfeq(
                 report.data_results[1][1],
-                pd.DataFrame({'mean': [1.0], 'std': [0.0], 'nsamples': [1.0],
+                pd.DataFrame({'mean': [1.0], 'std': [np.nan], 'nsamples': [1],
                               'b': [1.0], 'samples': [1.0]}))
