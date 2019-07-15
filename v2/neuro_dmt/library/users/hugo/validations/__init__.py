@@ -1,5 +1,6 @@
 import pandas as pd
 import warnings
+from enum import Enum
 from dmt.analysis import Analysis
 from abc import abstractmethod, ABC
 from neuro_dmt.library.users.hugo.utils import\
@@ -10,7 +11,8 @@ class VERDICT:
     """enum for verdict results"""
     PASS = "PASS"
     FAIL = "FAIL"
-    NA = "UNDECIDED"
+    NA = "NA"
+    INCONCLUSIVE = "INCONCLUSIVE"
 
 
 # TODO: enums instead of DATA_KEYS
@@ -60,7 +62,7 @@ class SimpleValidation(Analysis, ABC):
         Returns:
            samples: one or more values representing the values retrieved
         """
-        pass
+        raise NotImplementedError()
 
     def by(self, model):
         """
@@ -112,7 +114,7 @@ class SimpleValidation(Analysis, ABC):
             plot: plot of validation results
 
         Returns:
-            VERDICT.PASS, VERDICT.FAIL, or VERDICT.NA
+            VERDICT.PASS, VERDICT.FAIL, VERDICT.NA or VERDICT.INCONCLUSIVE
         """
         return VERDICT.NA
 
@@ -144,7 +146,7 @@ class SimpleValidation(Analysis, ABC):
             labels.append(label)
 
         plot = self.plot(
-            labels, results, phenomenon=self.phenomenon)
+            labels, results)
         stats = self.get_stats(*measurements)
         report.plot = plot
         report.stats = stats
@@ -183,7 +185,7 @@ class SimpleValidation(Analysis, ABC):
             except AttributeError:
                 warnings.warn("model number {}, {} does not have label"
                               .format(i, model))
-                label = 'model' + str(i)
+                label = 'model_{}'.format(i)
 
             model_measurements = (label, pd.DataFrame(by).assign(
                 samples=[self.get_measurement(model, q)
@@ -194,6 +196,7 @@ class SimpleValidation(Analysis, ABC):
 
 
 class Report:
+    # TODO: __repr__ method
     """validation report,
     for now just contains the results of the validation"""
     pass

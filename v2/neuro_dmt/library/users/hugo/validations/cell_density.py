@@ -13,7 +13,8 @@ class CellDensityValidation(SimpleValidation):
     # wrapper because python is bizarre
     # TODO: make it work like it should
     def plot(self, *args, **kwargs):
-        return plot_columns(*args, **kwargs)
+        return plot_columns(
+            *args, phenomenon=self.phenomenon, **kwargs)
 
     class AdapterInterface(Interface):
 
@@ -41,6 +42,8 @@ class CellDensityValidation(SimpleValidation):
                                layer prefix ('IPC', rather than 'L2_IPC')
                                to specify layer or region, use the associated
                                keys
+                  an absent key is asssumed to be 'all' values
+                  (e.g. total density if no mtype or sclass is specified)
 
             Returns:
                One or more samples of cell density (float)
