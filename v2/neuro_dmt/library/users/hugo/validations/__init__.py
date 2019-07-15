@@ -82,10 +82,16 @@ class SimpleValidation(Analysis, ABC):
         data = self.data
         if data is None:
             raise TypeError("{} requires data" .format(self.__class__))
-        by = [dict(**row) for i, row in
-              data.drop(
-                  columns=[k for k in DATA_KEYS if k in data.columns])
-              .iterrows()]
+        stripped_data = data.drop(
+            columns=[k for k in DATA_KEYS if k in data.columns])
+        if stripped_data.shape[1] == 0 or stripped_data.shape[1] == 0:
+            warnings.warn(
+                Warning(
+                    "data contains no information besides values, "
+                    "result will sample whole model"))
+            return [{}]
+
+        by = [dict(**row) for i, row in stripped_data.iterrows()]
         return by
 
     def get_stats(self, *measurements):
@@ -118,6 +124,19 @@ class SimpleValidation(Analysis, ABC):
         """
         return VERDICT.NA
 
+    # TODO: should I be consistent in naming, call this get_plot
+    def plot(self, labels, result):
+        """
+        plots the results of the validation
+        default: no plot
+
+        Arguments:
+            labels : a label for each element in result
+            result: a list of DataFrames
+        """
+        return None
+
+
     # TODO: there may not be just one by to plot by
     # TODO: change data results and plotting format
     def _get_report(self, measurements):
@@ -145,22 +164,19 @@ class SimpleValidation(Analysis, ABC):
             results.append(ensure_mean_and_std(measurement))
             labels.append(label)
 
-        plot = self.plot(
-            labels, results)
+        plot = self.plot(labels, results)
         stats = self.get_stats(*measurements)
         report.plot = plot
         report.stats = stats
-        report.data_results = results
+        # TODO: OrderedDict?
+        report.data_results = [
+            (label, results[i]) for i, label in enumerate(labels)]
 
         # TODO: should verdict be passed the whole report?
         #       it would allow e.g. showing plot and requesting user verdict
         report.verdict = self.get_verdict(*measurements,
                                           stats=stats, plot=plot)
         return report
-
-    def plot(self, labels, result, phenomenon):
-        """default plotter, no plot"""
-        return None
 
     def __call__(self, *adapted):
         """

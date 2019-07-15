@@ -41,6 +41,7 @@ def ensure_mean_and_std(data):
     use these datapoints to get mean and std
 
     where there none of these, leave np.nan
+
     Args:
         data: pandas DataFrame
 
