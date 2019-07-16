@@ -17,12 +17,14 @@ class VERDICT:
 
 # TODO: enums instead of DATA_KEYS
 # TODO: figure out what to do about units
+# TODO: rename 'by' and 'query' to 'measurement parameters'
+# TODO: pass only samples, stat summary should be done only at latest point
 class SimpleValidation(Analysis, ABC):
     """
     base class allowing certain validations to be quickly and easily defined
 
     a subclass needs to define at least get_measurement, while default options
-    exist for by, stats, verdict and plot.
+    exist for measurement_parameters, stats, verdict and plot.
     Overwrite those to customize the validation
 
     TODO: work out and enforce other requirements
@@ -46,7 +48,7 @@ class SimpleValidation(Analysis, ABC):
     #       could be done by passing AdapterInterface through methods and
     #       catching AttributeError
     @abstractmethod
-    def get_measurement(self, model, query):
+    def get_measurement(self, model, measurement_parameters):
         """
         get the required measurement from the adapted model
         abstract, must be overwritten in subclass
@@ -55,8 +57,10 @@ class SimpleValidation(Analysis, ABC):
 
         Arguments:
            model: model from which to extract the data
-           query: dict or dict-like,
-                  an element of self.by, additional data on where
+           measurement_parameters:
+                  dict or dict-like,
+                  an element of self.measurements_parameters(model),
+                  additional data on where
                   and what to extract (region, mtype, layer, column...)
 
         Returns:
@@ -64,7 +68,7 @@ class SimpleValidation(Analysis, ABC):
         """
         raise NotImplementedError()
 
-    def by(self, model):
+    def measurements_parameters(self, model):
         """
         data governing what to query in get_measurement
         (region, layer, mtype, etc.)
@@ -78,10 +82,12 @@ class SimpleValidation(Analysis, ABC):
 
         TODO: formally document format
         """
-        # TODO: cache by
+        # TODO: cache measurement_parameters
         data = self.data
         if data is None:
-            raise TypeError("{} requires data" .format(self.__class__))
+            raise TypeError("{} requires data, or "
+                            "a different measurements_parameters method"
+                            .format(self.__class__))
         stripped_data = data.drop(
             columns=[k for k in DATA_KEYS if k in data.columns])
         if stripped_data.shape[1] == 0 or stripped_data.shape[1] == 0:
@@ -91,8 +97,9 @@ class SimpleValidation(Analysis, ABC):
                     "result will sample whole model"))
             return [{}]
 
-        by = [dict(**row) for i, row in stripped_data.iterrows()]
-        return by
+        measurements_parameters = [dict(**row)
+                                   for i, row in stripped_data.iterrows()]
+        return measurements_parameters
 
     def get_stats(self, *measurements):
         """
@@ -137,7 +144,7 @@ class SimpleValidation(Analysis, ABC):
         return None
 
 
-    # TODO: there may not be just one by to plot by
+    # TODO: there may not be just one measurement_parameters to plot by
     # TODO: change data results and plotting format
     def _get_report(self, measurements):
         """
@@ -190,12 +197,12 @@ class SimpleValidation(Analysis, ABC):
         #       is called on it, and raises an appropriate error when
         #       a method not declared in AdapterInterface is called and the
         #       adapted model does not have it
-        # TODO: should query keys be restricted to the values of an enum?
+        # TODO: should mparam keys be restricted to the values of an enum?
         #       error message should indicate that to use key you should add it
         #       to enum
         models_measurements = []
         for i, model in enumerate(adapted):
-            by = self.by(model)
+            measurements_parameters = self.measurements_parameters(model)
             try:
                 label = model.label
             except AttributeError:
@@ -203,9 +210,11 @@ class SimpleValidation(Analysis, ABC):
                               .format(i, model))
                 label = 'model_{}'.format(i)
 
-            model_measurements = (label, pd.DataFrame(by).assign(
-                samples=[self.get_measurement(model, q)
-                         for q in self.by(model)]))
+            model_measurements = (
+                label, pd.DataFrame(measurements_parameters).assign(
+                    samples=[self.get_measurement(model, parameters)
+                             for parameters in
+                             self.measurements_parameters(model)]))
             models_measurements.append(model_measurements)
 
         return self._get_report(models_measurements)

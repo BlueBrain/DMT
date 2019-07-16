@@ -40,33 +40,40 @@ class TestSimpleValidation:
             data = pd.DataFrame({"buh": [1, 2, 3, 4]})
             assert all(_TestValidation(data=data).data == data)
 
-    class TestDefaultBy:
-        """test the default implementation of the 'by' method"""
+    class TestDefaultMeasurementsParameters:
+        """
+        test the default implementation of the
+        'measurements_parameters' method
+        """
         # TODO: should only data keys, empty dataframe, and no data all
         #       give the same result? which result?
 
         def test_error(self):
             dummy_object = ''
             with pyt.raises(TypeError):
-                _TestValidation().by(dummy_object)
+                _TestValidation().measurements_parameters(dummy_object)
 
         def test_data_with_data_keys(self):
             data = pd.DataFrame({"mean": [1, 2, 3, 4, 5],
                                  'blarg': [11, 12, 13, 14, 15]})
-            by = _TestValidation(data=data).by('')
-            assert by == [{'blarg': v} for v in data['blarg']]
+            measurements_parameters =\
+                _TestValidation(data=data).measurements_parameters('')
+            assert measurements_parameters ==\
+                [{'blarg': v} for v in data['blarg']]
 
         def test_data_only_data_keys(self):
             data = pd.DataFrame({"mean": [1, 2, 3, 4, 5]})
             with pyt.warns(Warning):
-                by = _TestValidation(data=data).by('')
-            assert by == [{}]
+                measurements_parameters =\
+                    _TestValidation(data=data).measurements_parameters('')
+            assert measurements_parameters == [{}]
 
         def test_data_empty_dataframe(self):
             data = pd.DataFrame()
             with pyt.warns(Warning):
-                by = _TestValidation(data=data).by('')
-            assert by == [{}]
+                measurements_parameters =\
+                    _TestValidation(data=data).measurements_parameters('')
+            assert measurements_parameters == [{}]
 
     class TestOtherDefaults:
 
