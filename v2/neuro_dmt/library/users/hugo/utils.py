@@ -131,12 +131,12 @@ def plot_columns(labels, data, phenomenon=""):
     for i, label in enumerate(labels):
         # TODO: plot confidence interval instead of std
         s.append(ax.bar(ind, data[i][MEAN],
-                        yerr=data[i][STD], width=width))
+                        yerr=data[i][STD], width=width, label=label))
 
         ind += width
 
     plt.title(_title(phenomenon, uniform_vals))
-    ax.legend(s, labels)
+    ax.legend()
     ax.set_xlabel(', '.join(str(col) for col in plotby.columns))
     ax.set_xticklabels([', '.join(str(val) for val in row.values)
                         for _, row in plotby.iterrows()])
