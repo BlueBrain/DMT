@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import pytest as pyt
 import matplotlib.pyplot as plt
 from pandas.testing import assert_frame_equal as afq
 from pandas.testing import assert_series_equal as asq
@@ -111,3 +112,36 @@ class Test_plot_columns:
         assert labels == test_labels
 
         # TODO: we can test properties of the patches and errorbars
+
+    @pyt.mark.xfail
+    def test_confidence_interval(self):
+        """test that errorbar reflects a 95% confidence interval"""
+        test_labels = ['test']
+        test_data = pd.DataFrame({'measurement_property': ['a', 'b', 'c'],
+                                  'mean': [10, 20, 30],
+                                  'std': [1, 2, 3],
+                                  'nsamples': [4, 1, 2]})
+
+        z_stat = 1.96  # for 95% CI
+        confidence = z_stat /\
+            test_data['std'] / np.sqrt(test_data['nsamples'])
+
+        test_phenomenon = 'cd'
+        fig, ax = plot_columns(test_labels, [test_data],
+                               phenomenon=test_phenomenon)
+        handles, labels = ax.get_legend_handles_labels()
+        segments = handles[0].errorbar.lines[2][0].get_segments()
+        segment_lengths = [s[1, 1] - s[0, 1] for s in segments]
+        # TODO: how to get errorbar size?
+        assert assert_iterables_equal(segment_lengths, confidence)
+
+    @pyt.mark.xfail
+    def test_no_std(self):
+        test_labels = ['test']
+        test_data = pd.DataFrame({'measurement_property': ['a', 'b', 'c'],
+                                  'mean': [10, 20, 30]})
+        test_phenomenon = 'cd'
+        fig, ax = plot_columns(test_labels, [test_data],
+                               phenomenon=test_phenomenon)
+        handles, labels = ax.get_legend_handles_labels()
+        assert handles[0].errorbar is None
