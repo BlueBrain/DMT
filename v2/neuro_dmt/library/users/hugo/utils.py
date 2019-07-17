@@ -40,20 +40,29 @@ def ensure_mean_and_std(data):
     Wherever there is no mean or std but there are datapoints(samples)
     use these datapoints to get mean and std
 
-    assumes all are represented in form <label>_<property>
-    (e.g. model_mean, bio_samples, etc.)
+    where there none of these, leave np.nan
 
+    Args:
+        data: pandas DataFrame
+
+    Returns:
+        a new dataframe with 'mean', 'std' and 'nsamples' columnss, where
+        the values are filled in based on the 'samples' column
 
     """
-    data = data.copy()
 
     def _set_axis(d):
+        """return 0 if d is iterable, else None"""
         return 0 if hasattr(d, "__len__") else None
 
     def lenor1(d, axis):
+        """return the length of d along axis 0 if it is iterable,
+        or 1 if it is not"""
         return len(d) if hasattr(d, "__len__") else 1
 
     def fill_func_of_datapoints(datapoints, series, func):
+        """fill the NaN values of series with some
+        function func of the corresponding datapoints"""
         return series.fillna({
             ind: func(datapoints[ind], axis=_set_axis(datapoints[ind]))
             for ind in data.index})
@@ -61,6 +70,7 @@ def ensure_mean_and_std(data):
     default = pd.Series([np.nan for n in range(data.shape[0])])
     end_means = data.get(MEAN, default.copy())
     end_stds = data.get(STD, default.copy())
+    # TODO: pandas24 allows nan integer
     end_nsamps = data.get(NSAMPLES, default.copy())
     if SAMPLES in data:
         datapoints = data[SAMPLES]
@@ -70,29 +80,36 @@ def ensure_mean_and_std(data):
             datapoints, end_stds, np.std)
         end_nsamps = fill_func_of_datapoints(
             datapoints, end_nsamps, lenor1)
-    data[MEAN] = end_means
-    data[STD] = end_stds
-    data[NSAMPLES] = end_nsamps
-    return data
+    return data.assign(**{MEAN: end_means,
+                          STD: end_stds,
+                          NSAMPLES: end_nsamps})
 
 
 def drop_data_entries(data):
     """drop all DATA_KEYS from a dataframe"""
-    data = data.copy()
-    data.drop(columns=[e for e in
-                       [entry for entry in DATA_KEYS]
-                       if e in data],
-              inplace=True)
-    return data
+    return data.drop(columns=[e for e in
+                              [entry for entry in DATA_KEYS]
+                              if e in data])
 
 
 def _title(phenomenon, uniform_vals):
-
+    """
+    generates a plot title based on
+    the phenomenon displayed and those attributes
+    which are the same for all data
+    Arguments:
+        phenomenon: name of the phenomenon plotted (e.g. cell density)
+        uniform_vals: attributes of the data that are constant across allow
+                      datapoints
+                      (might be region: SSp-ll for a validation of SSp-ll)
+    Returns:
+        a string to use as title
+    """
     if len(uniform_vals) == 0:
         return phenomenon
 
     return phenomenon + ' for ' + ','.join(
-        [str(k) + ": " + str(v)
+        ["{}: {}".format(k, v)
          for k, v in uniform_vals.items()])
 
 
@@ -114,12 +131,12 @@ def plot_columns(labels, data, phenomenon=""):
     for i, label in enumerate(labels):
         # TODO: plot confidence interval instead of std
         s.append(ax.bar(ind, data[i][MEAN],
-                        yerr=data[i][STD], width=width))
+                        yerr=data[i][STD], width=width, label=label))
 
         ind += width
 
     plt.title(_title(phenomenon, uniform_vals))
-    ax.legend(s, labels)
+    ax.legend()
     ax.set_xlabel(', '.join(str(col) for col in plotby.columns))
     ax.set_xticklabels([', '.join(str(val) for val in row.values)
                         for _, row in plotby.iterrows()])
