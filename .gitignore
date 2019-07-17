@@ -18,7 +18,6 @@ dist
 *.doku
 *.log
 *.out
-*.md
 *.aux
 auto/
 doc/auto/
@@ -28,4 +27,3 @@ doc/build/
 \#*\#
 .\#*
 *.png
-scratch/

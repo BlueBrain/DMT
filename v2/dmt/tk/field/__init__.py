@@ -304,25 +304,57 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
-
-def lazy(instance_property):
+def lazyproperty(instance_property):
     """
-    Make instance property lazy.
+    Make an 'instance_property' lazy.
 
     Parameters
-    ----------------
-    instance_property :: an attribute method of a class marked as @property
+    ~   instance_property:
+    ~       an attribute method of a class decorated @property
     """
     property_name_for_storage =\
-        "_{}".format(instance_property.__name__)
+        "_{}".format(
+            instance_property.__name__)
 
     @property
     def effective(instance):
-        if not hasattr(instance, property_name_for_storage):
+        """
+        The effective, decorated instance.
+        """
+        if not hasattr(
+                instance,
+                property_name_for_storage):
             setattr(
                 instance,
                 property_name_for_storage,
                 instance_property(instance))
-        return getattr(instance, property_name_for_storage)
+        return\
+            getattr(
+                instance,
+                property_name_for_storage)
 
     return effective
+
+lazy = lazyproperty
+# def lazy(instance_property):
+#     """
+#     Make instance property lazy.
+
+#     Parameters
+#     ----------------
+#     instance_property :: an attribute method of a class marked as @property
+#     """
+#     property_name_for_storage =\
+#         "_{}".format(instance_property.__name__)
+
+#     @property
+#     def effective(instance):
+#         if not hasattr(instance, property_name_for_storage):
+#             setattr(
+#                 instance,
+#                 property_name_for_storage,
+#                 instance_property(instance))
+#         return getattr(instance, property_name_for_storage)
+
+#     return effective
+
