@@ -59,6 +59,17 @@ def has_prefixless_mtypes(atlas):
                .intersection(set(os.listdir(atlas_dir)))) > 0
 
 
+def is_paxinos_watson(atlas):
+    """
+    checks if region acronyms corresponding to paxinos-watson based
+    somatosensory atlas are present. returns True if they are
+    """
+    rmap = atlas.load_region_map()
+    if rmap.find("SSCtx", "acronym") or rmap.find("S1HL", 'acronym'):
+        return True
+    return False
+
+
 def _list_if_not_list(item):
     """make something a list if it isn't"""
     if isinstance(item, list):
@@ -161,12 +172,11 @@ class _LayerMask(_MutateCall):
 
     def __init__(self, atlas):
         self._atlas = atlas
-        if is_O1_atlas(atlas):
-            if atlas.load_region_map().find('@L1$', 'acronym')\
-               or atlas.load_region_map().find("@SP$", 'acronym'):
-                self._method = self.full_layer
-            elif atlas.load_region_map().find("@.*;1$", 'acronym'):
-                self._method = self.column_semicolon_int
+        if atlas.load_region_map().find('@^L1$|.*;L1$', 'acronym')\
+           or atlas.load_region_map().find("@^SP$|.*;SP$", 'acronym'):
+            self._method = self.full_layer
+        elif atlas.load_region_map().find("@.*;1$", 'acronym'):
+            self._method = self.column_semicolon_int
         else:
             self._method = self.ABI
 
@@ -177,7 +187,6 @@ class _LayerMask(_MutateCall):
 
     def full_layer(self, layer):
         """layer acronyms contain the full layer string, e.g L2 or mc2;L2"""
-        # TODO: auto-detect on initialization?
         return self._atlas.get_region_mask(
             "@{}$".format(layer), attr="acronym").raw
 
@@ -212,6 +221,8 @@ class _RegionMask(_MutateCall):
         self._atlas = atlas
         if is_O1_atlas(atlas):
             self._method = self.O1_no_region_mask
+        elif is_paxinos_watson(atlas):
+            self._method = self.Paxinos_regions
         else:
             self._method = self.BBA_ABI_verbatim
 
@@ -226,6 +237,15 @@ class _RegionMask(_MutateCall):
         """simply request the region from the atlas if it conforms to
         the BBA naming conventions"""
         return self._atlas.get_region_mask(region).raw
+
+    def Paxinos_regions(self, ABI_region):
+        pax_region = ABI_region.replace("SSp", "S1").replace("-bfd", "BF")\
+                     .replace("-ul", "FL").replace("-ll", "HL")\
+                     .replace("-m", "J").replace("-tr", "Tr")\
+                     .replace("-dz", "DZ").replace("-dzo", "DZO")\
+                     .replace("-sh", "Sh").replace("-ulp", "ULp")\
+                     .replace("SS", "SSCtx").replace("SSs", "S2")
+        return self._atlas.get_region_mask(pax_region).raw
 
 
 class _ColumnMask(_MutateCall):
@@ -288,7 +308,7 @@ class _CellDensityGenerator(_MutateCall):
                              _list_if_not_list(self._mtype_filename(mtype))]
             if 'sclass' in query:
                 warn(Warning(
-                    'mtype keyword overrides sclass in {}.cell_density'
+                    'mtype keyword overrides sclass in cell_density'
                     .format(self)))
 
         elif 'sclass' in query:
@@ -303,6 +323,7 @@ class _CellDensityGenerator(_MutateCall):
             for density_type in density_types]
         if len(densities) == 0:
             return np.nan
+        print(density_types)
         return np.nansum(densities, axis=0)
 
 
