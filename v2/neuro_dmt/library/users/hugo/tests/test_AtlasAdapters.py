@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
-from neuro_dmt.models.bluebrain.atlas import AtlasAdapter
+from neuro_dmt.library.users.hugo.adapters.atlas import AtlasAdapter
 
 
 def compose_atlas_adapter(atlas):
@@ -323,7 +323,6 @@ class Test_atlas_adapter:
         def test_cell_density(self):
             with pyt.warns(Warning):
                 assert np.isnan(self.adapted.cell_density({'layer': 'L4'}))
-
 
     class Test_Rat_2018_O1:
         """
