@@ -10,8 +10,6 @@ class CellDensityValidation(SimpleValidation):
 
     phenomenon = "cell_density"
 
-    # wrapper because python is bizarre
-    # TODO: make it work like it should
     def plot(self, *args, **kwargs):
         return plot_columns(
             *args, phenomenon=self.phenomenon, **kwargs)

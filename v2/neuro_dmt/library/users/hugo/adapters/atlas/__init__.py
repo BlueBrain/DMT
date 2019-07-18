@@ -323,7 +323,6 @@ class _CellDensityGenerator(_MutateCall):
             for density_type in density_types]
         if len(densities) == 0:
             return np.nan
-        print(density_types)
         return np.nansum(densities, axis=0)
 
 

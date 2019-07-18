@@ -89,7 +89,6 @@ class Test_plot_columns:
                                test_data.measurement_property)
         handles, labels = ax.get_legend_handles_labels()
         assert labels == test_labels
-        # TODO: we can test properties of the patches and errorbars
 
     def test_two_datasets(self):
         plt.clf()
@@ -111,8 +110,6 @@ class Test_plot_columns:
         handles, labels = ax.get_legend_handles_labels()
         assert labels == test_labels
 
-        # TODO: we can test properties of the patches and errorbars
-
     @pyt.mark.xfail
     def test_confidence_interval(self):
         """test that errorbar reflects a 95% confidence interval"""
@@ -132,7 +129,6 @@ class Test_plot_columns:
         handles, labels = ax.get_legend_handles_labels()
         segments = handles[0].errorbar.lines[2][0].get_segments()
         segment_lengths = [s[1, 1] - s[0, 1] for s in segments]
-        # TODO: how to get errorbar size?
         assert assert_iterables_equal(segment_lengths, confidence)
 
     @pyt.mark.xfail

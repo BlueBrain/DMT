@@ -17,7 +17,8 @@ class VERDICT:
 
 # TODO: enums instead of DATA_KEYS
 # TODO: figure out what to do about units
-# TODO: rename 'by' and 'query' to 'measurement parameters'
+#       OPTION1: put in measurement parameters
+#       OPTION2: put in phenomenon, clarify in adapter
 # TODO: pass only samples, stat summary should be done only at latest point
 class SimpleValidation(Analysis, ABC):
     """
@@ -143,8 +144,6 @@ class SimpleValidation(Analysis, ABC):
         """
         return None
 
-
-    # TODO: there may not be just one measurement_parameters to plot by
     # TODO: change data results and plotting format
     def _get_report(self, measurements):
         """
