@@ -115,6 +115,7 @@ def _title(phenomenon, uniform_vals):
 
 # TODO: kwarg to plot datapoints
 # TODO: automatically adjust font size to prevent overlap
+# TODO: ylabel should explain that it is mean
 def plot_columns(labels, data, phenomenon=""):
     """plot multiple column plots on the same axis"""
     data = [d.fillna(np.nan) for d in data]
