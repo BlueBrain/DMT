@@ -1,4 +1,5 @@
 import numpy as np
+import pytest as pyt
 import bluepy.v2 as bp
 from neuro_dmt.library.users.hugo.adapters import CircuitAdapter
 
@@ -12,23 +13,27 @@ class TestOnNCXO1:
     adapted = CircuitAdapter(circuit_config)
 
     def test_cell_density(self):
-        test_cells = self.circuit.cells.get().shape[1]
-        test_vol = np.sum(self.circuit.atlas.get_region_mask("O1").raw) * 1e-9
-        assert self.adapted.cell_density({}) == test_cells / test_vol
+        test_cells = self.circuit.cells.get().shape[0]
+        test_mask = self.circuit.atlas.get_region_mask("O1")
+        test_vol = np.sum(test_mask.raw) * test_mask.voxel_volume * 1e-9
+        dens = test_cells / test_vol
+        assert self.adapted.cell_density({}) == pyt.approx(dens)
 
     def test_cd_by_layer_mtype_column(self):
         test_cells = self.circuit.cells.get(
             {bp.Cell.LAYER: [1, 3, 6],
              bp.Cell.MTYPE: ['L23_MC', "L6_MC"],
-             bp.Cell.REGION: 'mc2_Column'}).shape[1]
-        test_vol = np.sum(
-            np.logical_and(
-                self.circuit.atlas.get_region_mask("mc2_Column").raw,
-                self.circuit.atlas.get_region_mask("@L[136]$").raw)) * 1e-9
+             bp.Cell.REGION: 'mc2_Column'}).shape[0]
+        col_mask = self.circuit.atlas.get_region_mask("mc2_Column")
+        test_mask = np.logical_and(
+            col_mask.raw,
+            self.circuit.atlas.get_region_mask("@L[136]$").raw)
+        test_vol = np.sum(test_mask) * col_mask.voxel_volume * 1e-9
+        dens = test_cells / test_vol
         assert self.adapted.cell_density(
             {'layer': ['L1', 'L3', 'L6'],
              'mtype': 'MC',
-             'column': 'mc2'}) == test_cells / test_vol
+             'column': 'mc2'}) == pyt.approx(dens)
 
     def test_mtypes(self):
         assert self.adapted.mtypes() == [

@@ -97,6 +97,8 @@ class AtlasAdapter():
             self._atlas = Atlas.open(atlas)
         self._mask_generator = _MaskGenerator(self._atlas)
         self._cell_density_generator = _CellDensityGenerator(self._atlas)
+        self.voxel_volume =\
+            self._atlas.load_data("brain_regions").voxel_volume
 
     def mask_for_query(self, query):
         """get a mask corresponding to query"""
@@ -251,7 +253,7 @@ class _RegionMask(_MutateCall):
 
 class _ColumnMask(_MutateCall):
     """
-    container for _column_mask function varieties
+    manages the functions for getting column masks
 
     these functions accept a column in the form mc<column_number>
     and return a corresponding mask from the atlas, if relevant
@@ -276,7 +278,7 @@ class _ColumnMask(_MutateCall):
 
 class _CellDensityGenerator(_MutateCall):
     """
-    just a container for cell_density function varieties
+    manages varieties of functions for getting cell density
 
     the cell_density function accepts a query containing data on where to
     get density (layer, region, column ... ) and what kind (sclass, mtype...)
@@ -331,10 +333,10 @@ class _CellDensityGenerator(_MutateCall):
 
 class _TotalDensity(_MutateCall):
     """
-    just a container for the _total_density function varieties
+    container for _total_density function varieties
 
-    these functions accept no arguments and simply return the list of
-    density filenames that add up to form total density
+    these functions return a list of filenames of nrrds
+    that sum to total density
     """
 
     # TODO: think about how organise this object.

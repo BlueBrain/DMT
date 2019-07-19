@@ -2,8 +2,8 @@ import warnings
 import numpy as np
 import bluepy.v2 as bp
 from abc import ABCMeta, abstractmethod
-# TODO: what is the most elegant way to require subclasses to define
-#       required methods
+from neuro_dmt.library.users.hugo.adapters.atlas import AtlasAdapter
+
 
 LAYER = 'layer'
 MTYPE = 'mtype'
@@ -11,7 +11,6 @@ SYN_CLASS = 'sclass'
 MORPH_CLASS = 'mclass'
 
 
-# TODO: get mask rather than acronym from _translate_query_atlas
 # TODO: wrap data in adapter-like structure, get measurements
 #       by matching measurement_parameters. This ensures that
 #       the 'by' things will match up, and data not also requested
@@ -19,47 +18,46 @@ MORPH_CLASS = 'mclass'
 #       also, data requested of model and not in data can
 #       be displayed as NaN
 #       lets us construct DataFrames between mismatched results
-class AtlasCircuitAdapter(metaclass=ABCMeta):
-
+class CircuitAdapter(metaclass=ABCMeta):
+    """
+    adapter for bluepy circuits
+    infers what functionality is needed based on the circuit provided
+    (work in progress, presently only supports atlas based O1 circuits
+    """
     def __init__(self, circuit_config):
+        """initialize, for now assume atlas"""
         self._circuit = bp.Circuit(circuit_config)
+        self._adaptedAtlas = AtlasAdapter(self._circuit.atlas)
 
-    def cell_density(self, query):
-        """get cell density from the circuit"""
-        cell_query = self._translate_query_cells(query)
-        atlas_region = self._translate_query_atlas(query)
+    # TODO:: would it be better to have the adapter accept parameters as
+    #        kwargs
+    def cell_density(self, parameters):
+        """
+        get cell density from the circuit
+        """
+        cell_query = self._translate_query_cells(parameters)
         ncells = self._circuit.cells.get(cell_query).shape[0]
-        mask = self._circuit.atlas.get_region_mask(atlas_region)
-        nvoxels = np.sum(mask.raw)
-        # TODO: number depends on units, how to organise that?
-        #       does the .nrrd contain some info?
-        voxel_volume = np.prod(mask.voxel_dimensions) * 1e-9
-        return ncells / nvoxels * voxel_volume
-
-    @abstractmethod
-    def _translate_query_atlas(self, query):
-        pass
-
-    @abstractmethod
-    def _translate_query_cells(self, query):
-        pass
-
-
-# TODO: better to have an atlas component
-#       that can be O1Atlas or BBA or blah, blah
-# TODO: support iterables as query values (e.g. ['L2', 'L3'])
-class O1Adapter(AtlasCircuitAdapter):
-
-    def _mtypes(self):
-        return self._circuit.cells.mtypes
+        mask = self._adaptedAtlas.mask_for_query(parameters)
+        nvoxels = np.sum(mask)
+        voxel_volume = self._adaptedAtlas.voxel_volume * 1e-9
+        print(voxel_volume)
+        print(ncells)
+        return ncells / (nvoxels * voxel_volume)
 
     def mtypes(self):
-        return [mtype.split("_")[-1] for mtype in self._mtypes()]
+        return [self._mtype_parameters(mtype_name for mtype_name in
+                                       self._circuit.cells.get.mtype.unique())]
 
-    def _translate_query_cells(self, query):
+    def _mtype_parameters(self, mtype_name):
+        layer, mtype = mtype_name.split("_")
+        if len(layer) > 2:
+            layer = ["L{}".format(num) for num in layer[1:]]
+        return dict(layer=layer, mtype=mtype)
+
+    def _translate_query_cells(self, parameters):
         cell_query = {}
         # TODO: clean way to abstract this from the adapters?
-        for key, value in query.items():
+        for key, value in parameters.items():
             if key == LAYER:
                 if isinstance(value, str):
                     value = int(value[1])
@@ -70,7 +68,7 @@ class O1Adapter(AtlasCircuitAdapter):
                     raise TypeError(
                         "Mtypes in queries to adapter should not be in form"
                         "<layer>_<name>, but simply <name>")
-                ql = query.get(LAYER, False)
+                ql = parameters.get(LAYER, False)
                 if ql:
                     value = "_".join([ql, value])
                 else:
@@ -83,6 +81,6 @@ class O1Adapter(AtlasCircuitAdapter):
                 cell_query[bp.Cell.MORPH_CLASS] = value
         return cell_query
 
-    def _translate_query_atlas(self, query):
-        atlas_region = query.get('layer', 'O1')
+    def _translate_query_atlas(self, parameters):
+        atlas_region = parameters.get('layer', 'O1')
         return atlas_region

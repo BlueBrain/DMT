@@ -545,3 +545,8 @@ class Test_atlas_adapter:
                                "[cell_density]L6_IPC").raw],
                           axis=0)[
                               self.atlas.get_region_mask("SSCtx").raw])
+
+    def test_gets_voxel_volume(self):
+        adapted = AtlasAdapter(
+            "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
+        assert adapted.voxel_volume == 125.0
