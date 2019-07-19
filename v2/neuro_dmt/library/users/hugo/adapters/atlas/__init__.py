@@ -17,6 +17,7 @@ from voxcell.nexus.voxelbrain import Atlas
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
+# TODO: rename query to parameters
 BIG_LIST_OF_KNOWN_MTYPES = [
     "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
     "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",
@@ -318,12 +319,14 @@ class _CellDensityGenerator(_MutateCall):
         else:
             density_types = self._total_density()
 
-        densities = [
-            self._atlas.load_data(density_type).raw
-            for density_type in density_types]
-        if len(densities) == 0:
+        if len(density_types) == 0:
             return np.nan
-        return np.nansum(densities, axis=0)
+
+        densities = self._atlas.load_data(density_types[0]).raw
+        for density_type in density_types[1:]:
+            densities = np.nansum(
+                [densities, self._atlas.load_data(density_type).raw], axis=0)
+        return densities
 
 
 class _TotalDensity(_MutateCall):

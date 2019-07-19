@@ -12,6 +12,13 @@ MORPH_CLASS = 'mclass'
 
 
 # TODO: get mask rather than acronym from _translate_query_atlas
+# TODO: wrap data in adapter-like structure, get measurements
+#       by matching measurement_parameters. This ensures that
+#       the 'by' things will match up, and data not also requested
+#       of a model will not (and does not need to be) displayed
+#       also, data requested of model and not in data can
+#       be displayed as NaN
+#       lets us construct DataFrames between mismatched results
 class AtlasCircuitAdapter(metaclass=ABCMeta):
 
     def __init__(self, circuit_config):
