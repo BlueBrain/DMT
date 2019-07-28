@@ -16,7 +16,8 @@ class Field:
             __type__=object,
             __validation__=lambda x: True,
             __required__=True,
-            __default_value__=None):
+            __default_value__=None,
+            __examples__=[]):
         """Initialize Me"""
         self.__doc__ = __doc__
         self.__type__ = __type__
@@ -24,6 +25,31 @@ class Field:
         self.__required__ = __required__
         self.__attr_name__ = None
         self.__default_value__ = __default_value__
+        self.__defined_in__ = "Unknown"
+        self.__examples__ = __examples__
+
+    @property
+    def documentation(self):
+        """
+        Document this `Field`.
+        """
+        example_message =\
+            """
+            You may use `{}.{}.examples`
+            to see the kind of values that
+            this `Field` accepts.
+            """.format(
+                self.__defined_in__.__name__,
+                self.__attr_name__)
+        return self.__doc__  +(
+            "" if not self.__examples__ else example_message)
+           
+    def set_defining_class(self,
+            defining_class):
+        """
+        Set where this `Field` was defined.
+        """
+        self.__defined_in__ = defining_class
 
     def __get_instance_attribute_name(self, instance):
         """
@@ -74,6 +100,13 @@ class Field:
     def description(self):
         """Describe this Field"""
         return "Field<{}>".format(self.__doc__)
+
+    @property
+    def examples(self):
+        """
+        Examples
+        """
+        return self.__examples__
 
     def __set__(self, instance, value):
         """

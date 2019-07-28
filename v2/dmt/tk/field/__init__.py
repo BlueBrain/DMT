@@ -112,7 +112,10 @@ class WithFields:
             return getattr(class_field, "__default_value__", None)
 
         for field in self.get_fields():
-            class_field = getattr(self.__class__, field, None)
+            class_field =\
+                getattr(self.__class__, field, None)
+            class_field\
+                .set_defining_class( self.__class__ )
             set_name(class_field, field)
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
@@ -124,24 +127,28 @@ class WithFields:
 
             if class_field.__required__:
                 if value is None:
+                    documentation = class_field\
+                        .documentation\
+                        .replace(
+                            '\n',
+                            "\n\t\t")
                     print(
-                        """Please provide Field '{}':
-                        {}""".format(
-                            field,
-                            class_field.__doc__.replace('\n', "\n\t\t")),
+                        "Please provide Field '{}'\n".format(field) +\
+                        "\t{}".format(documentation),
+                            
                         file=stdout)
                     raise ValueError(
-                    """
-                    Cannot create '{}' instance without required Field '{}'.
-                    Please provide a value as a keyword argument in your 
-                    instance initialization.
-                    Missing Field '{}':
-                    \t{}
-                    """.format(
-                        self.__class__.__name__,
-                        field,
-                        field,
-                        class_field.__doc__.replace('\n', "\n\t\t")))
+                        """
+                        Cannot create '{}' instance without required Field '{}'.
+                        Please provide a value as a keyword argument in your 
+                        instance initialization.
+                        Missing Field '{}':
+                        \t{}
+                        """.format(
+                            self.__class__.__name__,
+                            field,
+                            field,
+                            documentation))
                 setattr(self, field, value)
             elif value is None:
                 #Value is not required
