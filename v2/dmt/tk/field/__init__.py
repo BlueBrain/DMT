@@ -112,8 +112,17 @@ class WithFields:
             return getattr(class_field, "__default_value__", None)
 
         for field in self.get_fields():
-            class_field = getattr(self.__class__, field, None)
-            set_name(class_field, field)
+            class_field =\
+                getattr(
+                    self.__class__,
+                    field,
+                    None)
+            class_field\
+                .set_defining_class(
+                    self.__class__)
+            set_name(
+                class_field,
+                field)
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
                 continue
@@ -124,11 +133,14 @@ class WithFields:
 
             if class_field.__required__:
                 if value is None:
+                    documentation = class_field\
+                        .documentation\
+                        .replace('\n', "\n\t\t")
                     print(
                         """Please provide Field '{}':
                         {}""".format(
                             field,
-                            class_field.__doc__.replace('\n', "\n\t\t")),
+                            documentation),
                         file=stdout)
                     raise ValueError(
                     """
@@ -141,7 +153,7 @@ class WithFields:
                         self.__class__.__name__,
                         field,
                         field,
-                        class_field.__doc__.replace('\n', "\n\t\t")))
+                        documentation))
                 setattr(self, field, value)
             elif value is None:
                 #Value is not required
