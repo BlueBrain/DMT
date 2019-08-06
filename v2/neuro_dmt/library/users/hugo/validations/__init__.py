@@ -116,16 +116,14 @@ class SimpleValidation(Analysis, ABC):
         """
         return None
 
-    def get_verdict(self, *measurements, stats=None, plot=None):
+    def get_verdict(self, report):
         """
         decides whether the validation passes or fails
         default: no verdict
 
         Arguments:
-            measurements: the measured quantities for each model
-            stats: p-values for measurements
-            plot: plot of validation results
-
+            report: validation Report. Will have plot, stats, data_results
+                    to be used to determine verdict
         Returns:
             VERDICT.PASS, VERDICT.FAIL, VERDICT.NA or VERDICT.INCONCLUSIVE
         """
@@ -179,8 +177,7 @@ class SimpleValidation(Analysis, ABC):
 
         # TODO: should verdict be passed the whole report?
         #       it would allow e.g. showing plot and requesting user verdict
-        report.verdict = self.get_verdict(*measurements,
-                                          stats=stats, plot=plot)
+        report.verdict = self.get_verdict(report)
         return report
 
     def __call__(self, *adapted):

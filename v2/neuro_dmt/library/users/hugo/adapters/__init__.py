@@ -54,6 +54,7 @@ class CircuitAdapter(metaclass=ABCMeta):
             layer = ["L{}".format(num) for num in layer[1:]]
         return dict(layer=layer, mtype=mtype)
 
+    # TODO: support lists for each param
     def _translate_query_cells(self, parameters):
         cell_query = {}
         # TODO: clean way to abstract this from the adapters?
