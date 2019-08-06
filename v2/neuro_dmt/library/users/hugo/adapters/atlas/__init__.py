@@ -17,7 +17,6 @@ from voxcell.nexus.voxelbrain import Atlas
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
-# TODO: rename query to parameters
 BIG_LIST_OF_KNOWN_MTYPES = [
     "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
     "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",

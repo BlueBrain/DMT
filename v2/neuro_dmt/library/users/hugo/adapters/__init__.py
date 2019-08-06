@@ -45,8 +45,8 @@ class CircuitAdapter(metaclass=ABCMeta):
         return ncells / (nvoxels * voxel_volume)
 
     def mtypes(self):
-        return [self._mtype_parameters(mtype_name for mtype_name in
-                                       self._circuit.cells.get.mtype.unique())]
+        return [self._mtype_parameters(mtype_name) for mtype_name in
+                                       self._circuit.cells.get().mtype.unique()]
 
     def _mtype_parameters(self, mtype_name):
         layer, mtype = mtype_name.split("_")
@@ -70,6 +70,9 @@ class CircuitAdapter(metaclass=ABCMeta):
                         "<layer>_<name>, but simply <name>")
                 ql = parameters.get(LAYER, False)
                 if ql:
+                    if isinstance(ql, tuple):
+                        ql = "".join([l[1] for l in ql])
+
                     value = "_".join([ql, value])
                 else:
                     value = [mt for mt in self._mtypes()

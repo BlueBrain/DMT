@@ -17,7 +17,6 @@ def compose_atlas_adapter(atlas):
 
 # TODO: test region X OR layer Y OR column Z
 # TODO: test excludde xyz
-# TODO: test mtype density
 class Test_atlas_adapter:
 
     class Test_NCX_O1:

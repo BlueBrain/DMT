@@ -15,11 +15,11 @@ class VERDICT:
     INCONCLUSIVE = "INCONCLUSIVE"
 
 
+# TODO: handle list values for queries in pandas dframes
 # TODO: enums instead of DATA_KEYS
 # TODO: figure out what to do about units
 #       OPTION1: put in measurement parameters
 #       OPTION2: put in phenomenon, clarify in adapter
-# TODO: pass only samples, stat summary should be done only at latest point
 class SimpleValidation(Analysis, ABC):
     """
     base class allowing certain validations to be quickly and easily defined
@@ -28,7 +28,6 @@ class SimpleValidation(Analysis, ABC):
     exist for measurement_parameters, stats, verdict and plot.
     Overwrite those to customize the validation
 
-    TODO: work out and enforce other requirements
     """
 
     def __init__(self, *args, data=None, **kwargs):
@@ -174,7 +173,7 @@ class SimpleValidation(Analysis, ABC):
         stats = self.get_stats(*measurements)
         report.plot = plot
         report.stats = stats
-        # TODO: OrderedDict?
+
         report.data_results = [
             (label, results[i]) for i, label in enumerate(labels)]
 
