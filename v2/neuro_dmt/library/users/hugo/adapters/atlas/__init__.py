@@ -3,6 +3,8 @@ import numpy as np
 import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
+# TODO: what if components were made into MethodTypes - __call__
+#       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
 # TODO: decouple whethe [cell_density] is filename prefix from whether
 #       sclass density is there

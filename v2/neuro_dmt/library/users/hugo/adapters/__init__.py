@@ -10,6 +10,7 @@ MTYPE = 'mtype'
 SYN_CLASS = 'sclass'
 MORPH_CLASS = 'mclass'
 COLUMN = 'column'
+REGION = 'region'
 
 
 # TODO: wrap data in adapter-like structure, get measurements
