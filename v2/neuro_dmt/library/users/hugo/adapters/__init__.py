@@ -50,7 +50,7 @@ class CircuitAdapter(metaclass=ABCMeta):
                 self._mtypes()]
 
     def _mtypes(self):
-        return self._circuit.cells.get().mtype.unique()
+        return sorted(self._circuit.cells.mtypes)
 
     def _mtype_parameters(self, mtype_name):
         layer, mtype = mtype_name.split("_")
@@ -68,30 +68,26 @@ class CircuitAdapter(metaclass=ABCMeta):
                     value = [value]
                 cell_parameters[bp.Cell.LAYER] = [int(v[1]) for v in value]
             elif key == MTYPE:
-                spl = value.split("_")
-                if len(spl) > 1:
-                    raise TypeError(
-                        "Mtypes in queries to adapter should not be in form"
-                        "<layer>_<name>, but simply <name>")
-                ql = parameters.get(LAYER, False)
-                if ql:
-                    if not isinstance(ql, list):
-                        ql = [ql]
-                    v = []
-                    for layer in ql:
-                        v.append("_".join([layer, value]))
-                        if layer in ['L2', 'L3']:
-                            v.append("_".join(["L23", value]))
-                else:
-                    v = [mt for mt in self._mtypes()
-                         if mt.split("_")[-1] == value]
+                if not isinstance(value, list):
+                    value = [value]
+                v = []
+                for mtype in value:
+                    if len(mtype.split("_")) > 1:
+                        raise TypeError(
+                            "Mtypes in queries to adapter should not be in "
+                            "form <layer>_<name>, but simply <name>")
+                    v += [mt for mt in self._mtypes()
+                          if mt.split("_")[-1] == mtype]
                 cell_parameters[bp.Cell.MTYPE] = v
             elif key == SYN_CLASS:
                 cell_parameters[bp.Cell.SYNAPSE_CLASS] = value
             elif key == MORPH_CLASS:
                 cell_parameters[bp.Cell.MORPH_CLASS] = value
             elif key == COLUMN:
-                cell_parameters[bp.Cell.REGION] = value + "_Column"
+                if not isinstance(value, list):
+                    value = [value]
+                cell_parameters[bp.Cell.REGION] =\
+                    [v + "_Column" for v in value]
         print(cell_parameters)
         return cell_parameters
 
