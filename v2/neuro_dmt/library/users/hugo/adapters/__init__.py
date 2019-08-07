@@ -9,6 +9,7 @@ LAYER = 'layer'
 MTYPE = 'mtype'
 SYN_CLASS = 'sclass'
 MORPH_CLASS = 'mclass'
+COLUMN = 'column'
 
 
 # TODO: wrap data in adapter-like structure, get measurements
@@ -35,9 +36,9 @@ class CircuitAdapter(metaclass=ABCMeta):
         """
         get cell density from the circuit
         """
-        cell_query = self._translate_query_cells(parameters)
-        ncells = self._circuit.cells.get(cell_query).shape[0]
-        mask = self._adaptedAtlas.mask_for_query(parameters)
+        cell_parameters = self._translate_parameters_cells(parameters)
+        ncells = self._circuit.cells.get(cell_parameters).shape[0]
+        mask = self._adaptedAtlas.mask_for_parameters(parameters)
         nvoxels = np.sum(mask)
         voxel_volume = self._adaptedAtlas.voxel_volume * 1e-9
         print(voxel_volume)
@@ -46,7 +47,10 @@ class CircuitAdapter(metaclass=ABCMeta):
 
     def mtypes(self):
         return [self._mtype_parameters(mtype_name) for mtype_name in
-                                       self._circuit.cells.get().mtype.unique()]
+                self._mtypes()]
+
+    def _mtypes(self):
+        return self._circuit.cells.get().mtype.unique()
 
     def _mtype_parameters(self, mtype_name):
         layer, mtype = mtype_name.split("_")
@@ -55,14 +59,14 @@ class CircuitAdapter(metaclass=ABCMeta):
         return dict(layer=layer, mtype=mtype)
 
     # TODO: support lists for each param
-    def _translate_query_cells(self, parameters):
-        cell_query = {}
+    def _translate_parameters_cells(self, parameters):
+        cell_parameters = {}
         # TODO: clean way to abstract this from the adapters?
         for key, value in parameters.items():
             if key == LAYER:
-                if isinstance(value, str):
-                    value = int(value[1])
-                cell_query[bp.Cell.LAYER] = value
+                if not isinstance(value, list):
+                    value = [value]
+                cell_parameters[bp.Cell.LAYER] = [int(v[1]) for v in value]
             elif key == MTYPE:
                 spl = value.split("_")
                 if len(spl) > 1:
@@ -71,20 +75,26 @@ class CircuitAdapter(metaclass=ABCMeta):
                         "<layer>_<name>, but simply <name>")
                 ql = parameters.get(LAYER, False)
                 if ql:
-                    if isinstance(ql, tuple):
-                        ql = "".join([l[1] for l in ql])
-
-                    value = "_".join([ql, value])
+                    if not isinstance(ql, list):
+                        ql = [ql]
+                    v = []
+                    for layer in ql:
+                        v.append("_".join([layer, value]))
+                        if layer in ['L2', 'L3']:
+                            v.append("_".join(["L23", value]))
                 else:
-                    value = [mt for mt in self._mtypes()
-                             if mt.split("_")[-1] == value]
-                cell_query[bp.Cell.MTYPE] = value
+                    v = [mt for mt in self._mtypes()
+                         if mt.split("_")[-1] == value]
+                cell_parameters[bp.Cell.MTYPE] = v
             elif key == SYN_CLASS:
-                cell_query[bp.Cell.SYNAPSE_CLASS] = value
+                cell_parameters[bp.Cell.SYNAPSE_CLASS] = value
             elif key == MORPH_CLASS:
-                cell_query[bp.Cell.MORPH_CLASS] = value
-        return cell_query
+                cell_parameters[bp.Cell.MORPH_CLASS] = value
+            elif key == COLUMN:
+                cell_parameters[bp.Cell.REGION] = value + "_Column"
+        print(cell_parameters)
+        return cell_parameters
 
-    def _translate_query_atlas(self, parameters):
+    def _translate_parameters_atlas(self, parameters):
         atlas_region = parameters.get('layer', 'O1')
         return atlas_region

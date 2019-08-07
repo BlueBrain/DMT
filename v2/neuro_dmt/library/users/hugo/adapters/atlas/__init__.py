@@ -94,26 +94,26 @@ class AtlasAdapter():
             self._atlas = atlas
         else:
             self._atlas = Atlas.open(atlas)
-        self._mask_generator = _MaskGenerator(self._atlas)
-        self._cell_density_generator = _CellDensityGenerator(self._atlas)
+        self._masks = _AtlasMasks(self._atlas)
+        self._cell_density = _CellDensity(self._atlas)
         self.voxel_volume =\
             self._atlas.load_data("brain_regions").voxel_volume
 
-    def mask_for_query(self, query):
-        """get a mask corresponding to query"""
+    def mask_for_parameters(self, parameters):
+        """get a mask corresponding to parameters"""
         # delegate
-        return self._mask_generator(query)
+        return self._masks.get(parameters)
 
-    def cell_density(self, query):
+    def cell_density(self, parameters):
         """get atlas cell density"""
-        density_volume = self._cell_density_generator(query)
+        density_volume = self._cell_density.get(parameters)
         if np.all(np.isnan(density_volume)):
             return np.nan
-        return density_volume[self.mask_for_query(query)]
+        return density_volume[self.mask_for_parameters(parameters)]
 
 
-class _MaskGenerator:
-    """helper class for AtlasAdapter, handles getting the mask for a query"""
+class _AtlasMasks:
+    """helper class for AtlasAdapter, handles getting the mask for a parameters"""
 
     def __init__(self, atlas):
         self._atlas = atlas
@@ -121,49 +121,32 @@ class _MaskGenerator:
         self._region_mask = _RegionMask(atlas)
         self._column_mask = _ColumnMask(atlas)
 
-    def __call__(self, query):
-        """get the mask for query"""
+    def get(self, parameters):
+        """get the mask for parameters"""
         masks = [self._atlas.load_data("brain_regions").raw > 0]
 
-        if 'region' in query:
+        if 'region' in parameters:
             region_mask = np.any(
-                [self._region_mask(region)
-                 for region in _list_if_not_list(query['region'])], axis=0)
+                [self._region_mask.get(region)
+                 for region in _list_if_not_list(parameters['region'])], axis=0)
             masks.append(region_mask)
 
-        if 'layer' in query:
+        if 'layer' in parameters:
             layer_mask = np.any(
-                [self._layer_mask(layer)
-                 for layer in _list_if_not_list(query['layer'])], axis=0)
+                [self._layer_mask.get(layer)
+                 for layer in _list_if_not_list(parameters['layer'])], axis=0)
             masks.append(layer_mask)
 
-        if 'column' in query:
+        if 'column' in parameters:
             column_mask = np.any(
-                [self._column_mask(column)
-                 for column in _list_if_not_list(query['column'])], axis=0)
+                [self._column_mask.get(column)
+                 for column in _list_if_not_list(parameters['column'])], axis=0)
             masks.append(column_mask)
 
         return np.all(masks, axis=0)
 
 
-class _MutateCall:
-    """
-    base class for dynamically composed callables
-    implement the _method method,
-    and it will be used when the instance is called
-    """
-
-    def _method(self, q):
-        """the method to execute on call"""
-        # cannot be abstract, as is only assigned after initialization
-        raise NotImplementedError()
-
-    def __call__(self, *args, **kwargs):
-        """forward to self._method"""
-        return self._method(*args, **kwargs)
-
-
-class _LayerMask(_MutateCall):
+class _LayerMask:
     """
     manages the functions for getting layer masks
     the __call__ method will be the function selected for the passed atlas
@@ -176,11 +159,11 @@ class _LayerMask(_MutateCall):
         self._atlas = atlas
         if atlas.load_region_map().find('@^L1$|.*;L1$', 'acronym')\
            or atlas.load_region_map().find("@^SP$|.*;SP$", 'acronym'):
-            self._method = self.full_layer
+            self.get = self.full_layer
         elif atlas.load_region_map().find("@.*;1$", 'acronym'):
-            self._method = self.column_semicolon_int
+            self.get = self.column_semicolon_int
         else:
-            self._method = self.ABI
+            self.get = self.ABI
 
     def column_semicolon_int(self, layer):
         """layer acronyms are <column>;<layer_number. e.g. mc2;2"""
@@ -208,13 +191,13 @@ class _LayerMask(_MutateCall):
                 "@.*{}$".format(layer.lower())).raw
 
 
-class _RegionMask(_MutateCall):
+class _RegionMask():
     """
     manages _region_mask function varieties
 
     sets its __call__ method
 
-    these functions accept a region acronym provided by a query and
+    these functions accept a region acronym provided by a parameters and
     return a mask from the atlas (if relevant)
     acronym provided will be based on ABI/BBA naming conventions
     """
@@ -222,11 +205,11 @@ class _RegionMask(_MutateCall):
     def __init__(self, atlas):
         self._atlas = atlas
         if is_O1_atlas(atlas):
-            self._method = self.O1_no_region_mask
+            self.get = self.O1_no_region_mask
         elif is_paxinos_watson(atlas):
-            self._method = self.Paxinos_regions
+            self.get = self.Paxinos_regions
         else:
-            self._method = self.BBA_ABI_verbatim
+            self.get = self.BBA_ABI_verbatim
 
     def O1_no_region_mask(self, region):
         """O1 circuits don't have 'region'
@@ -250,7 +233,7 @@ class _RegionMask(_MutateCall):
         return self._atlas.get_region_mask(pax_region).raw
 
 
-class _ColumnMask(_MutateCall):
+class _ColumnMask:
     """
     manages the functions for getting column masks
 
@@ -261,9 +244,9 @@ class _ColumnMask(_MutateCall):
     def __init__(self, atlas):
         self._atlas = atlas
         if is_O1_atlas(atlas):
-            self._method = self.O1_column
+            self.get = self.O1_column
         else:
-            self._method = self.no_columns
+            self.get = self.no_columns
 
     def O1_column(self, column):
         """O1 circuits have columns in their regions"""
@@ -275,11 +258,11 @@ class _ColumnMask(_MutateCall):
         return self._atlas.load_data("brain_regions").raw != 0
 
 
-class _CellDensityGenerator(_MutateCall):
+class _CellDensity:
     """
     manages varieties of functions for getting cell density
 
-    the cell_density function accepts a query containing data on where to
+    the cell_density function accepts a parameters containing data on where to
     get density (layer, region, column ... ) and what kind (sclass, mtype...)
     and returns a value for each voxel in the target area
     """
@@ -288,37 +271,37 @@ class _CellDensityGenerator(_MutateCall):
     def __init__(self, atlas):
         self._atlas = atlas
         if has_cell_density(atlas):
-            self._method = self.has_density
+            self.get = self.has_density
             self._total_density = _TotalDensity(atlas, self)
             self._mtype_filename = _MtypeFilename(atlas)
             self._sclass_filename = _SclassFilename(atlas)
         else:
-            self._method = self.no_cell_density
+            self.get = self.no_cell_density
 
-    def no_cell_density(self, query):
+    def no_cell_density(self, parameters):
         """no density data in this atlas"""
         warn(Warning("{} atlas has no cell density, returning NaN"
                      .format(self)))
         return np.nan
 
-    def has_density(self, query):
+    def has_density(self, parameters):
         """get density data from the atlas"""
-        if 'mtype' in query:
+        if 'mtype' in parameters:
             density_types = [name
-                             for mtype in _list_if_not_list(query['mtype'])
+                             for mtype in _list_if_not_list(parameters['mtype'])
                              for name in
-                             _list_if_not_list(self._mtype_filename(mtype))]
-            if 'sclass' in query:
+                             _list_if_not_list(self._mtype_filename.get(mtype))]
+            if 'sclass' in parameters:
                 warn(Warning(
                     'mtype keyword overrides sclass in cell_density'
                     .format(self)))
 
-        elif 'sclass' in query:
+        elif 'sclass' in parameters:
             density_types = [scname
-                             for sclass in _list_if_not_list(query['sclass'])
-                             for scname in self._sclass_filename(sclass)]
+                             for sclass in _list_if_not_list(parameters['sclass'])
+                             for scname in self._sclass_filename.get(sclass)]
         else:
-            density_types = self._total_density()
+            density_types = self._total_density.get()
 
         if len(density_types) == 0:
             return np.nan
@@ -330,7 +313,7 @@ class _CellDensityGenerator(_MutateCall):
         return densities
 
 
-class _TotalDensity(_MutateCall):
+class _TotalDensity:
     """
     container for _total_density function varieties
 
@@ -344,9 +327,9 @@ class _TotalDensity(_MutateCall):
         self._parent_cd_object = _cell_density
         self._atlas = atlas
         if has_sclass_densities(atlas):
-            self._method = self.exc_and_inh
+            self.get = self.exc_and_inh
         else:
-            self._method = self.all_mtypes
+            self.get = self.all_mtypes
 
     def exc_and_inh(self):
         """
@@ -354,7 +337,8 @@ class _TotalDensity(_MutateCall):
         """
         return [scname
                 for sclass in ('EXC', 'INH')
-                for scname in self._parent_cd_object._sclass_filename(sclass)]
+                for scname in
+                self._parent_cd_object._sclass_filename.get(sclass)]
 
     def all_mtypes(self):
         """
@@ -367,14 +351,14 @@ class _TotalDensity(_MutateCall):
 
         mtype_names = [fname for mtype in BIG_LIST_OF_KNOWN_MTYPES
                        for fname in _list_if_not_list(
-                               self._parent_cd_object._mtype_filename(mtype))]
+                            self._parent_cd_object._mtype_filename.get(mtype))]
         all_mtypes = {
             fname for fname in allnrrdnames if fname in mtype_names}
 
         return list(all_mtypes)
 
 
-class _SclassFilename(_MutateCall):
+class _SclassFilename:
     """
     just a container for _sclass_filename function varieties
 
@@ -387,9 +371,9 @@ class _SclassFilename(_MutateCall):
         self._atlas = atlas
         # TODO: disentangle presence of sclass from prefix
         if has_sclass_densities(atlas):
-            self._method = self.bracketed_prefix
+            self.get = self.bracketed_prefix
         else:
-            self._method = self.has_no_sclass
+            self.get = self.has_no_sclass
 
     # TODO: split BIG_LIST by sclass, so that sclass density can be
     #       obtained from mtype densities?
@@ -411,15 +395,15 @@ class _SclassFilename(_MutateCall):
             return []
 
 
-class _MtypeFilename(_MutateCall):
+class _MtypeFilename:
     """just a container for _mtype_filename function varieties"""
 
     def __init__(self, atlas):
         self._atlas = atlas
         if has_layer_prefixed_mtypes(atlas):
-            self._method = self.layer_prefix
+            self.get = self.layer_prefix
         else:
-            self._method = self.no_prefix
+            self.get = self.no_prefix
 
     def layer_prefix(self, mtype):
         """mtype densities are stored with a prefix"""
