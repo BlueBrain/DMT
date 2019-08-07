@@ -3,6 +3,7 @@ import numpy as np
 import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
+from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -72,13 +73,6 @@ def is_paxinos_watson(atlas):
     return False
 
 
-def _list_if_not_list(item):
-    """make something a list if it isn't"""
-    if isinstance(item, list):
-        return item
-    return [item]
-
-
 # TODO: perhaps adapter configuration should be something you can
 #       pass to the adapter, to bypass automatic configuration?
 #       this lets you manually specify traits when inference doesn't work
@@ -90,13 +84,14 @@ def _list_if_not_list(item):
 class AtlasAdapter():
     """adapter for a wide set of atlases"""
 
-    def __init__(self, atlas):
+    def __init__(self, atlas, represented_region=None):
         """initialize the adapter for the atlas"""
         if isinstance(atlas, Atlas):
             self._atlas = atlas
         else:
             self._atlas = Atlas.open(atlas)
-        self._masks = _AtlasMasks(self._atlas)
+        self._masks = _AtlasMasks(self._atlas,
+                                  represented_region=represented_region)
         self._cell_density = _CellDensity(self._atlas)
         self.voxel_volume =\
             self._atlas.load_data("brain_regions").voxel_volume
@@ -115,13 +110,17 @@ class AtlasAdapter():
 
 
 class _AtlasMasks:
-    """helper class for AtlasAdapter, handles getting the mask for a parameters"""
+    """helper class for AtlasAdapter,
+    handles getting the mask for a parameters"""
 
-    def __init__(self, atlas):
+    def __init__(self, atlas, represented_region=None):
         self._atlas = atlas
         self._layer_mask = _LayerMask(atlas)
         self._region_mask = _RegionMask(atlas)
         self._column_mask = _ColumnMask(atlas)
+        self.represented_region = None
+        if represented_region is not None:
+            self.represented_region = self.get(represented_region)
 
     def get(self, parameters):
         """get the mask for parameters"""
@@ -144,6 +143,9 @@ class _AtlasMasks:
                 [self._column_mask.get(column)
                  for column in _list_if_not_list(parameters['column'])], axis=0)
             masks.append(column_mask)
+
+        if self.represented_region is not None:
+            masks.append(self.represented_region)
 
         return np.all(masks, axis=0)
 

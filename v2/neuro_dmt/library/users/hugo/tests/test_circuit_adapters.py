@@ -53,6 +53,11 @@ class TestOnNCXO1:
              bp.Cell.LAYER: [1, 4, 6, 2],
              bp.Cell.MTYPE: allmc + allipc}
 
+    def test_empty_lists(self):
+        assert self.adapted._translate_parameters_cells(
+            {SYN_CLASS: [], MORPH_CLASS: [], COLUMN: [],
+             MTYPE: [], LAYER: []}) == {}
+
     def test_mtypes(self):
         assert self.adapted.mtypes() == [
             {LAYER: 'L1', MTYPE: 'DAC'},
@@ -141,7 +146,7 @@ class TestOnNCXIsocortex:
         test_cells = self.circuit.cells.get(
             {bp.Cell.LAYER: [1, 3, 6],
              bp.Cell.MTYPE: ['L23_MC', "L6_MC"],
-             bp.Cell.REGION: 'SSp-ll'}).shape[0]
+             bp.Cell.REGION: ['SSp-ll@left', 'SSp-ll@right']}).shape[0]
         test_mask = self.circuit.atlas.get_region_mask("@SSp-ll[136]$")
         test_vol = np.sum(test_mask.raw) * test_mask.voxel_volume * 1e-9
         dens = test_cells / test_vol
@@ -231,6 +236,11 @@ class TestOnNCXIsocortex:
             {LAYER: 'L6', MTYPE: 'TPC:A'},
             {LAYER: 'L6', MTYPE: 'TPC:C'},
             {LAYER: 'L6', MTYPE: 'UPC'}]
+
+    def test_empty_lists(self):
+        assert self.adapted._translate_parameters_cells(
+            {SYN_CLASS: [], MORPH_CLASS: [], REGION: [],
+             MTYPE: [], LAYER: []}) == {}
 
     def test_warns_column(self):
         with pyt.warns(Warning):
