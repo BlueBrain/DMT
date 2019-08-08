@@ -1,7 +1,6 @@
 import warnings
 import numpy as np
 import bluepy.v2 as bp
-from abc import ABCMeta, abstractmethod
 from neuro_dmt.library.users.hugo.adapters.atlas import AtlasAdapter
 from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
     LAYER, MTYPE, SYN_CLASS, MORPH_CLASS, COLUMN, REGION
@@ -20,7 +19,120 @@ from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
 #       also, data requested of model and not in data can
 #       be displayed as NaN
 #       lets us construct DataFrames between mismatched results
-class CircuitAdapter(metaclass=ABCMeta):
+
+
+def is_O1(circuit):
+    """check if is O1 circuit"""
+    from neuro_dmt.library.users.hugo.adapters.atlas import is_O1_atlas
+    return is_O1_atlas(circuit.atlas)
+
+
+def cells_have_int_layers(circuit):
+    """check if layers are represented as
+    integers in circuit's CellCollection"""
+    alayer = circuit.cells.get(1)[bp.Cell.LAYER]
+    return alayer in [1, 2, 3, 4, 5, 6]
+
+
+def _mtypes(circuit):
+    """retrieve raw mtypes from the circuit"""
+    return sorted(circuit.cells.mtypes)
+
+
+class Translator:
+    """Base class for translators"""
+
+    def __init__(self, circuit):
+        self._circuit = circuit
+
+    # Abstract class will not work, so NotImplementedError
+    def translate(self, parameter_dict, value):
+        raise NotImplementedError(
+            "this method needs to be overwritten before use")
+
+
+class _LayerTranslator(Translator):
+    """translates layers from measurement parameter to cell property"""
+
+    def __init__(self, circuit):
+        if cells_have_int_layers(circuit):
+            self.translate = self._int_layers
+        super().__init__(circuit)
+
+    def _int_layers(self, cell_properties, value):
+        """
+        layers in circuit are integers.
+        sets 'layer' in cell_properties to integer representation of value
+        """
+        cell_properties[bp.Cell.LAYER] = [int(v[1]) for v in value]
+
+
+class _MtypeTranslator(Translator):
+    """translates mtype from measurement parameter to cell property"""
+    def __init__(self, circuit):
+        self.translate = self._from_circuit_mtypes
+        super().__init__(circuit)
+
+    def _from_circuit_mtypes(self, cell_properties, value):
+        """infers the values for mtype property from raw mtypes in circuit"""
+        v = []
+        for mtype in value:
+            if len(mtype.split("_")) > 1:
+                raise TypeError(
+                    "Mtypes in queries to adapter should not be in "
+                    "form <layer>_<name>, but simply <name>")
+            # TODO: is it bad practice to use parent object's private method?
+            v += [mt for mt in _mtypes(self._circuit)
+                  if mt.endswith(mtype)]
+        cell_properties[bp.Cell.MTYPE] = v
+
+
+class _ColumnTranslator(Translator):
+    """translates column from measurement parameter to cell property"""
+    def __init__(self, circuit):
+        if is_O1(circuit):
+            self.translate = self._region_column
+        else:
+            self.translate = self._no_column
+        super().__init__(circuit)
+
+    def _region_column(self, cell_properties, value):
+        """column is represented as region in circuit's CellCollection"""
+        cell_properties[bp.Cell.REGION] =\
+            [v + "_Column" for v in value]
+
+    def _no_column(self, cell_properties, value):
+        """column not defined for this circuit"""
+        warnings.warn(
+            Warning("column undefined for this model, ignorning parameter"))
+        return
+
+
+class _RegionTranslator(Translator):
+    """translates region from measurement parameter to cell property"""
+    def __init__(self, circuit):
+        if is_O1(circuit):
+            self.translate = self._no_region
+        else:
+            self.translate = self._separate_hemispheres
+        super().__init__(circuit)
+
+    def _no_region(self, cell_properties, value):
+        """region not defined for this circuit (O1)"""
+        warnings.warn(
+            Warning("region is not defined for O1 models"))
+        return
+
+    def _separate_hemispheres(self, cell_properties, value):
+        """each region consists of two hemispheres"""
+        cell_properties[bp.Cell.REGION] = []
+        for region in value:
+            cell_properties[bp.Cell.REGION] += [region + "@left",
+                                                region + "@right"]
+        return
+
+
+class CircuitAdapter:
     """
     adapter for bluepy circuits
     infers what functionality is needed based on the circuit provided
@@ -120,112 +232,3 @@ class CircuitAdapter(metaclass=ABCMeta):
             elif key == REGION:
                 self._regionTranslator.translate(cell_properties, value)
         return cell_properties
-
-
-class Translator:
-    """Base class for translators"""
-
-    def __init__(self, circuit):
-        self._circuit = circuit
-
-    # Abstract class will not work, so NotImplementedError
-    def translate(self, parameter_dict, value):
-        raise NotImplementedError(
-            "this method needs to be overwritten before use")
-
-
-class _LayerTranslator(Translator):
-    """translates layers from measurement parameter to cell property"""
-
-    def __init__(self, circuit):
-        if cells_have_int_layers(circuit):
-            self.translate = self._int_layers
-        super().__init__(circuit)
-
-    def _int_layers(self, cell_properties, value):
-        """
-        layers in circuit are integers.
-        sets 'layer' in cell_properties to integer representation of value
-        """
-        cell_properties[bp.Cell.LAYER] = [int(v[1]) for v in value]
-
-
-class _MtypeTranslator(Translator):
-    """translates mtype from measurement parameter to cell property"""
-    def __init__(self, circuit):
-        self.translate = self._from_circuit_mtypes
-        super().__init__(circuit)
-
-    def _from_circuit_mtypes(self, cell_properties, value):
-        """infers the values for mtype property from raw mtypes in circuit"""
-        v = []
-        for mtype in value:
-            if len(mtype.split("_")) > 1:
-                raise TypeError(
-                    "Mtypes in queries to adapter should not be in "
-                    "form <layer>_<name>, but simply <name>")
-            # TODO: is it bad practice to use parent object's private method?
-            v += [mt for mt in _mtypes(self._circuit)
-                  if mt.endswith(mtype)]
-        cell_properties[bp.Cell.MTYPE] = v
-
-
-class _ColumnTranslator(Translator):
-    """translates column from measurement parameter to cell property"""
-    def __init__(self, circuit):
-        if is_O1(circuit):
-            self.translate = self._region_column
-        else:
-            self.translate = self._no_column
-        super().__init__(circuit)
-
-    def _region_column(self, cell_properties, value):
-        """column is represented as region in circuit's CellCollection"""
-        cell_properties[bp.Cell.REGION] =\
-            [v + "_Column" for v in value]
-
-    def _no_column(self, cell_properties, value):
-        """column not defined for this circuit"""
-        Warning("column undefined for this model, ignorning parameter")
-        return
-
-
-class _RegionTranslator(Translator):
-    """translates region from measurement parameter to cell property"""
-    def __init__(self, circuit):
-        if is_O1(circuit):
-            self.translate = self._no_region
-        else:
-            self.translate = self._separate_hemispheres
-        super().__init__(circuit)
-
-    def _no_region(self, cell_properties, value):
-        """region not defined for this circuit (O1)"""
-        Warning("region is not defined for O1 models")
-        return
-
-    def _separate_hemispheres(self, cell_properties, value):
-        """each region consists of two hemispheres"""
-        cell_properties[bp.Cell.REGION] = []
-        for region in value:
-            cell_properties[bp.Cell.REGION] += [region + "@left",
-                                                region + "@right"]
-        return
-
-
-def is_O1(circuit):
-    """check if is O1 circuit"""
-    from neuro_dmt.library.users.hugo.adapters.atlas import is_O1_atlas
-    return is_O1_atlas(circuit.atlas)
-
-
-def cells_have_int_layers(circuit):
-    """check if layers are represented as
-    integers in circuit's CellCollection"""
-    alayer = circuit.cells.get(1)[bp.Cell.LAYER]
-    return alayer in [1, 2, 3, 4, 5, 6]
-
-
-def _mtypes(circuit):
-    """retrieve raw mtypes from the circuit"""
-    return sorted(circuit.cells.mtypes)
