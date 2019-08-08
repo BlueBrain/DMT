@@ -3,7 +3,8 @@ import numpy as np
 import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
-from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list
+from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
+        LAYER, MTYPE, SYN_CLASS, COLUMN, REGION
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -126,10 +127,10 @@ class _AtlasMasks:
         """get the mask for parameters"""
         masks = [self._atlas.load_data("brain_regions").raw > 0]
 
-        if 'region' in parameters:
+        if REGION in parameters:
             region_mask = np.any(
                 [self._region_mask.get(region)
-                 for region in _list_if_not_list(parameters['region'])], axis=0)
+                 for region in _list_if_not_list(parameters[REGION])], axis=0)
             masks.append(region_mask)
 
         if 'layer' in parameters:
@@ -138,10 +139,10 @@ class _AtlasMasks:
                  for layer in _list_if_not_list(parameters['layer'])], axis=0)
             masks.append(layer_mask)
 
-        if 'column' in parameters:
+        if COLUMN in parameters:
             column_mask = np.any(
                 [self._column_mask.get(column)
-                 for column in _list_if_not_list(parameters['column'])], axis=0)
+                 for column in _list_if_not_list(parameters[COLUMN])], axis=0)
             masks.append(column_mask)
 
         if self.represented_region is not None:
@@ -216,9 +217,9 @@ class _RegionMask():
             self.get = self.BBA_ABI_verbatim
 
     def O1_no_region_mask(self, region):
-        """O1 circuits don't have 'region'
+        """O1 circuits don't have REGION
         in the same sense as whole brain atlas"""
-        warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
+        warn(Warning("{} ignores REGION as it is not relevant to O1 atlas"
                      .format(self)))
         return self._atlas.load_data("brain_regions").raw != 0
 
@@ -290,19 +291,19 @@ class _CellDensity:
 
     def has_density(self, parameters):
         """get density data from the atlas"""
-        if 'mtype' in parameters:
+        if MTYPE in parameters:
             density_types = [name
-                             for mtype in _list_if_not_list(parameters['mtype'])
+                             for mtype in _list_if_not_list(parameters[MTYPE])
                              for name in
                              _list_if_not_list(self._mtype_filename.get(mtype))]
-            if 'sclass' in parameters:
+            if SYN_CLASS in parameters:
                 warn(Warning(
                     'mtype keyword overrides sclass in cell_density'
                     .format(self)))
 
-        elif 'sclass' in parameters:
+        elif SYN_CLASS in parameters:
             density_types = [scname
-                             for sclass in _list_if_not_list(parameters['sclass'])
+                             for sclass in _list_if_not_list(parameters[SYN_CLASS])
                              for scname in self._sclass_filename.get(sclass)]
         else:
             density_types = self._total_density.get()
