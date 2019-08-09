@@ -4,7 +4,7 @@ import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
 from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
-        LAYER, MTYPE, SYN_CLASS, COLUMN, REGION
+        LAYER, MTYPE, SYN_CLASS, COLUMN, REGION, translate_ABI_to_Paxinos
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -152,12 +152,7 @@ class _RegionMask():
         return self._atlas.get_region_mask(region).raw
 
     def Paxinos_regions(self, ABI_region):
-        pax_region = ABI_region.replace("SSp", "S1").replace("-bfd", "BF")\
-                     .replace("-ul", "FL").replace("-ll", "HL")\
-                     .replace("-m", "J").replace("-tr", "Tr")\
-                     .replace("-dz", "DZ").replace("-dzo", "DZO")\
-                     .replace("-sh", "Sh").replace("-ulp", "ULp")\
-                     .replace("SS", "SSCtx").replace("SSs", "S2")
+        pax_region = translate_ABI_to_Paxinos(ABI_region)
         return self._atlas.get_region_mask(pax_region).raw
 
 
@@ -195,9 +190,7 @@ class _AtlasMasks:
         self._layer_mask = _LayerMask(atlas)
         self._region_mask = _RegionMask(atlas)
         self._column_mask = _ColumnMask(atlas)
-        self.represented_region = None
-        if represented_region is not None:
-            self.represented_region = self.get(represented_region)
+        self.represented_region = represented_region
 
     def get(self, parameters):
         """get the mask for parameters"""

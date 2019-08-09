@@ -1,12 +1,12 @@
 import warnings
 import numpy as np
 import bluepy.v2 as bp
+from os.path import dirname, join
 from neuro_dmt.library.users.hugo.adapters.atlas import AtlasAdapter
 from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
     LAYER, MTYPE, SYN_CLASS, MORPH_CLASS, COLUMN, REGION
 
 
-# TODO: DOCSTRINGS DOCSTRINGS DOCSTRINGS
 # TODO: what is the best way to deal with components that depend on other
 #       components?
 #       OPTION1: pass other components at initialization?
@@ -32,6 +32,14 @@ def cells_have_int_layers(circuit):
     integers in circuit's CellCollection"""
     alayer = circuit.cells.get(1)[bp.Cell.LAYER]
     return alayer in [1, 2, 3, 4, 5, 6]
+
+
+def region_in_cells(circuit):
+    try:
+        circuit.cells.get(1).region
+        return True
+    except AttributeError:
+        return False
 
 
 def _mtypes(circuit):
@@ -113,14 +121,23 @@ class _RegionTranslator(Translator):
     def __init__(self, circuit):
         if is_O1(circuit):
             self.translate = self._no_region
-        else:
+        elif region_in_cells(circuit):
             self.translate = self._separate_hemispheres
+        else:
+            self.translate = self._region_not_in_cells
         super().__init__(circuit)
 
     def _no_region(self, cell_properties, value):
         """region not defined for this circuit (O1)"""
         warnings.warn(
             Warning("region is not defined for O1 models"))
+        return
+
+    def _region_not_in_cells(self, cell_properties, value):
+        """
+        cells don't have a property corresponding to region,
+        but regions are defined in the atlas, so we don't need to warn
+        """
         return
 
     def _separate_hemispheres(self, cell_properties, value):
@@ -130,6 +147,16 @@ class _RegionTranslator(Translator):
             cell_properties[bp.Cell.REGION] += [region + "@left",
                                                 region + "@right"]
         return
+
+
+def get_regions_represented(circuit):
+    cells = circuit.cells.get(properties=[bp.Cell.X, bp.Cell.Y, bp.Cell.Z])
+    br = circuit.atlas.load_data("brain_regions")
+    cells_indices = br.positions_to_indices(cells.values)
+    regionids = np.unique(
+        br.raw[tuple(cells_indices[..., ax]
+                     for ax in range(cells_indices.shape[-1]))])
+    return np.isin(br.raw, regionids)
 
 
 class CircuitAdapter:
@@ -142,12 +169,22 @@ class CircuitAdapter:
         """for now we assume that the circuit has an atlas"""
         self._circuit = bp.Circuit(circuit_config)
         # TODO: there has to be a better way to do this
+        try:
+            atlas = self._circuit.atlas
+        except KeyError:
+            # no atlas in config. look for .atlas dir
+            from voxcell.nexus.voxelbrain import Atlas
+            import glob
+            atlas = Atlas.open(glob.glob(join(dirname(circuit_config),
+                                              ".atlas/*"))[0])
+        self._circuit.atlas = atlas
         if is_O1(self._circuit):
             represented_region = None
         else:
-            represented_region = {REGION: "Isocortex"}
-        self._adaptedAtlas = AtlasAdapter(self._circuit.atlas,
-                                          represented_region)
+            represented_region = get_regions_represented(self._circuit)
+
+        self._adaptedAtlas = AtlasAdapter(atlas, represented_region)
+
         self._layerTranslator = _LayerTranslator(self._circuit)
         self._mtypeTranslator = _MtypeTranslator(self._circuit)
         self._columnTranslator = _ColumnTranslator(self._circuit)
