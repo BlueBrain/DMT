@@ -44,8 +44,23 @@ class CellDensityAnalysis(ABC):
         Either a pandas.Index, or a pandas.MultiIndex
         pandas.Index: when there is only parameter to measure cell density
         pandas.MultiIndex: when there are more than parameter to measure
+
+        Default Value
+        ---------------
+        The default value assumes that the analyzed model is of a cortical
+        circuit. You may change it to a value appropriate to your analyses.
         """,
-        __type__=(pandas.Index, pandas.MultiIndex))
+        __type__=(pandas.Index, pandas.MultiIndex),
+        __default_value__=pandas.Index(
+            [1,2,3,4,5,6],
+            name="layer"))
+
+    plotter = Field(
+        """
+        An object that can plot data from a `pandas.DataFrame`. This object's
+        `plot` method will be called with the measurement result which will be
+        a pandas.DataFrame.
+        """)
 
     class AdapterInterface(
             Interface):
