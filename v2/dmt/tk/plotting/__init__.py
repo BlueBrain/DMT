@@ -20,3 +20,5 @@ def golden_figure(width:int =None, height:int =None):
     fig, ax = plt.subplots()
     fig.set_size_inches(width, height)
     return fig, ax
+
+
