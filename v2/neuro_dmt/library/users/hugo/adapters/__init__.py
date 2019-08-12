@@ -24,7 +24,7 @@ from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
 def is_O1(circuit):
     """check if is O1 circuit"""
     from neuro_dmt.library.users.hugo.adapters.atlas import is_O1_atlas
-    return is_O1_atlas(circuit.atlas)
+    return circuit.atlas is None or is_O1_atlas(circuit.atlas)
 
 
 def cells_have_int_layers(circuit):
@@ -109,6 +109,9 @@ class _ColumnTranslator(Translator):
         cell_properties[bp.Cell.REGION] =\
             [v + "_Column" for v in value]
 
+    # def _hypercolumn(self, cell_properties, value):
+    #     cell_properties[bp.
+
     def _no_column(self, cell_properties, value):
         """column not defined for this circuit"""
         warnings.warn(
@@ -163,10 +166,12 @@ class CircuitAdapter:
     """
     adapter for bluepy circuits
     infers what functionality is needed based on the circuit provided
-    (work in progress, presently only supports atlas based O1 circuits
+    currently fully supports atlas based O1(not all), S1,
+    and Isocortex circuits
+    and partially supports old (no atlas) O1 SSCX circuits.
     """
     def __init__(self, circuit_config):
-        """for now we assume that the circuit has an atlas"""
+        """compose an appropriate adapter from circuit_config"""
         self._circuit = bp.Circuit(circuit_config)
         # TODO: there has to be a better way to do this
         try:
@@ -175,20 +180,37 @@ class CircuitAdapter:
             # no atlas in config. look for .atlas dir
             from voxcell.nexus.voxelbrain import Atlas
             import glob
-            atlas = Atlas.open(glob.glob(join(dirname(circuit_config),
-                                              ".atlas/*"))[0])
-        self._circuit.atlas = atlas
-        if is_O1(self._circuit):
-            represented_region = None
-        else:
-            represented_region = get_regions_represented(self._circuit)
+            apath = glob.glob(join(dirname(circuit_config),
+                                   ".atlas/*"))
+            if len(apath) == 1:
+                atlas = Atlas.open(apath[0])
+            elif len(apath) == 0:
+                atlas = None
+            print(atlas, apath)
+            self._circuit.atlas = atlas
 
-        self._adaptedAtlas = AtlasAdapter(atlas, represented_region)
+        if atlas is not None:
+            if is_O1(self._circuit):
+                represented_region = None
+            else:
+                represented_region = get_regions_represented(self._circuit)
+
+            self._adaptedAtlas = AtlasAdapter(atlas, represented_region)
+        else:
+            warnings.warn(
+                Warning("old circuit with no atlas,"
+                        " cell_density method is unavailable"))
+            self.cell_density = self._cell_density_no_atlas
 
         self._layerTranslator = _LayerTranslator(self._circuit)
         self._mtypeTranslator = _MtypeTranslator(self._circuit)
         self._columnTranslator = _ColumnTranslator(self._circuit)
         self._regionTranslator = _RegionTranslator(self._circuit)
+
+    def _cell_density_no_atlas(self, *args):
+        raise NotImplementedError(
+            "cell density is currently not supported"
+            " for this circuit type")
 
     # TODO:: would it be better to have the adapter accept parameters as
     #        kwargs
