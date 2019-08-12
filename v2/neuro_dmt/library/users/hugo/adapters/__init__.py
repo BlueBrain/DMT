@@ -4,7 +4,8 @@ import bluepy.v2 as bp
 from os.path import dirname, join
 from neuro_dmt.library.users.hugo.adapters.atlas import AtlasAdapter
 from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
-    LAYER, MTYPE, SYN_CLASS, MORPH_CLASS, COLUMN, REGION
+    LAYER, MTYPE, SYN_CLASS, MORPH_CLASS, COLUMN, REGION,\
+    PRESYNAPTIC, POSTSYNAPTIC
 
 
 # TODO: what is the best way to deal with components that depend on other
@@ -255,6 +256,33 @@ class CircuitAdapter:
         return [self._mtype_parameters(mtype_name) for mtype_name in
                 _mtypes(self._circuit)]
 
+    def connection_probability(self, measurement_parameters):
+        pre_cells = self.get_cells(measurement_parameters[PRESYNAPTIC])
+        post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])
+        num_conn = len(tuple(self._circuit.connectome.iter_connections(
+            pre=pre_cells.gid.values(), post=post_cells.gid.values())))
+        num_pairs = pre_cells.shape[0] * (post_cells.shape[0] - 1)
+        return num_conn / num_pairs
+
+    def get_cells(self, parameters, properties=None):
+        """
+        get cells satisfying parameters 'parameters'
+
+        Arguments:
+
+            parameters: dict of parameter name-value pairs
+                        identifying the cell group
+
+            # TODO: reference parameter documentation
+
+        Returns:
+            DataFrame of cell properties
+        """
+        return self._circuit.cells.get(
+            self._translate_parameters_cells(parameters,
+                                             properties=properties))
+
+
     def _mtype_parameters(self, mtype_name):
         """
         translate a raw mtype name (generally <layer>_<mtype>) to a
@@ -273,6 +301,7 @@ class CircuitAdapter:
         if len(layer) > 2:
             layer = ["L{}".format(num) for num in layer[1:]]
         return dict(layer=layer, mtype=mtype.upper())
+
 
     # TODO: support lists for each param
     def _translate_parameters_cells(self, parameters):

@@ -1,8 +1,10 @@
 import numpy as np
 import pytest as pyt
 import bluepy.v2 as bp
-from neuro_dmt.library.users.hugo.adapters import CircuitAdapter,\
-    SYN_CLASS, LAYER, MTYPE, COLUMN, MORPH_CLASS, REGION
+from neuro_dmt.library.users.hugo.adapters import CircuitAdapter
+from neuro_dmt.library.users.hugo.adapters.utils import\
+    SYN_CLASS, LAYER, MTYPE, COLUMN, MORPH_CLASS, REGION,\
+    PRESYNAPTIC, POSTSYNAPTIC
 
 
 class TestOnNCXO1:
@@ -476,3 +478,16 @@ class TestOnProj1RatO1:
         with pyt.warns(Warning):
             self.adapted._translate_parameters_cells({REGION: 'SS'})
         pass
+
+    def test_connection_probability(self):
+        pre_group = {bp.Cell.MTYPE: ['L23_PC', 'L4_PC']}
+        post_group = {bp.Cell.MTYPE: ['L23_MC', 'L4_MC', 'L6_MC']}
+        exp_num = len(tuple(self.circuit.connectome.iter_connections(
+            pre=pre_group, post=post_group)))
+        pre_group_len = self.circuit.cells.get(pre_group).shape[0]
+        post_group_len = self.circuit.cells.get(post_group).shape[0]
+        num_pairs = pre_group_len * (post_group_len -1)
+        exprob = exp_num / num_pairs
+        assert self.adapted.connection_probability(
+            {PRESYNAPTIC: {MTYPE: "PC"}, POSTSYNAPTIC: {MTYPE: "MC"}}) ==\
+            exprob

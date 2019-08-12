@@ -4,6 +4,8 @@ SYN_CLASS = 'sclass'
 MORPH_CLASS = 'mclass'
 COLUMN = 'column'
 REGION = 'region'
+PRESYNAPTIC = 'pre'
+POSTSYNAPTIC = 'post'
 
 
 def _list_if_not_list(item):
