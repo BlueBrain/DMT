@@ -90,16 +90,25 @@ class _MtypeTranslator(Translator):
                     "Mtypes in queries to adapter should not be in "
                     "form <layer>_<name>, but simply <name>")
             # TODO: is it bad practice to use parent object's private method?
-            v += [mt for mt in _mtypes(self._circuit)
-                  if mt.endswith(mtype)]
+            thismt = [mt for mt in _mtypes(self._circuit)
+                      if mt.endswith(mtype)]
+            if len(thismt) == 0:
+                warnings.warn(Warning("mtype: {} not present in circuit"
+                                      .format(mtype)))
+            v += thismt
         cell_properties[bp.Cell.MTYPE] = v
 
 
 class _ColumnTranslator(Translator):
     """translates column from measurement parameter to cell property"""
     def __init__(self, circuit):
+        # TODO: instead of testing O1, I should test properties more directly
         if is_O1(circuit):
-            self.translate = self._region_column
+            celldf = circuit.cells.get()
+            if bp.Cell.HYPERCOLUMN in celldf.columns:
+                self.translate = self._hypercolumn
+            else:
+                self.translate = self._region_column
         else:
             self.translate = self._no_column
         super().__init__(circuit)
@@ -109,8 +118,10 @@ class _ColumnTranslator(Translator):
         cell_properties[bp.Cell.REGION] =\
             [v + "_Column" for v in value]
 
-    # def _hypercolumn(self, cell_properties, value):
-    #     cell_properties[bp.
+    def _hypercolumn(self, cell_properties, value):
+        """column refers to hypercolumn in circuit"""
+        cell_properties[bp.Cell.HYPERCOLUMN] = [int(v[-1]) for v in value]
+        return
 
     def _no_column(self, cell_properties, value):
         """column not defined for this circuit"""
@@ -256,10 +267,12 @@ class CircuitAdapter:
             mtype_parameters: a dict of measurement parameters
                              representing this mtyoe
         """
-        layer, mtype = mtype_name.split("_")
+        mttup = mtype_name.split("_")
+        layer = mttup[0]
+        mtype = "_".join(mttup[1:])
         if len(layer) > 2:
             layer = ["L{}".format(num) for num in layer[1:]]
-        return dict(layer=layer, mtype=mtype)
+        return dict(layer=layer, mtype=mtype.upper())
 
     # TODO: support lists for each param
     def _translate_parameters_cells(self, parameters):

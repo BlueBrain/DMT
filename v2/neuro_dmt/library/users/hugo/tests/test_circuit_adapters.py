@@ -408,11 +408,11 @@ class TestOnProj1RatO1:
     def test_mtypes(self):
         assert self.adapted.mtypes() == [
             {LAYER: 'L1', MTYPE: 'DAC'},
+            {LAYER: 'L1', MTYPE: 'DLAC'},
             {LAYER: 'L1', MTYPE: 'HAC'},
-            {LAYER: 'L1', MTYPE: 'LAC'},
             {LAYER: 'L1', MTYPE: 'NGC-DA'},
             {LAYER: 'L1', MTYPE: 'NGC-SA'},
-            {LAYER: 'L1', MTYPE: 'SAC'},
+            {LAYER: 'L1', MTYPE: 'SLAC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'BP'},
             {LAYER: ['L2', 'L3'], MTYPE: 'BTC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'CHC'},
@@ -421,12 +421,8 @@ class TestOnProj1RatO1:
             {LAYER: ['L2', 'L3'], MTYPE: 'MC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'NBC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'NGC'},
+            {LAYER: ['L2', "L3"], MTYPE: 'PC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'SBC'},
-            {LAYER: 'L2', MTYPE: 'IPC'},
-            {LAYER: 'L2', MTYPE: 'TPC:A'},
-            {LAYER: 'L2', MTYPE: 'TPC:B'},
-            {LAYER: 'L3', MTYPE: 'TPC:A'},
-            {LAYER: 'L3', MTYPE: 'TPC:B'},
             {LAYER: 'L4', MTYPE: 'BP'},
             {LAYER: 'L4', MTYPE: 'BTC'},
             {LAYER: 'L4', MTYPE: 'CHC'},
@@ -435,10 +431,10 @@ class TestOnProj1RatO1:
             {LAYER: 'L4', MTYPE: 'MC'},
             {LAYER: 'L4', MTYPE: 'NBC'},
             {LAYER: 'L4', MTYPE: 'NGC'},
+            {LAYER: 'L4', MTYPE: 'PC'},
             {LAYER: 'L4', MTYPE: 'SBC'},
-            {LAYER: 'L4', MTYPE: 'SSC'},
-            {LAYER: 'L4', MTYPE: 'TPC'},
-            {LAYER: 'L4', MTYPE: 'UPC'},
+            {LAYER: 'L4', MTYPE: 'SP'},
+            {LAYER: 'L4', MTYPE: 'SS'},
             {LAYER: 'L5', MTYPE: 'BP'},
             {LAYER: 'L5', MTYPE: 'BTC'},
             {LAYER: 'L5', MTYPE: 'CHC'},
@@ -448,25 +444,28 @@ class TestOnProj1RatO1:
             {LAYER: 'L5', MTYPE: 'NBC'},
             {LAYER: 'L5', MTYPE: 'NGC'},
             {LAYER: 'L5', MTYPE: 'SBC'},
-            {LAYER: 'L5', MTYPE: 'TPC:A'},
-            {LAYER: 'L5', MTYPE: 'TPC:B'},
-            {LAYER: 'L5', MTYPE: 'TPC:C'},
-            {LAYER: 'L5', MTYPE: 'UPC'},
+            {LAYER: 'L5', MTYPE: 'STPC'},
+            {LAYER: 'L5', MTYPE: 'TTPC1'},
+            {LAYER: 'L5', MTYPE: 'TTPC2'},
+            {LAYER: 'L5', MTYPE: 'UTPC'},
             {LAYER: 'L6', MTYPE: 'BP'},
             {LAYER: 'L6', MTYPE: 'BPC'},
             {LAYER: 'L6', MTYPE: 'BTC'},
             {LAYER: 'L6', MTYPE: 'CHC'},
             {LAYER: 'L6', MTYPE: 'DBC'},
-            {LAYER: 'L6', MTYPE: 'HPC'},
             {LAYER: 'L6', MTYPE: 'IPC'},
             {LAYER: 'L6', MTYPE: 'LBC'},
             {LAYER: 'L6', MTYPE: 'MC'},
             {LAYER: 'L6', MTYPE: 'NBC'},
             {LAYER: 'L6', MTYPE: 'NGC'},
             {LAYER: 'L6', MTYPE: 'SBC'},
-            {LAYER: 'L6', MTYPE: 'TPC:A'},
-            {LAYER: 'L6', MTYPE: 'TPC:C'},
-            {LAYER: 'L6', MTYPE: 'UPC'}]
+            {LAYER: 'L6', MTYPE: 'TPC_L1'},
+            {LAYER: 'L6', MTYPE: 'TPC_L4'},
+            {LAYER: 'L6', MTYPE: 'UTPC'}]
+
+    def test_warns_missing_mtype(self):
+        with pyt.warns(Warning):
+            self.adapted._translate_parameters_cells({MTYPE: 'BAASDHAS'})
 
     def test_empty_lists(self):
         assert self.adapted._translate_parameters_cells(
@@ -475,5 +474,5 @@ class TestOnProj1RatO1:
 
     def test_warns_region(self):
         with pyt.warns(Warning):
-            self._translate_parameters_cells({REGION: 'SS'})
+            self.adapted._translate_parameters_cells({REGION: 'SS'})
         pass
