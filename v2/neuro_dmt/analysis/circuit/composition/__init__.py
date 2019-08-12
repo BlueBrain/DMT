@@ -5,15 +5,11 @@ An `Analysis` underlies a model validation, or model comparison.
 Here we develop `Analysis` of a circuit's composition.
 """
 
-from .. import CircuitAnalysis
+from .. import BrainCircuitAnalysis
 
 class CompositionAnalysis(
-        CircuitAnalysis):
+        BrainCircuitAnalysis):
     """
     Analysis of a brain circuit's composition.
     """
     pass
-
-
-from cell_density import CellDensityAnalysis
-

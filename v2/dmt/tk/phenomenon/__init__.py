@@ -36,11 +36,15 @@ class Phenomenon(WithFields):
 
 
     def __init__(self,
+            name,
+            description,
             *args, **kwargs):
         """
         Initialize Me
         """
         super().__init__(
+            name=name,
+            description=description,
             *args, **kwargs)
        
         if "group" not in kwargs:

@@ -5,6 +5,7 @@ Circuit composition analyses.
 import pandas
 from .. import CompositionAnalysis
 from ..interfaces import CellDensityAdapterInterface
+from dmt.tk.phenomenon import Phenomenon
 
 
 class ByLayerCellDensityAnalysis(
@@ -12,16 +13,23 @@ class ByLayerCellDensityAnalysis(
     """
     Analysis of cell density by layer.
     """
+    phenomenon = Phenomenon(
+        "Cell Density",
+        "Count of cells in a unit volume.",
+        group="composition")
 
-    measurement_parameters =\
-        pandas.Index( [1,2,3,4,5,6], name="layer" )
+    measurement_parameters = pandas\
+        .Index([1, 2, 3, 4, 5, 6], name="layer")
 
     AdapterInterface =\
         CellDensityAdapterInterface
 
+    plotting_parameters ={
+        "x": "layer",
+        "y": phenomenon.label}
 
     def get_measurement(self,
-            *arg, **kwargs):
+            *args, **kwargs):
         """
         This sticks in the method to measure the circuit_model
         """
