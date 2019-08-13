@@ -87,12 +87,16 @@ class _MtypeTranslator(Translator):
         v = []
         for mtype in value:
             if len(mtype.split("_")) > 1:
-                raise TypeError(
+                # warning for now
+                # once mtype-name translation is implemented, we can revert
+                # to TypeError
+                warnings.warn(Warning(
                     "Mtypes in queries to adapter should not be in "
-                    "form <layer>_<name>, but simply <name>")
+                    "form <layer>_<name>, but simply <name>"
+                    "recieved mtype {}".format(mtype)))
             # TODO: is it bad practice to use parent object's private method?
             thismt = [mt for mt in _mtypes(self._circuit)
-                      if mt.endswith(mtype)]
+                      if "_".join(mt.split("_")[1:]) == mtype]
             if len(thismt) == 0:
                 warnings.warn(Warning("mtype: {} not present in circuit"
                                       .format(mtype)))
@@ -259,8 +263,10 @@ class CircuitAdapter:
     def connection_probability(self, measurement_parameters):
         pre_cells = self.get_cells(measurement_parameters[PRESYNAPTIC])
         post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])
-        num_conn = len(tuple(self._circuit.connectome.iter_connections(
-            pre=pre_cells.gid.values(), post=post_cells.gid.values())))
+        num_conn = len(tuple(self.get_connectome(measurement_parameters)
+                             .iter_connections(
+                                 pre=pre_cells.index.values,
+                                 post=post_cells.index.values)))
         num_pairs = pre_cells.shape[0] * (post_cells.shape[0] - 1)
         return num_conn / num_pairs
 
@@ -278,10 +284,16 @@ class CircuitAdapter:
         Returns:
             DataFrame of cell properties
         """
+        print(self._translate_parameters_cells(parameters))
         return self._circuit.cells.get(
-            self._translate_parameters_cells(parameters,
-                                             properties=properties))
+            self._translate_parameters_cells(parameters),
+            properties=properties)
 
+    def get_connectome(self, parameters):
+        # TODO: make dummy connectome that selects chunks for hemispheres,
+        #       and forwards operations seperately to the two before pooling
+        #       the result.
+        return self._circuit.connectome
 
     def _mtype_parameters(self, mtype_name):
         """

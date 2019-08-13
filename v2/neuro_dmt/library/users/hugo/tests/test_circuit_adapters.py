@@ -427,7 +427,7 @@ class TestOnProj1RatO1:
             {LAYER: ['L2', 'L3'], MTYPE: 'SBC'},
             {LAYER: 'L4', MTYPE: 'BP'},
             {LAYER: 'L4', MTYPE: 'BTC'},
-            {LAYER: 'L4', MTYPE: 'CHC'},
+            {LAYER: 'L4', MTYPE: 'ChC'},
             {LAYER: 'L4', MTYPE: 'DBC'},
             {LAYER: 'L4', MTYPE: 'LBC'},
             {LAYER: 'L4', MTYPE: 'MC'},
@@ -439,7 +439,7 @@ class TestOnProj1RatO1:
             {LAYER: 'L4', MTYPE: 'SS'},
             {LAYER: 'L5', MTYPE: 'BP'},
             {LAYER: 'L5', MTYPE: 'BTC'},
-            {LAYER: 'L5', MTYPE: 'CHC'},
+            {LAYER: 'L5', MTYPE: 'ChC'},
             {LAYER: 'L5', MTYPE: 'DBC'},
             {LAYER: 'L5', MTYPE: 'LBC'},
             {LAYER: 'L5', MTYPE: 'MC'},
@@ -453,7 +453,7 @@ class TestOnProj1RatO1:
             {LAYER: 'L6', MTYPE: 'BP'},
             {LAYER: 'L6', MTYPE: 'BPC'},
             {LAYER: 'L6', MTYPE: 'BTC'},
-            {LAYER: 'L6', MTYPE: 'CHC'},
+            {LAYER: 'L6', MTYPE: 'ChC'},
             {LAYER: 'L6', MTYPE: 'DBC'},
             {LAYER: 'L6', MTYPE: 'IPC'},
             {LAYER: 'L6', MTYPE: 'LBC'},
@@ -481,7 +481,7 @@ class TestOnProj1RatO1:
 
     def test_connection_probability(self):
         pre_group = {bp.Cell.MTYPE: ['L23_PC', 'L4_PC']}
-        post_group = {bp.Cell.MTYPE: ['L23_MC', 'L4_MC', 'L6_MC']}
+        post_group = {bp.Cell.MTYPE: ['L23_MC', 'L4_MC', 'L5_MC', 'L6_MC']}
         exp_num = len(tuple(self.circuit.connectome.iter_connections(
             pre=pre_group, post=post_group)))
         pre_group_len = self.circuit.cells.get(pre_group).shape[0]
@@ -491,3 +491,5 @@ class TestOnProj1RatO1:
         assert self.adapted.connection_probability(
             {PRESYNAPTIC: {MTYPE: "PC"}, POSTSYNAPTIC: {MTYPE: "MC"}}) ==\
             exprob
+
+    # TODO: test conn prob of empty group of cells
