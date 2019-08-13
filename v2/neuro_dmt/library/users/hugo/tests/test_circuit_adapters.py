@@ -417,7 +417,7 @@ class TestOnProj1RatO1:
             {LAYER: 'L1', MTYPE: 'SLAC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'BP'},
             {LAYER: ['L2', 'L3'], MTYPE: 'BTC'},
-            {LAYER: ['L2', 'L3'], MTYPE: 'CHC'},
+            {LAYER: ['L2', 'L3'], MTYPE: 'ChC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'DBC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'LBC'},
             {LAYER: ['L2', 'L3'], MTYPE: 'MC'},

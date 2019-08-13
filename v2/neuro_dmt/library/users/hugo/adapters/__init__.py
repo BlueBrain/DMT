@@ -300,7 +300,7 @@ class CircuitAdapter:
         mtype = "_".join(mttup[1:])
         if len(layer) > 2:
             layer = ["L{}".format(num) for num in layer[1:]]
-        return dict(layer=layer, mtype=mtype.upper())
+        return dict(layer=layer, mtype=mtype)
 
 
     # TODO: support lists for each param
