@@ -202,7 +202,6 @@ class CircuitAdapter:
                 atlas = Atlas.open(apath[0])
             elif len(apath) == 0:
                 atlas = None
-            print(atlas, apath)
             self._circuit.atlas = atlas
 
         if atlas is not None:
@@ -260,15 +259,31 @@ class CircuitAdapter:
         return [self._mtype_parameters(mtype_name) for mtype_name in
                 _mtypes(self._circuit)]
 
-    def connection_probability(self, measurement_parameters):
+    def connection_probability(self, measurement_parameters,
+                               nsamples=100, sample_size=50):
         pre_cells = self.get_cells(measurement_parameters[PRESYNAPTIC])
         post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])
-        num_conn = len(tuple(self.get_connectome(measurement_parameters)
-                             .iter_connections(
-                                 pre=pre_cells.index.values,
-                                 post=post_cells.index.values)))
-        num_pairs = pre_cells.shape[0] * (post_cells.shape[0] - 1)
+        pre_ids = pre_cells.index.values
+        post_ids = post_cells.index.values
+        connectome = self.get_connectome(measurement_parameters)
+        if (nsamples is None) or (
+                (nsamples * sample_size**2)
+                >= (pre_ids.shape[0] * post_ids.shape[0])):
+            return [self._connection_probability(connectome, pre_ids, post_ids)
+                    for sample in range(nsamples)]
+        else:
+            return [self._connection_probability(
+                connectome,
+                np.random.choice(pre_ids, sample_size),
+                np.random.choice(post_ids, sample_size))
+                    for sample in range(nsamples)]
+
+    def _connection_probability(self, connectome, pre_ids, post_ids):
+        num_conn = len(tuple(connectome.iter_connections(
+            pre=pre_ids, post=post_ids)))
+        num_pairs = pre_ids.shape[0] * (post_ids.shape[0] - 1)
         return num_conn / num_pairs
+
 
     def get_cells(self, parameters, properties=None):
         """
@@ -284,7 +299,6 @@ class CircuitAdapter:
         Returns:
             DataFrame of cell properties
         """
-        print(self._translate_parameters_cells(parameters))
         return self._circuit.cells.get(
             self._translate_parameters_cells(parameters),
             properties=properties)

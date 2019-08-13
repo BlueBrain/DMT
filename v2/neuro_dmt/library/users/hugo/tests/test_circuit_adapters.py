@@ -480,16 +480,18 @@ class TestOnProj1RatO1:
         pass
 
     def test_connection_probability(self):
-        pre_group = {bp.Cell.MTYPE: ['L23_PC', 'L4_PC']}
-        post_group = {bp.Cell.MTYPE: ['L23_MC', 'L4_MC', 'L5_MC', 'L6_MC']}
+        # will not be precise enough to succeed
+        pre_group = {bp.Cell.MTYPE: ['L4_PC']}
+        post_group = {bp.Cell.MTYPE: ['L4_MC']}
         exp_num = len(tuple(self.circuit.connectome.iter_connections(
             pre=pre_group, post=post_group)))
         pre_group_len = self.circuit.cells.get(pre_group).shape[0]
         post_group_len = self.circuit.cells.get(post_group).shape[0]
         num_pairs = pre_group_len * (post_group_len -1)
         exprob = exp_num / num_pairs
-        assert self.adapted.connection_probability(
-            {PRESYNAPTIC: {MTYPE: "PC"}, POSTSYNAPTIC: {MTYPE: "MC"}}) ==\
-            exprob
+        assert np.mean(self.adapted.connection_probability(
+            {PRESYNAPTIC: {LAYER: "L4", MTYPE: "PC"},
+             POSTSYNAPTIC: {LAYER: "L4", MTYPE: "MC"}})) ==\
+            pyt.approx(exprob, rel=0.05)
 
     # TODO: test conn prob of empty group of cells
