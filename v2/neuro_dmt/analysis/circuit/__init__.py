@@ -51,7 +51,7 @@ class BrainCircuitAnalysis(
         model to analyze.
         """,
         __type__=Interface)
-    plotter = Field(
+    plot = Field(
         """
         A class or a module that has `plot` method that will be used to
         plot the results of this analysis. The plotter should know how to 
@@ -115,7 +115,6 @@ class BrainCircuitAnalysis(
                 circuit_model,
                 *args, **kwargs)
         figure = self\
-            .plotter\
             .plot(
                 measurement.reset_index())
         return self\

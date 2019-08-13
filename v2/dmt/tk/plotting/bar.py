@@ -6,7 +6,7 @@ import seaborn
 from . import golden_aspect_ratio
 from dmt.tk.field import Field, lazyproperty, WithFields
 
-class BarPlotter(WithFields):
+class BarPlot(WithFields):
     """
     Specifies a plotting method, and the all the variables that can be set 
     """
@@ -40,20 +40,18 @@ class BarPlotter(WithFields):
         as `ylabel`.
         """,
         __default_value__="")
-
     height_figure = Field(
         """
         Height of the figure.
         """,
         __default_value__ = 8.)
-
     aspect_ratio_figure = Field(
         """
         Aspect ratio width / height for the figure.
         """,
         __default_value__=golden_aspect_ratio)
 
-    def plot(self,
+    def __call__(self,
             dataframe):
         """
         Make a plot.

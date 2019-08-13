@@ -6,7 +6,7 @@ import pandas
 from .. import CompositionAnalysis
 from ..interfaces import CellDensityAdapterInterface
 from dmt.tk.field import lazyproperty
-from dmt.tk.plotting.bar import BarPlotter
+from dmt.tk.plotting.bar import BarPlot
 from dmt.tk.phenomenon import Phenomenon
 
 
@@ -20,13 +20,17 @@ class ByLayerCompositionAnalysis(
             "layer": [1, 2, 3, 4, 5, 6]})
 
     @lazyproperty
-    def plotter(self):
-        return BarPlotter(
+    def plot(self):
+        return BarPlot(
             xvar="layer",
             xlabel="Layer",
             yvar=self.phenomenon.label,
             ylabel=self.phenomenon.name)
 
+cell_density_phenomenon = Phenomenon(
+    "Cell Density",
+    "Count of cells in a unit volume.",
+    group="composition")
 
 class ByLayerCellDensityAnalysis(
         ByLayerCompositionAnalysis):
@@ -35,10 +39,7 @@ class ByLayerCellDensityAnalysis(
     The `Field` values assigned below are the simplest applicable values.
     You may customize them.
     """
-    phenomenon = Phenomenon(
-        "Cell Density",
-        "Count of cells in a unit volume.",
-        group="composition")
+    phenomenon = cell_density_phenomenon
 
     AdapterInterface =\
         CellDensityAdapterInterface
