@@ -487,7 +487,7 @@ class TestOnProj1RatO1:
             pre=pre_group, post=post_group)))
         pre_group_len = self.circuit.cells.get(pre_group).shape[0]
         post_group_len = self.circuit.cells.get(post_group).shape[0]
-        num_pairs = pre_group_len * (post_group_len -1)
+        num_pairs = pre_group_len * post_group_len
         exprob = exp_num / num_pairs
         assert np.mean(self.adapted.connection_probability(
             {PRESYNAPTIC: {LAYER: "L4", MTYPE: "PC"},

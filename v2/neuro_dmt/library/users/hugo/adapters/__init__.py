@@ -92,8 +92,8 @@ class _MtypeTranslator(Translator):
                 # to TypeError
                 warnings.warn(Warning(
                     "Mtypes in queries to adapter should not be in "
-                    "form <layer>_<name>, but simply <name>"
-                    "recieved mtype {}".format(mtype)))
+                    "form <layer>_<name>, but simply <name>. "
+                    "recieved mtype: {}".format(mtype)))
             # TODO: is it bad practice to use parent object's private method?
             thismt = [mt for mt in _mtypes(self._circuit)
                       if "_".join(mt.split("_")[1:]) == mtype]
@@ -281,7 +281,7 @@ class CircuitAdapter:
     def _connection_probability(self, connectome, pre_ids, post_ids):
         num_conn = len(tuple(connectome.iter_connections(
             pre=pre_ids, post=post_ids)))
-        num_pairs = pre_ids.shape[0] * (post_ids.shape[0] - 1)
+        num_pairs = pre_ids.shape[0] * post_ids.shape[0]
         return num_conn / num_pairs
 
 
