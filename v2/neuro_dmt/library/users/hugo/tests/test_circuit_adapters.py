@@ -494,4 +494,7 @@ class TestOnProj1RatO1:
              POSTSYNAPTIC: {LAYER: "L4", MTYPE: "MC"}})) ==\
             pyt.approx(exprob, rel=0.05)
 
-    # TODO: test conn prob of empty group of cells
+    def test_conn_prob_empty_cells(self):
+        assert np.isnan(self.adapted.connection_probability(
+            {PRESYNAPTIC: {LAYER: "L1", MTYPE: ['PC']},
+             POSTSYNAPTIC: {LAYER: "L2", MTYPE: ["CHC"]}}))

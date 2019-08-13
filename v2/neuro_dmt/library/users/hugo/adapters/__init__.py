@@ -265,10 +265,11 @@ class CircuitAdapter:
         post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])
         pre_ids = pre_cells.index.values
         post_ids = post_cells.index.values
+        total_pairs = pre_ids.shape[0] * post_ids.shape[0]
+        if total_pairs == 0:
+            return np.nan
         connectome = self.get_connectome(measurement_parameters)
-        if (nsamples is None) or (
-                (nsamples * sample_size**2)
-                >= (pre_ids.shape[0] * post_ids.shape[0])):
+        if (nsamples is None) or ((nsamples * sample_size**2) >= total_pairs):
             return [self._connection_probability(connectome, pre_ids, post_ids)
                     for sample in range(nsamples)]
         else:
@@ -283,7 +284,6 @@ class CircuitAdapter:
             pre=pre_ids, post=post_ids)))
         num_pairs = pre_ids.shape[0] * post_ids.shape[0]
         return num_conn / num_pairs
-
 
     def get_cells(self, parameters, properties=None):
         """
