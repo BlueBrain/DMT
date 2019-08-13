@@ -22,7 +22,24 @@ class BrainCircuitAnalysis(
         """
         A collection of parameters to measure with.
         """,
-        __type__=( pandas.Index, pandas.MultiIndex ))
+        __type__=pandas.DataFrame)
+
+    @lazyproperty
+    def measurement_index(self):
+        """
+        The index to be given to the measurement.
+        Each row in `measurement_parameters` is represented in `sample_size`
+        number of times.
+        """
+        return pandas\
+            .DataFrame(
+                [parameters.to_dict()
+                 for _ in range(self.sample_size)
+                 for _, parameters in self.measurement_parameters.iterrows()])\
+            .set_index(
+                list(self.measurement_parameters.columns.values))\
+                .index
+
     sample_size = Field(
         """
         Number of samples to collect for each measurement.
@@ -37,16 +54,13 @@ class BrainCircuitAnalysis(
     plotter = Field(
         """
         A class or a module that has `plot` method that will be used to
-        plot the results of this analysis.
+        plot the results of this analysis. The plotter should know how to 
+        interpret the data provided. For example, the plotter will have to know
+        which columns are the x-axis, and which the y-axis. The `Plotter`
+        instance used by this `BrainCircuitAnalysis` instance should have those
+        set as instance attributes.
         """,
         __required__=False)
-    plotting_parameters = Field(
-        """
-        A dict listing the values of parameters that `plotter` will plot with.
-        Having a list parameters allows plot customization to be placed in a
-        single place, and applied to any suitable case.
-        """,
-        __default_value__={})
     reporter = Field(
         """
         A class or a module that will report the results of this analysis.
@@ -63,24 +77,34 @@ class BrainCircuitAnalysis(
         """
         raise NotImplementedError
 
+    def _get_statistical_measurement(self,
+            circuit_model,
+            *args, **kwargs):
+        """
+        Get a statistical measurement.
+        """
+        return pandas\
+            .DataFrame(
+                {self.phenomenon.label: [
+                    self.get_measurement( circuit_model, **parameters )
+                    for _ in range(self.sample_size)
+                    for _, parameters in self.measurement_parameters.iterrows()]},
+                index=self.measurement_index)
+
     def get_report(self,
             circuit_model,
             *args, **kwargs):
         """
         Get a report.
         """
-        measurement = pandas\
-            .DataFrame(
-                {self.phenomenon.label: [
-                    self.get_measurement( circuit_model, **parameters )
-                    for _ in range(self.sample_size)
-                    for parameters in self.measurement_parameters]},
-                index=self.measurement_parameters)
+        measurement = self\
+            ._get_statistical_measurement(
+                circuit_model,
+                *args, **kwargs)
         figure = self\
             .plotter\
             .plot(
-                measurement.reset_index(),
-                **plotting_parameters)
+                measurement.reset_index())
         return self\
             .reporter\
             .report(

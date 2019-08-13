@@ -5,6 +5,7 @@ Circuit composition analyses.
 import pandas
 from .. import CompositionAnalysis
 from ..interfaces import CellDensityAdapterInterface
+from dmt.tk.plotting.bar import BarPlotter
 from dmt.tk.phenomenon import Phenomenon
 
 
@@ -12,6 +13,8 @@ class ByLayerCellDensityAnalysis(
         CompositionAnalysis):
     """
     Analysis of cell density by layer.
+    The `Field` values assigned below are the simplest applicable values.
+    You may customize them.
     """
     phenomenon = Phenomenon(
         "Cell Density",
@@ -19,7 +22,8 @@ class ByLayerCellDensityAnalysis(
         group="composition")
 
     measurement_parameters = pandas\
-        .Index([1, 2, 3, 4, 5, 6], name="layer")
+        .DataFrame({
+            "layer": 2 * [1, 2, 3, 4, 5, 6]})
 
     AdapterInterface =\
         CellDensityAdapterInterface
@@ -27,6 +31,12 @@ class ByLayerCellDensityAnalysis(
     plotting_parameters ={
         "x": "layer",
         "y": phenomenon.label}
+
+    plotter = BarPlotter(
+        xvar="layer",
+        xlabel="Layer",
+        yvar=phenomenon.label,
+        ylabel=phenomenon.name)
 
     def get_measurement(self,
             *args, **kwargs):
