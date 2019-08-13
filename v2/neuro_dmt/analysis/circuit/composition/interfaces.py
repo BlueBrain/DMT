@@ -12,6 +12,8 @@ class CellDensityAdapterInterface(Interface):
     model to use cell density analyses.
     """
 
+    __measurement__ = "cell_density"
+
     def get_cell_density(self,
             circuit_model,
             mtype=None,
@@ -71,4 +73,5 @@ class CellDensityAdapterInterface(Interface):
         a float value
         """
         raise NotImplementedError
+
 

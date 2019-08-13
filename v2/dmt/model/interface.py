@@ -30,6 +30,7 @@ class InterfaceMeta(type):
 
      __interface_registry__ = {}#track interfaces that have been defined
 
+
      def __init__(cls, name, bases, attrs):
           """..."""
           if len(bases) > 1:
@@ -46,28 +47,40 @@ class InterfaceMeta(type):
                "__module__",
                "__doc__",
                "__qualname__"}
+
+          def __has_dunders(attribute):
+               """
+               Does `attribute` start and end with double underscores.
+               A `dunder` attribute will not be a required method,
+               i.e. an adapter of an `Interface` will not have to implement
+               such a method.
+               The use of `dunder`s can be to pass class-level information of an
+               `Interface`.
+               """
+               return len(attribute) >= 4\
+                    and attribute[:2] == "__"\
+                    and attribute[-2:] == "__"
+
           cls.__requiredmethods__ =[
                attr_name for attr_name in attrs.keys()
-               if attr_name not in python_provided_attributes]
+               if not __has_dunders(attr_name)]
           cls.__interfacemethods__ =\
                cls.__requiredmethods__
           suggestion =\
                Suggestion(
-                    """
-                    {} for {} requires you to implement.
-                    """.format(name, cls.__name__))
+                    "\nTo adapt to {} you must implement".format(name))
           attr_index = 1
           for attr_name, attr_value in attrs.items():
-               if attr_name not in python_provided_attributes:
+               if not __has_dunders(attr_name):
                     suggestion =\
                          suggestion +\
                          Suggestion(
-                              "\t({}) {}: {}".format(
+                              """\t({}) {} {}""".format(
                                    attr_index,
                                    attr_name,
                                    getattr(
                                         attr_value,
-                                        __doc__,
+                                        "__doc__",
                                         "no documentation!")))
                     attr_index += 1
 
@@ -106,8 +119,7 @@ class Interface(
           """
           Register an implementation of this Interface.
           """
-          type_implementation =\
-               implementation\
+          type_implementation = implementation\
                if isinstance(implementation, type)\
                   else type(implementation)
           
@@ -122,25 +134,26 @@ class Interface(
                          please implement the following:
                          """.format(type_implementation, cls))
                n = 1
-               for method in methods_unimplemented:
+               for method_name in methods_unimplemented:
+                    interface_method = getattr(cls, method_name)
                     suggestion =\
                          suggestion +\
                          """
                          ({}): {}
-                         """.format(n, method)
+                         """.format(n, method_name)
                     n += 1
                     suggestion =\
                          suggestion +\
                          """
-                         Take a look at {}'s implementation guide.
-                         """.format(cls)
-                    suggestion =\
-                         suggestion +\
-                         cls.__implementation_guide__
-                    raise Exception(
-                         """
-                         Unimplemented methods required by Interface {}.
-                         """.format(cls))
+                         Take a look at this `Interface`'s implementation guide:
+                         \t{}.__implementation_guide__
+                         """.format(cls.__name__)
+                    raise Exception(suggestion.formatted())
+                    # raise Exception(
+                    #      """
+                    #      Unimplemented methods required by Interface {}.
+                    #      You may resolve you
+                    #      """.format(cls))
                
           cls.__implementation_registry__\
              .append(type_implementation)

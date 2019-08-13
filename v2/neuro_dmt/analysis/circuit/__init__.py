@@ -69,13 +69,26 @@ class BrainCircuitAnalysis(
         """,
         __required__=False)
 
-    @abstractmethod
     def get_measurement(self,
+            circuit_model,
             **measurement_parameters):
         """
-        A subclass, or a mixin, must provide this method.
+        ...
         """
-        raise NotImplementedError
+        measurement_name = self\
+            .AdapterInterface.__measurement__
+        try:
+            adapter_method = getattr(
+                self.adapter,
+                measurement_name)
+        except AttributeError:
+            adapter_method = getattr(
+                self.adapter,
+                "get_{}".format(measurement_name))
+
+        return adapter_method(
+            circuit_model,
+            **measurement_parameters)
 
     def _get_statistical_measurement(self,
             circuit_model,
