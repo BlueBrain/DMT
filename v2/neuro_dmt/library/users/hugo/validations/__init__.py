@@ -197,6 +197,7 @@ class SimpleValidation(Analysis, ABC):
         #       to enum
         models_measurements = []
         for i, model in enumerate(adapted):
+
             measurements_parameters = self.measurements_parameters(model)
             try:
                 label = model.label
@@ -205,11 +206,18 @@ class SimpleValidation(Analysis, ABC):
                               .format(i, model))
                 label = 'model_{}'.format(i)
 
+            sampleslist = []
+            nmeasurements = len(measurements_parameters)
+            for i, parameters in enumerate(
+                    self.measurements_parameters(model)):
+                progress = i / nmeasurements
+                print(label, ": {0:.2%}".format(progress), end="\r")
+                sampleslist.append(
+                    self.get_measurement(model, parameters))
+
             model_measurements = (
                 label, pd.DataFrame(measurements_parameters).assign(
-                    samples=[self.get_measurement(model, parameters)
-                             for parameters in
-                             self.measurements_parameters(model)]))
+                    samples=sampleslist))
             models_measurements.append(model_measurements)
 
         return self._get_report(models_measurements)
