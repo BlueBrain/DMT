@@ -521,3 +521,14 @@ class TestConnectomeFunctions:
             {PRESYNAPTIC: {LAYER: "L1", MTYPE: "DAC"},
              POSTSYNAPTIC: {LAYER: "L4", MTYPE: "PC"}})) ==\
             pyt.approx(np.mean(exp_syncounts), rel=0.05)
+
+    def test_pathway_synapses(self):
+        pre_group = {bp.Cell.MTYPE: ['L4_BP']}
+        post_group = {bp.Cell.MTYPE: ['L23_PC']}
+        exp_synapses = len(self.circuit.connectome.pathway_synapses(
+            pre=pre_group, post=post_group))
+
+        assert self.adapted.pathway_synapses(
+            {PRESYNAPTIC: {LAYER: "L4", MTYPE: "BP"},
+             POSTSYNAPTIC: {LAYER: ["L2", "L3"], MTYPE: "PC"}}) ==\
+            exp_synapses

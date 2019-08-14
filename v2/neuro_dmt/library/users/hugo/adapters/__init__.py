@@ -296,6 +296,54 @@ class CircuitAdapter:
         num_pairs = pre_ids.shape[0] * post_ids.shape[0]
         return num_conn / num_pairs
 
+    # TOOD: should repeated docstrings always be copied? or referenced
+    def synapses_per_connection(self, measurement_parameters,
+                                nsamples=100, sample_size=50):
+        """
+        get the number of synapses per connection between two groups of cells
+
+        Arguments:
+            measurement_parameters: a dict with keys {} and {},
+                                    each with a dict value containing
+                                    parameters identifying the two cell groups
+            nsamples: how many samples to take. set to None to take whole group
+            sample_size: how many cells to sample from each group
+                         actual number of pairs sampled will be this squared
+
+        Returns:
+            float or list of floats: number of synapses per connection
+        """.format(PRESYNAPTIC, POSTSYNAPTIC)
+        return self._sample_connectome(self._synapses_per_connection,
+                                       nsamples, sample_size,
+                                       measurement_parameters)
+
+    def _synapses_per_connection(self, connectome, pre_ids, post_ids):
+        """
+        get the synapses per connection for each connection between
+        the cells identified by pre_ids and post_ids
+        """
+        return [conn[2] for conn in connectome.iter_connections(
+            pre=pre_ids, post=post_ids, return_synapse_count=True)]
+
+    def pathway_synapses(self, measurement_parameters):
+        """
+        get the total number of synapses between two groups of cells
+
+        Arguments:
+            measurement_parameters: a dict with keys {} and {},
+                                    each with a dict value containing
+                                    parameters identifying the two cell groups
+        Returns:
+            number of synapses:: int
+        """.format(PRESYNAPTIC, POSTSYNAPTIC)
+        return len(
+            self.get_connectome(measurement_parameters).pathway_synapses(
+                pre=self._translate_parameters_cells(
+                    measurement_parameters[PRESYNAPTIC]),
+                post=self._translate_parameters_cells(
+                    measurement_parameters[POSTSYNAPTIC])
+            ))
+
     # TODO: get all data from iter_connections, cache results?
     def _sample_connectome(self, method, nsamples, sample_size,
                            measurement_parameters, *args, **kwargs):
@@ -332,35 +380,6 @@ class CircuitAdapter:
                     np.random.choice(post_cells, sample_size),
                     *args, **kwargs)
                  for sample in range(nsamples)])
-
-    # TOOD: should repeated docstrings always be copied? or referenced
-    def synapses_per_connection(self, measurement_parameters,
-                                nsamples=100, sample_size=50):
-        """
-        get the number of synapses per connection between two groups of cells
-
-        Arguments:
-            measurement_parameters: a dict with keys {} and {},
-                                    each with a dict value containing
-                                    parameters identifying the two cell groups
-            nsamples: how many samples to take. set to None to take whole group
-            sample_size: how many cells to sample from each group
-                         actual number of pairs sampled will be this squared
-
-        Returns:
-            float or list of floats: number of synapses per connection
-        """.format(PRESYNAPTIC, POSTSYNAPTIC)
-        return self._sample_connectome(self._synapses_per_connection,
-                                       nsamples, sample_size,
-                                       measurement_parameters)
-
-    def _synapses_per_connection(self, connectome, pre_ids, post_ids):
-        """
-        get the synapses per connection for each connection between
-        the cells identified by pre_ids and post_ids
-        """
-        return [conn[2] for conn in connectome.iter_connections(
-            pre=pre_ids, post=post_ids, return_synapse_count=True)]
 
     def get_cells(self, parameters, properties=None):
         """
