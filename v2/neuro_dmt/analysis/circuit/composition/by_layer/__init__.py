@@ -8,16 +8,15 @@ from dmt.tk.field import lazyproperty
 from dmt.tk.plotting.bars import Bars
 from dmt.tk.reporting import Report
 from dmt.tk.phenomenon import Phenomenon
-
+from dmt.tk.parameters import Parameters
 
 class ByLayerCompositionAnalysis(
         CompositionAnalysis):
     """
     Common attributes of all by layer `CompositionAnalysis` types.
     """
-    measurement_parameters = pandas\
-        .DataFrame({
-            "layer": [1, 2, 3, 4, 5, 6]})
+    measurement_parameters = Parameters(
+        pandas.DataFrame({"layer": [1, 2, 3, 4, 5, 6]}))
 
     @lazyproperty
     def plotter(self):

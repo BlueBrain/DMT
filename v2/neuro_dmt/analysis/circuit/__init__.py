@@ -20,39 +20,21 @@ class BrainCircuitAnalysis(
         An object whose `.label` is a single word name for the phenomenon 
         analyzed by this `BrainCircuitAnalysis`.
         """)
-    measurement_parameters = Field(
-        """
-        A collection of parameters to measure with.
-        """,
-        __type__=pandas.DataFrame)
-
-    @lazyproperty
-    def measurement_index(self):
-        """
-        The index to be given to the measurement.
-        Each row in `measurement_parameters` is represented in `sample_size`
-        number of times.
-        """
-        return pandas\
-            .DataFrame(
-                [parameters.to_dict()
-                 for _ in range(self.sample_size)
-                 for _, parameters in self.measurement_parameters.iterrows()])\
-            .set_index(
-                list(self.measurement_parameters.columns.values))\
-                .index
-
-    sample_size = Field(
-        """
-        Number of samples to collect for each measurement.
-        """,
-        __default_value__ = 20)
     AdapterInterface  = Field(
         """
         The interface that will be used to get measurements for the circuit
         model to analyze.
         """,
         __type__=Interface)
+    measurement_parameters = Field(
+        """
+        A collection of parameters to measure with.
+        This object should have the following methods:
+        ~   1. `for_sampling`, returning an iterable of dict like parameters
+        ~       to pass to a measurement method as keyword arguments.
+        ~   2. `index`, returning a pandas.Index object to be used as an
+        ~       index on the measurement.
+        """)
     plotter = Field(
         """
         A class or a module that has `plot` method that will be used to
@@ -103,10 +85,9 @@ class BrainCircuitAnalysis(
         return pandas\
             .DataFrame(
                 {self.phenomenon.label: [
-                    self.get_measurement( circuit_model, **parameters )
-                    for _ in range(self.sample_size)
-                    for _, parameters in self.measurement_parameters.iterrows()]},
-                index=self.measurement_index)
+                    self.get_measurement( circuit_model, **params )
+                    for params in self.measurement_parameters.for_sampling]},
+                index=self.measurement_parameters.index)
 
     def get_figure(self,
             circuit_model=None,
