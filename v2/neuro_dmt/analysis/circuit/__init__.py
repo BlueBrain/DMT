@@ -52,6 +52,12 @@ class BrainCircuitAnalysis(
         """,
         __default_value__=Reporter(
             path_output_folder=os.getcwd()))
+    reference_data = Field(
+        """
+        A pandas.DataFrame containing reference data to compare with the
+        measurement made on a circuit model.
+        """,
+        __required__=False)
 
     @lazyproperty
     def adapter_method(self):
@@ -88,7 +94,7 @@ class BrainCircuitAnalysis(
                     for params in self.measurement_parameters.for_sampling]},
                 index=self.measurement_parameters.index)
 
-    def get_figure(self,
+    def get_figures(self,
             circuit_model=None,
             measurement=None,
             *args, **kwargs):
@@ -107,10 +113,10 @@ class BrainCircuitAnalysis(
                self._get_statistical_measurement(
                    circuit_model,
                    *args, **kwargs)
-        return self.plotter\
-            .get_figure(
+        return {
+            self.phenomenon.label: self.plotter.get_figure(
                 measurement.reset_index(),
-                caption=self.adapter_method.__doc__)
+                caption=self.adapter_method.__doc__)}
 
     def get_report(self,
             circuit_model,
@@ -119,9 +125,7 @@ class BrainCircuitAnalysis(
         Get a report for the given `circuit_model`.
         """
         return Report(
-            figures={
-                self.phenomenon.label: self.get_figure(
-                    circuit_model=circuit_model)},
+            figures= self.get_figures(circuit_model=circuit_model),
             introduction="{}, measured by layer\n{}.".format(
                 self.phenomenon.name,
                 self.phenomenon.description),
