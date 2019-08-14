@@ -36,3 +36,9 @@ class Figure(WithFields):
             caption=caption,
             *args, **kwargs)
 
+
+    def save(self, path, dpi=100):
+        """
+        Save the figure.
+        """
+        return self.graphic.savefig(path, dpi=dpi)

@@ -6,6 +6,7 @@ from .. import CompositionAnalysis
 from ..interfaces import CellDensityAdapterInterface
 from dmt.tk.field import lazyproperty
 from dmt.tk.plotting.bars import Bars
+from dmt.tk.reporting import Report
 from dmt.tk.phenomenon import Phenomenon
 
 
@@ -43,9 +44,20 @@ class ByLayerCellDensityAnalysis(
     AdapterInterface =\
         CellDensityAdapterInterface
 
-    # def get_measurement(self,
-    #         *args, **kwargs):
-    #     """
-    #     This sticks in the method to measure the circuit_model
-    #     """
-    #     return self.adapter.get_cell_density( *args, **kwargs)
+    def get_report(self,
+            circuit_model,
+            *args, **kwargs):
+        """
+        Get a report for the given `circuit_model`.
+
+        `get_report` method appears in this sub-class because
+        some `Fields` of a `Report` depend on the final `Analysis` class.
+        """
+        return Report(
+            figures={
+                "cell_density": self.get_figure(circuit_model=circuit_model)},
+            introduction="Cell density of a brain circuit, measured by layer.",
+            methods=self.adapter_method.__doc__,
+            results="Results are presented in the figure.",
+            discussion="To be provided after a review of the results")
+

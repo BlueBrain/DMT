@@ -3,10 +3,12 @@ Brain circuit analyses and validations.
 """
 
 from abc import abstractmethod
+import os
 import pandas        
 from dmt.analysis import Analysis
 from dmt.model.interface import Interface
 from dmt.tk.field import Field, lazyproperty
+from dmt.tk.reporting import Reporter
 
 class BrainCircuitAnalysis(
         Analysis):
@@ -67,7 +69,8 @@ class BrainCircuitAnalysis(
         It is up to the reporter what kind of report to generate. For example,
         the report can be a (interactive) webpage, or a static PDF.
         """,
-        __required__=False)
+        __default_value__=Reporter(
+            path_output_folder=os.getcwd()))
 
     @lazyproperty
     def adapter_method(self):
@@ -87,7 +90,6 @@ class BrainCircuitAnalysis(
         """
         ...
         """
-
         return self.adapter_method(
             circuit_model,
             **measurement_parameters)
@@ -106,25 +108,51 @@ class BrainCircuitAnalysis(
                     for _, parameters in self.measurement_parameters.iterrows()]},
                 index=self.measurement_index)
 
+    def get_figure(self,
+            circuit_model=None,
+            measurement=None,
+            *args, **kwargs):
+        """
+        Get a figure for the analysis of `circuit_model`.
+
+        Arguments
+        ----------
+        `circuit_model`: A circuit model.
+        `measurement`: The data frame to make a figure for.
+
+        Either a `circuit_model` or a `measurement` must be provided.
+        """
+        measurement = measurement\
+            if measurement is not None else\
+               self._get_statistical_measurement(
+                   circuit_model,
+                   *args, **kwargs)
+        return self.plotter\
+            .get_figure(
+                measurement.reset_index(),
+                caption=self.adapter_method.__doc__)
+
+    @abstractmethod
     def get_report(self,
             circuit_model,
             *args, **kwargs):
         """
-        Get a report.
+        Prepare a report for this analysis of `circuit_model`.
         """
-        measurement = self\
-            ._get_statistical_measurement(
-                circuit_model,
-                *args, **kwargs)
+        raise NotImplementedError
+
+    def __call__(self,
+            circuit_model,
+            adapter=None,
+            *args, **kwargs):
+        """
+        Make this `Analysis` masquerade as a function.
+        """
+        if adapter is not None:
+            self.adapter = adapter
         return self\
             .reporter\
-            .report(
-                measurement,
-                figure=self.plotter.get_figure(
-                    measurement.reset_index(),
-                    caption=self.adapter_method.__doc__))
-
-    pass
-
-
-
+            .post(
+                self.get_report(
+                    circuit_model,
+                    *args, **kwargs))
