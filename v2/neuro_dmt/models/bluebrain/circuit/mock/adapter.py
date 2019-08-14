@@ -25,6 +25,13 @@ class MockCircuitAdapter(WithFields):
     development of the analysis --- plotting, report generation etc.
     """
 
+    def get_label(self,
+            mock_circuit_model):
+        """
+        Label for a mock circuit model.
+        """
+        return "mock_circuit"
+
     def get_cell_density(self,
             mock_circuit_model,
             *args, **kwargs):

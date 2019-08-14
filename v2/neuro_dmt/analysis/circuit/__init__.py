@@ -56,8 +56,10 @@ class BrainCircuitAnalysis(
         """
         A pandas.DataFrame containing reference data to compare with the
         measurement made on a circuit model.
+        Each dataset in the dataframe must be annotated with index level
+        'dataset', in addition to levels that make sense for the measurements.
         """,
-        __required__=False)
+        __default_value__=pandas.DataFrame())
 
     @lazyproperty
     def adapter_method(self):
@@ -83,16 +85,44 @@ class BrainCircuitAnalysis(
 
     def _get_statistical_measurement(self,
             circuit_model,
+            sample_size=None,
             *args, **kwargs):
         """
         Get a statistical measurement.
         """
-        return pandas\
+        measurement = pandas\
             .DataFrame(
-                {self.phenomenon.label: [
-                    self.get_measurement( circuit_model, **params )
-                    for params in self.measurement_parameters.for_sampling]},
-                index=self.measurement_parameters.index)
+                [self.get_measurement(circuit_model, **p)
+                 for p in self.measurement_parameters.for_sampling(sample_size)],
+                columns=[self.phenomenon.label],
+                index=self.measurement_parameters.index(sample_size))
+
+        if self.reference_data.empty:
+            return measurement
+
+        model_measurement = measurement\
+            .reset_index()\
+            .assign(
+                dataset=self.adapter.get_label(circuit_model))\
+            .set_index(
+                ["dataset"] + self.measurement_parameters.variables)
+        return pandas\
+            .concat([
+                self.reference_data,
+                model_measurement])
+
+    def _append_reference_data(self,
+                measurement):
+        """
+        Append reference datasets.
+        """
+        if self.reference_data.empty:
+            return measurement
+        return pandas.concat([
+            measurement\
+            .reset_index()\
+            .assign(
+                dataset=self.adapter.get_label())])
 
     def get_figures(self,
             circuit_model=None,

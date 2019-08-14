@@ -14,6 +14,13 @@ class CellDensityAdapterInterface(Interface):
 
     __measurement__ = "cell_density"
 
+    def get_label(self,
+            circuit_model):
+        """
+        A label that can be used to name a pandas.DataFrame column.
+        """
+        raise NotImplementedError
+
     def get_cell_density(self,
             circuit_model,
             mtype=None,
