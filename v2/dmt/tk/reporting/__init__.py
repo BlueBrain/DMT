@@ -107,10 +107,14 @@ class Reporter(WithFields):
         figures_folder = self.get_figures_folder(output_folder)
 
         def __write(output_file, attribute, text=""):
+            section_end = 70 *'-'
+            underline = len(attribute) * '-'
             output_file.write(
-                "{}\n{}\n".format(
+                "{}\n{}\n{}\n{}\n".format(
                     attribute.upper(),
-                    text if text else getattr(report, attribute)))
+                    underline,
+                    text if text else getattr(report, attribute),
+                    section_end))
 
         with open(os.path.join(output_folder, "report.txt"), 'w') as output_file:
             __write(
@@ -122,7 +126,7 @@ class Reporter(WithFields):
             __write(
                 output_file, "discussion")
             __write(
-                output_file, "figure", figures_folder)
+                output_file, "figures", figures_folder)
             __write(
                 output_file, "figure captions",
                 "\n".join(

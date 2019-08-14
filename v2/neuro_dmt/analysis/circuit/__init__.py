@@ -8,7 +8,7 @@ import pandas
 from dmt.analysis import Analysis
 from dmt.model.interface import Interface
 from dmt.tk.field import Field, lazyproperty
-from dmt.tk.reporting import Reporter
+from dmt.tk.reporting import Report, Reporter
 
 class BrainCircuitAnalysis(
         Analysis):
@@ -24,8 +24,7 @@ class BrainCircuitAnalysis(
         """
         The interface that will be used to get measurements for the circuit
         model to analyze.
-        """,
-        __type__=Interface)
+        """)
     measurement_parameters = Field(
         """
         A collection of parameters to measure with.
@@ -113,14 +112,22 @@ class BrainCircuitAnalysis(
                 measurement.reset_index(),
                 caption=self.adapter_method.__doc__)
 
-    @abstractmethod
     def get_report(self,
             circuit_model,
             *args, **kwargs):
         """
-        Prepare a report for this analysis of `circuit_model`.
+        Get a report for the given `circuit_model`.
         """
-        raise NotImplementedError
+        return Report(
+            figures={
+                self.phenomenon.label: self.get_figure(
+                    circuit_model=circuit_model)},
+            introduction="{}, measured by layer\n{}.".format(
+                self.phenomenon.name,
+                self.phenomenon.description),
+            methods=self.adapter_method.__doc__,
+            results="Results are presented in the figure.",
+            discussion="To be provided after a review of the results")
 
     def __call__(self,
             circuit_model,
