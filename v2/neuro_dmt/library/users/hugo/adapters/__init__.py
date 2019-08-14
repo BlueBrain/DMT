@@ -178,6 +178,17 @@ def get_regions_represented(circuit):
     return np.isin(br.raw, regionids)
 
 
+def _flatten(lst):
+    """flatten a list which may contain lists"""
+    out = []
+    for item in lst:
+        if isinstance(item, list):
+            out += _flatten(item)
+        else:
+            out.append(item)
+    return out
+
+
 class CircuitAdapter:
     """
     adapter for bluepy circuits
@@ -261,29 +272,95 @@ class CircuitAdapter:
 
     def connection_probability(self, measurement_parameters,
                                nsamples=100, sample_size=50):
-        pre_cells = self.get_cells(measurement_parameters[PRESYNAPTIC])
-        post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])
-        pre_ids = pre_cells.index.values
-        post_ids = post_cells.index.values
-        total_pairs = pre_ids.shape[0] * post_ids.shape[0]
-        if total_pairs == 0:
-            return np.nan
-        connectome = self.get_connectome(measurement_parameters)
-        if (nsamples is None) or ((nsamples * sample_size**2) >= total_pairs):
-            return [self._connection_probability(connectome, pre_ids, post_ids)
-                    for sample in range(nsamples)]
-        else:
-            return [self._connection_probability(
-                connectome,
-                np.random.choice(pre_ids, sample_size),
-                np.random.choice(post_ids, sample_size))
-                    for sample in range(nsamples)]
+        """
+        get the connection probabilty for two groups of cells
+
+        Arguments:
+            measurement_parameters: a dict with keys {} and {},
+                                    each with a dict value containing
+                                    parameters identifying the two cell groups
+            nsamples: how many samples to take. set to None to take whole group
+            sample_size: how many cells to sample from each group
+                         actual number of pairs sampled will be this squared
+
+        Returns:
+            float or list of floats: connection probabiltiy
+        """.format(PRESYNAPTIC, POSTSYNAPTIC)
+        return self._sample_connectome(self._connection_probability,
+                                       nsamples, sample_size,
+                                       measurement_parameters)
 
     def _connection_probability(self, connectome, pre_ids, post_ids):
         num_conn = len(tuple(connectome.iter_connections(
             pre=pre_ids, post=post_ids)))
         num_pairs = pre_ids.shape[0] * post_ids.shape[0]
         return num_conn / num_pairs
+
+    # TODO: get all data from iter_connections, cache results?
+    def _sample_connectome(self, method, nsamples, sample_size,
+                           measurement_parameters, *args, **kwargs):
+        """
+        sample pre- and post- synaptic groups and apply method to them
+
+        Arguments:
+            method: method to use on the samples of cells to measure a property
+                    of the connectome. Must take arguments:
+                         connectome, pre_gids, post_gids
+            nsamples: how many samples to take. set to None to take whole group
+            sample_size: how many cells to sample from each group
+                         actual number of pairs sampled will be this squared
+            measurement_parameters: a dict with keys {} and {},
+                                    each with a dict value containing
+                                    parameters identifying the two cell groups
+        """.format(PRESYNAPTIC, POSTSYNAPTIC)
+        pre_cells = self.get_cells(measurement_parameters[PRESYNAPTIC])\
+                        .index.values
+        post_cells = self.get_cells(measurement_parameters[POSTSYNAPTIC])\
+                         .index.values
+        total_pairs = pre_cells.shape[0] * post_cells.shape[0]
+        if total_pairs == 0:
+            return np.nan
+        connectome = self.get_connectome(measurement_parameters)
+        if (nsamples is None) or ((nsamples * sample_size**2) >= total_pairs):
+            return method(connectome, pre_cells, post_cells,
+                          *args, **kwargs)
+        else:
+            return _flatten(
+                [method(
+                    connectome,
+                    np.random.choice(pre_cells, sample_size),
+                    np.random.choice(post_cells, sample_size),
+                    *args, **kwargs)
+                 for sample in range(nsamples)])
+
+    # TOOD: should repeated docstrings always be copied? or referenced
+    def synapses_per_connection(self, measurement_parameters,
+                                nsamples=100, sample_size=50):
+        """
+        get the number of synapses per connection between two groups of cells
+
+        Arguments:
+            measurement_parameters: a dict with keys {} and {},
+                                    each with a dict value containing
+                                    parameters identifying the two cell groups
+            nsamples: how many samples to take. set to None to take whole group
+            sample_size: how many cells to sample from each group
+                         actual number of pairs sampled will be this squared
+
+        Returns:
+            float or list of floats: number of synapses per connection
+        """.format(PRESYNAPTIC, POSTSYNAPTIC)
+        return self._sample_connectome(self._synapses_per_connection,
+                                       nsamples, sample_size,
+                                       measurement_parameters)
+
+    def _synapses_per_connection(self, connectome, pre_ids, post_ids):
+        """
+        get the synapses per connection for each connection between
+        the cells identified by pre_ids and post_ids
+        """
+        return [conn[2] for conn in connectome.iter_connections(
+            pre=pre_ids, post=post_ids, return_synapse_count=True)]
 
     def get_cells(self, parameters, properties=None):
         """

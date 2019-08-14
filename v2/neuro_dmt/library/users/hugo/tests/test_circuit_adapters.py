@@ -383,7 +383,8 @@ class TestOnProj1RatO1:
                      "SomatosensoryCxS1-v5.r0/O1/merged_circuit/"\
                      "CircuitConfig"
     circuit = bp.Circuit(circuit_config)
-    adapted = CircuitAdapter(circuit_config)
+    with pyt.warns(Warning):
+        adapted = CircuitAdapter(circuit_config)
 
     def test_cell_density_raises(self):
         # dens = test_cells / test_vol
@@ -479,6 +480,17 @@ class TestOnProj1RatO1:
             self.adapted._translate_parameters_cells({REGION: 'SS'})
         pass
 
+
+class TestConnectomeFunctions:
+    """on proj1 rat O1"""
+
+    circuit_config = "/gpfs/bbp.cscs.ch/project/proj1/circuits/"\
+                     "SomatosensoryCxS1-v5.r0/O1/merged_circuit/"\
+                     "CircuitConfig"
+    circuit = bp.Circuit(circuit_config)
+    with pyt.warns(Warning):
+        adapted = CircuitAdapter(circuit_config)
+
     def test_connection_probability(self):
         # will not be precise enough to succeed
         pre_group = {bp.Cell.MTYPE: ['L4_PC']}
@@ -498,3 +510,14 @@ class TestOnProj1RatO1:
         assert np.isnan(self.adapted.connection_probability(
             {PRESYNAPTIC: {LAYER: "L1", MTYPE: ['PC']},
              POSTSYNAPTIC: {LAYER: "L2", MTYPE: ["CHC"]}}))
+
+    def test_syns_per_conn(self):
+        pre_group = {bp.Cell.MTYPE: ['L1_DAC']}
+        post_group = {bp.Cell.MTYPE: ['L4_PC']}
+        iterator = self.circuit.connectome.iter_connections(
+            pre=pre_group, post=post_group, return_synapse_count=True)
+        exp_syncounts = [conn[2] for conn in iterator]
+        assert np.mean(self.adapted.synapses_per_connection(
+            {PRESYNAPTIC: {LAYER: "L1", MTYPE: "DAC"},
+             POSTSYNAPTIC: {LAYER: "L4", MTYPE: "PC"}})) ==\
+            pyt.approx(np.mean(exp_syncounts), rel=0.05)
