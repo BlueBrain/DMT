@@ -186,7 +186,8 @@ class SimpleValidation(Analysis, ABC):
             adapted: the adapted model(s)
         """
         # TODO: wrap the adapted model in an 'adapterchecker' which
-        #       checks that all the methods required by the AdapterInterface are there
+        #       checks that all the methods required by the
+        #       AdapterInterface are there
         #       forwards all method calls to the adapted model
         #       raises a warning if a method not declared in the AdapterInterface
         #       is called on it, and raises an appropriate error when
@@ -195,6 +196,8 @@ class SimpleValidation(Analysis, ABC):
         # TODO: should mparam keys be restricted to the values of an enum?
         #       error message should indicate that to use key you should add it
         #       to enum
+        # TODO: perhaps parameters should be ordered, leads to cleaner plotting
+        #       (e.g. layer, mtype vs mtype, layer)
         models_measurements = []
         for i, model in enumerate(adapted):
 
