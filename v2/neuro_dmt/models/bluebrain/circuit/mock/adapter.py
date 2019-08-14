@@ -16,13 +16,36 @@ from neuro_dmt.analysis.circuit.composition.interfaces\
 class MockCircuitAdapter(WithFields):
     """
     A mock adapter for a mock circuit.
+
+    This adapter is not to be used for the `MockCircuit` defined in
+    `neuro_dmt.models.bluebrain.mock.circuit`. `MockCircuit` is intended
+    to behave like actual BBP circuits, as closely as posible.
+
+    `MockCircuitAdapter`'s logic is independent and implemented to quick
+    development of the analysis --- plotting, report generation etc.
     """
 
     def get_cell_density(self,
             mock_circuit_model,
             *args, **kwargs):
         """
-        A mock value!
+        Mock cell density.
         """
-        return numpy.random.uniform(0., 100000.)
+        try:
+            layer = kwargs["layer"]
+            cell_density_layer = {
+                1: 10000.0,
+                2: 140000.0,
+                3: 100000.0,
+                4: 150000.0,
+                5: 100000.0,
+                6: 120000.0}
+            return numpy.random.normal(
+                cell_density_layer[layer],
+                10. * numpy.sqrt(cell_density_layer[layer]))
+        except AttributeError:
+            return numpy.random.uniform(0., 100000.)
+
+        raise Exception(
+            "Code excecution should not reach here.")
             

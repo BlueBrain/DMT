@@ -51,7 +51,7 @@ class BrainCircuitAnalysis(
         model to analyze.
         """,
         __type__=Interface)
-    plot = Field(
+    plotter = Field(
         """
         A class or a module that has `plot` method that will be used to
         plot the results of this analysis. The plotter should know how to 
@@ -69,24 +69,26 @@ class BrainCircuitAnalysis(
         """,
         __required__=False)
 
+    @lazyproperty
+    def adapter_method(self):
+        """
+        Makes sense for analysis of a single phenomenon.
+        """
+        measurement_name = self\
+            .AdapterInterface.__measurement__
+        try:
+            return getattr(self.adapter, measurement_name)
+        except AttributeError:
+            return getattr(self.adapter, "get_{}".format(measurement_name))
+
     def get_measurement(self,
             circuit_model,
             **measurement_parameters):
         """
         ...
         """
-        measurement_name = self\
-            .AdapterInterface.__measurement__
-        try:
-            adapter_method = getattr(
-                self.adapter,
-                measurement_name)
-        except AttributeError:
-            adapter_method = getattr(
-                self.adapter,
-                "get_{}".format(measurement_name))
 
-        return adapter_method(
+        return self.adapter_method(
             circuit_model,
             **measurement_parameters)
 
@@ -114,14 +116,13 @@ class BrainCircuitAnalysis(
             ._get_statistical_measurement(
                 circuit_model,
                 *args, **kwargs)
-        figure = self\
-            .plot(
-                measurement.reset_index())
         return self\
             .reporter\
             .report(
                 measurement,
-                figure)
+                figure=self.plotter.get_figure(
+                    measurement.reset_index(),
+                    caption=self.adapter_method.__doc__))
 
     pass
 

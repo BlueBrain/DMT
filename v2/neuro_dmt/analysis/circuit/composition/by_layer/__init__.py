@@ -1,12 +1,11 @@
 """
 Circuit composition analyses.
 """
-
 import pandas
 from .. import CompositionAnalysis
 from ..interfaces import CellDensityAdapterInterface
 from dmt.tk.field import lazyproperty
-from dmt.tk.plotting.bar import BarPlot
+from dmt.tk.plotting.bars import Bars
 from dmt.tk.phenomenon import Phenomenon
 
 
@@ -20,8 +19,8 @@ class ByLayerCompositionAnalysis(
             "layer": [1, 2, 3, 4, 5, 6]})
 
     @lazyproperty
-    def plot(self):
-        return BarPlot(
+    def plotter(self):
+        return Bars(
             xvar="layer",
             xlabel="Layer",
             yvar=self.phenomenon.label,

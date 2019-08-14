@@ -4,9 +4,10 @@ Bar plot.
 
 import seaborn
 from . import golden_aspect_ratio
+from .figure import Figure
 from dmt.tk.field import Field, lazyproperty, WithFields
 
-class BarPlot(WithFields):
+class Bars(WithFields):
     """
     Specifies a plotting method, and the all the variables that can be set 
     """
@@ -51,20 +52,49 @@ class BarPlot(WithFields):
         """,
         __default_value__=golden_aspect_ratio)
 
-    def __call__(self,
-            dataframe):
+    def __plotting_parameters(self,
+            **kwargs):
         """
-        Make a plot.
+        Extract plotting parameters from keyword arguments.
         """
-        return seaborn\
-            .catplot(
-                data=dataframe,
+        pass
+
+    def get_figure(self,
+            data,
+            *args,
+            caption="Caption not provided",
+            **kwargs):
+        """
+        Plot the dataframe.
+        """
+        return Figure(
+            seaborn.catplot(
+                data=data,
                 x=self.xvar,
                 y=self.yvar,
                 kind="bar",
                 hue=self.gvar if self.gvar else None,
                 height=self.height_figure,
-                aspect=self.aspect_ratio_figure)\
-            .set(
-                xlabel=self.xlabel if self.xlabel else self.xvar,
-                ylabel=self.ylabel if self.ylabel else self.yvar)
+                aspect=self.aspect_ratio_figure).set(
+                    xlabel=self.xlabel if self.xlabel else self.xvar,
+                    ylabel=self.ylabel if self.ylabel else self.yvar),
+            caption=caption)
+
+    def plot(self,
+            dataframe,
+            *args, **kwargs):
+        """
+        Plot the dataframe
+        """
+        return self\
+            .figure(
+                dataframe,
+                *args, **kwargs)
+
+    def __call__(self,
+            dataframe):
+        """
+        Make this class a callable,
+        so that it can masquerade as a function!
+        """
+        return self.plot(dataframe)

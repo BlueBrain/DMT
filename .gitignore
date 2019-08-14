@@ -28,3 +28,4 @@ doc/build/
 .\#*
 *.png
 scratch
+.ipynb_checkpoints
