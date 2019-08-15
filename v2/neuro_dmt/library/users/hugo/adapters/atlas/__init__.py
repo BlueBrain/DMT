@@ -3,6 +3,10 @@ import numpy as np
 import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
+from neuro_dmt.library.users.hugo.adapters.utils import _list_if_not_list,\
+        LAYER, MTYPE, SYN_CLASS, COLUMN, REGION, translate_ABI_to_Paxinos
+# TODO: what if components were made into MethodTypes - __call__
+#       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
 # TODO: decouple whethe [cell_density] is filename prefix from whether
 #       sclass density is there
@@ -17,7 +21,6 @@ from voxcell.nexus.voxelbrain import Atlas
 #       OPTION1: option 2 above, including 'not'
 #       OPTION2: allow 'exclude' key in query, which links to
 #                another query of values to exclude
-# TODO: rename query to parameters
 BIG_LIST_OF_KNOWN_MTYPES = [
     "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
     "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",
@@ -71,100 +74,7 @@ def is_paxinos_watson(atlas):
     return False
 
 
-def _list_if_not_list(item):
-    """make something a list if it isn't"""
-    if isinstance(item, list):
-        return item
-    return [item]
-
-
-# TODO: perhaps adapter configuration should be something you can
-#       pass to the adapter, to bypass automatic configuration?
-#       this lets you manually specify traits when inference doesn't work
-#       OPTION: abstract property inference to an AtlasSpec
-# TODO: make atlas properties accessible from upper level, perhaps
-#       follow if-inside branch approach, and infer beforehand
-#       then we send subobjects the AtlasAdapter instance
-#       so that they do not need to repeat the tests
-class AtlasAdapter():
-    """adapter for a wide set of atlases"""
-
-    def __init__(self, atlas):
-        """initialize the adapter for the atlas"""
-        if isinstance(atlas, Atlas):
-            self._atlas = atlas
-        else:
-            self._atlas = Atlas.open(atlas)
-        self._mask_generator = _MaskGenerator(self._atlas)
-        self._cell_density_generator = _CellDensityGenerator(self._atlas)
-        self.voxel_volume =\
-            self._atlas.load_data("brain_regions").voxel_volume
-
-    def mask_for_query(self, query):
-        """get a mask corresponding to query"""
-        # delegate
-        return self._mask_generator(query)
-
-    def cell_density(self, query):
-        """get atlas cell density"""
-        density_volume = self._cell_density_generator(query)
-        if np.all(np.isnan(density_volume)):
-            return np.nan
-        return density_volume[self.mask_for_query(query)]
-
-
-class _MaskGenerator:
-    """helper class for AtlasAdapter, handles getting the mask for a query"""
-
-    def __init__(self, atlas):
-        self._atlas = atlas
-        self._layer_mask = _LayerMask(atlas)
-        self._region_mask = _RegionMask(atlas)
-        self._column_mask = _ColumnMask(atlas)
-
-    def __call__(self, query):
-        """get the mask for query"""
-        masks = [self._atlas.load_data("brain_regions").raw > 0]
-
-        if 'region' in query:
-            region_mask = np.any(
-                [self._region_mask(region)
-                 for region in _list_if_not_list(query['region'])], axis=0)
-            masks.append(region_mask)
-
-        if 'layer' in query:
-            layer_mask = np.any(
-                [self._layer_mask(layer)
-                 for layer in _list_if_not_list(query['layer'])], axis=0)
-            masks.append(layer_mask)
-
-        if 'column' in query:
-            column_mask = np.any(
-                [self._column_mask(column)
-                 for column in _list_if_not_list(query['column'])], axis=0)
-            masks.append(column_mask)
-
-        return np.all(masks, axis=0)
-
-
-class _MutateCall:
-    """
-    base class for dynamically composed callables
-    implement the _method method,
-    and it will be used when the instance is called
-    """
-
-    def _method(self, q):
-        """the method to execute on call"""
-        # cannot be abstract, as is only assigned after initialization
-        raise NotImplementedError()
-
-    def __call__(self, *args, **kwargs):
-        """forward to self._method"""
-        return self._method(*args, **kwargs)
-
-
-class _LayerMask(_MutateCall):
+class _LayerMask:
     """
     manages the functions for getting layer masks
     the __call__ method will be the function selected for the passed atlas
@@ -177,11 +87,11 @@ class _LayerMask(_MutateCall):
         self._atlas = atlas
         if atlas.load_region_map().find('@^L1$|.*;L1$', 'acronym')\
            or atlas.load_region_map().find("@^SP$|.*;SP$", 'acronym'):
-            self._method = self.full_layer
+            self.get = self.full_layer
         elif atlas.load_region_map().find("@.*;1$", 'acronym'):
-            self._method = self.column_semicolon_int
+            self.get = self.column_semicolon_int
         else:
-            self._method = self.ABI
+            self.get = self.ABI
 
     def column_semicolon_int(self, layer):
         """layer acronyms are <column>;<layer_number. e.g. mc2;2"""
@@ -209,13 +119,13 @@ class _LayerMask(_MutateCall):
                 "@.*{}$".format(layer.lower())).raw
 
 
-class _RegionMask(_MutateCall):
+class _RegionMask():
     """
     manages _region_mask function varieties
 
     sets its __call__ method
 
-    these functions accept a region acronym provided by a query and
+    these functions accept a region acronym provided by a parameters and
     return a mask from the atlas (if relevant)
     acronym provided will be based on ABI/BBA naming conventions
     """
@@ -223,16 +133,16 @@ class _RegionMask(_MutateCall):
     def __init__(self, atlas):
         self._atlas = atlas
         if is_O1_atlas(atlas):
-            self._method = self.O1_no_region_mask
+            self.get = self.O1_no_region_mask
         elif is_paxinos_watson(atlas):
-            self._method = self.Paxinos_regions
+            self.get = self.Paxinos_regions
         else:
-            self._method = self.BBA_ABI_verbatim
+            self.get = self.BBA_ABI_verbatim
 
     def O1_no_region_mask(self, region):
-        """O1 circuits don't have 'region'
+        """O1 circuits don't have REGION
         in the same sense as whole brain atlas"""
-        warn(Warning("{} ignores 'region' as it is not relevant to O1 atlas"
+        warn(Warning("{} ignores REGION as it is not relevant to O1 atlas"
                      .format(self)))
         return self._atlas.load_data("brain_regions").raw != 0
 
@@ -242,16 +152,11 @@ class _RegionMask(_MutateCall):
         return self._atlas.get_region_mask(region).raw
 
     def Paxinos_regions(self, ABI_region):
-        pax_region = ABI_region.replace("SSp", "S1").replace("-bfd", "BF")\
-                     .replace("-ul", "FL").replace("-ll", "HL")\
-                     .replace("-m", "J").replace("-tr", "Tr")\
-                     .replace("-dz", "DZ").replace("-dzo", "DZO")\
-                     .replace("-sh", "Sh").replace("-ulp", "ULp")\
-                     .replace("SS", "SSCtx").replace("SSs", "S2")
+        pax_region = translate_ABI_to_Paxinos(ABI_region)
         return self._atlas.get_region_mask(pax_region).raw
 
 
-class _ColumnMask(_MutateCall):
+class _ColumnMask:
     """
     manages the functions for getting column masks
 
@@ -262,9 +167,9 @@ class _ColumnMask(_MutateCall):
     def __init__(self, atlas):
         self._atlas = atlas
         if is_O1_atlas(atlas):
-            self._method = self.O1_column
+            self.get = self.O1_column
         else:
-            self._method = self.no_columns
+            self.get = self.no_columns
 
     def O1_column(self, column):
         """O1 circuits have columns in their regions"""
@@ -276,62 +181,46 @@ class _ColumnMask(_MutateCall):
         return self._atlas.load_data("brain_regions").raw != 0
 
 
-class _CellDensityGenerator(_MutateCall):
-    """
-    manages varieties of functions for getting cell density
+class _AtlasMasks:
+    """helper class for AtlasAdapter,
+    handles getting the mask for a parameters"""
 
-    the cell_density function accepts a query containing data on where to
-    get density (layer, region, column ... ) and what kind (sclass, mtype...)
-    and returns a value for each voxel in the target area
-    """
-
-    # TODO: maybe method/object names should be plural, as they return lists
-    def __init__(self, atlas):
+    def __init__(self, atlas, represented_region=None):
         self._atlas = atlas
-        if has_cell_density(atlas):
-            self._method = self.has_density
-            self._total_density = _TotalDensity(atlas, self)
-            self._mtype_filename = _MtypeFilename(atlas)
-            self._sclass_filename = _SclassFilename(atlas)
-        else:
-            self._method = self.no_cell_density
+        self._layer_mask = _LayerMask(atlas)
+        self._region_mask = _RegionMask(atlas)
+        self._column_mask = _ColumnMask(atlas)
+        self.represented_region = represented_region
 
-    def no_cell_density(self, query):
-        """no density data in this atlas"""
-        warn(Warning("{} atlas has no cell density, returning NaN"
-                     .format(self)))
-        return np.nan
+    def get(self, parameters):
+        """get the mask for parameters"""
+        masks = [self._atlas.load_data("brain_regions").raw > 0]
 
-    def has_density(self, query):
-        """get density data from the atlas"""
-        if 'mtype' in query:
-            density_types = [name
-                             for mtype in _list_if_not_list(query['mtype'])
-                             for name in
-                             _list_if_not_list(self._mtype_filename(mtype))]
-            if 'sclass' in query:
-                warn(Warning(
-                    'mtype keyword overrides sclass in cell_density'
-                    .format(self)))
+        if REGION in parameters:
+            region_mask = np.any(
+                [self._region_mask.get(region)
+                 for region in _list_if_not_list(parameters[REGION])], axis=0)
+            masks.append(region_mask)
 
-        elif 'sclass' in query:
-            density_types = [scname
-                             for sclass in _list_if_not_list(query['sclass'])
-                             for scname in self._sclass_filename(sclass)]
-        else:
-            density_types = self._total_density()
+        if LAYER in parameters:
+            layer_mask = np.any(
+                [self._layer_mask.get(layer)
+                 for layer in _list_if_not_list(parameters[LAYER])], axis=0)
+            masks.append(layer_mask)
 
-        if len(density_types) == 0:
-            return np.nan
+        if COLUMN in parameters:
+            column_mask = np.any(
+                [self._column_mask.get(column)
+                 for column in _list_if_not_list(parameters[COLUMN])], axis=0)
+            masks.append(column_mask)
 
-        densities = self._atlas.load_data(density_types[0]).raw
-        for density_type in density_types[1:]:
-            densities = np.nansum(
-                [densities, self._atlas.load_data(density_type).raw], axis=0)
-        return densities
+        if self.represented_region is not None:
+            masks.append(self.represented_region)
+
+        return np.all(masks, axis=0)
 
 
-class _TotalDensity(_MutateCall):
+class _TotalDensity:
     """
     container for _total_density function varieties
 
@@ -345,9 +234,9 @@ class _TotalDensity(_MutateCall):
         self._parent_cd_object = _cell_density
         self._atlas = atlas
         if has_sclass_densities(atlas):
-            self._method = self.exc_and_inh
+            self.get = self.exc_and_inh
         else:
-            self._method = self.all_mtypes
+            self.get = self.all_mtypes
 
     def exc_and_inh(self):
         """
@@ -355,7 +244,8 @@ class _TotalDensity(_MutateCall):
         """
         return [scname
                 for sclass in ('EXC', 'INH')
-                for scname in self._parent_cd_object._sclass_filename(sclass)]
+                for scname in
+                self._parent_cd_object._sclass_filename.get(sclass)]
 
     def all_mtypes(self):
         """
@@ -368,14 +258,14 @@ class _TotalDensity(_MutateCall):
 
         mtype_names = [fname for mtype in BIG_LIST_OF_KNOWN_MTYPES
                        for fname in _list_if_not_list(
-                               self._parent_cd_object._mtype_filename(mtype))]
+                            self._parent_cd_object._mtype_filename.get(mtype))]
         all_mtypes = {
             fname for fname in allnrrdnames if fname in mtype_names}
 
         return list(all_mtypes)
 
 
-class _SclassFilename(_MutateCall):
+class _SclassFilename:
     """
     just a container for _sclass_filename function varieties
 
@@ -388,9 +278,9 @@ class _SclassFilename(_MutateCall):
         self._atlas = atlas
         # TODO: disentangle presence of sclass from prefix
         if has_sclass_densities(atlas):
-            self._method = self.bracketed_prefix
+            self.get = self.bracketed_prefix
         else:
-            self._method = self.has_no_sclass
+            self.get = self.has_no_sclass
 
     # TODO: split BIG_LIST by sclass, so that sclass density can be
     #       obtained from mtype densities?
@@ -404,7 +294,6 @@ class _SclassFilename(_MutateCall):
         the sclass density is contained in files named
         [cell_density]<sclass>.nrrd
         """
-
         # for now assume no UN
         if density_type in ("EXC", "INH"):
             return ['[cell_density]' + density_type]
@@ -412,15 +301,15 @@ class _SclassFilename(_MutateCall):
             return []
 
 
-class _MtypeFilename(_MutateCall):
+class _MtypeFilename:
     """just a container for _mtype_filename function varieties"""
 
     def __init__(self, atlas):
         self._atlas = atlas
         if has_layer_prefixed_mtypes(atlas):
-            self._method = self.layer_prefix
+            self.get = self.layer_prefix
         else:
-            self._method = self.no_prefix
+            self.get = self.no_prefix
 
     def layer_prefix(self, mtype):
         """mtype densities are stored with a prefix"""
@@ -435,3 +324,94 @@ class _MtypeFilename(_MutateCall):
     def no_prefix(self, mtype):
         """mtype densities are stored with a direct name"""
         return mtype
+
+
+class _CellDensity:
+    """
+    manages varieties of functions for getting cell density
+
+    the cell_density function accepts a parameters containing data on where to
+    get density (layer, region, column ... ) and what kind (sclass, mtype...)
+    and returns a value for each voxel in the target area
+    """
+
+    # TODO: maybe method/object names should be plural, as they return lists
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if has_cell_density(atlas):
+            self.get = self.has_density
+            self._total_density = _TotalDensity(atlas, self)
+            self._mtype_filename = _MtypeFilename(atlas)
+            self._sclass_filename = _SclassFilename(atlas)
+        else:
+            self.get = self.no_cell_density
+
+    def no_cell_density(self, parameters):
+        """no density data in this atlas"""
+        warn(Warning("{} atlas has no cell density, returning NaN"
+                     .format(self)))
+        return np.nan
+
+    def has_density(self, parameters):
+        """get density data from the atlas"""
+        if MTYPE in parameters:
+            density_types = [name
+                             for mtype in _list_if_not_list(parameters[MTYPE])
+                             for name in
+                             _list_if_not_list(self._mtype_filename.get(mtype))]
+            if SYN_CLASS in parameters:
+                warn(Warning(
+                    'mtype keyword overrides sclass in cell_density'
+                    .format(self)))
+
+        elif SYN_CLASS in parameters:
+            density_types = [scname
+                             for sclass in _list_if_not_list(parameters[SYN_CLASS])
+                             for scname in self._sclass_filename.get(sclass)]
+        else:
+            density_types = self._total_density.get()
+
+        if len(density_types) == 0:
+            return np.nan
+
+        densities = self._atlas.load_data(density_types[0]).raw
+        for density_type in density_types[1:]:
+            densities = np.nansum(
+                [densities, self._atlas.load_data(density_type).raw], axis=0)
+        return densities
+
+
+# TODO: perhaps adapter configuration should be something you can
+#       pass to the adapter, to bypass automatic configuration?
+#       this lets you manually specify traits when inference doesn't work
+#       OPTION: abstract property inference to an AtlasSpec
+# TODO: make atlas properties accessible from upper level, perhaps
+#       follow if-inside branch approach, and infer beforehand
+#       then we send subobjects the AtlasAdapter instance
+#       so that they do not need to repeat the tests
+class AtlasAdapter():
+    """adapter for a wide set of atlases"""
+
+    def __init__(self, atlas, represented_region=None):
+        """initialize the adapter for the atlas"""
+        if isinstance(atlas, Atlas):
+            self._atlas = atlas
+        else:
+            self._atlas = Atlas.open(atlas)
+        self._masks = _AtlasMasks(self._atlas,
+                                  represented_region=represented_region)
+        self._cell_density = _CellDensity(self._atlas)
+        self.voxel_volume =\
+            self._atlas.load_data("brain_regions").voxel_volume
+
+    def mask_for_parameters(self, parameters):
+        """get a mask corresponding to parameters"""
+        # delegate
+        return self._masks.get(parameters)
+
+    def cell_density(self, parameters):
+        """get atlas cell density"""
+        density_volume = self._cell_density.get(parameters)
+        if np.all(np.isnan(density_volume)):
+            return np.nan
+        return density_volume[self.mask_for_parameters(parameters)]

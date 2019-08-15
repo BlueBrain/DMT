@@ -15,11 +15,11 @@ class VERDICT:
     INCONCLUSIVE = "INCONCLUSIVE"
 
 
+# TODO: handle list values for queries in pandas dframes
 # TODO: enums instead of DATA_KEYS
 # TODO: figure out what to do about units
 #       OPTION1: put in measurement parameters
 #       OPTION2: put in phenomenon, clarify in adapter
-# TODO: pass only samples, stat summary should be done only at latest point
 class SimpleValidation(Analysis, ABC):
     """
     base class allowing certain validations to be quickly and easily defined
@@ -28,7 +28,6 @@ class SimpleValidation(Analysis, ABC):
     exist for measurement_parameters, stats, verdict and plot.
     Overwrite those to customize the validation
 
-    TODO: work out and enforce other requirements
     """
 
     def __init__(self, *args, data=None, **kwargs):
@@ -117,16 +116,14 @@ class SimpleValidation(Analysis, ABC):
         """
         return None
 
-    def get_verdict(self, *measurements, stats=None, plot=None):
+    def get_verdict(self, report):
         """
         decides whether the validation passes or fails
         default: no verdict
 
         Arguments:
-            measurements: the measured quantities for each model
-            stats: p-values for measurements
-            plot: plot of validation results
-
+            report: validation Report. Will have plot, stats, data_results
+                    to be used to determine verdict
         Returns:
             VERDICT.PASS, VERDICT.FAIL, VERDICT.NA or VERDICT.INCONCLUSIVE
         """
@@ -174,14 +171,13 @@ class SimpleValidation(Analysis, ABC):
         stats = self.get_stats(*measurements)
         report.plot = plot
         report.stats = stats
-        # TODO: OrderedDict?
+
         report.data_results = [
             (label, results[i]) for i, label in enumerate(labels)]
 
         # TODO: should verdict be passed the whole report?
         #       it would allow e.g. showing plot and requesting user verdict
-        report.verdict = self.get_verdict(*measurements,
-                                          stats=stats, plot=plot)
+        report.verdict = self.get_verdict(report)
         return report
 
     def __call__(self, *adapted):
@@ -190,7 +186,8 @@ class SimpleValidation(Analysis, ABC):
             adapted: the adapted model(s)
         """
         # TODO: wrap the adapted model in an 'adapterchecker' which
-        #       checks that all the methods required by the AdapterInterface are there
+        #       checks that all the methods required by the
+        #       AdapterInterface are there
         #       forwards all method calls to the adapted model
         #       raises a warning if a method not declared in the AdapterInterface
         #       is called on it, and raises an appropriate error when
@@ -199,8 +196,11 @@ class SimpleValidation(Analysis, ABC):
         # TODO: should mparam keys be restricted to the values of an enum?
         #       error message should indicate that to use key you should add it
         #       to enum
+        # TODO: perhaps parameters should be ordered, leads to cleaner plotting
+        #       (e.g. layer, mtype vs mtype, layer)
         models_measurements = []
         for i, model in enumerate(adapted):
+
             measurements_parameters = self.measurements_parameters(model)
             try:
                 label = model.label
@@ -209,11 +209,18 @@ class SimpleValidation(Analysis, ABC):
                               .format(i, model))
                 label = 'model_{}'.format(i)
 
+            sampleslist = []
+            nmeasurements = len(measurements_parameters)
+            for i, parameters in enumerate(
+                    self.measurements_parameters(model)):
+                progress = i / nmeasurements
+                print(label, ": {0:.2%}".format(progress), end="\r")
+                sampleslist.append(
+                    self.get_measurement(model, parameters))
+
             model_measurements = (
                 label, pd.DataFrame(measurements_parameters).assign(
-                    samples=[self.get_measurement(model, parameters)
-                             for parameters in
-                             self.measurements_parameters(model)]))
+                    samples=sampleslist))
             models_measurements.append(model_measurements)
 
         return self._get_report(models_measurements)

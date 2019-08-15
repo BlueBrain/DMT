@@ -81,7 +81,7 @@ class TestSimpleValidation:
             assert _TestValidation().get_stats() is None
 
         def test_verdict(self):
-            assert _TestValidation().get_verdict() is VERDICT.NA
+            assert _TestValidation().get_verdict('') is VERDICT.NA
 
         def test_plot(self):
             assert _TestValidation().plot('', '') is None
