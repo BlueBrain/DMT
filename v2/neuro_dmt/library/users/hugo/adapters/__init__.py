@@ -68,7 +68,7 @@ class CircuitAdapter(metaclass=ABCMeta):
                     raise TypeError(
                         "Mtypes in queries to adapter should not be in form"
                         "<layer>_<name>, but simply <name>")
-                ql = parameters.get(LAYER, False)
+                ql = parameters.get(LAYER)
                 if ql:
                     value = "_".join([ql, value])
                 else:

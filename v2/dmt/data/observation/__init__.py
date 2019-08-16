@@ -2,16 +2,13 @@
 Prototypes and documentation to help us develop Observation
 """
 
-from abc import\
-    abstractmethod
 import pandas as pd
-from ..field import\
+from dmt.tk.field import\
     Field,\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
-
-from ..quantity import Quantity
+from dmt.tk.quantity import Quantity
 
 
 #move this helper method elsewhere
@@ -94,10 +91,10 @@ class Observation(
 
     #operational level
     #attributes that will depend on the instance 
-    objectOfObservation = Field(
+    object_of_observation = Field(
         """
         The object that was observed. It is not expected to be a simple object.
-        It may be implemented as a Python object, or as a dict maps all the
+        It may be implemented as a Python object, or as a dict mapping all the
         relevant attribute names to their values, or even an informal string
         that describes all of the observed object's relevant attributes.
         """,
@@ -126,6 +123,18 @@ class Observation(
         """,
         __type__=object,
         __default_value__="Unknown")
+    citation = Field(
+        """
+        Pointer to a journal / online reference.
+        """,
+        __default_value__="Unknown")
+    uri = Field(
+        """
+        Universal Resource Identifier from which this `Observation` was
+        created.
+        """,
+        __default_value__="Unknown")
+
 
     def __init__(self,
             data,

@@ -1,5 +1,6 @@
 from ..observation import *
 
+
 class Measurement(
         Observation):
     """
