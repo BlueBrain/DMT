@@ -3,19 +3,38 @@ Datasets used / created at the Blue Brain Project for the rat.
 """
 
 import os
+from collections import OrderedDict
 import pandas
+from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.utils import datasets
-from dmt.data.observation import Measurement
+from dmt.data.observation import\
+    Measurement,\
+    SummaryMeasurement
 from neuro_dmt import data
 
-class ByLayerCellDensityMeasurement(Measurement):
+class ByLayerCellDensityMeasurement(
+        Measurement):
     """
     Measurement of cell density, by (cortical) layer.
     """
-    phenomenon = dict(
+    phenomenon = Phenomenon(
+        "Cell Density",
         description="Count of cells per unit volume",
-        label="cell_density")
-    parameters = dict(
+        group="Composition")
+    parameters = OrderedDict(
+        layer="Cortical layer where to count the cells in.")
+
+
+class ByLayerCellDensitySummaryMeasurement(
+        SummaryMeasurement):
+    """
+    Measurement of cell density, by (cortical) layer.
+    """
+    phenomenon = Phenomenon(
+        "Cell Density",
+        description="Count of cells per unit volume",
+        group="Composition")
+    parameters = OrderedDict(
         layer="Cortical layer where to count the cells in.")
 
 
@@ -65,7 +84,7 @@ defelipe2014 = ByLayerCellDensityMeasurement(
 __meyer2010_dataset = datasets.load(
     __path_cell_density_datasets,
     "Meyer2010")
-meyer2010 = ByLayerCellDensityMeasurement(
+meyer2010 = ByLayerCellDensitySummaryMeasurement(
     label=__meyer2010_dataset["short_name"],
     object_of_observation="Rats of age P27",
     provenance="Look at the citation",

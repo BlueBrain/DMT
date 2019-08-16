@@ -2,9 +2,11 @@
 Prototypes and documentation to help us develop Observation
 """
 
+from collections import OrderedDict
 import pandas as pd
 from dmt.tk.field import\
     Field,\
+    lazyproperty,\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
@@ -60,7 +62,7 @@ class ObservationMetaClass(
         The names will be used to name the dataframe indices,
         and the descriptions to provide documentation.
         """,
-        __type__=dict)
+        __type__=OrderedDict)
     phenomenon = ClassAttribute(
         """
         Phenomenon observed.
@@ -146,7 +148,7 @@ class Observation(
             data=data,
             **kwargs)
 
-    @property
+    @lazyproperty
     def properties_observed(self):
         """
         Properties observed.
@@ -170,8 +172,7 @@ class Observation(
         """
         if isinstance(data_value, list):#a list of dicts
             for d in data_value:
-                if not isinstance(d, dict):
-                    break
+                assert isinstance(d, dict)
                 for v in variable_list:
                     if v not in d:
                         raise ValueError(
@@ -269,5 +270,6 @@ class Observation(
 
 from .measurement import\
     Measurement,\
+    SummaryMeasurement,\
     summary_statistic
 

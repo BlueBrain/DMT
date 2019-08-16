@@ -1,3 +1,5 @@
+import numpy
+import pandas
 from ..observation import *
 
 
@@ -6,17 +8,47 @@ class Measurement(
     """
     Measurement is an Observation of a phenomenon described by a numerical
     variable.
+    By default, a `Measurement` instance is expected to contain several
+    samples for each combination of parameter values.
     """
     __metaclass_base__ = True
 
-    pass
+    @lazyproperty
+    def parameters_list(self):
+        """
+        List of parameter labels.
+        """
+        return list(self.parameters.keys())
+
+    def get_sample_parameters(self,
+            parameters_values,
+            sample_size):
+        """
+        Get a pandas.DataFrame that represents the parameters
+        of a sample of measurements.
+        """
+        if not isinstance(parameters_values, tuple):
+            parameters_values = tuple([parameters_values])
+
+        assert len(parameters_values) == len(self.parameters_list)
+
+        return pandas.DataFrame(
+            sample_size * [dict(zip(self.parameters_list, parameters_values))])
+
+    @lazyproperty
+    def summary(self):
+        """
+        A statistical summary of the data in this measurement.
+        """
+        return self\
+            .dataframe\
+            .groupby(self.parameters_list)\
+            .agg(["size", "mean", "std"])
 
 
-class StatisticalMeasurement(Measurement):
+class SummaryMeasurement(Measurement):
     """
-    A statistical measurement assumes sampling.
-    Either the sampled observations are available,
-    or a statistical summary is available.
+    A statistical summary of sample measurements assumes sampling.
     """
 
     __metaclass_base__ = True
@@ -38,6 +70,19 @@ class StatisticalMeasurement(Measurement):
         ---------------
         data_value :: Either a list of dicts or a pandas dataframe
         """
+        assert isinstance(data_value, pandas.DataFrame)
+        assert isinstance(data_value.columns, pandas.MultiIndex)
+        column_values_1 = {
+            measurement_label
+            for measurement_label, _ in data_value.columns.values}
+        assert get_label(self.phenomenon) in  column_values_1
+        column_values_2 = {
+            summary_label
+            for _, summary_label in data_value.columns.values}
+        assert "mean" in column_values_2
+        assert "std" in column_values_2
+
+
         try:
             super().check_validity(data_value)
         except MissingObservationParameter as error:
@@ -51,16 +96,36 @@ class StatisticalMeasurement(Measurement):
                 pass
         finally:
             pass
+
         return True
 
+    def samples(self, size=20):
+        """
+        Generate 20 samples for each combination of parameters in this
+        `SummaryMeasurement`.
+        """
+        def sample(row):
+            def __one():
+                m = numpy.random.normal(
+                    row[self.phenomenon.label]["mean"],
+                    row[self.phenomenon.label]["std"])
+                return m if m > 0 else __one()
+            
+            return numpy.array([__one() for _ in range(size)])
 
-    @property
+        return pandas\
+            .concat([
+                self.get_sample_parameters(
+                    index_values, size)\
+                .assign(**{
+                    self.phenomenon.label: sample(row)})
+                for index_values, row in self.dataframe.iterrows()])\
+            .set_index(self.parameters_list)
+
+    @lazyproperty
     def summary(self):
         """
         A statistical summary of the data in this measurement.
-        As of <20190612>, we assume that the data stored in this statistical
-        measurement is itself a summary. This assumption may not apply when we
-        store the full observed dataset.
         """
         return self.dataframe
 

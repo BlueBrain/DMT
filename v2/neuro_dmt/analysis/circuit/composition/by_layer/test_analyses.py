@@ -2,6 +2,7 @@
 Test develop by layer composition analyses.
 """
 
+import numpy
 import pandas
 from dmt.tk.field import lazyproperty
 from dmt.tk.plotting.bars import Bars
@@ -10,6 +11,7 @@ from dmt.tk.parameters import Parameters
 from ....circuit import BrainCircuitAnalysis
 from ..interfaces import CellDensityAdapterInterface
 from neuro_dmt.models.bluebrain.circuit.mock.adapter import MockCircuitAdapter
+from neuro_dmt.data import rat
 
 
 cell_density_phenomenon =\
@@ -41,6 +43,7 @@ def get_random_dataset(index):
 reference_datasets = pandas.concat([
     get_random_dataset(index)
     for index in range(3)])
+
 
 cell_density_validation =\
     BrainCircuitAnalysis(
