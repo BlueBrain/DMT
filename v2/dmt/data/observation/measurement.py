@@ -45,6 +45,21 @@ class Measurement(
             .groupby(self.parameters_list)\
             .agg(["size", "mean", "std"])
 
+    @lazyproperty
+    def summary_measurement(self):
+        """
+        This `Measurement`, but with summary statistics, instead of all
+        the samples.
+        """
+        return self.get_summary_measurement(
+            object_of_observation=self.object_of_observation,
+            procedure=self.procedure,
+            label=self.label,
+            provenance=self.provenance,
+            citation=self.citation,
+            uri=self.uri,
+            data=self.summary.reset_index())
+
 
 class SummaryMeasurement(Measurement):
     """

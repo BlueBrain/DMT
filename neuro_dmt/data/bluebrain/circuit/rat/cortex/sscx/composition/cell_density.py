@@ -20,7 +20,6 @@ data_path=\
         "/gpfs/bbp.cscs.ch/home/sood",
         "work/validations/dmt",
         "examples/datasets/cortex/sscx/rat/composition",
-        "cell_density")
 
 
 class RatSSCxCellDensityData(

@@ -6,7 +6,7 @@ from abc import abstractmethod
 import os
 import pandas        
 from dmt.analysis import Analysis
-from dmt.model.interface import Interface
+from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, lazyproperty
 from dmt.tk.reporting import Report, Reporter
 
@@ -24,7 +24,8 @@ class BrainCircuitAnalysis(
         """
         The interface that will be used to get measurements for the circuit
         model to analyze.
-        """)
+        """,
+        __type__=InterfaceMeta)
     measurement_parameters = Field(
         """
         A collection of parameters to measure with.

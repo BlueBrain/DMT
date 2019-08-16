@@ -12,18 +12,6 @@ from dmt.data.observation import\
     SummaryMeasurement
 from neuro_dmt import data
 
-class ByLayerCellDensityMeasurement(
-        Measurement):
-    """
-    Measurement of cell density, by (cortical) layer.
-    """
-    phenomenon = Phenomenon(
-        "Cell Density",
-        description="Count of cells per unit volume",
-        group="Composition")
-    parameters = OrderedDict(
-        layer="Cortical layer where to count the cells in.")
-
 
 class ByLayerCellDensitySummaryMeasurement(
         SummaryMeasurement):
@@ -37,6 +25,20 @@ class ByLayerCellDensitySummaryMeasurement(
     parameters = OrderedDict(
         layer="Cortical layer where to count the cells in.")
 
+
+class ByLayerCellDensityMeasurement(
+        Measurement):
+    """
+    Measurement of cell density, by (cortical) layer.
+    """
+    phenomenon = Phenomenon(
+        "Cell Density",
+        description="Count of cells per unit volume",
+        group="Composition")
+    parameters = OrderedDict(
+        layer="Cortical layer where to count the cells in.")
+    get_summary_measurement = ByLayerCellDensitySummaryMeasurement
+    
 
 __path_cell_density_datasets = os.path.join(
     data.LOCATION,
