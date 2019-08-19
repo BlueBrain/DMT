@@ -3,9 +3,9 @@ import warnings
 from enum import Enum
 from dmt.analysis import Analysis
 from abc import abstractmethod, ABC
+from dmt.tk.enum import DATA_KEYS
 from neuro_dmt.library.users.hugo.utils import\
-    DATA_KEYS, ensure_mean_and_std
-
+    ensure_mean_and_std
 
 class VERDICT:
     """enum for verdict results"""

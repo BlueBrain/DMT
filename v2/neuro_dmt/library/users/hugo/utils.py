@@ -2,17 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from dmt.tk.plotting import golden_figure
-
-
-SAMPLES = "samples"
-MEAN = "mean"
-STD = "std"
-NSAMPLES = "nsamples"
-
-DATA_KEYS = [SAMPLES, MEAN, STD, NSAMPLES]
-# keys reserved for data in the dataframes
-# TODO: this should be available as an enum. These keys are not specific
-#       to neuroscience, so the logical place would be in dmt.tk
+from dmt.tk.enum import MEAN, STD, SAMPLES, NSAMPLES, DATA_KEYS
 
 
 def drop_uniform_columns(dataframe):
