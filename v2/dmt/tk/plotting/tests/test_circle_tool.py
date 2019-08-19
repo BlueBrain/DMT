@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import numpy.testing as npt
+import pytest as pyt
 from dmt.tk.enum import MEAN, STD
 from dmt.tk.plotting.circle import CircleTool, CirclePlot
 
@@ -89,7 +90,7 @@ class TestCircleTool:
 
 class TestCirclePlot:
 
-    def test_prepare_plot():
+    def test_prepare_plot(self):
         df = pd.DataFrame({
             MEAN: [1, 2, 1, 2],
             STD: [1, 2, 3, 1],
@@ -97,8 +98,8 @@ class TestCirclePlot:
                     {'mtype': 'b'}, {'mtype': 'b'}],
             'post': [{'mtype': 'a'}, {'mtype': 'b'},
                      {'mtype': 'a'}, {'mtype': 'b'}]})
-        pivot_table, segments = CirclePlot()._prepare_plot(df)
-        pd.testing.assert_frame_equal(pivot_table,
+        table = CirclePlot()._prepare_plot(df)
+        pd.testing.assert_frame_equal(table,
                                       pd.DataFrame({
                                           'pre: mtype': ['a', 'a', 'b', 'b'],
                                           'post: mtype': ['a', 'b', 'a', 'b'],
@@ -106,8 +107,28 @@ class TestCirclePlot:
                                       .pivot_table(index='pre: mtype',
                                                    columns='post: mtype',
                                                    values=MEAN))
-        assert {
-            'a': {'incoming': {'b': np.pi * (2/8)},
-                  'outgoing': np.pi * (3/8)},
-            'b': {'incoming': np.pi * (4/8),
-                  'outgoing': np.pi * (3/8)}} == segments
+
+    def test_connection_angles(self):
+        df = pd.DataFrame({
+            MEAN: [1, 2, 1, 2],
+            STD: [1, 2, 3, 1],
+            'pre': [{'mtype': 'a'}, {'mtype': 'a'},
+                    {'mtype': 'b'}, {'mtype': 'b'}],
+            'post': [{'mtype': 'a'}, {'mtype': 'b'},
+                     {'mtype': 'a'}, {'mtype': 'b'}]})
+        plotter = CirclePlot()
+        source_angles, dest_angles = plotter.connection_angles(
+            plotter._prepare_plot(df))
+        exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
+                            'b': (3/6 * np.pi, 5/6 * np.pi)},
+                      'b': {'a': (11/6 * np.pi, 12/6 * np.pi),
+                            'b': (9/6 * np.pi, 11/6 * np.pi)}}
+
+        exp_dest = {'b': {'a': (0, 1/6 * np.pi),
+                          'b': (7/6 * np.pi, 9/6 * np.pi)},
+                    'a': {'a': (1/6 * np.pi, 2/6 * np.pi),
+                          'b': (5/6 * np.pi, 7/6 * np.pi)}}
+        for f in ['a', 'b']:
+            for t in ['a', 'b']:
+                assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
+                assert source_angles[f][t] == pyt.approx(exp_source[f][t])

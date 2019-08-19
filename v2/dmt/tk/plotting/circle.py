@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
-
+from dmt.tk.enum import DATA_KEYS, MEAN
+from dmt.tk.plotting.utils import make_hashable
 
 # TODO: DOCSTRINGS DOCSTRINGS DOCSTRINGS
 class CircleTool:
@@ -66,18 +67,6 @@ class CircleTool:
         return matplotlib.patches.Polygon(xy, closed=False)
 
 
-def make_hashable(df, columnlabel):
-    # currently assume all entries have the same keys
-    dict_column = df[columnlabel]
-    keys = dict_column[0].keys()
-    cat_column_label = columnlabel + ": " + ", ".join(keys)
-    column_values = [", ".join(str(v)
-                               for v in d.values())
-                     for d in dict_column.values]
-    return df.drop(columns=columnlabel).assign(
-        **{cat_column_label: column_values}), cat_column_label
-
-
 class CirclePlot:
 
     def __init__(self):
@@ -85,11 +74,50 @@ class CirclePlot:
         self.circle = CircleTool(1.0)
         self.outer = CircleTool(1.0 + bar_width)
 
+    # TODO: test case where precol and postcol don't have same values
     def _prepare_plot(self, df):
-        pass
+        non_data_columns = [col for col in df.columns
+                            if col not in DATA_KEYS]
+        assert len(non_data_columns) == 2
+        df, tocol = make_hashable(df, non_data_columns[0])
+        df, fromcol = make_hashable(df, non_data_columns[1])
+        pivot_table = df.pivot_table(columns=tocol, index=fromcol,
+                                     values=MEAN)
+        return pivot_table
 
-    def plot(self, df):
-        pass
+    def connection_angles(self, pivot_table):
+        source_angles = {ind: {} for ind in pivot_table.index}
+        dest_angles = {ind: {} for ind in pivot_table.index}
+        angle = 0
+        tot_conn = np.sum(pivot_table.values)
+        for i, ind in enumerate(pivot_table.index):
+            from_order =\
+                list(pivot_table.index[i:]) + list(pivot_table.index[:i])
+            to_order =\
+                list(pivot_table.index[i+1:]) + list(pivot_table.index[:i+1])
+            from_order.reverse()
+            to_order.reverse()
+            for from_ in from_order:
+                angle_size = np.pi * pivot_table.loc[from_, ind] / tot_conn
+                dest_angles[from_][ind] = (angle, angle + angle_size)
+                angle += angle_size
+            for to in to_order:
+                angle_size = np.pi * pivot_table.loc[ind, to] / tot_conn
+                source_angles[ind][to] = (angle, angle + angle_size)
+                angle += angle_size
+        return source_angles, dest_angles
+
+    def connection_patches(self, df):
+        pivot_table = self._prepare_plot(df)
+        assert sorted(pivot_table.index) == sorted(pivot_table.columns)
+        source_angles, dest_angles = self.connection_angles(pivot_table)
+        patches = [self.circle.curve_polygon(*source_angles[from_][to],
+                                             *dest_angles[from_][to])
+                   for from_ in pivot_table.index
+                   for to in pivot_table.index]
+
+        return patches
+
 
 
 
