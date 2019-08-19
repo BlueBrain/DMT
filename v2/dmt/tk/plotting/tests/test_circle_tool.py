@@ -117,8 +117,9 @@ class TestCirclePlot:
             'post': [{'mtype': 'a'}, {'mtype': 'b'},
                      {'mtype': 'a'}, {'mtype': 'b'}]})
         plotter = CirclePlot()
-        source_angles, dest_angles = plotter.connection_angles(
+        source_angles, dest_angles, type_angles = plotter.connection_angles(
             plotter._prepare_plot(df))
+
         exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
                             'b': (3/6 * np.pi, 5/6 * np.pi)},
                       'b': {'a': (11/6 * np.pi, 12/6 * np.pi),
@@ -128,7 +129,12 @@ class TestCirclePlot:
                           'b': (7/6 * np.pi, 9/6 * np.pi)},
                     'a': {'a': (1/6 * np.pi, 2/6 * np.pi),
                           'b': (5/6 * np.pi, 7/6 * np.pi)}}
+
+        exp_type = {'a': (0, 5/6 * np.pi),
+                    'b': (5/6 * np.pi, 12/6 * np.pi)}
+
         for f in ['a', 'b']:
+            assert type_angles[f] == pyt.approx(exp_type[f])
             for t in ['a', 'b']:
                 assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
                 assert source_angles[f][t] == pyt.approx(exp_source[f][t])
