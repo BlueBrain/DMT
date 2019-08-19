@@ -87,6 +87,19 @@ class TestCircleTool:
              unitcircle.segment_points(f2, f1)]),
                                poly.get_xy())
 
+    def test_segment_polygon(self):
+        unitcircle = CircleTool(1.0)
+        angle1, angle2 = 2 * np.pi/3, np.pi
+        width = 0.01
+        outer = CircleTool(1 + width)
+        inner_points = unitcircle.segment_points(angle1, angle2)
+        npt.assert_array_almost_equal(
+            unitcircle.segment_polygon(angle1, angle2, width).get_xy(),
+            np.concatenate([
+                inner_points,
+                outer.segment_points(angle2, angle1),
+                [inner_points[0]]]))
+
 
 class TestCirclePlot:
 

@@ -66,6 +66,13 @@ class CircleTool:
              self.segment_points(from_angle2, from_angle1)])
         return matplotlib.patches.Polygon(xy, closed=False)
 
+    def segment_polygon(self, from_angle, to_angle, width):
+        outer = CircleTool(self.radius + width)
+        xy = np.concatenate(
+            [self.segment_points(from_angle, to_angle),
+             outer.segment_points(to_angle, from_angle)])
+        return matplotlib.patches.Polygon(xy, closed=True)
+
 
 class CirclePlot:
 
