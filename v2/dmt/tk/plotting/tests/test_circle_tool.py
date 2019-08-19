@@ -157,10 +157,10 @@ class TestCirclePlot:
                       'b': {'a': (11/6 * np.pi, 12/6 * np.pi),
                             'b': (9/6 * np.pi, 11/6 * np.pi)}}
 
-        exp_dest = {'b': {'a': (0, 1/6 * np.pi),
-                          'b': (7/6 * np.pi, 9/6 * np.pi)},
-                    'a': {'a': (1/6 * np.pi, 2/6 * np.pi),
-                          'b': (5/6 * np.pi, 7/6 * np.pi)}}
+        exp_dest = {'b': {'a': (1/6 * np.pi, 0),
+                          'b': (9/6 * np.pi, 7/6 * np.pi)},
+                    'a': {'a': (2/6 * np.pi, 1/6 * np.pi),
+                          'b': (7/6 * np.pi, 5/6 * np.pi)}}
         for f in ['a', 'b']:
             for t in ['a', 'b']:
                 assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])

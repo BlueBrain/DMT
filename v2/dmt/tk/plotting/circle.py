@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
 from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.plotting.utils import make_hashable
 
@@ -76,7 +77,8 @@ class CircleTool:
 
 class CirclePlot:
 
-    def __init__(self):
+    def __init__(self, space_between=0.0):
+        self.space_between = space_between
         self.circle = CircleTool(1.0)
 
     # TODO: test case where precol and postcol don't have same values
@@ -98,7 +100,8 @@ class CirclePlot:
             size =\
                 (pivot_table.loc[typ, :].sum() + pivot_table.loc[:, typ].sum())
             angle_size = np.pi * size / tot_conn
-            type_angles[typ] = (angle, angle + angle_size)
+            space = self.space_between * 0.5
+            type_angles[typ] = (angle + space, angle + angle_size - space)
             angle += angle_size
         return type_angles
 
@@ -123,7 +126,7 @@ class CirclePlot:
             for from_ in from_order:
                 angle_size = type_angle_size * pivot_table.loc[from_, ind]\
                              / tot_conn
-                dest_angles[from_][ind] = (angle, angle + angle_size)
+                dest_angles[from_][ind] = (angle + angle_size, angle)
                 angle += angle_size
 
             for to in to_order:
@@ -144,16 +147,38 @@ class CirclePlot:
                    for from_ in pivot_table.index}
         return patches
 
+    def type_patches(self, type_angles):
+        return {
+            typ: self.circle.segment_polygon(*angles, 0.1)
+            for typ, angles in type_angles.items()}
+
     def get_patches(self, pivot_table):
         type_angles = self.type_angles(pivot_table)
         connection_patches = self.connection_patches(pivot_table,
-                                                     self.type_angles)
+                                                     type_angles)
         type_patches = self.type_patches(type_angles)
         return type_patches, connection_patches
 
     def plot(self, df):
         pivot_table = self._prepare_plot(df)
         assert sorted(pivot_table.index) == sorted(pivot_table.columns)
+        self.circle.draw()
+        ax = plt.gca()
+        type_patches, connection_patches = self.get_patches(pivot_table)
+        type_collection = matplotlib.collections.PatchCollection(
+            type_patches.values())
+        type_collection.set_array(np.arange(len(type_patches)))
+        connections_collection = matplotlib.collections.PatchCollection(
+            [dd for d in connection_patches.values() for dd in d.values()])
+        ax.add_collection(type_collection)
+        ax.add_collection(connections_collection)
+
+        type_angles = {t: np.mean(a)
+                       for t, a in self.type_angles(pivot_table).items()}
+        textcirc = CircleTool(self.circle.radius * 1.2)
+        for t, a in type_angles.items():
+            plt.text(*textcirc.angles_to_points(type_angles[t]), t)
+        return ax
 
 
 # CirclePlot
