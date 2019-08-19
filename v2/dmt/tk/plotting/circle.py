@@ -70,9 +70,7 @@ class CircleTool:
 class CirclePlot:
 
     def __init__(self):
-        bar_width = 0.01
         self.circle = CircleTool(1.0)
-        self.outer = CircleTool(1.0 + bar_width)
 
     # TODO: test case where precol and postcol don't have same values
     def _prepare_plot(self, df):
@@ -85,14 +83,29 @@ class CirclePlot:
                                      values=MEAN)
         return pivot_table
 
-    def connection_angles(self, pivot_table):
-        source_angles = {ind: {} for ind in pivot_table.index}
-        dest_angles = {ind: {} for ind in pivot_table.index}
+    def type_angles(self, pivot_table):
+        tot_conn = np.sum(pivot_table.values)
         type_angles = {}
         angle = 0
-        tot_conn = np.sum(pivot_table.values)
+        for typ in pivot_table.index:
+            size =\
+                (pivot_table.loc[typ, :].sum() + pivot_table.loc[:, typ].sum())
+            angle_size = np.pi * size / tot_conn
+            type_angles[typ] = (angle, angle + angle_size)
+            angle += angle_size
+        return type_angles
+
+    def connection_angles(self, pivot_table, type_angles):
+        source_angles = {ind: {} for ind in pivot_table.index}
+        dest_angles = {ind: {} for ind in pivot_table.index}
         for i, ind in enumerate(pivot_table.index):
-            start_angle = angle
+            start_angle, end_angle = type_angles[ind]
+            type_angle_size = end_angle - start_angle
+            angle = start_angle
+
+            tot_conn = (pivot_table.loc[ind, :].sum()
+                        + pivot_table.loc[:, ind].sum())
+
             from_order =\
                 list(pivot_table.index[i:]) + list(pivot_table.index[:i])
             to_order =\
@@ -101,23 +114,22 @@ class CirclePlot:
             to_order.reverse()
 
             for from_ in from_order:
-                angle_size = np.pi * pivot_table.loc[from_, ind] / tot_conn
+                angle_size = type_angle_size * pivot_table.loc[from_, ind]\
+                             / tot_conn
                 dest_angles[from_][ind] = (angle, angle + angle_size)
                 angle += angle_size
 
             for to in to_order:
-                angle_size = np.pi * pivot_table.loc[ind, to] / tot_conn
+                angle_size = type_angle_size * pivot_table.loc[ind, to]\
+                             / tot_conn
                 source_angles[ind][to] = (angle, angle + angle_size)
                 angle += angle_size
 
-            type_angles[ind] = (start_angle, angle)
+        return source_angles, dest_angles
 
-        return source_angles, dest_angles, type_angles
-
-    def connection_patches(self, df):
-        pivot_table = self._prepare_plot(df)
-        assert sorted(pivot_table.index) == sorted(pivot_table.columns)
-        source_angles, dest_angles = self.connection_angles(pivot_table)
+    def connection_patches(self, pivot_table, type_patch_angles):
+        source_angles, dest_angles =\
+            self.connection_angles(pivot_table, type_patch_angles)
         patches = {from_:
                    {to: self.circle.curve_polygon(*source_angles[from_][to],
                                                   *dest_angles[from_][to])
@@ -125,7 +137,16 @@ class CirclePlot:
                    for from_ in pivot_table.index}
         return patches
 
+    def get_patches(self, pivot_table):
+        type_angles = self.type_angles(pivot_table)
+        connection_patches = self.connection_patches(pivot_table,
+                                                     self.type_angles)
+        type_patches = self.type_patches(type_angles)
+        return type_patches, connection_patches
 
+    def plot(self, df):
+        pivot_table = self._prepare_plot(df)
+        assert sorted(pivot_table.index) == sorted(pivot_table.columns)
 
 
 # CirclePlot
