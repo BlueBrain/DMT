@@ -103,23 +103,42 @@ class TestCircleTool:
 
 class TestCirclePlot:
 
-    def test_prepare_plot(self):
-        df = pd.DataFrame({
-            MEAN: [1, 2, 1, 2],
-            STD: [1, 2, 3, 1],
-            'pre': [{'mtype': 'a'}, {'mtype': 'a'},
-                    {'mtype': 'b'}, {'mtype': 'b'}],
-            'post': [{'mtype': 'a'}, {'mtype': 'b'},
-                     {'mtype': 'a'}, {'mtype': 'b'}]})
-        table = CirclePlot()._prepare_plot(df)
-        pd.testing.assert_frame_equal(table,
-                                      pd.DataFrame({
-                                          'pre: mtype': ['a', 'a', 'b', 'b'],
-                                          'post: mtype': ['a', 'b', 'a', 'b'],
-                                          MEAN: [1, 2, 1, 2]})
-                                      .pivot_table(index='pre: mtype',
-                                                   columns='post: mtype',
-                                                   values=MEAN))
+    class Test_prepare_plot:
+
+        # edge cases to do
+        # TODO: columns mismatch
+        # TODO: duplicate pathways
+        # TODO: no MEAN
+        # TODO: more than two non-data columns
+        def test_basic(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2, 1, 2],
+                'pre': ['a', 'a', 'b', 'b'],
+                'post': ['a', 'b', 'a', 'b']})
+            table = CirclePlot()._prepare_plot(df)
+            pd.testing.assert_frame_equal(
+                table,
+                df.pivot_table(index='pre', columns='post',
+                               values=MEAN))
+
+        def test_unhashable_columns(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2, 1, 2],
+                STD: [1, 2, 3, 1],
+                'pre': [{'mtype': 'a'}, {'mtype': 'a'},
+                        {'mtype': 'b'}, {'mtype': 'b'}],
+                'post': [{'mtype': 'a'}, {'mtype': 'b'},
+                         {'mtype': 'a'}, {'mtype': 'b'}]})
+            table = CirclePlot()._prepare_plot(df)
+            pd.testing.assert_frame_equal(
+                table,
+                pd.DataFrame({
+                    'pre: mtype': ['a', 'a', 'b', 'b'],
+                    'post: mtype': ['a', 'b', 'a', 'b'],
+                    MEAN: [1, 2, 1, 2]})
+                .pivot_table(index='pre: mtype',
+                             columns='post: mtype',
+                             values=MEAN))
 
     def test_group_patch_angles(self):
         pivot_table = pd.DataFrame({
