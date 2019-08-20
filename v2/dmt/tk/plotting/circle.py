@@ -5,7 +5,6 @@ from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.plotting.utils import make_hashable
 
 
-# TODO: DOCSTRINGS DOCSTRINGS DOCSTRINGS
 # TODO: test that rotation works
 class CircleTool:
     """a helper for drawing circles, circle segments, and arcs"""
@@ -327,7 +326,13 @@ class CirclePlot:
         group_patches = self.group_patches(group_angles)
         return group_patches, connection_patches
 
-    # TODO: could do with some tests
+    # TODO: could do with some tests, but PatchCollection has no
+    #       introspection on its patches
+    # TODO: use match_original for colors?
+    #       this would also help testing - then we can assign colors
+    #       when generating the patches and check the results
+    # TODO: we could have a function mapping group to color,
+    #       which can be overwritten to customize color
     def patch_collections(self, group_patches, connection_patches):
         """
         turn the patch_dicts from get_patches into colored PatchCollections
@@ -400,30 +405,8 @@ class CirclePlot:
 
         # awkward to re-calculate this!
         group_angles = {t: np.mean(a)
-                       for t, a in self.group_angles(pivot_table).items()}
+                        for t, a in self.group_angles(pivot_table).items()}
         textcirc = CircleTool(self.circle.radius * 1.2)
         for t, a in group_angles.items():
             plt.text(*textcirc.angles_to_points(group_angles[t]), t)
         return plt.gcf(), ax
-
-
-# CirclePlot
-
-# xlabel, ylabel are columns to plot by (e.g. pre and post)
-# (these are inferred)
-# make_hashable these columns
-# plot_circle_plot(df.pivot_table(index=x_column, columns=y_column, values=MEAN))
-# TODO: how to handle differing coloration by sclass?
-
-# NOTE: for this plotter we certainly do need some data at analysis-composing time.
-#       we need to know what to pivot around
-#       (e.g. for connectomics 'pre' and 'post')
-#       OR: well, do we really? couldn't we just find the two non-data columns
-#           and complain if there are more
-#       hmm... that seems like the simplest option
-#       though presently their order isn't guaranteed, but that is
-#       not the plotter's problem, but whoever passed the dataframe
-#
-#       it would still be best to make it possible to pass these as a kwarg.
-# NOTE: default behavior is to infer, but can also pass args at initialization
-#       or at plot-time
