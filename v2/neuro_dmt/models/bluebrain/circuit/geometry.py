@@ -4,7 +4,7 @@ Code for manipulating geometric features of Blue Brain Project circuits.
 import numpy as np
 from bluepy.geometry.roi import ROI
 from bluepy.v2.enums import Cell
-from dmt.tk.field import Field, WithFields
+from dmt.tk.field import Field, lazyproperty, WithFields
 
 
 class Position(WithFields):
