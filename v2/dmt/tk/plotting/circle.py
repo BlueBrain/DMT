@@ -159,20 +159,50 @@ class CirclePlot:
         type_patches = self.type_patches(type_angles)
         return type_patches, connection_patches
 
+    # TODO: could do with some tests
+    def patch_collections(self, type_patches, connection_patches):
+        types = sorted(type_patches.keys())
+        type_color = np.arange(len(types))
+        type_patch_list = [type_patches[typ] for typ in types]
+        connection_color = np.array(
+            [type_color[i] for i, typ in enumerate(types)
+             for _ in connection_patches[typ].values()])
+        connection_patch_list = [
+            p for typ in types
+            for p in connection_patches[typ].values()]
+
+        type_collection = matplotlib.collections.PatchCollection(
+            type_patch_list)
+        type_collection.set_array(type_color)
+        connections_collection = matplotlib.collections.PatchCollection(
+            connection_patch_list)
+        connections_collection.set_array(connection_color)
+        alpha = 0.5
+        connections_collection.set_alpha(alpha)
+
+        return type_collection, connections_collection
+
+    # TODO: test the actual plot method one its clear what
+    #        its supposed to do
+    # TODO: test how it handles NaNs
     def plot(self, df):
         pivot_table = self._prepare_plot(df)
         assert sorted(pivot_table.index) == sorted(pivot_table.columns)
-        self.circle.draw()
-        ax = plt.gca()
+        ax = plt.axes()
+        # TODO: adapt limits to text
+        ax.set_xlim(left=-1.3, right=+1.3)
+        ax.set_ylim(bottom=-1.3, top=+1.3)
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
         type_patches, connection_patches = self.get_patches(pivot_table)
-        type_collection = matplotlib.collections.PatchCollection(
-            type_patches.values())
-        type_collection.set_array(np.arange(len(type_patches)))
-        connections_collection = matplotlib.collections.PatchCollection(
-            [dd for d in connection_patches.values() for dd in d.values()])
+        type_collection, connections_collection =\
+            self.patch_collections(type_patches, connection_patches)
         ax.add_collection(type_collection)
         ax.add_collection(connections_collection)
 
+        # awkward to re-calculate this!
         type_angles = {t: np.mean(a)
                        for t, a in self.type_angles(pivot_table).items()}
         textcirc = CircleTool(self.circle.radius * 1.2)
