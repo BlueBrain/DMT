@@ -121,7 +121,7 @@ class TestCirclePlot:
                                                    columns='post: mtype',
                                                    values=MEAN))
 
-    def test_type_patch_angles(self):
+    def test_group_patch_angles(self):
         pivot_table = pd.DataFrame({
             'pre: mtype': ['a', 'a', 'b', 'b'],
             'post: mtype': ['a', 'b', 'a', 'b'],
@@ -130,13 +130,13 @@ class TestCirclePlot:
                                      columns='post: mtype',
                                      values=MEAN)
         plotter = CirclePlot()
-        type_angles = plotter.type_angles(pivot_table)
+        group_angles = plotter.group_angles(pivot_table)
 
         exp_type = {'a': (0, 5/6 * np.pi),
                     'b': (5/6 * np.pi, 12/6 * np.pi)}
 
         for f in ['a', 'b']:
-            assert type_angles[f] == pyt.approx(exp_type[f])
+            assert group_angles[f] == pyt.approx(exp_type[f])
 
     def test_connection_angles(self):
 
@@ -150,7 +150,7 @@ class TestCirclePlot:
 
         plotter = CirclePlot()
         source_angles, dest_angles = plotter.connection_angles(
-            pivot_table, plotter.type_angles(pivot_table))
+            pivot_table, plotter.group_angles(pivot_table))
 
         exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
                             'b': (3/6 * np.pi, 5/6 * np.pi)},
