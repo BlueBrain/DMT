@@ -38,7 +38,7 @@ class AtlasHelper(WithFields):
         """,
         __default_value__="[PH]y")
     dataset_orientation_layer_interval = Field(
-        """ fF
+        """
         For each voxel in the atlas, the positions along the voxel's
         orientation where the orientation (vector) intersects each layer's
         upper and lower boundaries are recorded as an interval. This `Field`
@@ -116,7 +116,7 @@ class AtlasHelper(WithFields):
         return {
             layer: Interval(
                 top=layer_profile.raw[voxel[0], voxel[1], voxel[2], 1],
-                bottom=layer_profile.raw[voxel[0], voxel[1], voxel[2], 0])
+                bottom=layer_profile[voxel[0], voxel[1], voxel[2], 0])
             for layer, layer_profile in self.orientation_profile_voxel.items()}
 
     def get_atlas_region_acronyms(self,
