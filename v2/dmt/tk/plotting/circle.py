@@ -191,9 +191,20 @@ class CirclePlot:
         Returns:
             pivot table of {MEAN}
         """.format(MEAN=MEAN)
+
+        # TODO: should this work on samples without mean?
+        if MEAN not in df.columns:
+            raise ValueError(
+                "dataframe must have {} column".format(MEAN))
+
         non_data_columns = [col for col in df.columns
                             if col not in DATA_KEYS]
-        assert len(non_data_columns) == 2
+
+        if len(non_data_columns) != 2:
+            raise ValueError(
+                "dataframe must have exactly two columns aside from {}"
+                .format(DATA_KEYS))
+
         df, tocol = make_hashable(df, non_data_columns[0])
         df, fromcol = make_hashable(df, non_data_columns[1])
         pivot_table = df.pivot_table(columns=tocol, index=fromcol,
@@ -211,7 +222,7 @@ class CirclePlot:
         Returns:
             dict {group: (start_angle, end_angle)}
         """
-        tot_conn = np.sum(pivot_table.values)
+        tot_conn = np.nansum(pivot_table.values)
         group_angles = {}
         angle = 0
         for grp in pivot_table.index:

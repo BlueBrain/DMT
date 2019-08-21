@@ -140,47 +140,151 @@ class TestCirclePlot:
                              columns='post: mtype',
                              values=MEAN))
 
-    def test_group_patch_angles(self):
-        pivot_table = pd.DataFrame({
-            'pre: mtype': ['a', 'a', 'b', 'b'],
-            'post: mtype': ['a', 'b', 'a', 'b'],
-            MEAN: [1, 2, 1, 2]})\
-                        .pivot_table(index='pre: mtype',
-                                     columns='post: mtype',
-                                     values=MEAN)
-        plotter = CirclePlot()
-        group_angles = plotter.group_angles(pivot_table)
+        def test_duplicate_pathways(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2, 1, 2, 3],
+                STD: [1, 2, 3, 1, 3],
+                'pre': [{'mtype': 'a'}, {'mtype': 'a'},
+                        {'mtype': 'b'}, {'mtype': 'b'},
+                        {'mtype': 'b'}],
+                'post': [{'mtype': 'a'}, {'mtype': 'b'},
+                         {'mtype': 'a'}, {'mtype': 'b'},
+                         {'mtype': 'b'}]})
+            pd.testing.assert_frame_equal(
+                pd.DataFrame({
+                    'pre: mtype': ['a', 'a', 'b', 'b'],
+                    'post: mtype': ['a', 'b', 'a', 'b'],
+                    MEAN: [1, 2, 1, 2.5]})\
+                .pivot_table(index='pre: mtype',
+                             columns='post: mtype',
+                             values=MEAN),
+                CirclePlot()._prepare_plot(df))
 
-        exp_type = {'a': (0, 5/6 * np.pi),
-                    'b': (5/6 * np.pi, 12/6 * np.pi)}
+        # let this xfail for now,
+        # once the rest can deal with NaNs, this test
+        # will be clearer and more relevatn
+        @pyt.mark.xfail
+        def test_columns_mismatch(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2],
+                'pre': ['a', 'b'],
+                'post': ['c', 'c']})
 
-        for f in ['a', 'b']:
-            assert group_angles[f] == pyt.approx(exp_type[f])
+            pd.testing.assert_frame_equal(
+                pd.DataFrame({
+                    MEAN: [np.nan, np.nan, np.nan,
+                           np.nan, np.nan, np.nan,
+                           1, 2, np.nan],
+                    'pre': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c'],
+                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'g', 'g', 'g']}),
+                CirclePlot()._prepare_plot(df))
 
-    def test_connection_angles(self):
+        def test_more_nondata_cols(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2],
+                'a': [1, 2],
+                'b': [2, 3],
+                'c': [4, 5]})
+            with pyt.raises(ValueError):
+                CirclePlot()._prepare_plot(df)
 
-        pivot_table = pd.DataFrame({
-            'pre: mtype': ['a', 'a', 'b', 'b'],
-            'post: mtype': ['a', 'b', 'a', 'b'],
-            MEAN: [1, 2, 1, 2]})\
-                        .pivot_table(index='pre: mtype',
-                                     columns='post: mtype',
-                                     values=MEAN)
+        def test_no_MEAN(self):
+            df = pd.DataFrame({
+                'a': [1, 2],
+                'b': [2, 3]})
+            with pyt.raises(ValueError):
+                CirclePlot()._prepare_plot(df)
 
-        plotter = CirclePlot()
-        source_angles, dest_angles = plotter.connection_angles(
-            pivot_table, plotter.group_angles(pivot_table))
+    # don't need to test for NaN, as plot will convert to 0 anyway
+    class TestGroupAngles:
 
-        exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
-                            'b': (3/6 * np.pi, 5/6 * np.pi)},
-                      'b': {'a': (11/6 * np.pi, 12/6 * np.pi),
-                            'b': (9/6 * np.pi, 11/6 * np.pi)}}
+        def test_group_angles(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, 2]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+            plotter = CirclePlot()
+            group_angles = plotter.group_angles(pivot_table)
 
-        exp_dest = {'b': {'a': (1/6 * np.pi, 0),
-                          'b': (9/6 * np.pi, 7/6 * np.pi)},
-                    'a': {'a': (2/6 * np.pi, 1/6 * np.pi),
-                          'b': (7/6 * np.pi, 5/6 * np.pi)}}
-        for f in ['a', 'b']:
-            for t in ['a', 'b']:
-                assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
-                assert source_angles[f][t] == pyt.approx(exp_source[f][t])
+            exp_angles = {'a': (0, 5/6 * np.pi),
+                          'b': (5/6 * np.pi, 12/6 * np.pi)}
+
+            for f in ['a', 'b']:
+                assert group_angles[f] == pyt.approx(exp_angles[f])
+
+        def test_group_angles_NaN(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, np.nan]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+            plotter = CirclePlot()
+            group_angles = plotter.group_angles(pivot_table)
+
+            exp_angles = {'a': (0, 5/4 * np.pi),
+                          'b': (5/4 * np.pi, 8/4 * np.pi)}
+
+            for f in ['a', 'b']:
+                assert group_angles[f] == pyt.approx(exp_angles[f])
+
+    class TestConnectionAngles:
+
+        def test_connection_angles(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, 2]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+
+            plotter = CirclePlot()
+            source_angles, dest_angles = plotter.connection_angles(
+                pivot_table, plotter.group_angles(pivot_table))
+
+            exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
+                                'b': (3/6 * np.pi, 5/6 * np.pi)},
+                          'b': {'a': (11/6 * np.pi, 12/6 * np.pi),
+                                'b': (9/6 * np.pi, 11/6 * np.pi)}}
+
+            exp_dest = {'b': {'a': (1/6 * np.pi, 0),
+                              'b': (9/6 * np.pi, 7/6 * np.pi)},
+                        'a': {'a': (2/6 * np.pi, 1/6 * np.pi),
+                              'b': (7/6 * np.pi, 5/6 * np.pi)}}
+            for f in ['a', 'b']:
+                for t in ['a', 'b']:
+                    assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
+                    assert source_angles[f][t] == pyt.approx(exp_source[f][t])
+
+        def test_connection_angles_NaN(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, np.nan]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+
+            plotter = CirclePlot()
+            source_angles, dest_angles = plotter.connection_angles(
+                pivot_table, plotter.group_angles(pivot_table))
+
+            exp_source = {'a': {'a': (2/4 * np.pi, 3/4 * np.pi),
+                                'b': (3/4 * np.pi, 5/4 * np.pi)},
+                          'b': {'a': (7/4 * np.pi, 8/4 * np.pi),
+                                'b': (np.nan, np.nan)}}
+
+            exp_dest = {'b': {'a': (1/4 * np.pi, 0),
+                              'b': (np.nan, np.nan)},
+                        'a': {'a': (2/4 * np.pi, 1/4 * np.pi),
+                              'b': (7/4 * np.pi, 5/4 * np.pi)}}
+
+            for f in ['a', 'b']:
+                for t in ['a', 'b']:
+                    assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
+                    assert source_angles[f][t] == pyt.approx(exp_source[f][t])
