@@ -6,6 +6,7 @@ Bluebrain circuits are built against a brain atlas.
 import numpy
 import pandas
 from voxcell.nexus.voxelbrain import Atlas
+from voxcell.nexus.voxelbrain import LocalAtlas
 from voxcell import VoxelData
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.utils import collections
@@ -16,9 +17,9 @@ class AtlasHelper(WithFields):
     """
     Helps with `class Atlas`, and used to analyze circuits.
     """
-    atlas = Field(
+    path_atlas = Field(
         """
-        `Atlas` instance to help
+        Path to an atlas directory holding `Atlas` datasets.
         """)
     layers = Field(
         """
@@ -59,6 +60,13 @@ class AtlasHelper(WithFields):
         """)
 
     @lazyfield
+    def atlas(self):
+        """
+        The `Atlas` instance.
+        """
+        return LocalAtlas(self.path_atlas)
+
+    @lazyfield
     def hierarchy(self):
         """
         Brain regions in an `Atlas` are nested.
@@ -71,13 +79,13 @@ class AtlasHelper(WithFields):
         """
         Position of a voxel, measured along it's `orientation_profile`.
         """
-         bottoms_voxel = self\
-             .atlas\
-             .load_data(
-                 self.dataset_orientation_position)\
-             .raw
-         return bottoms_voxel + self.voxel_size/2.
-
+        bottoms_voxel = self\
+            .atlas\
+            .load_data(
+                self.dataset_orientation_position)\
+            .raw
+        return bottoms_voxel + self.voxel_size/2.
+    
     @lazyfield
     def voxel_data(self):
         """
@@ -175,8 +183,10 @@ class AtlasHelper(WithFields):
         """
         if layers is not None and depth is not None:
             raise ValueError(
-                "Random position can be evaluated either in a layer or
-                at a depth. Not Both.")
+                """
+                Random position can be evaluated either in a layer or
+                at a depth. Not Both.
+                """)
         if depth is not None:
             raise NotImplementedError(
                 "get_random_position(...) at given depth.")

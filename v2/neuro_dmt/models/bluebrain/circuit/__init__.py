@@ -13,6 +13,7 @@ from bluepy.geometry.roi import ROI as RegionOfInterest
 import neurom
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal import Logger
+from neuro_dmt.models.bluebrain.circuit.atlas import AtlasHelper
 
 logger = Logger("BlueBrainCircuitModel")
 
@@ -65,6 +66,14 @@ class BlueBrainCircuitModel(WithFields):
         """
         return Circuit(self.circuit_config)
     
+    @lazyfield
+    def atlas_helper(self):
+        """
+        The Atlas used to build the circuit, wrapped in `AtlasHelper`.
+        """
+        return AtlasHelper(
+            path_atlas=self.bluepy_circuit.atlas)
+
     @lazyfield
     def cells(self):
         """
@@ -252,6 +261,37 @@ class BlueBrainCircuitModel(WithFields):
             Cell.Z: (corner_0[2], corner_1[2])}
 
 
+    def get_cells_in_region(self,
+            region_of_interest,
+            with_properties=[]):
+        """
+        Get only cells in region.
+        """
+        XYZ = [Cell.X, Cell.Y, Cell.Z]
+        cells = self.cells.get(
+            self.get_region_query(region_of_interest),
+            XYZ + with_properties)
+        return cells[
+            region_of_interest.contains(cells[XYZ].values)]
+
+    def get_cell_counts(self,
+            region_of_interest,
+            **kwwargs):
+        """
+        Count cells of specified type in a region of interest
+        """
+        properties = [
+            key for key, value in kwargs.items()
+            if value is not None]
+        if mtype is None and etype is None:
+            query_region = self.get_region_query(region_of_interest)
+            cells_region = self.get_cells_in_region(
+                region_of_interest,
+                with_properties=properties)
+            cells_specific = cells_region[
+                cells_region]
+
+
     def get_synapse_density(self, region_of_interest, scale_factor=1.0):
         """
         Synapse density withing given region of interest.
@@ -335,14 +375,14 @@ class BlueBrainCircuitModel(WithFields):
         segments = self.get_segments(region_of_interest)
         
         return _spine_count(segments[
-            (segments[Section.NEURITE_TYPE] == nm.BASAL_DENDRITE)|
-            (segments[Section.NEURITE_TYPE] == nm.APICAL_DENDRITE)])
+            (segments[Section.NEURITE_TYPE] == neurom.BASAL_DENDRITE)|
+            (segments[Section.NEURITE_TYPE] == neurom.APICAL_DENDRITE)])
 
     def get_spine_count_density(self,
             region_of_interest,
             queried_neurite_type=[
-                nm.BASAL_DENDRITE,
-                nm.APICAL_DENDRITE],
+                neurom.BASAL_DENDRITE,
+                neurom.APICAL_DENDRITE],
             spine_density_per_unit_len_mean=1.05,
             spine_density_per_unit_len_std=0.35,
             scale_factor=1.e0):

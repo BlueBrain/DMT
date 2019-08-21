@@ -53,9 +53,6 @@ class Report(WithFields):
         __default_value__="Not provided")
 
 
-    pass
-
-
 class Reporter(WithFields):
     """
     Abstract base class.
@@ -116,7 +113,11 @@ class Reporter(WithFields):
                     text if text else getattr(report, attribute),
                     section_end))
 
-        with open(os.path.join(output_folder, "report.txt"), 'w') as output_file:
+        with open(
+                os.path.join(
+                    output_folder,
+                    "report.txt"),
+                'w') as output_file:
             __write(
                 output_file, "introduction")
             __write(
