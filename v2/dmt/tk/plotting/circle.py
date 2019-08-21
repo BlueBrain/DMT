@@ -260,8 +260,8 @@ class CirclePlot:
             group_angle_size = end_angle - start_angle
             angle = start_angle
 
-            tot_conn = (pivot_table.loc[ind, :].sum()
-                        + pivot_table.loc[:, ind].sum())
+            tot_conn = (np.nansum(pivot_table.loc[ind, :])
+                        + np.nansum(pivot_table.loc[:, ind]))
 
             from_order =\
                 list(pivot_table.index[i:]) + list(pivot_table.index[:i])
@@ -273,14 +273,16 @@ class CirclePlot:
             for from_ in from_order:
                 angle_size = group_angle_size * pivot_table.loc[from_, ind]\
                              / tot_conn
-                dest_angles[from_][ind] = (angle + angle_size, angle)
-                angle += angle_size
+                if not np.isnan(angle_size):
+                    dest_angles[from_][ind] = (angle + angle_size, angle)
+                    angle += angle_size
 
             for to in to_order:
                 angle_size = group_angle_size * pivot_table.loc[ind, to]\
                              / tot_conn
-                source_angles[ind][to] = (angle, angle + angle_size)
-                angle += angle_size
+                if not np.isnan(angle_size):
+                    source_angles[ind][to] = (angle, angle + angle_size)
+                    angle += angle_size
 
         return source_angles, dest_angles
 

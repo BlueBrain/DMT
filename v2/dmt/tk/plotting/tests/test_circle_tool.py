@@ -170,13 +170,22 @@ class TestCirclePlot:
                 'pre': ['a', 'b'],
                 'post': ['c', 'c']})
 
+            print(pd.DataFrame({
+                    MEAN: [np.nan, np.nan, np.nan,
+                           np.nan, np.nan, np.nan,
+                           1, 2, np.nan],
+                    'pre': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c'],
+                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'c', 'c', 'c']})
+                .pivot_table(index='pre', columns='post', values=MEAN))
+            print(CirclePlot()._prepare_plot(df))
             pd.testing.assert_frame_equal(
                 pd.DataFrame({
                     MEAN: [np.nan, np.nan, np.nan,
                            np.nan, np.nan, np.nan,
                            1, 2, np.nan],
                     'pre': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c'],
-                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'g', 'g', 'g']}),
+                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'c', 'c', 'c']})
+                .pivot_table(index='pre', columns='post', values=MEAN),
                 CirclePlot()._prepare_plot(df))
 
         def test_more_nondata_cols(self):
@@ -258,6 +267,7 @@ class TestCirclePlot:
                               'b': (7/6 * np.pi, 5/6 * np.pi)}}
             for f in ['a', 'b']:
                 for t in ['a', 'b']:
+                    print('f=', f, 't=', t)
                     assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
                     assert source_angles[f][t] == pyt.approx(exp_source[f][t])
 
@@ -276,15 +286,17 @@ class TestCirclePlot:
 
             exp_source = {'a': {'a': (2/4 * np.pi, 3/4 * np.pi),
                                 'b': (3/4 * np.pi, 5/4 * np.pi)},
-                          'b': {'a': (7/4 * np.pi, 8/4 * np.pi),
-                                'b': (np.nan, np.nan)}}
+                          'b': {'a': (7/4 * np.pi, 8/4 * np.pi)}}
 
-            exp_dest = {'b': {'a': (1/4 * np.pi, 0),
-                              'b': (np.nan, np.nan)},
+            exp_dest = {'b': {'a': (1/4 * np.pi, 0)},
                         'a': {'a': (2/4 * np.pi, 1/4 * np.pi),
                               'b': (7/4 * np.pi, 5/4 * np.pi)}}
 
+            dummy_value = (0, 0)
             for f in ['a', 'b']:
                 for t in ['a', 'b']:
-                    assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
-                    assert source_angles[f][t] == pyt.approx(exp_source[f][t])
+                    print('f=', f, 't=', t)
+                    assert dest_angles[f].get(t, dummy_value)\
+                        == pyt.approx(exp_dest[f].get(t, dummy_value))
+                    assert source_angles[f].get(t, dummy_value) ==\
+                        pyt.approx(exp_source[f].get(t, dummy_value))
