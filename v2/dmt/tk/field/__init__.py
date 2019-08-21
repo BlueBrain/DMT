@@ -316,37 +316,34 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
-def lazyproperty(instance_property):
+def lazyfield(instance_field):
     """
-    Make an 'instance_property' lazy.
+    Make an 'instance_field' lazy.
 
-    Parameters
-    ~   instance_property:
-    ~       an attribute method of a class decorated @property
+    Arguments
+    -----------
+    instance_field:
+    ~   a method attribute of a class decorated @lazyfield
     """
-    property_name_for_storage =\
-        "_{}".format(
-            instance_property.__name__)
+    field_name_for_storage = "_{}".format(instance_field.__name__)
 
     @property
     def effective(instance):
         """
-        The effective, decorated instance.
+        The effective method, resulting from the decoration `@lazyfield`.
         """
         if not hasattr(
                 instance,
-                property_name_for_storage):
+                field_name_for_storage):
             setattr(
                 instance,
-                property_name_for_storage,
-                instance_property(instance))
+                field_name_for_storage,
+                instance_field(instance))
         return\
             getattr(
                 instance,
-                property_name_for_storage)
+                field_name_for_storage)
 
     return effective
 
-lazy = lazyproperty
-
-lazyfield = lazyproperty
+lazyproperty = lazyfield
