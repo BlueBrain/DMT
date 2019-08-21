@@ -161,10 +161,6 @@ class TestCirclePlot:
                              values=MEAN),
                 CirclePlot()._prepare_plot(df))
 
-        # let this xfail for now,
-        # once the rest can deal with NaNs, this test
-        # will be clearer and more relevatn
-        @pyt.mark.xfail
         def test_columns_mismatch(self):
             df = pd.DataFrame({
                 MEAN: [1, 2],
@@ -172,13 +168,7 @@ class TestCirclePlot:
                 'post': ['c', 'c']})
 
             pd.testing.assert_frame_equal(
-                pd.DataFrame({
-                    MEAN: [np.nan, np.nan, np.nan,
-                           np.nan, np.nan, np.nan,
-                           1, 2, np.nan],
-                    'pre': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c'],
-                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'c', 'c', 'c']})
-                .pivot_table(index='pre', columns='post', values=MEAN),
+                df.pivot_table(index='pre', columns='post', values=MEAN),
                 CirclePlot()._prepare_plot(df))
 
         def test_more_nondata_cols(self):
