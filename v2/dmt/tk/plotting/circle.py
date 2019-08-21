@@ -330,8 +330,8 @@ class CirclePlot:
         patches = {from_:
                    {to: self.circle.curve_polygon(*source_angles[from_][to],
                                                   *dest_angles[from_][to])
-                    for to in pivot_table.index}
-                   for from_ in pivot_table.index}
+                    for to in source_angles[from_].keys()}
+                   for from_ in source_angles.keys()}
         return patches
 
     def group_patches(self, group_angles):
@@ -391,11 +391,15 @@ class CirclePlot:
         groups = sorted(group_patches.keys())
         group_color = np.arange(len(groups))
         group_patch_list = [group_patches[grp] for grp in groups]
+        from_groups = [group for group in groups
+                       if group in connection_patches.keys()]
         connection_color = np.array(
-            [group_color[i] for i, grp in enumerate(groups)
-             for _ in connection_patches[grp].values()])
+            [group_color[groups.index(grp)]
+             for grp in from_groups
+             for _ in connection_patches[grp].keys()])
+        print(connection_color)
         connection_patch_list = [
-            p for grp in groups
+            p for grp in from_groups
             for p in connection_patches[grp].values()]
 
         group_collection = matplotlib.collections.PatchCollection(
@@ -404,6 +408,8 @@ class CirclePlot:
         connections_collection = matplotlib.collections.PatchCollection(
             connection_patch_list)
         connections_collection.set_array(connection_color)
+        connections_collection.set_clim(vmin=group_color[0],
+                                        vmax=group_color[-1])
         alpha = 0.5
         connections_collection.set_alpha(alpha)
 
@@ -428,7 +434,7 @@ class CirclePlot:
             figure, axis with CirclePlot
         """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
         pivot_table = self._prepare_plot(df)
-        assert sorted(pivot_table.index) == sorted(pivot_table.columns)
+
         ax = plt.axes()
         # TODO: adapt limits to text
         ax.set_xlim(left=-1.3, right=+1.3)

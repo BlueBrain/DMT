@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import numpy.testing as npt
 import pytest as pyt
+import matplotlib.pyplot as plt
 from dmt.tk.enum import MEAN, STD
 from dmt.tk.plotting.circle import CircleTool, CirclePlot
 
@@ -170,14 +171,6 @@ class TestCirclePlot:
                 'pre': ['a', 'b'],
                 'post': ['c', 'c']})
 
-            print(pd.DataFrame({
-                    MEAN: [np.nan, np.nan, np.nan,
-                           np.nan, np.nan, np.nan,
-                           1, 2, np.nan],
-                    'pre': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c'],
-                    'post': ['a', 'a', 'a', 'b', 'b', 'b,', 'c', 'c', 'c']})
-                .pivot_table(index='pre', columns='post', values=MEAN))
-            print(CirclePlot()._prepare_plot(df))
             pd.testing.assert_frame_equal(
                 pd.DataFrame({
                     MEAN: [np.nan, np.nan, np.nan,
@@ -342,3 +335,59 @@ class TestCirclePlot:
                         == pyt.approx(exp_dest[f].get(t, dummy_value))
                     assert source_angles[f].get(t, dummy_value) ==\
                         pyt.approx(exp_source[f].get(t, dummy_value))
+
+        class TestPlot:
+            """
+            very bare-bones checks that the .plot function at least runs
+            since the plot consists mostly of PatchCollections we can't really
+            test the plot itself
+            """
+
+            def test_basic(self):
+                df = pd.DataFrame({
+                    MEAN: [1, 2, 1, 2],
+                    'pre': ['a', 'a', 'b', 'b'],
+                    'post': ['a', 'b', 'a', 'b']})
+                f, a = CirclePlot().plot(df)
+                assert isinstance(f, plt.Figure)
+                assert isinstance(a, plt.Axes)
+                plt.clf()
+
+            def test_dict_prepost(self):
+                df = pd.DataFrame({
+                    MEAN: [1, 2, 1, 2],
+                    'pre': [{'m': 'a', 'l': 1},
+                            {'m': 'a', 'l': 1},
+                            {'m': 'b', 'l': 2},
+                            {'m': 'b', 'l': 2}],
+                    'post': [{'m': 'a', 'l': 1},
+                             {'m': 'b', 'l': 2},
+                             {'m': 'a', 'l': 1},
+                             {'m': 'b', 'l': 2}]})
+                f, a = CirclePlot().plot(df)
+
+                assert isinstance(f, plt.Figure)
+                assert isinstance(a, plt.Axes)
+                plt.clf()
+
+            def test_asymmetric(self):
+                df = pd.DataFrame({
+                    MEAN: [1, 2],
+                    'pre': ['a', 'b'],
+                    'post': ['c', 'c']})
+                f, a = CirclePlot().plot(df)
+
+                assert isinstance(f, plt.Figure)
+                assert isinstance(a, plt.Axes)
+                plt.clf()
+
+            def test_nan(self):
+                df = pd.DataFrame({
+                    'pre: mtype': ['a', 'a', 'b', 'b'],
+                    'post: mtype': ['a', 'b', 'a', 'b'],
+                    MEAN: [1, 2, 1, np.nan]})
+                f, a = CirclePlot().plot(df)
+
+                assert isinstance(f, plt.Figure)
+                assert isinstance(a, plt.Axes)
+                plt.clf()
