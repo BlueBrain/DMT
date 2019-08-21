@@ -224,10 +224,21 @@ class CirclePlot:
         """
         tot_conn = np.nansum(pivot_table.values)
         group_angles = {}
+        groups = sorted(set(pivot_table.index) | set(pivot_table.columns))
         angle = 0
-        for grp in pivot_table.index:
-            size =\
-                (pivot_table.loc[grp, :].sum() + pivot_table.loc[:, grp].sum())
+        for grp in groups:
+            try:
+                size_from = np.nansum(pivot_table.loc[grp, :])
+            except KeyError:
+                size_from = 0
+
+            try:
+                size_to = np.nansum(pivot_table.loc[:, grp])
+            except KeyError:
+                size_to = 0
+
+            size = size_from + size_to
+
             angle_size = np.pi * size / tot_conn
             space = self.space_between * 0.5
             group_angles[grp] = (angle + space, angle + angle_size - space)
@@ -255,34 +266,50 @@ class CirclePlot:
         """
         source_angles = {ind: {} for ind in pivot_table.index}
         dest_angles = {ind: {} for ind in pivot_table.index}
-        for i, ind in enumerate(pivot_table.index):
-            start_angle, end_angle = group_angles[ind]
+        groups = sorted(group_angles.keys())
+        for i, grp in enumerate(groups):
+            start_angle, end_angle = group_angles[grp]
             group_angle_size = end_angle - start_angle
             angle = start_angle
 
-            tot_conn = (np.nansum(pivot_table.loc[ind, :])
-                        + np.nansum(pivot_table.loc[:, ind]))
+            try:
+                tot_from = np.nansum(pivot_table.loc[grp, :])
+            except KeyError:
+                tot_from = 0
+
+            try:
+                tot_to = np.nansum(pivot_table.loc[:, grp])
+            except KeyError:
+                tot_to = 0
+
+            tot_conn = tot_from + tot_to
 
             from_order =\
-                list(pivot_table.index[i:]) + list(pivot_table.index[:i])
+                list(groups[i:]) + list(groups[:i])
             to_order =\
-                list(pivot_table.index[i+1:]) + list(pivot_table.index[:i+1])
+                list(groups[i+1:]) + list(groups[:i+1])
             from_order.reverse()
             to_order.reverse()
 
             for from_ in from_order:
-                angle_size = group_angle_size * pivot_table.loc[from_, ind]\
-                             / tot_conn
-                if not np.isnan(angle_size):
-                    dest_angles[from_][ind] = (angle + angle_size, angle)
-                    angle += angle_size
+                try:
+                    angle_size = group_angle_size * pivot_table.loc[from_, grp]\
+                                 / tot_conn
+                    if not np.isnan(angle_size):
+                        dest_angles[from_][grp] = (angle + angle_size, angle)
+                        angle += angle_size
+                except KeyError:
+                    pass
 
             for to in to_order:
-                angle_size = group_angle_size * pivot_table.loc[ind, to]\
-                             / tot_conn
-                if not np.isnan(angle_size):
-                    source_angles[ind][to] = (angle, angle + angle_size)
-                    angle += angle_size
+                try:
+                    angle_size = group_angle_size * pivot_table.loc[grp, to]\
+                                 / tot_conn
+                    if not np.isnan(angle_size):
+                        source_angles[grp][to] = (angle, angle + angle_size)
+                        angle += angle_size
+                except KeyError:
+                    pass
 
         return source_angles, dest_angles
 

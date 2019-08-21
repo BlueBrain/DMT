@@ -241,6 +241,22 @@ class TestCirclePlot:
             for f in ['a', 'b']:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
+        def test_group_angles_asymmetric(self):
+            pivot_table = pd.DataFrame({
+                MEAN: [1, 2],
+                'pre': ['a', 'b'],
+                'post': ['c', 'c']}).pivot_table(index='pre', columns='post',
+                                                 values=MEAN)
+            plotter = CirclePlot()
+            group_angles = plotter.group_angles(pivot_table)
+
+            exp_angles = {'a': (0, 1/3 * np.pi),
+                          'b': (1/3 * np.pi, 3/3 * np.pi),
+                          'c': (3/3 * np.pi, 6/3 * np.pi)}
+
+            for f in ['a', 'b']:
+                assert group_angles[f] == pyt.approx(exp_angles[f])
+
     class TestConnectionAngles:
 
         def test_connection_angles(self):
@@ -291,6 +307,32 @@ class TestCirclePlot:
             exp_dest = {'b': {'a': (1/4 * np.pi, 0)},
                         'a': {'a': (2/4 * np.pi, 1/4 * np.pi),
                               'b': (7/4 * np.pi, 5/4 * np.pi)}}
+
+            dummy_value = (0, 0)
+            for f in ['a', 'b']:
+                for t in ['a', 'b']:
+                    print('f=', f, 't=', t)
+                    assert dest_angles[f].get(t, dummy_value)\
+                        == pyt.approx(exp_dest[f].get(t, dummy_value))
+                    assert source_angles[f].get(t, dummy_value) ==\
+                        pyt.approx(exp_source[f].get(t, dummy_value))
+
+        def test_nonsymmetric_groups(self):
+            pivot_table = pd.DataFrame({
+                MEAN: [1, 2],
+                'pre': ['a', 'b'],
+                'post': ['c', 'c']}).pivot_table(index='pre', columns='post',
+                                                 values=MEAN)
+
+            plotter = CirclePlot()
+            source_angles, dest_angles = plotter.connection_angles(
+                pivot_table, plotter.group_angles(pivot_table))
+
+            exp_source = {'a': {'c': (0/3 * np.pi, 1/3 * np.pi)},
+                          'b': {'c': (1/3 * np.pi, 3/3 * np.pi)}}
+
+            exp_dest = {'a': {'c': (6/3 * np.pi, 5/3 * np.pi)},
+                        'b': {'c': (5/3 * np.pi, 3/3 * np.pi)}}
 
             dummy_value = (0, 0)
             for f in ['a', 'b']:
