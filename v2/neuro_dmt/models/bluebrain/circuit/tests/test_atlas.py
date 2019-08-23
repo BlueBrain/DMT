@@ -3,7 +3,8 @@ import numpy.testing as npt
 import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
 from neuro_dmt.models.bluebrain.circuit.atlas import CircuitAtlas
-from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE, COLUMN
+from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE,\
+    COLUMN, ABSOLUTE_DEPTH
 
 
 # TODO: test region X OR layer Y OR column Z
@@ -386,6 +387,22 @@ class Test_CircuitAtlas:
                                "[cell_density]L6_IPC").raw],
                           axis=0)[
                               self.atlas.get_region_mask("MOp").raw])
+
+        def test_absolute_depths(self):
+            expdepths = np.unique(-self.atlas.load_data("[PH]y").raw)
+            npt.assert_array_equal(self.adapted.depths(), expdepths)
+
+        def test_mask_for_depth(self):
+            atlas_y = -self.atlas.load_data("[PH]y").raw
+            posns = [(0, 25), (500, 700)]
+            exp_masks = np.logical_and(
+                np.any([np.logical_and(atlas_y >= p[0], atlas_y < p[1])
+                        for p in posns], axis=0),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+            npt.assert_array_equal(self.adapted.mask_for_parameters(
+                {ABSOLUTE_DEPTH: posns}),
+                                   exp_masks)
 
     # TODO: test behavior when provided PW-style brain region
     class Test_2019_S1:

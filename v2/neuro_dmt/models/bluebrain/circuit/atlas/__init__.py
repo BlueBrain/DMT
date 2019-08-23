@@ -7,7 +7,7 @@ import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
 from neuro_dmt.terminology.parameters import MTYPE, SYN_CLASS, BRAIN_REGION,\
-    COLUMN, LAYER
+    COLUMN, LAYER, ABSOLUTE_DEPTH
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -217,6 +217,11 @@ class _AtlasMasks:
         self._column_mask = _ColumnMask(atlas)
         self.represented_region = represented_region
 
+    def _get_depth_volume(self):
+        phy = self._atlas.load_data("[PH]y").raw
+        top = self._atlas.load_data("[PH]1").raw[..., 1]
+        return top - phy
+
     def get(self, parameters):
         """get the mask for parameters"""
         masks = [self._atlas.load_data("brain_regions").raw > 0]
@@ -238,6 +243,14 @@ class _AtlasMasks:
                 [self._column_mask.get(column)
                  for column in _list_if_not_list(parameters[COLUMN])], axis=0)
             masks.append(column_mask)
+
+        if ABSOLUTE_DEPTH in parameters:
+            depths = self._get_depth_volume()
+            depth_mask = np.any(
+                [np.logical_and(depths >= d[0], depths < d[1])
+                 for d in _list_if_not_list(parameters[ABSOLUTE_DEPTH])],
+                axis=0)
+            masks.append(depth_mask)
 
         if self.represented_region is not None:
             masks.append(self.represented_region)
@@ -374,7 +387,7 @@ class _CellDensity:
     def no_cell_density(self, parameters):
         """no density data in this atlas"""
         warn(Warning("{} atlas has no cell density, returning NaN"
-                     .format(self)))
+                     .format(self._atlas)))
         return np.nan
 
     def has_density(self, parameters):
@@ -436,3 +449,7 @@ class CircuitAtlas():
         if np.all(np.isnan(density_volume)):
             return np.nan
         return density_volume[self.mask_for_parameters(parameters)]
+
+    def depths(self):
+        depth = self._masks._get_depth_volume()
+        return np.unique(depth[np.isfinite(depth)])
