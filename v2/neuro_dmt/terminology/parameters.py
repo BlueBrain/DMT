@@ -1,0 +1,8 @@
+LAYER = 'layer'
+MTYPE = 'mtype'
+SYN_CLASS = 'sclass'
+MORPH_CLASS = 'mclass'
+COLUMN = 'column'
+BRAIN_REGION = 'brain region'
+PRESYNAPTIC = 'pre'
+POSTSYNAPTIC = 'post'
