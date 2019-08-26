@@ -466,6 +466,27 @@ class Test_CircuitAtlas:
                           axis=0)[
                               self.atlas.get_region_mask("SSCtx").raw])
 
+    class Test_2017_S1:
+
+        adapted = CircuitAtlas(
+            "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/r0/.atlas/"
+            "C63CB79F-392A-4873-9949-0D347682253A")
+
+        atlas = Atlas.open(
+            "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/r0/.atlas/"
+            "C63CB79F-392A-4873-9949-0D347682253A")
+
+        def test_absolute_depths(self):
+            with pyt.raises(NotImplementedError):
+                self.adapted.depths()
+
+        # TODO: resolve height/depth difference
+        def test_mask_for_depth(self):
+            with pyt.raises(NotImplementedError):
+                self.adapted.mask_for_parameters(
+                    {ABSOLUTE_DEPTH: (0, 25)})
+
+
     def test_gets_voxel_volume(self):
         adapted = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")

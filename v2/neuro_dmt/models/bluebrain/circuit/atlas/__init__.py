@@ -98,6 +98,10 @@ def is_paxinos_watson(atlas):
     return False
 
 
+def has_PHy(atlas):
+    return os.path.exists(os.path.join(atlas.dirpath, "[PH]y.nrrd"))
+
+
 class _LayerMask:
     """
     manages the functions for getting layer masks
@@ -206,6 +210,33 @@ class _ColumnMask:
         return self._atlas.load_data("brain_regions").raw != 0
 
 
+class _DepthMask:
+
+    def __init__(self, atlas):
+        self._atlas = atlas
+        if has_PHy(atlas):
+            self.get_depth = self._get_PHy_depth
+        else:
+            self.get_depth = self._no_PHy
+
+    def _get_PHy_depth(self):
+        phy = self._atlas.load_data("[PH]y").raw
+        top = self._atlas.load_data("[PH]1").raw[..., 1]
+        return top - phy
+
+    def _no_PHy(self):
+        raise NotImplementedError("this atlas does not have depth data,\n"
+                                  "try height instead")
+
+    def get(self, absolute_depth):
+        depths = self.get_depth()
+        depth_mask = np.any(
+            [np.logical_and(depths >= d[0], depths < d[1])
+             for d in _list_if_not_list(absolute_depth)],
+            axis=0)
+        return depth_mask
+
+
 class _AtlasMasks:
     """helper class for CircuitAtlas,
     handles getting the mask for a parameters"""
@@ -215,12 +246,8 @@ class _AtlasMasks:
         self._layer_mask = _LayerMask(atlas)
         self._region_mask = _RegionMask(atlas)
         self._column_mask = _ColumnMask(atlas)
+        self._depth_mask = _DepthMask(atlas)
         self.represented_region = represented_region
-
-    def _get_depth_volume(self):
-        phy = self._atlas.load_data("[PH]y").raw
-        top = self._atlas.load_data("[PH]1").raw[..., 1]
-        return top - phy
 
     def get(self, parameters):
         """get the mask for parameters"""
@@ -229,7 +256,8 @@ class _AtlasMasks:
         if BRAIN_REGION in parameters:
             region_mask = np.any(
                 [self._region_mask.get(region)
-                 for region in _list_if_not_list(parameters[BRAIN_REGION])], axis=0)
+                 for region in _list_if_not_list(parameters[BRAIN_REGION])],
+                axis=0)
             masks.append(region_mask)
 
         if LAYER in parameters:
@@ -245,17 +273,19 @@ class _AtlasMasks:
             masks.append(column_mask)
 
         if ABSOLUTE_DEPTH in parameters:
-            depths = self._get_depth_volume()
-            depth_mask = np.any(
-                [np.logical_and(depths >= d[0], depths < d[1])
-                 for d in _list_if_not_list(parameters[ABSOLUTE_DEPTH])],
-                axis=0)
+            depth_mask = self._depth_mask.get(parameters[ABSOLUTE_DEPTH])
             masks.append(depth_mask)
 
         if self.represented_region is not None:
             masks.append(self.represented_region)
 
         return np.all(masks, axis=0)
+
+    # TODO: depths stuff is not really a subset of Masks
+    #       but masks does not (should not?) have access to CircuitAtlas
+    #       instance, so we can't leave it there
+    def get_depth_volume(self):
+        return self._depth_mask.get_depth()
 
 
 class _TotalDensity:
@@ -399,7 +429,7 @@ class _CellDensity:
                              _list_if_not_list(self._mtype_filename.get(mtype))]
             if SYN_CLASS in parameters:
                 warn(Warning(
-                    'mtype keyword overrides sclass in cell_density'
+                    'mtype keyword overrides sclass in {}.cell_density'
                     .format(self)))
 
         elif SYN_CLASS in parameters:
@@ -451,5 +481,5 @@ class CircuitAtlas():
         return density_volume[self.mask_for_parameters(parameters)]
 
     def depths(self):
-        depth = self._masks._get_depth_volume()
+        depth = self._masks.get_depth_volume()
         return np.unique(depth[np.isfinite(depth)])
