@@ -27,6 +27,15 @@ def get_label(something):
         "unavailable_{}".format(
             something.__class__.__name__))
 
+def get_variables(phenomenon):
+    """
+    Get measured variables associated with a phenomenon.
+    """
+    try:
+        return phenomenon.variables
+    except AttributeError:
+        return phenomenon.get("variables", [])
+
 
 class MissingObservationParameter(Exception):
     """
@@ -162,10 +171,10 @@ class Observation(
         measure of the phenomenon, ['mean', 'error', 'sample_size']
         make more sense.
         """
-        return [get_label(self.phenomenon)]
+        return get_variables(self.phenomenon)
 
     @staticmethod
-    def _check_variables(data_value, variable_list):
+    def _check_columns(data_value, variable_list):
         """
         Check that the list of variables in variable_list is
         provided by data in data_value
@@ -214,14 +223,14 @@ class Observation(
         data_value :: Either a list of dicts or a pandas dataframe
         """
         try:
-            self._check_variables(data_value, self.parameters)
+            self._check_columns(data_value, self.parameters)
         except ValueError as error:
             raise MissingObservationParameter(*error.args)
         finally:
             pass
 
         try:
-            self._check_variables(data_value, [get_label(self.phenomenon)])
+            self._check_columns(data_value, get_variables(self.phenomenon))
         except ValueError as error:
             raise MissingObservedVariable(*error.args)
         finally:
