@@ -149,11 +149,6 @@ class Interface(
                          \t{}.__implementation_guide__
                          """.format(cls.__name__)
                     raise Exception(suggestion.formatted())
-                    # raise Exception(
-                    #      """
-                    #      Unimplemented methods required by Interface {}.
-                    #      You may resolve you
-                    #      """.format(cls))
                
           cls.__implementation_registry__\
              .append(type_implementation)

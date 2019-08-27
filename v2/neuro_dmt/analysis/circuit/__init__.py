@@ -156,7 +156,7 @@ class BrainCircuitAnalysis(
         Get a report for the given `circuit_model`.
         """
         return Report(
-            figures= self.get_figures(circuit_model=circuit_model),
+            figures=self.get_figures(circuit_model=circuit_model),
             introduction="{}, measured by layer\n{}.".format(
                 self.phenomenon.name,
                 self.phenomenon.description),

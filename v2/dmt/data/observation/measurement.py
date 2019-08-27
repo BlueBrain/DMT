@@ -116,7 +116,7 @@ class SummaryMeasurement(Measurement):
 
     def samples(self, size=20):
         """
-        Generate 20 samples for each combination of parameters in this
+        Generate `<size>` samples for each combination of parameters in this
         `SummaryMeasurement`.
         """
         def sample(row):
