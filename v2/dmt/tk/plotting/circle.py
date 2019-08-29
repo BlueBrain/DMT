@@ -3,8 +3,9 @@ import matplotlib
 import matplotlib.pyplot as plt
 from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.plotting.utils import make_hashable
+from dmt.tk.plotting import golden_figure
 
-
+# TODO: change format of 'pre', 'post' columns, expect multiindexed columns
 # TODO: test that rotation works
 class CircleTool:
     """a helper for drawing circles, circle segments, and arcs"""
@@ -176,9 +177,6 @@ class CirclePlot:
         self.space_between = space_between
         self.circle = CircleTool(1.0)
 
-    # TODO: test case where precol and postcol don't have same values
-    # TODO: test case where pre and post are just strings instead of
-    #       dicts
     def _prepare_plot(self, df):
         """
         convert the data into a pivot table for plotting
@@ -434,8 +432,8 @@ class CirclePlot:
             figure, axis with CirclePlot
         """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
         pivot_table = self._prepare_plot(df)
-
-        ax = plt.axes()
+        sz = len(pivot_table.index)*4
+        fig, ax = golden_figure(width=sz, height=sz)
         # TODO: adapt limits to text
         ax.set_xlim(left=-1.3, right=+1.3)
         ax.set_ylim(bottom=-1.3, top=+1.3)
@@ -452,7 +450,12 @@ class CirclePlot:
         # awkward to re-calculate this!
         group_angles = {t: np.mean(a)
                         for t, a in self.group_angles(pivot_table).items()}
+        oldfont = plt.rcParams.get('font.size')
+        plt.rcParams.update({'font.size': sz})
         textcirc = CircleTool(self.circle.radius * 1.2)
         for t, a in group_angles.items():
-            plt.text(*textcirc.angles_to_points(group_angles[t]), t)
-        return plt.gcf(), ax
+            print(t, a)
+            plt.text(*textcirc.angles_to_points(a), t,
+                     rotation=90-a*(180/np.pi), rotation_mode="anchor")
+        plt.rcParams.update({"font.size": oldfont})
+        return fig, ax
