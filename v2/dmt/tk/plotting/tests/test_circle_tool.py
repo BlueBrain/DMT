@@ -240,6 +240,38 @@ class TestCirclePlot:
             for f in ['a', 'b']:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
+        def test_group_angles_space(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, 2]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+            plotter = CirclePlot(space_between=np.pi / 4)
+            group_angles = plotter.group_angles(pivot_table)
+            unit_size = 1.5 / 12
+            exp_angles = {'a': (np.pi/8, (1/8 + 5 * unit_size) * np.pi),
+                          'b': ((5 * unit_size + 3/8) * np.pi,
+                                (2 - 1/8) * np.pi)}
+
+            for f in ['a', 'b']:
+                assert group_angles[f] == pyt.approx(exp_angles[f])
+
+        def test_overlarge_space_between(self):
+            pivot_table = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'c', 'g'],
+                'post: mtype': ['a', 'b', 'a', 'd'],
+                MEAN: [1, 2, 1, 2]})\
+                            .pivot_table(index='pre: mtype',
+                                         columns='post: mtype',
+                                         values=MEAN)
+            with pyt.raises(ValueError):
+                CirclePlot(space_between=np.pi)
+
+            with pyt.raises(ValueError):
+                CirclePlot(space_between=np.pi/2).group_angles(pivot_table)
+
     class TestConnectionAngles:
 
         def test_connection_angles(self):

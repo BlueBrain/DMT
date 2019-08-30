@@ -174,6 +174,11 @@ class CirclePlot:
         Arguments:
            space_between : the space to leave between segments, in radians
         """
+        if space_between < 0 or space_between >= np.pi:
+            raise ValueError("cannot have np.pi or greater space_between, "
+                             "there wouldn't be any space left for the actual "
+                             "plot.")
+
         self.space_between = space_between
         self.circle = CircleTool(1.0)
 
@@ -224,6 +229,16 @@ class CirclePlot:
         group_angles = {}
         groups = sorted(set(pivot_table.index) | set(pivot_table.columns))
         angle = 0
+        occupied_space = self.space_between * len(groups)
+
+        # TODO: better to warn and reduce size?
+        if occupied_space >= 2 * np.pi:
+            raise ValueError("with {} groups, space_between cannot be >="
+                             " {}".format(len(groups),
+                                          2 * np.pi / len(groups)))
+
+        available_space = 2 * np.pi - occupied_space
+        aspace_div2 = available_space * 0.5
         for grp in groups:
             try:
                 size_from = np.nansum(pivot_table.loc[grp, :])
@@ -236,11 +251,13 @@ class CirclePlot:
                 size_to = 0
 
             size = size_from + size_to
+            angle_size = aspace_div2 * size / tot_conn
 
-            angle_size = np.pi * size / tot_conn
             space = self.space_between * 0.5
-            group_angles[grp] = (angle + space, angle + angle_size - space)
-            angle += angle_size
+            start = angle + space
+            end = start + angle_size
+            group_angles[grp] = (start, end)
+            angle = end + space
         return group_angles
 
     def connection_angles(self, pivot_table, group_angles):
