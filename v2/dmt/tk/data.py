@@ -43,7 +43,10 @@ def parameters_to_df(parameters, rdepth=0):
     newdfdict = {}
     for i, l1 in enumerate(lv1):
         if len(lv2[i]) == 0:
-            newdfdict[l1] = base_df[l1].values
+            if isinstance(l1, tuple):
+                newdfdict[l1 + ('',)] = base_df[l1].values
+            else:
+                newdfdict[(l1, '')] = base_df[l1].values
         for j, l2 in enumerate(lv2[i]):
             if isinstance(l1, tuple):
                 key = l1 + (l2, )
@@ -61,5 +64,4 @@ def parameters_to_df(parameters, rdepth=0):
                     values.append(value if l2 == 0 else None)
 
             newdfdict[key] = values
-
     return pd.DataFrame(parameters_to_df(newdfdict, rdepth+1))

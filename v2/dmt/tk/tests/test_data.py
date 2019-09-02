@@ -79,7 +79,7 @@ def test_columns_different_levels():
     testdict = {'b': [{'a': 1}],
                 'c': ['d']}
     expdf = pd.DataFrame({('b', 'a'): [1],
-                          'c': ['d']})
+                          ('c', ''): ['d']})
     frame = parameters_to_df(testdict)
     pdt.assert_frame_equal(expdf, frame)
 
@@ -96,13 +96,26 @@ def test_deeply_nested():
     testdict = {'param': [{'value': [1, 2],
                            'exclude': {'value': 2, 'exclude': [4, 5, 6]}}]}
 
-    expdf = pd.DataFrame({('param', 'value', 0): [1],
-                          ('param', 'value', 1): [2],
-                          ('param', 'exclude', 'value'): [2],
+    expdf = pd.DataFrame({('param', 'value', 0, ''): [1],
+                          ('param', 'value', 1, ''): [2],
+                          ('param', 'exclude', 'value', ''): [2],
                           ('param', 'exclude', 'exclude', 0): [4],
                           ('param', 'exclude', 'exclude', 1): [5],
                           ('param', 'exclude', 'exclude', 2): [6]})
     frame = parameters_to_df(testdict)
+    print(expdf, "\n\n", frame)
+    pdt.assert_frame_equal(expdf, frame)
+
+
+def test_many_different_levels():
+    testdict = {'a': [{'b': [1, 2]}],
+                'c': [3]}
+    expdf = pd.DataFrame({
+        ('a', 'b', 0): [1],
+        ('a', 'b', 1): [2],
+        ('c', '', ''): [3]})
+    frame = parameters_to_df(testdict)
+    print(expdf, "\n\n", frame)
     pdt.assert_frame_equal(expdf, frame)
 
 
