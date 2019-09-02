@@ -1,4 +1,4 @@
-import pytest as pyt.
+import pytest as pyt
 import pandas as pd
 from pandas import testing as pdt
 from dmt.tk.data import parameters_to_df
@@ -44,6 +44,42 @@ def test_dict_entries():
                           ('pre', 'b'): [0, 1, 2, 0, 1, 2, 0, 1, 2],
                           ('post', 'c'): [0, 0, 0, 1, 1, 1, 2, 2, 2],
                           ('post', 'd'): [0, 1, 2, 0, 1, 2, 0, 1, 2]})
+    frame = parameters_to_df(testdict)
+    pdt.assert_frame_equal(expdf, frame)
+
+
+def test_list_and_str():
+    testdict = {'a': [['c', 'd'], 'esr']}
+    expdf = pd.DataFrame({('a', 0): ['c', 'esr'],
+                          ('a', 1): ['d', None]})
+    frame = parameters_to_df(testdict)
+    pdt.assert_frame_equal(expdf, frame)
+
+
+def test_dict_and_str():
+    testdict = {'pre': [{'a': 'b'}, 'string']}
+    expdf = pd.DataFrame({('pre', 0): [None, 'string'],
+                          ('pre', 'a'): ['b', None]})
+    frame = parameters_to_df(testdict)
+    print(frame)
+    pdt.assert_frame_equal(expdf, frame)
+
+
+def test_dict_and_list():
+    testdict = {'b': [{'a': 10}, [1, 2, 3]]}
+    expdf = pd.DataFrame({('b', 'a'): [10, None],
+                          ('b', 0): [None, 1],
+                          ('b', 1): [None, 2],
+                          ('b', 2): [None, 3]})
+    frame = parameters_to_df(testdict)
+    pdt.assert_frame_equal(expdf, frame)
+
+
+def test_columns_different_levels():
+    testdict = {'b': [{'a': 1}],
+                'c': ['d']}
+    expdf = pd.DataFrame({('b', 'a'): [1],
+                          'c': ['d']})
     frame = parameters_to_df(testdict)
     pdt.assert_frame_equal(expdf, frame)
 
