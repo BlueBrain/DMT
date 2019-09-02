@@ -26,7 +26,17 @@ class Measurement(
             sample_size):
         """
         Get a pandas.DataFrame that represents the parameters
-        of a sample of measurements.
+        to make a sample of measurements.
+
+        Arguments
+        ------------
+        parameters_values :: A tuple representing a (data-frame) row.
+        sample_size :: int
+
+        Result
+        ------------
+        A dataframe that repeats `parameters_values` `sample_size`
+        number of times.
         """
         if not isinstance(parameters_values, tuple):
             parameters_values = tuple([parameters_values])
