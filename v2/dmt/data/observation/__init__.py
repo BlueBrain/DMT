@@ -34,7 +34,13 @@ def get_variables(phenomenon):
     try:
         return phenomenon.variables
     except AttributeError:
-        return phenomenon.get("variables", [])
+        try:
+            return phenomenon["variables"]
+        except TypeError:
+            return [get_label(phenomenon)]
+        except KeyError:
+            return [get_label(phenomenon)]
+    return None
 
 
 class MissingObservationParameter(Exception):
@@ -195,8 +201,9 @@ class Observation(
                 if p not in data_value.columns:
                     raise ValueError(
                         """
-                        '{}' not provided by data-frame columns {}
-                        """.format(p, data_value.columns))
+                        '{}' not provided by data-frame columns {}.
+                        Required columns are {}.
+                        """.format(p, data_value.columns, variable_list))
             return True
 
         raise TypeError(

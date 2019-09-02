@@ -13,6 +13,7 @@ class Measurement(
     """
     __metaclass_base__ = True
 
+
     @lazyproperty
     def parameters_list(self):
         """
@@ -51,7 +52,12 @@ class Measurement(
         This `Measurement`, but with summary statistics, instead of all
         the samples.
         """
-        return self.get_summary_measurement(
+        type_summary_measurement = type(
+            "{}SummaryMeasurement".format(self.__class__.__name__),
+            (SummaryMeasurement,),
+            {"phenomenon": self.phenomenon,
+             "parameters": self.parameters})
+        return type_summary_measurement(
             object_of_observation=self.object_of_observation,
             procedure=self.procedure,
             label=self.label,

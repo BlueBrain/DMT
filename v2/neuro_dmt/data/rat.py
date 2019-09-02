@@ -13,19 +13,6 @@ from dmt.data.observation import\
 from neuro_dmt import data
 
 
-class ByLayerCellDensitySummaryMeasurement(
-        SummaryMeasurement):
-    """
-    Measurement of cell density, by (cortical) layer.
-    """
-    phenomenon = Phenomenon(
-        "Cell Density",
-        description="Count of cells per unit volume",
-        group="Composition")
-    parameters = OrderedDict(
-        layer="Cortical layer where to count the cells in.")
-
-
 class ByLayerCellDensityMeasurement(
         Measurement):
     """

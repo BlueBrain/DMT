@@ -10,7 +10,7 @@ class Figure(WithFields):
     """
     graphic = Field(
         """
-        A PDF, PNG, or any other format.
+        A matplotlib figure, or PDF, PNG...
         """)
     caption = Field(
         """
@@ -18,9 +18,9 @@ class Figure(WithFields):
         """)
 
     def __init__(self,
-                 figure_graphic,
-                 caption="No caption provided",
-                 *args, **kwargs):
+            figure_graphic,
+            caption="No caption provided",
+            *args, **kwargs):
         """
         Initialize with graphic as an argument.
         `WithField` provides an `__init__` method that accepts initializer
@@ -41,4 +41,8 @@ class Figure(WithFields):
         """
         Save the figure.
         """
-        return self.graphic.savefig(path, dpi=dpi)
+        try:
+            return self.graphic.savefig(path, dpi=dpi)
+        except AttributeError:
+            raise TypeError(
+                "Figure type {} not supported".format(figure.__class__))
