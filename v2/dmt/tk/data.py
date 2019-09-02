@@ -13,7 +13,11 @@ def parameters_to_df(parameters):
     lv2 = [[] for c in lv1]
     for c, col in enumerate(lv1):
         for i, v in enumerate(base_df[col]):
-            if isinstance(v, Iterable) and not isinstance(v, str):
+            if isinstance(v, Mapping):
+                for k in v.keys():
+                    if k not in lv2[c]:
+                        lv2[c].append(k)
+            elif isinstance(v, Iterable) and not isinstance(v, str):
                 for n, _ in enumerate(v):
                     if n not in lv2[c]:
                         lv2[c].append(n)
@@ -28,7 +32,7 @@ def parameters_to_df(parameters):
             for value in base_df[l1]:
                 try:
                     values.append(value[l2])
-                except IndexError:
+                except (IndexError, KeyError):
                     values.append(None)
                 except TypeError:
                     values.append(value if j == 0 else None)
