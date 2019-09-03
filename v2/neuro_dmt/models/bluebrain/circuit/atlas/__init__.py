@@ -6,8 +6,9 @@ import numpy as np
 import glob
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
+from voxcell import VoxcellError
 from neuro_dmt.terminology.parameters import MTYPE, SYN_CLASS, BRAIN_REGION,\
-    COLUMN, LAYER, ABSOLUTE_DEPTH
+    COLUMN, LAYER, ABSOLUTE_DEPTH, ABSOLUTE_HEIGHT
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -177,7 +178,6 @@ class _RegionMask():
     def BBA_ABI_verbatim(self, region):
         """simply request the region from the atlas if it conforms to
         the BBA naming conventions"""
-        print("verb")
         return self._atlas.get_region_mask(region).raw
 
     def Paxinos_regions(self, ABI_region):
@@ -210,31 +210,49 @@ class _ColumnMask:
         return self._atlas.load_data("brain_regions").raw != 0
 
 
-class _DepthMask:
+def _get_PHy_depth(atlas):
+    try:
+        phy = atlas.load_data("[PH]y").raw
+        top = atlas.load_data("[PH]1").raw[..., 1]
+    except VoxcellError:
+        raise NotImplementedError("No depth data available for this atlas {}"
+                                  .format(atlas.dirpath))
+    return top - phy
+
+
+def _get_PHy_height(atlas):
+    try:
+        phy = atlas.load_data("[PH]y").raw
+        bot = atlas.load_data("[PH]6").raw[..., 0]
+        return phy - bot
+    except VoxcellError:
+        return atlas.load_data("distance").raw
+
+
+class _PrincipalAxisPositionMask:
 
     def __init__(self, atlas):
         self._atlas = atlas
-        if has_PHy(atlas):
-            self.get_depth = self._get_PHy_depth
+
+    def get_depth(self):
+        return _get_PHy_depth(self._atlas)
+
+    def get_height(self):
+        return _get_PHy_height(self._atlas)
+
+    def get(self, absolute_depth=None, absolute_height=None):
+        if absolute_depth is not None and absolute_height is not None:
+            raise RuntimeError("cannot provide both depth and height")
+        elif absolute_depth is not None:
+            vol = self.get_depth()
+            value = absolute_depth
+        elif absolute_height is not None:
+            vol = self.get_height()
+            value = absolute_height
         else:
-            self.get_depth = self._no_PHy
-
-    def _get_PHy_depth(self):
-        phy = self._atlas.load_data("[PH]y").raw
-        top = self._atlas.load_data("[PH]1").raw[..., 1]
-        return top - phy
-
-    def _no_PHy(self):
-        raise NotImplementedError("this atlas does not have depth data,\n"
-                                  "try height instead")
-
-    def get(self, absolute_depth):
-        depths = self.get_depth()
-        depth_mask = np.any(
-            [np.logical_and(depths >= d[0], depths < d[1])
-             for d in _list_if_not_list(absolute_depth)],
-            axis=0)
-        return depth_mask
+            raise RuntimeError("asked for mask with no parameters")
+        return (np.logical_and(vol >= value[0], vol < value[1])
+                if isinstance(value, tuple) else vol == value)
 
 
 class _AtlasMasks:
@@ -246,7 +264,7 @@ class _AtlasMasks:
         self._layer_mask = _LayerMask(atlas)
         self._region_mask = _RegionMask(atlas)
         self._column_mask = _ColumnMask(atlas)
-        self._depth_mask = _DepthMask(atlas)
+        self._pa_position_mask = _PrincipalAxisPositionMask(atlas)
         self.represented_region = represented_region
 
     def get(self, parameters):
@@ -273,8 +291,20 @@ class _AtlasMasks:
             masks.append(column_mask)
 
         if ABSOLUTE_DEPTH in parameters:
-            depth_mask = self._depth_mask.get(parameters[ABSOLUTE_DEPTH])
+            depth_mask = np.any(
+                [self._pa_position_mask.get(
+                    absolute_depth=absd)
+                 for absd in _list_if_not_list(parameters[ABSOLUTE_DEPTH])],
+                axis=0)
             masks.append(depth_mask)
+
+        if ABSOLUTE_HEIGHT in parameters:
+            height_mask = np.any(
+                [self._pa_position_mask.get(
+                    absolute_height=absd)
+                 for absd in _list_if_not_list(parameters[ABSOLUTE_HEIGHT])],
+                axis=0)
+            masks.append(height_mask)
 
         if self.represented_region is not None:
             masks.append(self.represented_region)
@@ -285,7 +315,7 @@ class _AtlasMasks:
     #       but masks does not (should not?) have access to CircuitAtlas
     #       instance, so we can't leave it there
     def get_depth_volume(self):
-        return self._depth_mask.get_depth()
+        return self._pa_position_mask.get_depth()
 
 
 class _TotalDensity:
@@ -480,6 +510,17 @@ class CircuitAtlas():
             return np.nan
         return density_volume[self.mask_for_parameters(parameters)]
 
-    def depths(self):
-        depth = self._masks.get_depth_volume()
+    # TODO: methods like these might like some parameters too
+    def depths(self, parameters=None):
+        if parameters is None:
+            parameters = {}
+        depth = _get_PHy_depth(self._atlas)[
+            self.mask_for_parameters(parameters)]
         return np.unique(depth[np.isfinite(depth)])
+
+    def heights(self, parameters=None):
+        if parameters is None:
+            parameters = {}
+        height = _get_PHy_height(self._atlas)[
+            self.mask_for_parameters(parameters)]
+        return np.unique(height[np.isfinite(height)])

@@ -4,7 +4,7 @@ import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
 from neuro_dmt.models.bluebrain.circuit.atlas import CircuitAtlas
 from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE,\
-    COLUMN, ABSOLUTE_DEPTH
+    COLUMN, ABSOLUTE_DEPTH, ABSOLUTE_HEIGHT
 
 
 # TODO: test region X OR layer Y OR column Z
@@ -388,8 +388,10 @@ class Test_CircuitAtlas:
                           axis=0)[
                               self.atlas.get_region_mask("MOp").raw])
 
+        # TODO: how to handle multiple areas e.g. thalamus depth, etc.
         def test_absolute_depths(self):
             expdepths = np.unique(-self.atlas.load_data("[PH]y").raw)
+            expdepths = expdepths[np.isfinite(expdepths)]
             npt.assert_array_equal(self.adapted.depths(), expdepths)
 
         def test_mask_for_depth(self):
@@ -402,6 +404,41 @@ class Test_CircuitAtlas:
 
             npt.assert_array_equal(self.adapted.mask_for_parameters(
                 {ABSOLUTE_DEPTH: posns}),
+                                   exp_masks)
+            posns = [12.5, 50]
+            exp_masks = np.logical_and(
+                np.any([atlas_y == p for p in posns], axis=0),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+            npt.assert_array_equal(self.adapted.mask_for_parameters(
+                {ABSOLUTE_DEPTH: posns}),
+                                   exp_masks)
+
+        def test_absolute_heights(self):
+            expheights = np.unique(self.atlas.load_data("[PH]y").raw
+                                   - self.atlas.load_data("[PH]6").raw[..., 0])
+            expheights = expheights[np.isfinite(expheights)]
+            npt.assert_array_equal(self.adapted.heights(), expheights)
+
+        def test_mask_for_height(self):
+            atlas_y = self.atlas.load_data("[PH]y").raw\
+                      - self.atlas.load_data("[PH]6").raw[..., 0]
+            posns = [(0, 25), (500, 700)]
+            exp_masks = np.logical_and(
+                np.any([np.logical_and(atlas_y >= p[0], atlas_y < p[1])
+                        for p in posns], axis=0),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+            npt.assert_array_equal(self.adapted.mask_for_parameters(
+                {ABSOLUTE_HEIGHT: posns}),
+                                   exp_masks)
+            posns = [12.5, 50]
+            exp_masks = np.logical_and(
+                np.any([atlas_y == p for p in posns], axis=0),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+            npt.assert_array_equal(self.adapted.mask_for_parameters(
+                {ABSOLUTE_HEIGHT: posns}),
                                    exp_masks)
 
     # TODO: test behavior when provided PW-style brain region
@@ -466,6 +503,7 @@ class Test_CircuitAtlas:
                           axis=0)[
                               self.atlas.get_region_mask("SSCtx").raw])
 
+    # TODO: find and fix source of numpy RuntimeWarnings
     class Test_2017_S1:
 
         adapted = CircuitAtlas(
@@ -486,6 +524,22 @@ class Test_CircuitAtlas:
                 self.adapted.mask_for_parameters(
                     {ABSOLUTE_DEPTH: (0, 25)})
 
+        def test_absolute_heights(self):
+            expheights = np.unique(self.atlas.load_data("distance").raw)
+            expheights = expheights[np.isfinite(expheights)]
+            npt.assert_array_equal(self.adapted.heights(), expheights)
+
+        def test_mask_for_height(self):
+            atlas_y = self.atlas.load_data("distance").raw
+            posns = [(0, 25), (500, 700)]
+            exp_masks = np.logical_and(
+                np.any([np.logical_and(atlas_y >= p[0], atlas_y < p[1])
+                        for p in posns], axis=0),
+                self.atlas.load_data("brain_regions").raw != 0)
+
+            npt.assert_array_equal(self.adapted.mask_for_parameters(
+                {ABSOLUTE_HEIGHT: posns}),
+                                   exp_masks)
 
     def test_gets_voxel_volume(self):
         adapted = CircuitAtlas(
