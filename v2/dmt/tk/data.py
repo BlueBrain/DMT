@@ -2,13 +2,27 @@ import pandas as pd
 from collections import Mapping, Iterable
 
 
-def parameters_to_df(parameters, rdepth=0):
+def multilevel_dataframe(data_dict_s):
     """
-    given a set of parameter values return a dataframe with
-    multiindexed columns for dict-like parameter values, converting
-    any lists to tuples
+    given a dict representing a dataframe, convert complex
+    datatypes (lists, tuples, dicts) to subcolumns.
+    e.g. {'a': [{'b': 0, 'c': 1}]} to
+
+      a
+     b c
+     0 1
+
+    Arguments:
+        data_dict_s: a dict of lists or list of dicts representing data
+                     may have iterables and mappables as entries
+
+    Returns:
+        a dataframe with any mappables converted to subcolumns where
+        the subcolumn names correspond to the mappable keys, and where
+        any non-string and non-set iterables are converted to subcolumns
+        where the index is the column name.
     """
-    base_df = pd.DataFrame(parameters)
+    base_df = pd.DataFrame(data_dict_s)
 
     lv1 = list(base_df.columns)
     lv2 = [[] for c in lv1]
@@ -64,4 +78,4 @@ def parameters_to_df(parameters, rdepth=0):
                     values.append(value if l2 == 0 else None)
 
             newdfdict[key] = values
-    return pd.DataFrame(parameters_to_df(newdfdict, rdepth+1))
+    return pd.DataFrame(multilevel_dataframe(newdfdict))
