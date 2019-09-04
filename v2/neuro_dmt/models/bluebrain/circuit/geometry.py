@@ -176,9 +176,9 @@ def random_location(box, n=None, dim=3):
     return p0 + r * (p1 - p0) 
 
 def collect_sample(measurement,
-                   region_to_explore,
-                   sampled_box_shape=np.array([25.0, 25.0, 25.0]),
-                   sample_size=100):
+            region_to_explore,
+            sampled_box_shape=np.array([25.0, 25.0, 25.0]),
+            sample_size=100):
     """Collect a sample of a spatial measurement in a given region. A spatial
     measurement measures a spatial phenomenon for a given spatial region. To
     collect a sample for a measurement, start with a sample of spatial regions,

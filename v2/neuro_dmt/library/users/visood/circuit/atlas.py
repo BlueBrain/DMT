@@ -176,6 +176,11 @@ class BlueBrainCircuitAtlas(WithFields):
             id for acronym in self.get_region_acronyms(regions, layers)
             for id in self.hierarchy.collect("acronym", acronym, "id")}
 
+    def get_region_mask(self, region):
+        """
+        Voxeldata as raw 3D array, non-nan only at voxels in `region`.
+        """
+        return self.atlas.get_region_mask(region)
 
     def get_random_position(self,
             region=None,
