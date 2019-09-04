@@ -9,7 +9,7 @@ from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk import collections
 from neuro_dmt.utils.geometry import Interval
 
-class CircuitAtlas(WithFields):
+class BlueBrainCircuitAtlas(WithFields):
     """
     Helps with `voxcell.nexus.voxelbrain.Atlas` used to analyze circuits.
     """
