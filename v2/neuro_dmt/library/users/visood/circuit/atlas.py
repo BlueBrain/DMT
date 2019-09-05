@@ -203,7 +203,7 @@ class BlueBrainCircuitAtlas(WithFields):
             raise NotImplementedError(
                 "get_random_position(...) at a given height.")
 
-        atlas_ids = self.get_atlas_ids(region, layers)
+        atlas_ids = self.get_ids(region, layers)
         if self.voxel_data.count(atlas_ids) == 0:
             return None
 

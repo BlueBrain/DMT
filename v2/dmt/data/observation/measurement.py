@@ -13,7 +13,6 @@ class Measurement(
     """
     __metaclass_base__ = True
 
-
     @lazyproperty
     def parameters_list(self):
         """
@@ -21,7 +20,7 @@ class Measurement(
         """
         return list(self.parameters.keys())
 
-    def get_sample_parameters(self,
+    def _get_sample_parameters(self,
             parameters_values,
             sample_size):
         """
@@ -146,7 +145,7 @@ class SummaryMeasurement(Measurement):
 
         return pandas\
             .concat([
-                self.get_sample_parameters(
+                self._get_sample_parameters(
                     index_values, size)\
                 .assign(**{
                     self.phenomenon.label: sample(row)})
