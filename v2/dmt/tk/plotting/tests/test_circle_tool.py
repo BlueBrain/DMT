@@ -117,7 +117,7 @@ class TestCirclePlot:
                 MEAN: [1, 2, 1, 2],
                 'pre': ['a', 'a', 'b', 'b'],
                 'post': ['a', 'b', 'a', 'b']})
-            table = CirclePlot()._prepare_plot(df)
+            table, grps = CirclePlot()._prepare_plot(df)
             pd.testing.assert_frame_equal(
                 table,
                 df.pivot_table(index='pre', columns='post',
@@ -193,29 +193,29 @@ class TestCirclePlot:
 
         def test_group_angles(self):
             pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                ('pre', 'mtype'): ['a', 'a', 'b', 'b'],
+                ('post', 'mtype'): ['a', 'b', 'a', 'b'],
+                (MEAN, ''): [1, 2, 1, 2]})\
+                            .pivot_table(index=[('pre', 'mtype')],
+                                         columns=[('post', 'mtype')],
+                                         values=[(MEAN, '')])
             plotter = CirclePlot()
             group_angles = plotter.group_angles(pivot_table)
 
             exp_angles = {'a': (0, 5/6 * np.pi),
                           'b': (5/6 * np.pi, 12/6 * np.pi)}
-
+            print(pivot_table)
             for f in ['a', 'b']:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_NaN(self):
             pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, np.nan]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                ('pre', 'mtype'): ['a', 'a', 'b', 'b'],
+                ('post', 'mtype'): ['a', 'b', 'a', 'b'],
+                (MEAN, ''): [1, 2, 1, np.nan]})\
+                            .pivot_table(index=[('pre', 'mtype')],
+                                         columns=[('post', 'mtype')],
+                                         values=[(MEAN, '')])
             plotter = CirclePlot()
             group_angles = plotter.group_angles(pivot_table)
 
@@ -243,12 +243,12 @@ class TestCirclePlot:
 
         def test_group_angles_space(self):
             pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                ('pre', 'mtype'): ['a', 'a', 'b', 'b'],
+                ('post', 'mtype'): ['a', 'b', 'a', 'b'],
+                (MEAN, ''): [1, 2, 1, 2]})\
+                            .pivot_table(index=[('pre', 'mtype')],
+                                         columns=[('post', 'mtype')],
+                                         values=[(MEAN, '')])
             plotter = CirclePlot(space_between=np.pi / 4)
             group_angles = plotter.group_angles(pivot_table)
             unit_size = 1.5 / 12
@@ -261,12 +261,12 @@ class TestCirclePlot:
 
         def test_overlarge_space_between(self):
             pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'c', 'g'],
-                'post: mtype': ['a', 'b', 'a', 'd'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                ('pre', 'mtype'): ['a', 'a', 'c', 'g'],
+                ('post', 'mtype'): ['a', 'b', 'a', 'd'],
+                (MEAN, ''): [1, 2, 1, 2]})\
+                            .pivot_table(index=[('pre', 'mtype')],
+                                         columns=[('post', 'mtype')],
+                                         values=[(MEAN, '')])
             with pyt.raises(ValueError):
                 CirclePlot(space_between=np.pi)
 

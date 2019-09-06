@@ -228,7 +228,7 @@ class CirclePlot:
             tocol = non_data_columns[0]
             fromcol = non_data_columns[1]
             meancol = MEAN
-        print(df)
+
         pivot_table = df.pivot_table(columns=tocol, index=fromcol,
                                      values=meancol)
         return pivot_table
@@ -246,7 +246,9 @@ class CirclePlot:
         """
         tot_conn = np.nansum(pivot_table.values)
         group_angles = {}
-        groups = sorted(set(pivot_table.index) | set(pivot_table.columns))
+        groups = list(pivot_table.index) + [c for c in pivot_table.columns
+                                            if c not in pivot_table.index]
+        print(groups)
         angle = 0
         occupied_space = self.space_between * len(groups)
 
@@ -452,6 +454,9 @@ class CirclePlot:
     # TODO: test the actual plot method once its clear what
     #        its supposed to do
     # TODO: test how it handles NaNs
+    # TODO: groups must be extracted prior to pivoting table
+    #       when pivoting is moved to util, groups passed to it
+    #       and groups extracted
     def plot(self, df):
         """"
         create a CirclePlot of the data in df
