@@ -4,6 +4,7 @@ import numpy.testing as npt
 import pytest as pyt
 import matplotlib.pyplot as plt
 from dmt.tk.enum import MEAN, STD
+from dmt.tk.data import multilevel_dataframe
 from dmt.tk.plotting.circle import CircleTool, CirclePlot
 
 
@@ -112,7 +113,7 @@ class TestCirclePlot:
         # TODO: no MEAN
         # TODO: more than two non-data columns
         def test_basic(self):
-            df = pd.DataFrame({
+            df = multilevel_dataframe({
                 MEAN: [1, 2, 1, 2],
                 'pre': ['a', 'a', 'b', 'b'],
                 'post': ['a', 'b', 'a', 'b']})
@@ -123,7 +124,7 @@ class TestCirclePlot:
                                values=MEAN))
 
         def test_unhashable_columns(self):
-            df = pd.DataFrame({
+            df = multilevel_dataframe({
                 MEAN: [1, 2, 1, 2],
                 STD: [1, 2, 3, 1],
                 'pre': [{'mtype': 'a'}, {'mtype': 'a'},
@@ -134,15 +135,15 @@ class TestCirclePlot:
             pd.testing.assert_frame_equal(
                 table,
                 pd.DataFrame({
-                    'pre: mtype': ['a', 'a', 'b', 'b'],
-                    'post: mtype': ['a', 'b', 'a', 'b'],
-                    MEAN: [1, 2, 1, 2]})
-                .pivot_table(index='pre: mtype',
-                             columns='post: mtype',
-                             values=MEAN))
+                    ('pre', 'mtype'): ['a', 'a', 'b', 'b'],
+                    ('post', 'mtype'): ['a', 'b', 'a', 'b'],
+                    (MEAN, ''): [1, 2, 1, 2]})
+                .pivot_table(index=[('pre', 'mtype')],
+                             columns=[('post', 'mtype')],
+                             values=[(MEAN, '')]))
 
         def test_duplicate_pathways(self):
-            df = pd.DataFrame({
+            df = multilevel_dataframe({
                 MEAN: [1, 2, 1, 2, 3],
                 STD: [1, 2, 3, 1, 3],
                 'pre': [{'mtype': 'a'}, {'mtype': 'a'},
@@ -153,12 +154,12 @@ class TestCirclePlot:
                          {'mtype': 'b'}]})
             pd.testing.assert_frame_equal(
                 pd.DataFrame({
-                    'pre: mtype': ['a', 'a', 'b', 'b'],
-                    'post: mtype': ['a', 'b', 'a', 'b'],
-                    MEAN: [1, 2, 1, 2.5]})\
-                .pivot_table(index='pre: mtype',
-                             columns='post: mtype',
-                             values=MEAN),
+                    ('pre', 'mtype'): ['a', 'a', 'b', 'b'],
+                    ('post', 'mtype'): ['a', 'b', 'a', 'b'],
+                    (MEAN, ''): [1, 2, 1, 2.5]})
+                .pivot_table(index=[('pre', 'mtype')],
+                             columns=[('post', 'mtype')],
+                             values=[(MEAN, '')]),
                 CirclePlot()._prepare_plot(df))
 
         def test_columns_mismatch(self):

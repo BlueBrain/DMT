@@ -5,6 +5,7 @@ from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.plotting.utils import make_hashable
 from dmt.tk.plotting import golden_figure
 
+
 # TODO: change format of 'pre', 'post' columns, expect multiindexed columns
 # TODO: test that rotation works
 class CircleTool:
@@ -182,6 +183,8 @@ class CirclePlot:
         self.space_between = space_between
         self.circle = CircleTool(1.0)
 
+    # TODO: this should be moved so it can be a more general util
+    #       for constructing pivot tables from multiindexed frames
     def _prepare_plot(self, df):
         """
         convert the data into a pivot table for plotting
@@ -199,19 +202,35 @@ class CirclePlot:
         if MEAN not in df.columns:
             raise ValueError(
                 "dataframe must have {} column".format(MEAN))
+        columns = df.columns
+        multiindexed = False
+        if hasattr(columns, 'levels'):
+            # multiindexed
+            multiindexed=True
+            columns = df.columns.levels[0]
 
-        non_data_columns = [col for col in df.columns
+        non_data_columns = [col for col in columns
                             if col not in DATA_KEYS]
 
         if len(non_data_columns) != 2:
             raise ValueError(
-                "dataframe must have exactly two columns aside from {}"
+                "dataframe must have exactly two top-level"
+                " columns aside from {}"
                 .format(DATA_KEYS))
 
-        df, tocol = make_hashable(df, non_data_columns[0])
-        df, fromcol = make_hashable(df, non_data_columns[1])
+        if multiindexed:
+            tocol = [col for col in df.columns
+                     if col[0] == non_data_columns[0]]
+            fromcol = [col for col in df.columns
+                       if col[0] == non_data_columns[1]]
+            meancol = [c for c in df.columns if c[0] == MEAN]
+        else:
+            tocol = non_data_columns[0]
+            fromcol = non_data_columns[1]
+            meancol = MEAN
+        print(df)
         pivot_table = df.pivot_table(columns=tocol, index=fromcol,
-                                     values=MEAN)
+                                     values=meancol)
         return pivot_table
 
     def group_angles(self, pivot_table):
