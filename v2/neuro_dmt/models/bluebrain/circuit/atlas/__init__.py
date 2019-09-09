@@ -16,6 +16,7 @@ from neuro_dmt.terminology.parameters import\
     COLUMN, LAYER,\
     DEPTH, HEIGHT
 from neuro_dmt.terminology.atlas import translate
+from neuro_dmt.utils.geometry import Interval
 
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
@@ -271,15 +272,16 @@ class _LayerMask(WithFields):
         """
         return RegionLayerRepresentation(self.atlas)
 
-    def get(self, layer, raw=True):
+    def get(self, layers):
         """
         Get a region mask.
         """
-        voxel_data =\
-            self.atlas.get_region_mask(
+        return np.any(
+            [self.atlas.get_region_mask(
                 self.region_layer_representation.acronym(layer),
-                attr="acronym")
-        return voxel_data.raw if raw else voxel_data
+                attr="acronym").raw
+             for layer in layers],
+            axis=0)
 
     # def __init__(self, atlas):
     #     self._atlas = atlas
@@ -400,28 +402,67 @@ def _get_PHy_height(atlas):
 
 class _PrincipalAxisPositionMask:
 
-    def __init__(self, atlas):
+    def __init__(self, atlas, direction):
         self._atlas = atlas
+        self._direction = direction
 
-    def get_depth(self):
-        return _get_PHy_depth(self._atlas)
+    @lazyfield
+    def voxel_position(self):
+        """
+        Position along the principal axis.
+        """
+        return self._atlas.load_data("[PH]y").raw
 
-    def get_height(self):
-        return _get_PHy_height(self._atlas)
+    @lazyfield
+    def voxel_top(self):
+        """
+        Top along the principal axis.
+        """
+        return self._atlas.load_data("[PH]1").raw[..., 1]
 
-    def get(self, absolute_depth=None, absolute_height=None):
-        if absolute_depth is not None and absolute_height is not None:
-            raise RuntimeError("cannot provide both depth and height")
-        elif absolute_depth is not None:
-            vol = self.get_depth()
-            value = absolute_depth
-        elif absolute_height is not None:
-            vol = self.get_height()
-            value = absolute_height
-        else:
-            raise RuntimeError("asked for mask with no parameters")
-        return (np.logical_and(vol >= value[0], vol < value[1])
-                if isinstance(value, tuple) else vol == value)
+    @lazyfield
+    def voxel_bottom(self):
+        """
+        Bottom along the principal axis.
+        """
+        return self._atlas.load_data("[PH]6").raw[..., 0]
+
+    @lazyfield
+    def voxel_depth(self):
+        """
+        Depth down the principal axis.
+        """
+        return self.voxel_top - self.voxel_position
+
+    @lazyfield
+    def voxel_height(self):
+        """
+        Height along the principal axis.
+        """
+        return self.voxel_position - self.voxel_bottom
+
+    @lazyfield
+    def voxel_data(self):
+        """
+        Voxel data to use.
+        """
+        if self.direction == DEPTH:
+            return self.voxel_depth
+        if self.direction == HEIGHT:
+            return self.voxel_height
+        raise TypeError(
+            "Unknown principal axis direction {}".format(self.direction))
+
+    def get(self, value):
+        """
+        ...
+        """
+        return\
+            np.logical_and(
+                value[0] <= self.voxel_data,
+                self.voxel_data < value[1])\
+            if isinstance(value, tuple) else\
+               self.voxel_data == value
 
 
 class _AtlasMasks:
@@ -430,61 +471,25 @@ class _AtlasMasks:
 
     def __init__(self, atlas, represented_region=None):
         self._atlas = atlas
-        self._layer_mask = _LayerMask(atlas=atlas)
-        self._region_mask = _RegionMask(atlas=atlas)
-        self._column_mask = _ColumnMask(atlas=atlas)
-        self._pa_position_mask = _PrincipalAxisPositionMask(atlas=atlas)
-        self.represented_region = represented_region
+        self._mask_generator = {
+            LAYER: _LayerMask(atlas=atlas),
+            BRAIN_REGION: _RegionMask(atlas=atlas),
+            COLUMN: _ColumnMask(atlas=atlas),
+            DEPTH: _PrincipalAxisPositionMask(atlas=atlas, direction=DEPTH),
+            HEIGHT: _PrincipalAxisPositionMask(atlas=atlas, direction=HEIGHT)}
+
+        brain_region_mask = self._atlas.load_data("brain_regions").raw > 0
+        self._masks = [brain_region_mask] if represented_region is None\
+            else [brain_region_mask, represented_region]
 
     def get(self, parameters):
         """get the mask for parameters"""
-        masks = [self._atlas.load_data("brain_regions").raw > 0]
-
-        if BRAIN_REGION in parameters:
-            region_mask = np.any(
-                [self._region_mask.get(region)
-                 for region in _list_if_not_list(parameters[BRAIN_REGION])],
-                axis=0)
-            masks.append(region_mask)
-
-        if LAYER in parameters:
-            layer_mask = np.any(
-                [self._layer_mask.get(layer)
-                 for layer in _list_if_not_list(parameters[LAYER])], axis=0)
-            masks.append(layer_mask)
-
-        if COLUMN in parameters:
-            column_mask = np.any(
-                [self._column_mask.get(column)
-                 for column in _list_if_not_list(parameters[COLUMN])], axis=0)
-            masks.append(column_mask)
-
-        if DEPTH in parameters:
-            depth_mask = np.any(
-                [self._pa_position_mask.get(
-                    absolute_depth=absd)
-                 for absd in _list_if_not_list(parameters[DEPTH])],
-                axis=0)
-            masks.append(depth_mask)
-
-        if HEIGHT in parameters:
-            height_mask = np.any(
-                [self._pa_position_mask.get(
-                    absolute_height=absd)
-                 for absd in _list_if_not_list(parameters[HEIGHT])],
-                axis=0)
-            masks.append(height_mask)
-
-        if self.represented_region is not None:
-            masks.append(self.represented_region)
-
-        return np.all(masks, axis=0)
-
-    # TODO: depths stuff is not really a subset of Masks
-    #       but masks does not (should not?) have access to CircuitAtlas
-    #       instance, so we can't leave it there
-    def get_depth_volume(self):
-        return self._pa_position_mask.get_depth()
+        return np.all(
+            self._masks + [
+                self._mask_generator[mask_type].get(collections.get_list(value))
+                for mask_type, value in parameters.items()
+                if mask_type in self._mask_generator],
+            axis=0)
 
 
 class _TotalDensity:
@@ -500,12 +505,8 @@ class _TotalDensity:
     def __init__(self, atlas, _cell_density):
         self._parent_cd_object = _cell_density
         self._atlas = atlas
-        if has_sclass_densities(atlas):
-            self.get = self.exc_and_inh
-        else:
-            self.get = self.all_mtypes
 
-    def exc_and_inh(self):
+    def __exc_and_inh(self):
         """
         total density is the sum of excitatory and inhibitory density
         """
@@ -514,7 +515,7 @@ class _TotalDensity:
                 for scname in
                 self._parent_cd_object._sclass_filename.get(sclass)]
 
-    def all_mtypes(self):
+    def __all_mtypes(self):
         """
         total density is the sum of all mtype densities
         """
@@ -531,6 +532,10 @@ class _TotalDensity:
 
         return list(all_mtypes)
 
+    def get(self):
+        if has_sclass_densities(atlas):
+            return self.__exc_and_inh()
+        return self.__all_mtypes()
 
 class _SclassFilename:
     """
@@ -544,19 +549,15 @@ class _SclassFilename:
     def __init__(self, atlas):
         self._atlas = atlas
         # TODO: disentangle presence of sclass from prefix
-        if has_sclass_densities(atlas):
-            self.get = self.bracketed_prefix
-        else:
-            self.get = self.has_no_sclass
 
     # TODO: split BIG_LIST by sclass, so that sclass density can be
     #       obtained from mtype densities?
-    def has_no_sclass(self, density_type):
+    def __has_no_sclass(self, density_type):
         """the circuit has no information about sclass density"""
         warn(Warning("{} has no sclass densities".format(self)))
         return []
 
-    def bracketed_prefix(self, density_type):
+    def __bracketed_prefix(self, density_type):
         """
         the sclass density is contained in files named
         [cell_density]<sclass>.nrrd
@@ -567,18 +568,20 @@ class _SclassFilename:
         else:
             return []
 
+    def get(self, density_type):
+        if has_sclass_densities(self._atlas):
+            return self.__bracketed_prefix(density_type)
+        else:
+            return self.__has_no_sclass(density_type)
+
 
 class _MtypeFilename:
     """just a container for _mtype_filename function varieties"""
 
     def __init__(self, atlas):
         self._atlas = atlas
-        if has_layer_prefixed_mtypes(atlas):
-            self.get = self.layer_prefix
-        else:
-            self.get = self.no_prefix
 
-    def layer_prefix(self, mtype):
+    def __layer_prefix(self, mtype):
         """mtype densities are stored with a prefix"""
         from glob import glob
         from os.path import join, basename
@@ -588,9 +591,16 @@ class _MtypeFilename:
                      for name in allnames]
         return basenames
 
-    def no_prefix(self, mtype):
+    def __no_prefix(self, mtype):
         """mtype densities are stored with a direct name"""
         return mtype
+
+    def get(self, mtype):
+        if has_layer_prefixed_mtypes(self._atlas):
+            return self.__layer_prefix(mtype)
+        else:
+            return self.__no_prefix(mtype)
+
 
 
 class _CellDensity:
@@ -606,7 +616,6 @@ class _CellDensity:
     def __init__(self, atlas):
         self._atlas = atlas
         if has_cell_density(atlas):
-            self.get = self.has_density
             self._total_density = _TotalDensity(atlas, self)
             self._mtype_filename = _MtypeFilename(atlas)
             self._sclass_filename = _SclassFilename(atlas)
@@ -619,7 +628,7 @@ class _CellDensity:
                      .format(self._atlas)))
         return np.nan
 
-    def has_density(self, parameters):
+    def get(self, parameters):
         """get density data from the atlas"""
         if MTYPE in parameters:
             density_types = [name
