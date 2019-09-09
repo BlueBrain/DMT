@@ -1,7 +1,13 @@
+"""
+Test `CircuitAltas`
+"""
+
+import os
 import numpy as np
 import numpy.testing as npt
 import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
+from dmt.tk.field import Field, WithFields
 from neuro_dmt.models.bluebrain.circuit.atlas import CircuitAtlas
 from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE,\
     COLUMN, ABSOLUTE_DEPTH, ABSOLUTE_HEIGHT
@@ -9,37 +15,49 @@ from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE,\
 
 # TODO: test region X OR layer Y OR column Z
 # TODO: test excludde xyz
+
+
 class Test_CircuitAtlas:
 
-    class Test_NCX_O1:
+    class Test_NCX_O1(WithFields):
         """
         test for NCX release O1 circuit
-        TODO: replace with dummy atlas mimicking properties"""
+        TODO: replace with dummy atlas mimicking properties
+        """
 
-        adapted = CircuitAtlas(
-            "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
+        path_atlas = Field(
+            """
+            Path to the atlas to be tested.
+            """,
+            __default_value__=os.path.join(
+                "/gpfs/bbp.cscs.ch/project/proj66",
+                ""entities/dev/atlas/O1-152/")
+        circuit_atlas = Field(
+            """"""
+            __default_value__=CircuitAtlas(
+                )
         atlas = Atlas.open(
             "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({}),
+                self.circuit_atlas.mask_for_parameters({}),
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                    self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({LAYER: 'L1'}),
+                self.circuit_atlas.mask_for_parameters({LAYER: 'L1'}),
                 self.atlas.get_region_mask("L1").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['L2', 'L5']}),
                 np.logical_or(
                     self.atlas.get_region_mask("L2").raw,
@@ -47,12 +65,12 @@ class Test_CircuitAtlas:
 
         def test_mask_column(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN: 'mc0'}),
+                self.circuit_atlas.mask_for_parameters({COLUMN: 'mc0'}),
                 self.atlas.get_region_mask("mc0_Column").raw)
 
         def test_mask_three_columns(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN:
+                self.circuit_atlas.mask_for_parameters({COLUMN:
                                              ['mc0', 'mc6', 'mc4']}),
                 np.logical_or(
                     np.logical_or(
@@ -62,7 +80,7 @@ class Test_CircuitAtlas:
 
         def test_mask_column_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {COLUMN: ['mc2'], LAYER: ['L2', 'L3']}),
                 np.logical_and(
                     self.atlas.get_region_mask('mc2_Column').raw,
@@ -72,14 +90,14 @@ class Test_CircuitAtlas:
 
         def test_cell_density(self):
             with pyt.warns(Warning):
-                assert np.isnan(self.adapted.cell_density({LAYER: 'L4'}))
+                assert np.isnan(self.circuit_atlas.cell_density({LAYER: 'L4'}))
 
     class Test_Rat_2019_O1:
         """
         Test for SSCX dissemination O1 circuit
         TODO: replace with dummy atlas mimicing properties"""
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj64/"
             "dissemination/data/atlas/O1/MEAN/mean")
         atlas = Atlas.open(
@@ -88,23 +106,23 @@ class Test_CircuitAtlas:
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({}),
+                self.circuit_atlas.mask_for_parameters({}),
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                    self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({LAYER: 'L1'}),
+                self.circuit_atlas.mask_for_parameters({LAYER: 'L1'}),
                 self.atlas.get_region_mask("@;1$").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['L2', 'L5']}),
                 np.logical_or(
                     self.atlas.get_region_mask("@;2$").raw,
@@ -112,12 +130,12 @@ class Test_CircuitAtlas:
 
         def test_mask_column(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN: 'mc0'}),
+                self.circuit_atlas.mask_for_parameters({COLUMN: 'mc0'}),
                 self.atlas.get_region_mask("mc0_Column").raw)
 
         def test_mask_three_columns(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN:
+                self.circuit_atlas.mask_for_parameters({COLUMN:
                                              ['mc0', 'mc6', 'mc4']}),
                 np.logical_or(
                     np.logical_or(
@@ -127,7 +145,7 @@ class Test_CircuitAtlas:
 
         def test_mask_column_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {COLUMN: ['mc2'], LAYER: ['L2', 'L3']}),
                 np.logical_or(
                     self.atlas.get_region_mask('mc2;2').raw,
@@ -135,26 +153,26 @@ class Test_CircuitAtlas:
 
         def test_cell_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({LAYER: 'L5', COLUMN: 'mc2'}),
+                self.circuit_atlas.cell_density({LAYER: 'L5', COLUMN: 'mc2'}),
                 (self.atlas.load_data("[cell_density]EXC").raw
                  + self.atlas.load_data("[cell_density]INH").raw)[
                      self.atlas.get_region_mask("mc2;5").raw])
 
         def test_sclass_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({'sclass': 'EXC'}),
+                self.circuit_atlas.cell_density({'sclass': 'EXC'}),
                 self.atlas.load_data("[cell_density]EXC").raw[
                     self.atlas.load_data("brain_regions").raw != 0]
                 )
             npt.assert_array_equal(
-                self.adapted.cell_density({'sclass': 'INH'}),
+                self.circuit_atlas.cell_density({'sclass': 'INH'}),
                 self.atlas.load_data("[cell_density]INH").raw[
                     self.atlas.load_data("brain_regions").raw != 0]
                 )
 
         def test_mtype_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density(
+                self.circuit_atlas.cell_density(
                     {MTYPE: 'MC', LAYER: ['L2', 'L3']}),
                 self.atlas.load_data("[cell_density]L23_MC").raw[
                     self.atlas.get_region_mask('@;2$|;3$').raw])
@@ -165,7 +183,7 @@ class Test_CircuitAtlas:
         TODO: replace with dummy atlas mimicking properties
         """
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj64/entities/dev/atlas/"
             "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018")
         atlas = Atlas.open(
@@ -174,23 +192,23 @@ class Test_CircuitAtlas:
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({}),
+                self.circuit_atlas.mask_for_parameters({}),
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                    self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({LAYER: 'L1'}),
+                self.circuit_atlas.mask_for_parameters({LAYER: 'L1'}),
                 self.atlas.get_region_mask("L1").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['L2', 'L5']}),
                 np.logical_or(
                     self.atlas.get_region_mask("L2").raw,
@@ -198,12 +216,12 @@ class Test_CircuitAtlas:
 
         def test_mask_column(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN: 'mc0'}),
+                self.circuit_atlas.mask_for_parameters({COLUMN: 'mc0'}),
                 self.atlas.get_region_mask("mc0_Column").raw)
 
         def test_mask_three_columns(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN:
+                self.circuit_atlas.mask_for_parameters({COLUMN:
                                              ['mc0', 'mc6', 'mc4']}),
                 np.logical_or(
                     np.logical_or(
@@ -213,7 +231,7 @@ class Test_CircuitAtlas:
 
         def test_mask_column_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {COLUMN: ['mc2'], LAYER: ['L2', 'L3']}),
                 np.logical_and(
                     self.atlas.get_region_mask('mc2_Column').raw,
@@ -231,7 +249,7 @@ class Test_CircuitAtlas:
             atlasmtypenames = {nrrd for nrrd in atlasnrrds
                                if (nrrd.isupper() and "[PH]" not in nrrd)}
             npt.assert_array_equal(
-                self.adapted.cell_density({LAYER: 'L5', COLUMN: 'mc2'}),
+                self.circuit_atlas.cell_density({LAYER: 'L5', COLUMN: 'mc2'}),
                 np.sum([self.atlas.load_data(mtype).raw
                         for mtype in atlasmtypenames],
                        axis=0)[
@@ -241,11 +259,11 @@ class Test_CircuitAtlas:
 
         def test_sclass_density(self):
             with pyt.warns(Warning):
-                assert np.isnan(self.adapted.cell_density({'sclass': 'EXC'}))
+                assert np.isnan(self.circuit_atlas.cell_density({'sclass': 'EXC'}))
 
         def test_mtype_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density(
+                self.circuit_atlas.cell_density(
                     {MTYPE: 'NGC-DA', LAYER: ['L5', 'L1']}),
                 self.atlas.load_data("NGC-DA").raw[
                     self.atlas.get_region_mask('@L5$|L1$').raw])
@@ -255,7 +273,7 @@ class Test_CircuitAtlas:
         test for O1 hippocampus atlas
         TODO: replace with dummy atlas mimicing properties"""
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj42/entities/dev/atlas/"
             "20190625-CA3-O1-atlas/")
         atlas = Atlas.open(
@@ -264,23 +282,23 @@ class Test_CircuitAtlas:
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({}),
+                self.circuit_atlas.mask_for_parameters({}),
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_warns_region(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                    self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({LAYER: 'SP'}),
+                self.circuit_atlas.mask_for_parameters({LAYER: 'SP'}),
                 self.atlas.get_region_mask("@;SP$").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['SO', 'SLM']}),
                 np.logical_or(
                     self.atlas.get_region_mask("@;SO$").raw,
@@ -288,12 +306,12 @@ class Test_CircuitAtlas:
 
         def test_mask_column(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN: 'mc0'}),
+                self.circuit_atlas.mask_for_parameters({COLUMN: 'mc0'}),
                 self.atlas.get_region_mask("mc0_Column").raw)
 
         def test_mask_three_columns(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({COLUMN:
+                self.circuit_atlas.mask_for_parameters({COLUMN:
                                              ['mc0', 'mc6', 'mc4']}),
                 np.logical_or(
                     np.logical_or(
@@ -303,7 +321,7 @@ class Test_CircuitAtlas:
 
         def test_mask_column_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {COLUMN: ['mc2'], LAYER: ['SO', 'SR']}),
                 np.logical_and(
                     self.atlas.get_region_mask('mc2_Column').raw,
@@ -313,7 +331,7 @@ class Test_CircuitAtlas:
 
         def test_cell_density(self):
             with pyt.warns(Warning):
-                assert np.isnan(self.adapted.cell_density({LAYER: 'L4'}))
+                assert np.isnan(self.circuit_atlas.cell_density({LAYER: 'L4'}))
 
     # TODO: test being provided in-terminology region that is not present
     #       e.g. SSp-dz
@@ -322,7 +340,7 @@ class Test_CircuitAtlas:
         test for the AllenAtlas based BlueBrainAtlas
         TODO: replace with dummy atlas mimicing properties"""
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj68/entities/"
             "dev/atlas/ccf_2017-50um/20181114")
         atlas = Atlas.open(
@@ -331,22 +349,22 @@ class Test_CircuitAtlas:
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({}),
+                self.circuit_atlas.mask_for_parameters({}),
                 self.atlas.load_data("brain_regions").raw != 0)
 
         def test_region_mask(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                 self.atlas.get_region_mask("SSp").raw)
 
         def test_mask_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({LAYER: 'L2'}),
+                self.circuit_atlas.mask_for_parameters({LAYER: 'L2'}),
                 self.atlas.get_region_mask("@.*2$").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['SO', 'L4']}),
                 np.logical_or(
                     np.logical_and(
@@ -357,12 +375,12 @@ class Test_CircuitAtlas:
         def test_warns_column(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({COLUMN: 'mc2'}),
+                    self.circuit_atlas.mask_for_parameters({COLUMN: 'mc2'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_region_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {BRAIN_REGION: "SSp-ll", LAYER: ['L1', 'L4']}),
                 np.logical_or(
                     self.atlas.get_region_mask("SSp-ll1").raw,
@@ -370,7 +388,7 @@ class Test_CircuitAtlas:
 
         def test_cell_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({BRAIN_REGION: "RT"}),
+                self.circuit_atlas.cell_density({BRAIN_REGION: "RT"}),
                 np.sum([
                     self.atlas.load_data("[cell_density]{}".format(sc)).raw
                     for sc in ("EXC", "INH")], axis=0)[
@@ -378,7 +396,7 @@ class Test_CircuitAtlas:
 
         def test_mtype_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({
+                self.circuit_atlas.cell_density({
                     "mtype": "IPC",
                     BRAIN_REGION: "MOp"}),
                 np.nansum([self.atlas.load_data(
@@ -392,7 +410,7 @@ class Test_CircuitAtlas:
         def test_absolute_depths(self):
             expdepths = np.unique(-self.atlas.load_data("[PH]y").raw)
             expdepths = expdepths[np.isfinite(expdepths)]
-            npt.assert_array_equal(self.adapted.depths(), expdepths)
+            npt.assert_array_equal(self.circuit_atlas.depths(), expdepths)
 
         def test_mask_for_depth(self):
             atlas_y = -self.atlas.load_data("[PH]y").raw
@@ -402,7 +420,7 @@ class Test_CircuitAtlas:
                         for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.adapted.mask_for_parameters(
+            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
                 {ABSOLUTE_DEPTH: posns}),
                                    exp_masks)
             posns = [12.5, 50]
@@ -410,7 +428,7 @@ class Test_CircuitAtlas:
                 np.any([atlas_y == p for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.adapted.mask_for_parameters(
+            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
                 {ABSOLUTE_DEPTH: posns}),
                                    exp_masks)
 
@@ -418,7 +436,7 @@ class Test_CircuitAtlas:
             expheights = np.unique(self.atlas.load_data("[PH]y").raw
                                    - self.atlas.load_data("[PH]6").raw[..., 0])
             expheights = expheights[np.isfinite(expheights)]
-            npt.assert_array_equal(self.adapted.heights(), expheights)
+            npt.assert_array_equal(self.circuit_atlas.heights(), expheights)
 
         def test_mask_for_height(self):
             atlas_y = self.atlas.load_data("[PH]y").raw\
@@ -429,7 +447,7 @@ class Test_CircuitAtlas:
                         for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.adapted.mask_for_parameters(
+            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
                 {ABSOLUTE_HEIGHT: posns}),
                                    exp_masks)
             posns = [12.5, 50]
@@ -437,7 +455,7 @@ class Test_CircuitAtlas:
                 np.any([atlas_y == p for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.adapted.mask_for_parameters(
+            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
                 {ABSOLUTE_HEIGHT: posns}),
                                    exp_masks)
 
@@ -447,7 +465,7 @@ class Test_CircuitAtlas:
         test for paxinos-watson based S1 atlas of somatosensory cortex
         TODO: replace with dummy atlas mimicing properties"""
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj64/"
             "dissemination/data/atlas/S1/MEAN/mean")
         atlas = Atlas.open(
@@ -456,12 +474,12 @@ class Test_CircuitAtlas:
 
         def test_region_mask(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters({BRAIN_REGION: 'SSp'}),
+                self.circuit_atlas.mask_for_parameters({BRAIN_REGION: 'SSp'}),
                 self.atlas.get_region_mask("S1").raw)
 
         def test_mask_multiple_layers(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {LAYER: ['L1', 'L4']}),
                 np.logical_or(
                     self.atlas.get_region_mask("@L1").raw,
@@ -470,12 +488,12 @@ class Test_CircuitAtlas:
         def test_warns_column(self):
             with pyt.warns(Warning):
                 npt.assert_array_equal(
-                    self.adapted.mask_for_parameters({COLUMN: 'mc2'}),
+                    self.circuit_atlas.mask_for_parameters({COLUMN: 'mc2'}),
                     self.atlas.load_data("brain_regions").raw != 0)
 
         def test_mask_region_layer(self):
             npt.assert_array_equal(
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {BRAIN_REGION: "SSp-ll", LAYER: ['L1', 'L4']}),
                 np.logical_and(
                     self.atlas.get_region_mask("S1HL").raw,
@@ -485,7 +503,7 @@ class Test_CircuitAtlas:
 
         def test_cell_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({BRAIN_REGION: "SSp-m"}),
+                self.circuit_atlas.cell_density({BRAIN_REGION: "SSp-m"}),
                 np.nansum([
                     self.atlas.load_data("[cell_density]{}".format(sc)).raw
                     for sc in ("EXC", "INH")], axis=0)[
@@ -493,7 +511,7 @@ class Test_CircuitAtlas:
 
         def test_mtype_density(self):
             npt.assert_array_equal(
-                self.adapted.cell_density({
+                self.circuit_atlas.cell_density({
                     "mtype": "IPC",
                     BRAIN_REGION: "SS"}),
                 np.nansum([self.atlas.load_data(
@@ -506,7 +524,7 @@ class Test_CircuitAtlas:
     # TODO: find and fix source of numpy RuntimeWarnings
     class Test_2017_S1:
 
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj64/circuits/S1.v6a/r0/.atlas/"
             "C63CB79F-392A-4873-9949-0D347682253A")
 
@@ -516,18 +534,18 @@ class Test_CircuitAtlas:
 
         def test_absolute_depths(self):
             with pyt.raises(NotImplementedError):
-                self.adapted.depths()
+                self.circuit_atlas.depths()
 
         # TODO: resolve height/depth difference
         def test_mask_for_depth(self):
             with pyt.raises(NotImplementedError):
-                self.adapted.mask_for_parameters(
+                self.circuit_atlas.mask_for_parameters(
                     {ABSOLUTE_DEPTH: (0, 25)})
 
         def test_absolute_heights(self):
             expheights = np.unique(self.atlas.load_data("distance").raw)
             expheights = expheights[np.isfinite(expheights)]
-            npt.assert_array_equal(self.adapted.heights(), expheights)
+            npt.assert_array_equal(self.circuit_atlas.heights(), expheights)
 
         def test_mask_for_height(self):
             atlas_y = self.atlas.load_data("distance").raw
@@ -537,11 +555,11 @@ class Test_CircuitAtlas:
                         for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.adapted.mask_for_parameters(
+            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
                 {ABSOLUTE_HEIGHT: posns}),
                                    exp_masks)
 
     def test_gets_voxel_volume(self):
-        adapted = CircuitAtlas(
+        circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
-        assert adapted.voxel_volume == 125.0
+        assert circuit_atlas.voxel_volume == 125.0

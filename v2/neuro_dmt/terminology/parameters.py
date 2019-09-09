@@ -5,8 +5,8 @@
 #       for now, strings give us exactly the functionality we need
 LAYER = 'layer'
 MTYPE = 'mtype'
-SYN_CLASS = 'sclass'
-MORPH_CLASS = 'mclass'
+SYN_CLASS = 'synapse_class'
+MORPH_CLASS = 'morphology_class'
 COLUMN = 'column'
 BRAIN_REGION = 'brain_region'
 PRESYNAPTIC = 'pre'
