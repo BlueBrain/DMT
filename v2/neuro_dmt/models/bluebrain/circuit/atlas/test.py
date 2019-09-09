@@ -7,15 +7,27 @@ import numpy as np
 import numpy.testing as npt
 import pytest as pyt
 from voxcell.nexus.voxelbrain import Atlas
-from dmt.tk.field import Field, WithFields
+from dmt.tk.field import Field, lazyfield, WithFields
+from neuro_dmt.models.bluebrain.circuit import atlas as circuit_atlas
 from neuro_dmt.models.bluebrain.circuit.atlas import CircuitAtlas
-from neuro_dmt.terminology.parameters import BRAIN_REGION, LAYER, MTYPE,\
-    COLUMN, ABSOLUTE_DEPTH, ABSOLUTE_HEIGHT
+from neuro_dmt.terminology.parameters import\
+    BRAIN_REGION, LAYER, COLUMN, MTYPE,\
+    DEPTH, HEIGHT
 
 
 # TODO: test region X OR layer Y OR column Z
 # TODO: test excludde xyz
 
+
+def test_append_nrrd():
+    """
+    Test appending `.nrrd` to a file's name.
+    """
+    assert circuit_atlas._nrrd("a") == "a.nrrd"
+    files = ["a", "b", "c"]
+    assert all(
+        fnrrd == "{}.nrrd".format(f)
+        for f, fnrrd in zip(files, circuit_atlas._nrrd(*files)))
 
 class Test_CircuitAtlas:
 
@@ -24,20 +36,27 @@ class Test_CircuitAtlas:
         test for NCX release O1 circuit
         TODO: replace with dummy atlas mimicking properties
         """
-
         path_atlas = Field(
             """
             Path to the atlas to be tested.
             """,
             __default_value__=os.path.join(
                 "/gpfs/bbp.cscs.ch/project/proj66",
-                ""entities/dev/atlas/O1-152/")
-        circuit_atlas = Field(
-            """"""
-            __default_value__=CircuitAtlas(
-                )
-        atlas = Atlas.open(
-            "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
+                "entities/dev/atlas/O1-152/"))
+
+        @lazyfield
+        def circuit_atlas(self):
+            """
+            The `CircuitAtlas` instance to test with.
+            """
+            return CircuitAtlas(self.path_atlas)
+
+        @lazyfield
+        def atlas(self):
+            """
+            `Atlas` instance to test against.
+            """
+            return Atlas.open(self.path_atlas)
 
         def test_mask_blank_parameters(self):
             npt.assert_array_equal(

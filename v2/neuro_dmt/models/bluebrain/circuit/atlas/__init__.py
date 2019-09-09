@@ -2,13 +2,21 @@
 classes and methods for adapting atlases
 """
 import os
+from abc import ABC, abstractmethod
 import numpy as np
 import glob
+from enum import Enum
 from warnings import warn
 from voxcell.nexus.voxelbrain import Atlas
 from voxcell import VoxcellError
-from neuro_dmt.terminology.parameters import MTYPE, SYN_CLASS, BRAIN_REGION,\
-    COLUMN, LAYER, ABSOLUTE_DEPTH, ABSOLUTE_HEIGHT
+from dmt.tk import collections
+from dmt.tk.field import Field, lazyfield, WithFields
+from neuro_dmt.terminology.parameters import\
+    MTYPE, SYN_CLASS, BRAIN_REGION,\
+    COLUMN, LAYER,\
+    DEPTH, HEIGHT
+from neuro_dmt.terminology.atlas import translate
+
 # TODO: what if components were made into MethodTypes - __call__
 #       calling their own methods based on atlas properties
 # TODO: currently usng two different methods to get available mtypes, choose
@@ -27,6 +35,7 @@ from neuro_dmt.terminology.parameters import MTYPE, SYN_CLASS, BRAIN_REGION,\
 #                another query of values to exclude
 # TODO: atlasSpec
 # TODO: move each component to its own file, write component-level tests
+
 BIG_LIST_OF_KNOWN_MTYPES = [
     "RC", "IN", "TC", "BPC", "BP", "BTC", "CHC", "DAC", "DBC", "HAC", "HPC",
     "IPC", "LAC", "LBC", "MC", "NBC", "NGC-DA", "NGC-SA", "NGC", "SAC", "SBC",
@@ -40,112 +49,272 @@ def _list_if_not_list(item):
     return [item]
 
 
-# TODO: this deserves a class or module
-#       maybe a class for each terminology set, with a method
-#       to translate one to another?
-def translate_ABI_to_Paxinos(ABI_region):
-    return ABI_region.replace("SSp", "S1").replace("-bfd", "BF")\
-                     .replace("-ul", "FL").replace("-ll", "HL")\
-                     .replace("-m", "J").replace("-tr", "Tr")\
-                     .replace("-dz", "DZ").replace("-dzo", "DZO")\
-                     .replace("-sh", "Sh").replace("-ulp", "ULp")\
-                     .replace("SS", "SSCtx").replace("SSs", "S2")
-
-
 def is_O1_atlas(atlas):
     return len(atlas.load_region_map().find("O1 mosaic", "name")) > 0
 
+def is_paxinos_watson(atlas):
+    """
+    Check if region acronyms corresponding to Paxiwos-Watson based
+    Somatosensory atlas are present.
+    """
+    rmap = atlas.load_region_map()
+    return rmap.find("SSCtx", "acronym") or rmap.find("S1HL", 'acronym')
+
+def _nrrd(file_head, *file_tail):
+    """
+    Arguments
+    file_head: Name of a file
+    file_tail: A sequence of file names
+    """
+    if len(file_tail) == 0:
+        return "{}.nrrd".format(file_head)
+    return ["{}.nrrd".format(f) for f in (file_head,) + file_tail]
+
+def has_sclass_densities(atlas):
+    """
+    Check that a directory has `.nrrd` files for synapse class densities.
+    """
+    nrrds_sclass = set(
+        _nrrd("[cell_density]EXC", "[cell_density]INH", "EXC", "INH"))
+    files_atlas = set(
+        os.listdir(atlas.dirpath))
+    return len(files_atlas.intersection(nrrds_sclass)) > 0
+
+def has_layer_prefixed_mtypes(atlas):
+    """
+    Check whether mtype densities with
+    layer prefixes are present in the atlas.
+    """
+    return any(
+        glob.glob(os.path.join(atlas.dirpath, "*_{}.nrrd".format(mtype)))
+        for mtype in BIG_LIST_OF_KNOWN_MTYPES)
+
+def has_prefixless_mtypes(atlas):
+    """
+    Check that mtype densities without layer prefix
+    are present in the atlas.
+    """
+    nrrds_mtype = set(
+        _nrrd(BIG_LIST_OF_KNOWN_MTYPES))
+    files_atlas = set(
+        os.listdir(atlas.dirpath))
+    return len(nrrds_mtype.intersection(files_atlas)) > 0
 
 def has_cell_density(atlas):
-    """checks for any cell density data"""
+    """
+    checks for any cell density data
+    """
     return has_sclass_densities(atlas)\
         or has_layer_prefixed_mtypes(atlas)\
         or has_prefixless_mtypes(atlas)
 
-
-def has_sclass_densities(atlas):
-    """checks for sclass-specific density"""
-    atlas_dir = atlas.dirpath
-    return len(
-        {'[cell_density]EXC.nrrd', '[cell_density]INH.nrrd',
-         'EXC.nrrd', 'INH.nrrd'}.intersection(set(os.listdir(atlas_dir)))) > 0
-
-
-def has_layer_prefixed_mtypes(atlas):
-    """checks whether mtype densities with
-       layer prefixes are present in the atlas"""
-    atlas_dir = atlas.dirpath
-    return any(
-        glob.glob(os.path.join(atlas_dir, "*_{}.nrrd".format(mtype)))
-        for mtype in BIG_LIST_OF_KNOWN_MTYPES)
-
-
-def has_prefixless_mtypes(atlas):
-    """checks whether mtype densities without layer prefix
-    are present in the atlas"""
-    atlas_dir = atlas.dirpath
-    return len(set(mt + ".nrrd" for mt in BIG_LIST_OF_KNOWN_MTYPES)
-               .intersection(set(os.listdir(atlas_dir)))) > 0
-
-
-def is_paxinos_watson(atlas):
-    """
-    checks if region acronyms corresponding to paxinos-watson based
-    somatosensory atlas are present. returns True if they are
-    """
-    rmap = atlas.load_region_map()
-    if rmap.find("SSCtx", "acronym") or rmap.find("S1HL", 'acronym'):
-        return True
-    return False
-
-
 def has_PHy(atlas):
-    return os.path.exists(os.path.join(atlas.dirpath, "[PH]y.nrrd"))
+    """
+    Check if `atlas` has principal axis position dataset.
+    """
+    return os.path.exists(os.path.join(atlas.dirpath, _nrrd("[PH]y")))
 
 
-class _LayerMask:
+class RegionLayerRepersentationType(Enum):
+    Unknown = 0
+    BlueBrainAtlas = 1
+    FullAtlas = 2
+    SemicolonInt = 3
+
+
+class AtlasType(Enum):
+    Unknown = 0
+    PaxinosWatson = 1
+    BlueBrain = 2
+    O1 = 3
+
+
+class RegionLayerRepresentation(WithFields):
+    """
+    Expresses how an atlas represents a brain-region's layer.
+    """
+    def __init__(self, atlas):
+        """
+        Initialize for an atlas.
+        """
+        pattern_full_layer_cortical = "@^L1$|.*;L1$"
+        pattern_full_layer_hippocampal = "@^SP$|.*;SP$"
+        pattern_semicolon_int = "@.*;1$"
+        region_map = atlas.load_region_map()
+
+        if (region_map.find(pattern_full_layer_cortical, "acronym") or 
+            region_map.find(pattern_full_layer_hippocampal, "acronym")):
+            self.region_layer_type = RegionLayerRepersentationType.FullAtlas
+        elif region_map.find(pattern_semicolon_int, "acronym"):
+            self.region_layer_type = RegionLayerRepersentationType.SemicolonInt
+        else:
+            self.region_layer_type = RegionLayerRepersentationType.BlueBrainAtlas
+
+        if (region_map.find("SSCtx", "acronym") or
+            region_map.find("S1HL", "acronym")):
+            self.atlas_type = AtlasType.PaxinosWatson
+        elif region_map.find("O1 mosaic", "name"):
+            self.atlas_type = AtlasType.O1
+        else:
+            self.atlas_type = AtlasType.BlueBrain
+
+
+    @lazyfield
+    def acronym_pattern(self):
+        """
+        Regex pattern for layer region.
+        """
+        return {
+            RegionLayerRepersentationType.BlueBrainAtlas: "@.*{}$",
+            RegionLayerRepersentationType.FullAtlas: "@{}$",
+            RegionLayerRepersentationType.SemicolonInt: "@;{}$"
+        }[self.region_layer_type]
+
+    def query_layer(self, layer):
+        """
+        Convert argument 'layer' to a query that the atlas supports.
+        """
+        if self.region_layer_type == RegionLayerRepersentationType.BlueBrainAtlas:
+            return\
+                layer[1:] if layer.startswith('L') and layer[1] in "123456"\
+                else layer.lower()),
+        if self.region_layer_type == RegionLayerRepersentationType.FullAtlas:
+            return layer
+        if self.region_layer_type == RegionLayerRepersentationType.SemicolonInt:
+            return layer[1]
+
+        raise TypeError(
+            "Unknown RegionLayerRepresentationType {}".format(
+                self.region_layer_type))
+
+    def query_region(self, region):
+        """
+        Convert argument 'region' to a query that the atlas supports.
+        """
+        if self.atlas_type == AtlasType.O1:
+            return None
+        if self.atlas_type == AtlasType.BlueBrain:
+            return region
+        if self.atlas_type == AtlasType.PaxinosWatson:
+            return translate.ABI_to_paxinos(region)
+
+        raise TypeError(
+            "Unknown AtlasType {}".format(
+                self.atlas_type))
+        
+    def acronym(self, layer):
+        """
+        Acronym for layer.
+        """
+        return self.acronym_pattern.format(self.query_layer(layer))
+
+
+class BlueBrainAtlasRegionLayerRepresentation(
+        RegionLayerRepresentation):
+    """
+    Establish how BlueBrainAtlas represents layers in its hierarchy.
+    """
+    regex_pattern = "@.*{}$"
+
+    def query_layer(self, layer):
+        """
+        Convert argument `layer` to a query that the atlas supports.
+        """
+        if layer.startswith('L') and layer[1] in "123456":
+            return layer[1:]
+        return layer.lower()
+
+
+class FullLayerRegionLayerRepresentation(
+        RegionLayerRepresentation):
+    """
+    """
+    regex_pattern = "@{}$"
+
+    def query_layer(self, layer):
+        """
+        Convert argument `layer` to a query that the atlas supports.
+        """
+        return layer
+
+
+class RegionSemicolonIntRegionLayerRepresentation(
+        RegionLayerRepresentation):
+    """
+    """
+    acronym_pattern = "@;{}$"
+
+    def query_layer(self, layer):
+        """
+        Convert argument `layer` to a query that the atlas supports.
+        """
+        return layer[1]
+
+
+class _LayerMask(WithFields):
     """
     manages the functions for getting layer masks
-    the __call__ method will be the function selected for the passed atlas
 
     these functions accept a layer name and return a mask from the atlas
     layer names are provided in their uppercase string forms
     """
-
-    def __init__(self, atlas):
-        self._atlas = atlas
-        if atlas.load_region_map().find('@^L1$|.*;L1$', 'acronym')\
-           or atlas.load_region_map().find("@^SP$|.*;SP$", 'acronym'):
-            self.get = self.full_layer
-        elif atlas.load_region_map().find("@.*;1$", 'acronym'):
-            self.get = self.column_semicolon_int
-        else:
-            self.get = self.ABI
-
-    def column_semicolon_int(self, layer):
-        """layer acronyms are <column>;<layer_number. e.g. mc2;2"""
-        return self._atlas.get_region_mask(
-            "@;{}$".format(layer[1]), attr="acronym").raw
-
-    def full_layer(self, layer):
-        """layer acronyms contain the full layer string, e.g L2 or mc2;L2"""
-        return self._atlas.get_region_mask(
-            "@{}$".format(layer), attr="acronym").raw
-
-    def ABI(self, layer):
+    atlas = Field(
         """
-        layer acronyms according to the BlueBrainAtlas
-        for cortex this is the layer number at the end of the region name
-        for hippocampus it is the lowercase layer name
-        at the end of the region name
+        `Atlas` instance in which this `_LayerMask` will provide masks.
+        """)
+
+    @lazyfield
+    def region_layer_representation(self):
         """
-        if layer.startswith('L') and layer[1] in '123456':
-            # cortex
-            return self._atlas.get_region_mask("@.*{}$".format(layer[1:])).raw
-        else:
-            # hippocampus
-            return self._atlas.get_region_mask(
-                "@.*{}$".format(layer.lower())).raw
+        `RegionLayerRepresentation` for the `Atlas` instance for which
+        layer masks will be generated.
+        """
+        return RegionLayerRepresentation(self.atlas)
+
+    def get(self, layer, raw=True):
+        """
+        Get a region mask.
+        """
+        voxel_data =\
+            self.atlas.get_region_mask(
+                self.region_layer_representation.acronym(layer),
+                attr="acronym")
+        return voxel_data.raw if raw else voxel_data
+
+    # def __init__(self, atlas):
+    #     self._atlas = atlas
+    #     if atlas.load_region_map().find('@^L1$|.*;L1$', 'acronym')\
+    #        or atlas.load_region_map().find("@^SP$|.*;SP$", 'acronym'):
+    #         self.get = self.full_layer
+    #     elif atlas.load_region_map().find("@.*;1$", 'acronym'):
+    #         self.get = self.column_semicolon_int
+    #     else:
+    #         self.get = self.ABI
+
+    # def column_semicolon_int(self, layer):
+    #     """layer acronyms are <column>;<layer_number. e.g. mc2;2"""
+    #     return self._atlas.get_region_mask(
+    #         "@;{}$".format(layer[1]), attr="acronym").raw
+
+    # def full_layer(self, layer):
+    #     """layer acronyms contain the full layer string, e.g L2 or mc2;L2"""
+    #     return self._atlas.get_region_mask(
+    #         "@{}$".format(layer), attr="acronym").raw
+
+    # def ABI(self, layer):
+    #     """
+    #     layer acronyms according to the BlueBrainAtlas
+    #     for cortex this is the layer number at the end of the region name
+    #     for hippocampus it is the lowercase layer name
+    #     at the end of the region name
+    #     """
+    #     if layer.startswith('L') and layer[1] in '123456':
+    #         # cortex
+    #         return self._atlas.get_region_mask("@.*{}$".format(layer[1:])).raw
+    #     else:
+    #         # hippocampus
+    #         return self._atlas.get_region_mask(
+    #             "@.*{}$".format(layer.lower())).raw
 
 
 class _RegionMask():
@@ -261,10 +430,10 @@ class _AtlasMasks:
 
     def __init__(self, atlas, represented_region=None):
         self._atlas = atlas
-        self._layer_mask = _LayerMask(atlas)
-        self._region_mask = _RegionMask(atlas)
-        self._column_mask = _ColumnMask(atlas)
-        self._pa_position_mask = _PrincipalAxisPositionMask(atlas)
+        self._layer_mask = _LayerMask(atlas=atlas)
+        self._region_mask = _RegionMask(atlas=atlas)
+        self._column_mask = _ColumnMask(atlas=atlas)
+        self._pa_position_mask = _PrincipalAxisPositionMask(atlas=atlas)
         self.represented_region = represented_region
 
     def get(self, parameters):
@@ -290,19 +459,19 @@ class _AtlasMasks:
                  for column in _list_if_not_list(parameters[COLUMN])], axis=0)
             masks.append(column_mask)
 
-        if ABSOLUTE_DEPTH in parameters:
+        if DEPTH in parameters:
             depth_mask = np.any(
                 [self._pa_position_mask.get(
                     absolute_depth=absd)
-                 for absd in _list_if_not_list(parameters[ABSOLUTE_DEPTH])],
+                 for absd in _list_if_not_list(parameters[DEPTH])],
                 axis=0)
             masks.append(depth_mask)
 
-        if ABSOLUTE_HEIGHT in parameters:
+        if HEIGHT in parameters:
             height_mask = np.any(
                 [self._pa_position_mask.get(
                     absolute_height=absd)
-                 for absd in _list_if_not_list(parameters[ABSOLUTE_HEIGHT])],
+                 for absd in _list_if_not_list(parameters[HEIGHT])],
                 axis=0)
             masks.append(height_mask)
 
