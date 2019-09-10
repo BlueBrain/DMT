@@ -1,5 +1,5 @@
 import pandas as pd
-from collections import Mapping, Iterable
+from collections import Mapping, Iterable, OrderedDict
 
 
 def multilevel_dataframe(data_dict_s):
@@ -54,7 +54,7 @@ def multilevel_dataframe(data_dict_s):
     if not at_least_one_sub:
         return base_df
 
-    newdfdict = {}
+    newdfdict = OrderedDict()
     for i, l1 in enumerate(lv1):
         if len(lv2[i]) == 0:
             if isinstance(l1, tuple):

@@ -1,7 +1,9 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
 from dmt.tk.enum import DATA_KEYS, MEAN
+from dmt.tk.data import multilevel_dataframe
 from dmt.tk.plotting.utils import make_hashable
 from dmt.tk.plotting import golden_figure
 
@@ -195,23 +197,42 @@ class CirclePlot:
             pivot table of {MEAN}
         """.format(MEAN=MEAN)
 
+        try:
+            [df[c].unique() for c in df.columns]
+        except TypeError:
+            df = multilevel_dataframe(df)
+
         # TODO: should this work on samples without mean?
         if MEAN not in df.columns:
             raise ValueError(
                 "dataframe must have {} column".format(MEAN))
 
-        non_data_columns = [col for col in df.columns
+        columns = df.columns
+        if isinstance(columns[0], tuple):
+            columns = []
+            for c in df.columns:
+                if c[0] not in columns:
+                    columns.append(c[0])
+
+        non_data_columns = [col for col in columns
                             if col not in DATA_KEYS]
 
         if len(non_data_columns) != 2:
             raise ValueError(
-                "dataframe must have exactly two columns aside from {}"
-                .format(DATA_KEYS))
+                "dataframe must have exactly two columns aside from {}, "
+                "found: {}"
+                .format(DATA_KEYS, non_data_columns))
 
-        df, tocol = make_hashable(df, non_data_columns[0])
-        df, fromcol = make_hashable(df, non_data_columns[1])
-        pivot_table = df.pivot_table(columns=tocol, index=fromcol,
-                                     values=MEAN)
+        df, fromcol = make_hashable(df, non_data_columns[0])
+        df, tocol = make_hashable(df, non_data_columns[1])
+
+        # flatten out multiindex
+        flat_df = pd.DataFrame({fromcol: df[fromcol],
+                                tocol: df[tocol],
+                                MEAN: df[MEAN]})
+
+        pivot_table = flat_df.pivot_table(columns=tocol, index=fromcol,
+                                          values=MEAN)
         return pivot_table
 
     def group_angles(self, pivot_table):
