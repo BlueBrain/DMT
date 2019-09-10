@@ -25,21 +25,18 @@ class RegionLayerRepresentationImplementation(ABC):
     implementation to be used by  `class RegionLayerRepresentation`
     must provide.
     """
+    def __init__(self, *args, **kwargs):
+        """Cannot be initialized."""
+        raise TypeError(
+            "RegionLayerRepersentationImplementations cannot be instantiated")
 
     @classmethod
-    def _is_O1(cls, atlas):
-        """
-        Determine if an atlas is an O1-atlas.
-        """
-        root = atlas.load_hierarchy().data
-        return  root["acronym"] == "O1" or root["name"] == "O1 mosaic"
-
-    @abstractclassmethod
     def is_applicable(cls, atlas):
         """
-        Test if this subclass is applicable. 
+        Test if this subclass is applicable.
+        This will be at the base of all mixins, so always applicable.
         """
-        raise NotImplementedError
+        return True
 
     @abstractmethod
     def get_acronym(self, region, layer):
@@ -74,12 +71,13 @@ class RegionLayerRepresentationImplementation(ABC):
 
 
     @classmethod
-    def is_layer_region(cls, region_name):
+    def is_layer_region(cls, hierarchy_node):
         """
         Check if a hierarchy node reprensents a layer region.
         A default implementation is provided.
         A subclass may override to implement a specific behavior.
         """
+        region_name = hierarchy_node.data["name"]
         return "layer" in region_name or "Layer" in region_name
 
     @classmethod
@@ -88,10 +86,184 @@ class RegionLayerRepresentationImplementation(ABC):
         Layer region acronyms.
         """
         for leaf in leaves(hierarchy):
-            if self.is_layer_region(leaf.data["name"]):
+            if cls.is_layer_region(leaf):
                 yield leaf.data["acronym"]
 
+
+class WithJustLayerNumber:
+    """
+    Mixin for atlas cortical layer region representations that do not
+    prefix the layer by 'L'.
+    """
+    layer_values = ["1", "2", "3", "4", "5", "6"]
+
+    @classmethod
+    def get_query_layers(cls, layers):
+        """..."""
+        def _get_one(layer):
+            try:
+                return layer[1] if layer[0] == 'L' else layer
+            except TypeError:
+                return str(layer)
+        return [_get_one(layer) for layer in layers]
+
+
+class WithPrefixedLayerNumber:
+    """
+    Mixin for atlas cortical layer region representations that prefix the
+    layer by 'L'.
+    """
+    layer_values = ["L1", "L2", "L3", "L4", "L5", "L6"]
+
+    @classmethod
+    def get_query_layers(cls, layers):
+        """..."""
+        def _get_one(layer):
+            try:
+                if layer[0] == 'L':
+                    return layer
+            except TypeError:
+                pass
+            return "L{}".format(layer)
+        return [_get_one(layer) for layer in layers]
+
+
+class HasSemicolonSeparatedRegionLayer:
+    """
+    Mixin for `RegionLayerRepresentationImplementation`s that
+    separate region from layer by a semicolon.
+    """
+    @abstractclassmethod
+    def get_layer_regions(cls, layers):
+        """..."""
+        raise NotImplementedError
+
+    @classmethod
+    def is_layer_region(cls, hierarchy_node):
+        """..."""
+        return super().is_layer_region(hierarchy_node)\
+            and ';' in hierarchy_node.data["acronym"]
+
+    @classmethod
+    def is_applicable(cls, atlas):
+        """..."""
+        for region_layer in cls.get_layer_regions(atlas.load_hierarchy()):
+            return ";" in region_layer
+        return False
+
+    @classmethod
+    def get_acronym(cls, region, layer):
+        """..."""
+        atlas_layer = cls.get_query_layers([layer])[0]
+        return "{};{}".format(region, atlas_layer)
+
+
+class HasUnseparatedRegionLayer:
+    """
+    Mixin for `RegionLayerRepresentationImplementation`s that
+    does not separate region from layer.
+    """
+    @abstractclassmethod
+    def get_layer_regions(cls, layers):
+        """..."""
+        raise NotImplementedError
+
+    @classmethod
+    def is_layer_region(cls, hierarchy_node):
+        """..."""
+        if not  super().is_layer_region(hierarchy_node):
+            return False
+
+        try:
+            region_layer = hierarchy_node.data["acronym"]
+            return region_layer[-1] in cls.layer_values\
+                or region_layer[-2:] in cls.layer_values
+        except IndexError:
+            return False
+
+        return False
+
+    @classmethod
+    def is_applicable(cls, atlas):
+        """..."""
+        for _ in cls.get_layer_regions(atlas.load_hierarchy()):
+            return True
+        return False
+
+    @classmethod
+    def get_acronym(cls, region, layer):
+        """..."""
+        atlas_layer = cls.get_query_layers([layer])[0]
+        return "{}{}".format(region, atlas_layer)
+
+
+
+class HasLayerRegionWithoutRegion:
+    """
+    Some atlases may represent layers in each region with acronyms
+    that do not contain containing region's acronym.
+    """
+    @abstractclassmethod
+    def get_layer_regions(cls, hierarchy_node):
+        """..."""
+        raise NotImplementedError
+
+    @classmethod
+    def is_applicable(cls, atlas):
+        """..."""
+        if not super().is_applicable(atlas):
+            return False
+        for region_layer in cls.get_layer_regions(atlas.load_hierarchy()):
+            return region_layer.data["acronym"] in cls.layer_values
+        return False
+
+    @classmethod
+    def get_acronym(cls, region, layer):
+        """..."""
+        return layer
+        
+
+class ForO1Atlas:
+    """
+    Mixin for O1 atlases.
+    """
+    def is_applicable(cls, atlas):
+        """..."""
+        if not super().is_applicable(atlas):
+            return False
+        root = atlas.load_hierarchy().data
+        return  root["acronym"] == "O1" or root["name"] == "O1 mosaic"
+
+
+class O1AtlasJustPrefixedLayerRepresentation(
+        HasLayerRegionWithoutRegion,
+        WithPrefixedLayerNumber,
+        ForO1Atlas,
+        RegionLayerRepresentationImplementation):
+    """
+    The O1 atlas at /gpfs/project/proj66/entities/dev/atlas/O1-152
+    uses acronyms L1, L2, ... for cortical layers, without prefixing
+    the containing region acronym.
+    """
+    pass
+
+
+class O1AtlasSemicolonSeparatedRepresentation(
+        HasSemicolonSeparatedRegionLayer,
+        WithJustLayerNumber,
+        ForO1Atlas,
+        RegionLayerRepresentationImplementation):
+    """
+    O1 atlas that separates layer from region by a semi-colon.
+
+    Example atlas: .../proj64/dissemination/data/atlas/O1/MEAN/mean
+    """
+    pass
+
+
 class IsoCortexAtlas2018Representation(
+        HasUnseparatedRegionLayer,
+        WithJustLayerNumber,
         RegionLayerRepresentationImplementation):
     """
     Representation of layer regions as used for the (mouse) isocortex release 
@@ -105,6 +277,9 @@ class IsoCortexAtlas2018Representation(
         "L5": "5",
         "L6": ("6a", "6b")}
 
+    layer_values = [
+        "1", "2", "3", "4", "5", "6a", "6b"]
+
     @classmethod
     def is_applicable(cls, atlas):
         """..."""
@@ -117,105 +292,36 @@ class IsoCortexAtlas2018Representation(
     @classmethod
     def is_layer_region(cls, hierarchy_node):
         """..."""
+        if not super().is_layer_region(hierarchy_node):
+            return False
+        try:
+            acronym = hierarchy_node.data["acronym"]
+            return acronym[-1] in cls.atlas_layer_values\
+                or acronym[-2:] in cls.atlas_layer_values
+        except IndexError:
+            return False
+        return False
 
-
-    def get_acronym(region, layer):
+    @classmethod
+    def get_acronym(cls, region, layer):
         """..."""
         return "{}{}".format(region, layer)
 
     @classmethod
     def get_query_layers(cls, layers):
         """..."""
+        def _prefixed_L(layer):
+            try:
+                if layer[0] == 'L':
+                    return layer
+            except TypeError:
+                pass
+            return "L{}".format(layer)
+
         return [
             atlas_layer
-            for atlas_layer in cls.atlas_layer[layer]
+            for atlas_layer in cls.atlas_layer[_prefixed_L(layer)]
             for layer in layers]
-
-
-class WithJustLayerNumber:
-    """
-    Mixin for atlas cortical layer region representations that do not
-    prefix the layer by 'L'.
-    """
-    @classmethod
-    def get_query_layers(cls, layers):
-        """..."""
-        def _get_one(layer):
-            try:
-                return layer[1] if layer[0] == "L" else layer
-            except TypeError:
-                return str(layer)
-        return [_get_one(layer) for layer in layers]
-
-
-class SemicoloSeparatedRegionLayer:
-    """
-    Mixin for `RegionLayerRepresentationImplementation`s that
-    separate region from layer by a semicolon.
-    """
-    @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        for region_layer in cls.get_layer_regions(atlas.load_hierarchy()):
-            if ";" in region_layer:
-                return True
-            else:
-                return False
-        return False
-
-    @abstractclassmethod
-    def get_query_layers(cls, layers):
-        """..."""
-        raise NotImplementedError
-
-    @classmethod
-    def get_acronym(cls, region, layer):
-        """..."""
-        atlas_layer = cls.get_query_layers([layer])[0]
-        return "{};{}".format(region, atlas_layer)
-
-
-class O1AtlasJustLayerRepresentation(
-        RegionLayerRepresentationImplementation):
-    """
-    The O1 atlas at /gpfs/project/proj66/entities/dev/atlas/O1-152
-    uses acronyms L1, L2, ... for cortical layers, without prefixing
-    the containing region acronym.
-    """
-    @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        if not cls._is_O1(atlas):
-            return False
-
-        hierarchy = atlas.load_hierarchy()
-        eg_layer_acronym = hierarchy.children[0].children[0].data["acronym"]
-        return eg_layer_acronym in ["L1", "L2", "L3", "L4", "L5", "L6"]
-
-    @staticmethod
-    def get_acronym(region, layer):
-        """..."""
-        return layer
-
-        
-class O1AtlasSemicolonSeparatedRepresentation(
-        WithJustLayerNumber,
-        SemicoloSeparatedRegionLayer,
-        RegionLayerRepresentationImplementation):
-    """
-    O1 atlas that separates layer from region by a semi-colon.
-
-    Example atlas: .../proj64/dissemination/data/atlas/O1/MEAN/mean
-    """
-    @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        if not cls._is_O1(atlas):
-            return False
-
-        hierarchy = atlas.load_hierarchy()
-        eg_layer_acronym = hierarchy.children[0].children[0].data["acronym"]
-        return ';' in eg_layer_acronym
 
 
 class RegionLayerRepresentation(WithFields):
