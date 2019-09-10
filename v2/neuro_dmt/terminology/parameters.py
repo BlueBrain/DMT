@@ -5,9 +5,10 @@
 #       for now, strings give us exactly the functionality we need
 LAYER = 'layer'
 MTYPE = 'mtype'
-SYN_CLASS = 'synapse_class'
-MORPH_CLASS = 'morphology_class'
-COLUMN = 'column'
+SYNAPSE_CLASS = "synapse_class"
+MORPH_CLASS = "morphology_class"
+MESOCOLUMN = "mesocolumn"
+HYPERCOLUMN = "hypercolumn"
 BRAIN_REGION = 'brain_region'
 PRESYNAPTIC = 'pre'
 POSTSYNAPTIC = 'post'
