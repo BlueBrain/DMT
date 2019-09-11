@@ -2,16 +2,15 @@
 Prototypes and documentation to help us develop Observation
 """
 
-from abc import\
-    abstractmethod
+from collections import OrderedDict
 import pandas as pd
-from ..field import\
+from dmt.tk.field import\
     Field,\
+    lazyproperty,\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
-
-from ..quantity import Quantity
+from dmt.tk.quantity import Quantity
 
 
 #move this helper method elsewhere
@@ -27,6 +26,21 @@ def get_label(something):
         something, "label",
         "unavailable_{}".format(
             something.__class__.__name__))
+
+def get_variables(phenomenon):
+    """
+    Get measured variables associated with a phenomenon.
+    """
+    try:
+        return phenomenon.variables
+    except AttributeError:
+        try:
+            return phenomenon["variables"]
+        except TypeError:
+            return [get_label(phenomenon)]
+        except KeyError:
+            return [get_label(phenomenon)]
+    return None
 
 
 class MissingObservationParameter(Exception):
@@ -63,7 +77,7 @@ class ObservationMetaClass(
         The names will be used to name the dataframe indices,
         and the descriptions to provide documentation.
         """,
-        __type__=dict)
+        __type__=OrderedDict)
     phenomenon = ClassAttribute(
         """
         Phenomenon observed.
@@ -94,10 +108,10 @@ class Observation(
 
     #operational level
     #attributes that will depend on the instance 
-    objectOfObservation = Field(
+    object_of_observation = Field(
         """
         The object that was observed. It is not expected to be a simple object.
-        It may be implemented as a Python object, or as a dict maps all the
+        It may be implemented as a Python object, or as a dict mapping all the
         relevant attribute names to their values, or even an informal string
         that describes all of the observed object's relevant attributes.
         """,
@@ -126,6 +140,18 @@ class Observation(
         """,
         __type__=object,
         __default_value__="Unknown")
+    citation = Field(
+        """
+        Pointer to a journal / online reference.
+        """,
+        __default_value__="Unknown")
+    uri = Field(
+        """
+        Universal Resource Identifier from which this `Observation` was
+        created.
+        """,
+        __default_value__="Unknown")
+
 
     def __init__(self,
             data,
@@ -137,7 +163,7 @@ class Observation(
             data=data,
             **kwargs)
 
-    @property
+    @lazyproperty
     def properties_observed(self):
         """
         Properties observed.
@@ -151,18 +177,17 @@ class Observation(
         measure of the phenomenon, ['mean', 'error', 'sample_size']
         make more sense.
         """
-        return [get_label(self.phenomenon)]
+        return get_variables(self.phenomenon)
 
     @staticmethod
-    def _check_variables(data_value, variable_list):
+    def _check_columns(data_value, variable_list):
         """
         Check that the list of variables in variable_list is
         provided by data in data_value
         """
         if isinstance(data_value, list):#a list of dicts
             for d in data_value:
-                if not isinstance(d, dict):
-                    break
+                assert isinstance(d, dict)
                 for v in variable_list:
                     if v not in d:
                         raise ValueError(
@@ -176,8 +201,9 @@ class Observation(
                 if p not in data_value.columns:
                     raise ValueError(
                         """
-                        '{}' not provided by data-frame columns {}
-                        """.format(p, data_value.columns))
+                        '{}' not provided by data-frame columns {}.
+                        Required columns are {}.
+                        """.format(p, data_value.columns, variable_list))
             return True
 
         raise TypeError(
@@ -204,14 +230,14 @@ class Observation(
         data_value :: Either a list of dicts or a pandas dataframe
         """
         try:
-            self._check_variables(data_value, self.parameters)
+            self._check_columns(data_value, self.parameters)
         except ValueError as error:
             raise MissingObservationParameter(*error.args)
         finally:
             pass
 
         try:
-            self._check_variables(data_value, [get_label(self.phenomenon)])
+            self._check_columns(data_value, get_variables(self.phenomenon))
         except ValueError as error:
             raise MissingObservedVariable(*error.args)
         finally:
@@ -260,5 +286,6 @@ class Observation(
 
 from .measurement import\
     Measurement,\
+    SummaryMeasurement,\
     summary_statistic
 
