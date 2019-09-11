@@ -48,18 +48,18 @@ class CellDensityValidation(SimpleValidation):
             """
             pass
 
-    def get_measurement(self, model, query):
-        """get cell density for model with properties in  query"""
-        return model.cell_density(query)
+    def get_measurement(self, model, parameters):
+        """get cell density for model with properties in  parameters"""
+        return model.cell_density(parameters)
 
 
 class INHRatioValidation(CellDensityValidation):
 
     phenomenon = "inhibitory_ratio"
 
-    def get_measurement(self, model, query):
+    def get_measurement(self, model, parameters):
         """get inhibitory density divided by total density
-        from model with properties in query"""
-        q_INH = dict(**query)
+        from model with properties in parameters"""
+        q_INH = dict(**parameters)
         q_INH['sclass'] = 'INH'
-        return model.cell_density(q_INH) / model.cell_density(query)
+        return model.cell_density(q_INH) / model.cell_density(parameters)

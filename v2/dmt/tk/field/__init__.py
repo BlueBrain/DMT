@@ -316,6 +316,7 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
+
 def lazyfield(instance_field):
     """
     Make an 'instance_field' lazy.
@@ -345,5 +346,7 @@ def lazyfield(instance_field):
                 field_name_for_storage)
 
     return effective
+
+lazy = lazyfield
 
 lazyproperty = lazyfield
