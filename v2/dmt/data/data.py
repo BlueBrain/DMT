@@ -2,8 +2,8 @@
 Prototype for Data.
 """
 import pandas as pd
-from dmt.v2.tk.journal import Logger
-from dmt.v2.tk.field import\
+from dmt.tk.journal import Logger
+from dmt.tk.field import\
     Field,\
     ClassAttribute,\
     WithFields,\
@@ -32,7 +32,6 @@ class DataClassMeta(ClassAttributeMetaBase):
         and the description to provide documentation.
         """,
         __type__=dict)
-
         
 
 class DataClassConstructor(type):
@@ -100,14 +99,16 @@ class Data(
     """,
         __type__=list,
         __required__=True)
-    label = Field("""
+    label = Field(
+        """
         A string to name a Data instance. 
         """,
         __type__=str,
         __required__=True)
-    provenance = Field("""
-    Description of the origin of this data.
-    """,
+    provenance = Field(
+        """
+        Description of the origin of this data.
+        """,
         __type__=object,
         __default_value__="Unknown")
 

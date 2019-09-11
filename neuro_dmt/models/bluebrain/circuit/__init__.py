@@ -224,7 +224,7 @@ class BlueBrainModelHelper:
                     segment_dataframe[
                         Section.NEURITE_TYPE] == neurite_type
                 ].values)
-                
+
         if by is None:
             return pd.Series({
                 neurite_type: total_length(
