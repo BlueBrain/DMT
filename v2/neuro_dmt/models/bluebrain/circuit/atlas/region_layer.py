@@ -3,281 +3,180 @@ Representation of layer regions in an atlas.
 """
 
 from abc import ABC, abstractmethod, abstractclassmethod
-from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.field import ClassAttribute, Field, lazyfield, WithFields
 from dmt.tk import collections
+from neuro_dmt.terminology.atlas import translate
 
-
-def leaves(tree):
-    """
-    Generate leaves in a hierarchy tree.
-    """
-    for child in tree.children:
-        if len(child.children) == 0:
-            yield child
-        else:
-            for grand_child in leaves(child):
-                yield grand_child
-    
 
 class RegionLayerRepresentationImplementation(ABC):
     """
-    An interface that describes the methods and fields that an
-    implementation to be used by  `class RegionLayerRepresentation`
-    must provide.
+    Implements `RegionLayerRepresentation`.
     """
 
+    applicable_patterns = ClassAttribute(
+        """
+        Regex patterns that can be used to resolve how the atlas represents
+        layer regions.
+        """)
+
+    layer_acronym_pattern_template = ClassAttribute(
+        """
+        Regex expression template that can used to generate a regex expression
+        for layer region acronyms needed to get a region mask from the atlas.
+        """)
+
+    def __init__(self, atlas):
+        """
+        Initialize for an atlas.
+        """
+        self._use_paxinos_regions = any(
+            atlas.load_region_map(pattern, "acronym")
+            for pattern in ("SSCtx", "S1HL")):
+
     @classmethod
-    def _is_O1(cls, atlas):
+    def is_applicable(cls, atlas):
         """
-        Determine if an atlas is an O1-atlas.
+        Is this implementation applicable to given `Atlas` instance.
         """
-        root = atlas.load_hierarchy().data
-        return  root["acronym"] == "O1" or root["name"] == "O1 mosaic"
+        return any(
+            atlas.load_region_map().find(pattern)
+            for pattern in cls.applicable_patterns)
+
+    def get_region_acronym(self, region):
+        """
+        Get acronym for region.
+        """
+        return translate.ABI_to_Paxinos(region)\
+            if self._use_paxinos_regions else\
+               region
 
     @abstractclassmethod
-    def is_applicable(cls, atlas):
+    def get_query_layer(self, layer):
         """
-        Test if this subclass is applicable. 
+        Get layer as the atlas represents itk.
         """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_acronym(self, region, layer):
-        """
-        A pattern that can be filled in with a region and layer to obtain
-        an acronym in an atlas hierarchy.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def get_query_layers(layers):
-        """
-        One atlas' representation of layers might be different from another.
-        This method should convert a value of layer to that used by that used
-        by the atlas to which this `RegionLayerRepersentationType` applies.
-
-        A default method is provided, that should be overridden to provide
-        specific behavior.
-        """
-        return layers
-
-    @staticmethod
-    def get_query_regions(regions):
-        """
-        Region names and acronyms may differ between atlases. To use a single
-        terminology in our work, we need a translator.
-        We provide default behavior here.
-        A sub-class may override this method to implement
-        any peculiar behavior of a specific atlas.
-        """
-        return regions
-
+        pass
 
     @classmethod
-    def is_layer_region(cls, region_name):
+    def get_layer_region_regex(cls, layer):
         """
-        Check if a hierarchy node reprensents a layer region.
-        A default implementation is provided.
-        A subclass may override to implement a specific behavior.
+        Get regex that can be used to retrieve all layer-regions for a given
+        layer.
         """
-        return "layer" in region_name or "Layer" in region_name
+        return cls.layer_acronym_pattern_template\
+                   .format(cls.get_query_layer(layer))
+                       
 
-    @classmethod
-    def get_layer_regions(cls, hierarchy):
-        """
-        Layer region acronyms.
-        """
-        for leaf in leaves(hierarchy):
-            if self.is_layer_region(leaf.data["name"]):
-                yield leaf.data["acronym"]
-
-class IsoCortexAtlas2018Representation(
-        RegionLayerRepresentationImplementation):
+class FullLayerRepresentation:
     """
-    Representation of layer regions as used for the (mouse) isocortex release 
-    of April 2018.
+    Layer region acronyms contain the full layer string, e.g. L2 or mc2;L2.
     """
-    atlas_layer = {
-        "L1": "1",
-        "L2": "2",
-        "L3": "3",
-        "L4": "4",
-        "L5": "5",
-        "L6": ("6a", "6b")}
+    applicable_patterns = ("@^L1$|.*;L1$", "@^SP$|.*;SP$")
+
+    layer_acronym_pattern_template = "@{}$"
 
     @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        pattern_full_layer_cortical = "@^L1$|.*;L1$"
-        pattern_full_layer_hippocampal = "@^SP$|.*;SP$"
-        region_map = atlas.load_region_map()
-        return region_map.find(pattern_full_layer_cortical, "acronym")\
-            or region_map.find(pattern_full_layer_hippocampal, "acronym")
-
-    @classmethod
-    def is_layer_region(cls, hierarchy_node):
-        """..."""
-
-
-    def get_acronym(region, layer):
-        """..."""
-        return "{}{}".format(region, layer)
-
-    @classmethod
-    def get_query_layers(cls, layers):
-        """..."""
-        return [
-            atlas_layer
-            for atlas_layer in cls.atlas_layer[layer]
-            for layer in layers]
-
-
-class WithJustLayerNumber:
-    """
-    Mixin for atlas cortical layer region representations that do not
-    prefix the layer by 'L'.
-    """
-    @classmethod
-    def get_query_layers(cls, layers):
-        """..."""
-        def _get_one(layer):
-            try:
-                return layer[1] if layer[0] == "L" else layer
-            except TypeError:
-                return str(layer)
-        return [_get_one(layer) for layer in layers]
-
-
-class SemicoloSeparatedRegionLayer:
-    """
-    Mixin for `RegionLayerRepresentationImplementation`s that
-    separate region from layer by a semicolon.
-    """
-    @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        for region_layer in cls.get_layer_regions(atlas.load_hierarchy()):
-            if ";" in region_layer:
-                return True
-            else:
-                return False
-        return False
-
-    @abstractclassmethod
-    def get_query_layers(cls, layers):
-        """..."""
-        raise NotImplementedError
-
-    @classmethod
-    def get_acronym(cls, region, layer):
-        """..."""
-        atlas_layer = cls.get_query_layers([layer])[0]
-        return "{};{}".format(region, atlas_layer)
-
-
-class O1AtlasJustLayerRepresentation(
-        RegionLayerRepresentationImplementation):
-    """
-    The O1 atlas at /gpfs/project/proj66/entities/dev/atlas/O1-152
-    uses acronyms L1, L2, ... for cortical layers, without prefixing
-    the containing region acronym.
-    """
-    @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        if not cls._is_O1(atlas):
-            return False
-
-        hierarchy = atlas.load_hierarchy()
-        eg_layer_acronym = hierarchy.children[0].children[0].data["acronym"]
-        return eg_layer_acronym in ["L1", "L2", "L3", "L4", "L5", "L6"]
-
-    @staticmethod
-    def get_acronym(region, layer):
+    def get_query_layer(cls, layer):
         """..."""
         return layer
 
-        
-class O1AtlasSemicolonSeparatedRepresentation(
-        WithJustLayerNumber,
-        SemicoloSeparatedRegionLayer,
+
+class SemicolonIntRepresentation:
+    """
+    Layer region acronyms separated region from layer by a semicolon,
+    <region>;<layer>
+    """
+    applicable_patterns = ("@.*;6$", "@.*;SP$")
+
+    layer_acronym_pattern_template = "@;{}$"
+
+    @classmethod
+    def get_query_layer(self, layer):
+        """..."""
+        return layer[1]
+
+
+class BlueBrainAtlasRepresentation(
         RegionLayerRepresentationImplementation):
     """
-    O1 atlas that separates layer from region by a semi-colon.
-
-    Example atlas: .../proj64/dissemination/data/atlas/O1/MEAN/mean
+    Convention used, or to be used by the BlueBrain Atlas.
     """
+    applicable_patterns = ("@.*6a$", "@.*SP$")
+
+    layer_acronym_pattern_template = "@.*{}$"
+
     @classmethod
-    def is_applicable(cls, atlas):
-        """..."""
-        if not cls._is_O1(atlas):
-            return False
+    def get_query_layer(cls, layer):
+        """
+        Convert argument `layer` to a form accepted by the atlases that this
+        `BlueBrainAtlasRepresentation` applies to.
+        """
+        return layer[1:]\
+            if layer.startswith('L') and layer[1] in "123456"\
+               else layer.lower()
 
-        hierarchy = atlas.load_hierarchy()
-        eg_layer_acronym = hierarchy.children[0].children[0].data["acronym"]
-        return ';' in eg_layer_acronym
 
 
-class RegionLayerRepresentation(WithFields):
+class RegionLayerRepresentation:
     """
-    Express how the circuit atlas represents laminary regions of a brain area
+    Express how the circuit atlas represents laminar regions of a brain area
     such as the cortex.
-    Brain regions in a brain atlas are organized in a hierarchy.
-    While brain regions such as the SSp and SSp-ll fit well in a
-    tree-based hierarchy, layers have to be stuck inside this tree hierarchy
-    by creating leaf nodes in the hierarchy under the final brain region.
-    These leaf nodes in a laminar part of the circuit are the layers.
-    The problematic issue is the acronym given to these layer-regions.
-    The name of the brain region node just above the layer-region is appended
-    by the value of the layer, separated by a character. This class handles
-    this complexity.
-    Different versions of the atlas, or atlases for different parts of the
-    brain follow different conventions. To handle this diversity we use a 
-    version of the 'bridge' pattern:
+
+    A brain atlas organizes brain regions in a hierarchy. Regions such as
+    the primary somatosensory, and the primary somatosensory area lower limb
+    fit naturally in this hierarchy based on 'is-contained-in' relationships.
+    Layers, however, form a structure that is orthogonal to the regions in this
+    hierarchy. Layers span all the regions in the cortex. To fit them in the
+    atlas's hierarchy, each final cortical region is divided into cortical
+    layers, each of which form a leaf region. Thus each cortical layer is
+    chunked up and annotated by the (sub-)region containing it. The volumetric 
+    data associated with the atlas uses only the ids associated with the leaf
+    regions of the atlas hierarchy. Sticking chunked up layer regions into the
+    hierarchy as leaf nodes allows the brain circuit atlas to use only a single
+    volumetric data set. While there are only a few brain region naming
+    conventions, there are no standards about how to name the layer regions. We
+    track the complexity arising out of this missing naming convention.
+
+    We will use a version of the bridge pattern:
     1. https://www.giacomodebidda.com/bridge-pattern-in-python/
     2. https://sourcemaking.com/design_patterns/bridge
     3. https://simpleprogrammer.com/design-patterns-simplified-the-bridge-pattern/
     """
+
     def __init__(self, implementation):
         """
-        Initialize for the given `Atlas` instance.
+        Initialize with the given concrete `implementation`.
 
-        A concrete implementation that will be used to provide functionality
-        to this 'interface'. Read the methods in the following class body to
-        decide what messages this implementation must respond to.
+        A concrete implementation will be used to provide functionality to this
+        `interface`.
         """
         self._implementation = implementation
 
     @classmethod
-    def for_atlas(cls,
-            atlas,
-            available_implementations=[]):
+    def for_atlas(cls, atlas):
         """
         An instance for the given `Atlas` instance.
         """
-        for implementation in available_implementations:
-            if implementation.applies(atlas):
-                return cls(implementation)
+        for implementation_class in (
+                FullLayerRepresentation,
+                SemicolonIntRepresentation,
+                BlueBrainAtlasRepresentation):
+            if implementation_class.is_applicable(atlas):
+                return cls(implementation_class(atlas))
         raise Exception(
             "No available implementation applies to atlas {}.".format(atlas))
 
-    def get_acronyms(self, regions, layers=None):
-        """
-        Get acronyms used by the atlas corresponding to a combination of
-        regions and layers.
-        """
-        atlas_regions = self\
-            ._implementation\
-            .get_query_regions(
-                collections.get_list(regions))
-        if layers is None:
-            return atlas_regions
 
-        atlas_layers = self\
-            ._implementation\
-            .get_query_layers(
-                collections.get_list(layers))
-        return [
-            self._implementation.get_acronym(region, layer)
-            for region in atlas_regions
-            for layer in atlas_layers]
+    def get_region_acronym(self, region):
+        """
+        Acronym for a region.
+        """
+        self.implementation.get_region_acronym(region)
+
+
+    def get_layer_region_regex(self, region):
+        """
+        Get acronym for region.
+        """
+        return self.implementation.get_layer_region_regex(region)
+

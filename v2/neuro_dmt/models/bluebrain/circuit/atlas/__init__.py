@@ -13,7 +13,7 @@ from neuro_dmt.terminology.parameters import\
     BRAIN_REGION, MESOCOLUMN, LAYER,\
     DEPTH, HEIGHT
 from neuro_dmt.terminology.atlas import translate
-
+from .region_layer import RegionLayerRepresentation
 
 
 class CircuitAtlas(WithFields):
@@ -84,7 +84,7 @@ class CircuitAtlas(WithFields):
         An object that expresses how region and layer are combined in the
         atlas, how their acronyms are represented in the hierarchy.
         """
-        return RegionLayerRepresentation(atlas)
+        return RegionLayerRepresentation.for_atlas(atlas)
 
     def get_acronyms(self, regions, layers=None):
         """
@@ -94,12 +94,16 @@ class CircuitAtlas(WithFields):
 
 
     def get_ids(self,
-            regions, layers=None,
+            regions=None,
+            layers=None,
             with_descendents=True,
             ignore_case=False):
         """
         Get atlas ids used by the atlas for combinations of regions and layers.
         """
+        if regions is None and layers is None:
+            raise ValueError(
+                "Neither regions, nor layers passed.")
         return {_id
                 for acronym in self.get_acronyms(
                         regions,
@@ -110,11 +114,34 @@ class CircuitAtlas(WithFields):
                         with_descendants=with_descendents,
                         ignore_case=ignore_case)}
 
-    def get_mask(self, regions, layers=None):
+    def get_mask(self,
+            region=None,
+            layer=None,
+            hypercolumn=None,
+            depth=None,
+            height=None):
         """
         Mask for combinations of regions and layers.
         """
-        masks = [
-            self.atlas.get_region_mask(acronym, attr="acronym")
-            for acronym in self.get_acronyms(self, regions, layers)]
-        return numpy.any(masks, axis=0)
+        if region is None and layer is None:
+            return self.atlas.load_data("brain_regions") > 0
+
+        if region is not None:
+            region_mask = numpy.any(
+                [self.atlas.get_region_mask(
+                    self.region_layer_representation.get_region_acronym(r),
+                    attr="acronym").raw
+                 for r in collections.get_list(region)],
+                axis=0)
+
+        if layer is None:
+            return region_mask
+
+        layer_mask = numpy.any(
+            [self.atlas.get_region_mask(
+                self.region_layer_representation.get_layer_region_regex(l),
+                attr="acronym").raw
+             for l in collections.get_list(layer)],
+            axis=0)
+
+        return numpy.logical_and(region_mask, layer_mask)
