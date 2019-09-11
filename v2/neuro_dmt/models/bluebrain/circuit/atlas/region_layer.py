@@ -8,7 +8,7 @@ from dmt.tk import collections
 from neuro_dmt.terminology.atlas import translate
 
 
-class RegionLayerRepresentationImplementation(ABC):
+class RegionLayerRepresentationImplementation(WithFields):
     """
     Implements `RegionLayerRepresentation`.
     """
