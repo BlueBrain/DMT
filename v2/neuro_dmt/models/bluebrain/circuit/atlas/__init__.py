@@ -120,11 +120,15 @@ class CircuitAtlas(WithFields):
         if layer is None:
             return region_mask
 
+        atlas_layers = [
+            self.region_layer_representation.get_layer_region_regex(l)
+            for l in collections.get_list(layer)] 
         layer_mask = numpy.any(
-            [self.atlas.get_region_mask(
-                self.region_layer_representation.get_layer_region_regex(l),
-                attr="acronym").raw
-             for l in collections.get_list(layer)],
+            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+             for atlas_layer in atlas_layers],
             axis=0)
+
+        if region is None:
+            return layer_mask
 
         return numpy.logical_and(region_mask, layer_mask)

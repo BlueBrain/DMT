@@ -7,6 +7,7 @@ import numpy as np
 import numpy.testing as npt
 from voxcell.nexus.voxelbrain import Atlas
 from dmt.tk.field import WithFields, Field, lazyfield
+from dmt.tk import collections
 from . import CircuitAtlas
 from .region_layer import *
 
@@ -47,9 +48,22 @@ def test_atlas_paths():
         assert Atlas.open(path),\
             "Could not open atlas {} at {}.".format(name_atlas, path)
 
+def _expect_equal(x, y, message=""):
+    try:
+        if not message:
+            message = """
+            Array Left with sum {}
+            != Array Right with sum {}
+            """.format(
+                np.nansum(x),
+                np.nansum(y))
+        npt.assert_array_equal(x, y, message)
+        return True
+    except (TypeError, AttributeError, KeyError):
+        assert x == y, "{} != {}".format(x, y)
+        return True
 
-def _expect_equal(x, y):
-    assert x == y, "{} != {}".format(x, y)
+    assert False, "Code execution should not reach here."
 
 def test_representation_applicability():
     """
@@ -78,10 +92,13 @@ class CircuitAtlasTest(WithFields):
         """
         Path to the atlas to be tested.
         """)
-
-    region_acronyms = Field(
+    regions_to_test = Field(
         """
         A list of acronyms to test with.
+        """)
+    layers_to_test = Field(
+        """
+        A list of lists to test with.
         """)
 
     @lazyfield
@@ -98,16 +115,187 @@ class CircuitAtlasTest(WithFields):
         """
         return Atlas.open(self.path_atlas)
 
+    @lazyfield
+    def atlas_layers(self):
+        """
+        Layers as the underlying atlas understands them.
+        """
+        def __get_one(layer):
+            return self\
+                .circuit_atlas\
+                .region_layer_representation\
+                .get_layer_region_regex(layer)
+        return [
+            __get_one(layer)
+            for layer in collections.get_list(self.layers_to_test)]
+
+    @lazyfield
+    def atlas_regions(self):
+        """
+        Regions as the underlying atlas understands them.
+        """
+        def __get_one(region):
+            return self\
+                .circuit_atlas\
+                .region_layer_representation\
+                .get_region_acronym(region)
+
+        return [
+            __get_one(region)
+            for region in collections.get_list(self.regions_to_test)]
+
     def region_mask(self):
-        for region in self.region_acronyms:
+        """
+        Test that masks for regions are good.
+        """
+        for region in self.regions_to_test:
             atlas_region = self\
                 .circuit_atlas\
                 .region_layer_representation\
-                .get_region_acronym("SSp")
-            npt.assert_array_equal(
+                .get_region_acronym(region)
+            _expect_equal(
                 self.circuit_atlas.get_mask(region=region),
                 self.atlas.get_region_mask(atlas_region).raw)
 
+    def layer_mask(self):
+        """
+        Test that masks for layers are good.
+        """
+        layer = collections.get_list(self.layers_to_test)[0]
+        circuit_atlas_mask = self\
+            .circuit_atlas\
+            .get_mask(layer=layer)
+        assert len(circuit_atlas_mask.shape) == 3
+        assert np.nansum(circuit_atlas_mask) > 0
+        atlas_layer = self.atlas_layers[0]
+        atlas_mask = self\
+            .atlas\
+            .get_region_mask(atlas_layer, attr="acronym")\
+            .raw
+        _expect_equal(
+            circuit_atlas_mask, atlas_mask,
+            """Compared circuit atlas mask layer {}
+            against atlas mask layer {}""".format(layer, atlas_layer))
+
+    def multiple_layer_mask(self):
+        """
+        Test that masks for multiple layers at once are good.
+        """
+        layers = collections.get_list(self.layers_to_test)
+
+        if len(layers) < 2:
+            raise ValueError(
+                """
+                Cannot run multiple layer mask test if layers to test are < 2:
+                {}.
+                """.format(self.layers_to_test))
+
+        circuit_atlas_mask = self\
+            .circuit_atlas\
+            .get_mask(layer=collections.get_list(layers))
+        assert len(circuit_atlas_mask.shape) == 3
+        assert np.nansum(circuit_atlas_mask) > 0
+        atlas_mask = np.any(
+            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+             for atlas_layer in self.atlas_layers],
+            axis=0)
+        _expect_equal(
+            circuit_atlas_mask, atlas_mask,
+            """circuit atlas mask with {} Trues
+            != atlas mask with {} Trues""".format(
+                np.nansum(circuit_atlas_mask),
+                np.nansum(atlas_mask)))
+
+    def region_layer_mask(self):
+        """
+        Tests that mask for region, layer pair is good.
+        """
+        layer = collections.get_list(self.layers_to_test)[0]
+        region = collections.get_list(self.regions_to_test)[0]
+        circuit_atlas_mask = self\
+            .circuit_atlas\
+            .get_mask(
+                region=region,
+                layer=layer)
+        atlas_layer = self.atlas_layers[0]
+        atlas_region = self.atlas_regions[0]
+        atlas_region_mask = self\
+            .atlas\
+            .get_region_mask(atlas_region, attr="acronym")\
+            .raw
+        atlas_layer_mask = self\
+            .atlas\
+            .get_region_mask(atlas_layer, attr="acronym")\
+            .raw
+        atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
+        _expect_equal(circuit_atlas_mask, atlas_mask)
+
+    def region_multiple_layer_mask(self):
+        """
+        Tests that masks for region, layer pairs for a single region
+        and multiple layers are good.
+        """
+        layers = collections.get_list(self.layers_to_test)
+
+        if len(layers) < 2:
+            raise ValueError(
+                """
+                Cannot run multiple layer mask test if layers to test are < 2:
+                {}.
+                """.format(self.layers_to_test))
+
+        region = collections.get_list(self.regions_to_test)[0]
+        circuit_atlas_mask = self\
+            .circuit_atlas\
+            .get_mask(
+                region=region,
+                layer=layers)
+        atlas_region = self.atlas_regions[0]
+        atlas_region_mask = self\
+            .atlas\
+            .get_region_mask(atlas_region, attr="acronym")\
+            .raw
+        atlas_layer_mask =  np.any(
+            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+             for atlas_layer in self.atlas_layers],
+            axis=0)
+        atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
+        _expect_equal(circuit_atlas_mask, atlas_mask)
+            
+
+    def multiple_region_multiple_layer_mask(self):
+        """
+        Tests that masks for region, layer pairs for a single region
+        and multiple layers are good.
+        """
+        layers = collections.get_list(self.layers_to_test)
+        regions = collections.get_list(self.regions_to_test)
+        if len(layers) < 2 or len(regions) < 2 :
+            raise ValueError(
+                """
+                Cannot run multiple region, layer mask test
+                if layers to test are < 2 or regions to test are < 2:
+                {} {}.
+                """.format(
+                    self.layers_to_test,
+                    self.regions_to_test))
+
+        circuit_atlas_mask = self\
+            .circuit_atlas\
+            .get_mask(
+                region=regions,
+                layer=layers)
+        atlas_region_mask = np.any(
+            [self.atlas.get_region_mask(atlas_region, attr="acronym").raw
+             for atlas_region in self.atlas_regions],
+            axis=0)
+        atlas_layer_mask =  np.any(
+            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+             for atlas_layer in self.atlas_layers],
+            axis=0)
+        atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
+        _expect_equal(circuit_atlas_mask, atlas_mask)
+ 
 
 def test_S1RatSSCxDiss():
     """
@@ -117,8 +305,13 @@ def test_S1RatSSCxDiss():
     circuit_atlas_test =\
         CircuitAtlasTest(
             path_atlas=path_atlas[name_atlas],
-            region_acronyms=["SSp"])
+            regions_to_test=["SSp-ll", "SSp-ul"],
+            layers_to_test=["L1", "L2"])
     circuit_atlas = circuit_atlas_test.circuit_atlas
     atlas = circuit_atlas_test.atlas
 
     circuit_atlas_test.region_mask()
+    circuit_atlas_test.layer_mask()
+    circuit_atlas_test.multiple_layer_mask()
+    circuit_atlas_test.region_layer_mask()
+    circuit_atlas_test.multiple_region_multiple_layer_mask()
