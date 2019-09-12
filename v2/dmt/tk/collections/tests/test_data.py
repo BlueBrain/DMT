@@ -2,7 +2,7 @@ import pytest as pyt
 import pandas as pd
 from pandas import testing as pdt
 from collections import OrderedDict
-from dmt.tk.data import multilevel_dataframe
+from dmt.tk.collections.data import multilevel_dataframe
 
 
 def test_plain_dict():
