@@ -50,6 +50,8 @@ def get_list(head, *tail):
     head: An element
     tail: A sequence of elements
     """
+    if check(head):
+        return head
     return [head] + list(tail)
 
 from .emuset import emuset
