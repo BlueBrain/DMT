@@ -1,9 +1,4 @@
 """
-Custom collection classes and methods.
-"""
-
-
-"""
 Utilities to deal with collections.
 """
 
@@ -41,5 +36,3 @@ def check(xs):
     return(
         isinstance(xs, collections.Iterable) and
         not isinstance(xs, (str, bytes)) )
-
-from .emuset import emuset

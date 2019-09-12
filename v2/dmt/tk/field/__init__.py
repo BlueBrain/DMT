@@ -112,8 +112,17 @@ class WithFields:
             return getattr(class_field, "__default_value__", None)
 
         for field in self.get_fields():
-            class_field = getattr(self.__class__, field, None)
-            set_name(class_field, field)
+            class_field =\
+                getattr(
+                    self.__class__,
+                    field,
+                    None)
+            class_field\
+                .set_defining_class(
+                    self.__class__)
+            set_name(
+                class_field,
+                field)
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
                 continue
@@ -124,11 +133,14 @@ class WithFields:
 
             if class_field.__required__:
                 if value is None:
+                    documentation = class_field\
+                        .documentation\
+                        .replace('\n', "\n\t\t")
                     print(
                         """Please provide Field '{}':
                         {}""".format(
                             field,
-                            class_field.__doc__.replace('\n', "\n\t\t")),
+                            documentation),
                         file=stdout)
                     raise ValueError(
                     """
@@ -141,7 +153,7 @@ class WithFields:
                         self.__class__.__name__,
                         field,
                         field,
-                        class_field.__doc__.replace('\n', "\n\t\t")))
+                        documentation))
                 setattr(self, field, value)
             elif value is None:
                 #Value is not required
@@ -304,57 +316,37 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
-def lazyproperty(instance_property):
-    """
-    Make an 'instance_property' lazy.
 
-    Parameters
-    ~   instance_property:
-    ~       an attribute method of a class decorated @property
+def lazyfield(instance_field):
     """
-    property_name_for_storage =\
-        "_{}".format(
-            instance_property.__name__)
+    Make an 'instance_field' lazy.
+
+    Arguments
+    -----------
+    instance_field:
+    ~   a method attribute of a class decorated @lazyfield
+    """
+    field_name_for_storage = "_{}".format(instance_field.__name__)
 
     @property
     def effective(instance):
         """
-        The effective, decorated instance.
+        The effective method, resulting from the decoration `@lazyfield`.
         """
         if not hasattr(
                 instance,
-                property_name_for_storage):
+                field_name_for_storage):
             setattr(
                 instance,
-                property_name_for_storage,
-                instance_property(instance))
+                field_name_for_storage,
+                instance_field(instance))
         return\
             getattr(
                 instance,
-                property_name_for_storage)
+                field_name_for_storage)
 
     return effective
 
-lazy = lazyproperty
-# def lazy(instance_property):
-#     """
-#     Make instance property lazy.
+lazy = lazyfield
 
-#     Parameters
-#     ----------------
-#     instance_property :: an attribute method of a class marked as @property
-#     """
-#     property_name_for_storage =\
-#         "_{}".format(instance_property.__name__)
-
-#     @property
-#     def effective(instance):
-#         if not hasattr(instance, property_name_for_storage):
-#             setattr(
-#                 instance,
-#                 property_name_for_storage,
-#                 instance_property(instance))
-#         return getattr(instance, property_name_for_storage)
-
-#     return effective
-
+lazyproperty = lazyfield

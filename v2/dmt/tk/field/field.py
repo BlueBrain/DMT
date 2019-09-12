@@ -16,7 +16,8 @@ class Field:
             __type__=object,
             __validation__=lambda x: True,
             __required__=True,
-            __default_value__=None):
+            __default_value__=None,
+            __examples__=[]):
         """Initialize Me"""
         self.__doc__ = __doc__
         self.__type__ = __type__
@@ -24,6 +25,8 @@ class Field:
         self.__required__ = __required__
         self.__attr_name__ = None
         self.__default_value__ = __default_value__
+        self.__examples__  = __examples__
+        self.__defined_in__ = "Unknown"
 
     def __get_instance_attribute_name(self, instance):
         """
@@ -70,10 +73,37 @@ class Field:
                     value))
         return True
 
+
     @property
     def description(self):
         """Describe this Field"""
         return "Field<{}>".format(self.__doc__)
+
+    def set_defining_class(self, cls):
+        """
+        Where was this `Field` defined.
+        """
+        self.__defined_in__ = cls.__name__
+
+    @property
+    def examples(self):
+        """
+        Get examples
+        """
+        return self.__examples__
+
+    @property
+    def documentation(self):
+        """
+        Documentation with examples.
+        """
+        if not self.__examples__:
+            return self.__doc__
+        return self.__doc__ + """
+        You may look at some examples: `{}.{}.examples`
+        """.format(
+            self.__defined_in__,
+            self.__attr_name__)
 
     def __set__(self, instance, value):
         """

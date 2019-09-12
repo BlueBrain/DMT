@@ -1110,4 +1110,3 @@
 * Presentations
   Talk about validations.
 ** <2019-03-01 Fri>
-   
