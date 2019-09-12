@@ -8,10 +8,6 @@ import pandas
 from voxcell.nexus.voxelbrain import Atlas
 from dmt.tk import collections
 from dmt.tk.field import Field, lazyfield, WithFields
-from neuro_dmt.terminology.parameters import\
-    MTYPE, SYNAPSE_CLASS,\
-    BRAIN_REGION, MESOCOLUMN, LAYER,\
-    DEPTH, HEIGHT
 from neuro_dmt.terminology.atlas import translate
 from .region_layer import RegionLayerRepresentation
 
