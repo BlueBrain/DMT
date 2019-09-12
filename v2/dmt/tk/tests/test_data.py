@@ -1,40 +1,46 @@
 import pytest as pyt
 import pandas as pd
 from pandas import testing as pdt
+from collections import OrderedDict
 from dmt.tk.data import multilevel_dataframe
 
 
 def test_plain_dict():
     testdict = {'a': [1, 2, 3, 4], 'b': 0}
     expdf = pd.DataFrame(testdict)
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_list_of_dict():
     testdict = [{'a': 1, 'b': 0}, {'a': 2, 'b': 0}, {'a': 3}]
     expdf = pd.DataFrame(testdict)
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_list_entries():
     testdict = {'c': [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}
     expdf = pd.DataFrame({('c', 0): [1, 4, 7], ('c', 1): [2, 5, 8],
                           ('c', 2): [3, 6, 9]})
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_list_dicts_list():
     testdict = [{'c': a} for a in [[1, 2, 3], [4, 5, 6], [7, 8, 9]]]
     expdf = pd.DataFrame({('c', 0): [1, 4, 7], ('c', 1): [2, 5, 8],
                           ('c', 2): [3, 6, 9]})
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_one_list():
     testdict = {'c': [[1, 2, 3], 5, [7, 8, 9]]}
     expdf = pd.DataFrame({('c', 0): [1, 5, 7], ('c', 1): [2, None, 8],
                           ('c', 2): [3, None, 9]})
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_dict_entries():
@@ -45,7 +51,8 @@ def test_dict_entries():
                           ('post', 'c'): [0, 0, 0, 1, 1, 1, 2, 2, 2],
                           ('post', 'd'): [0, 1, 2, 0, 1, 2, 0, 1, 2]})
     frame = multilevel_dataframe(testdict)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_list_and_str():
@@ -53,7 +60,8 @@ def test_list_and_str():
     expdf = pd.DataFrame({('a', 0): ['c', 'esr'],
                           ('a', 1): ['d', None]})
     frame = multilevel_dataframe(testdict)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_dict_and_str():
@@ -62,7 +70,8 @@ def test_dict_and_str():
                           ('pre', 'a'): ['b', None]})
     frame = multilevel_dataframe(testdict)
     print(frame)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_dict_and_list():
@@ -72,7 +81,8 @@ def test_dict_and_list():
                           ('b', 1): [None, 2],
                           ('b', 2): [None, 3]})
     frame = multilevel_dataframe(testdict)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_columns_different_levels():
@@ -81,7 +91,8 @@ def test_columns_different_levels():
     expdf = pd.DataFrame({('b', 'a'): [1],
                           ('c', ''): ['d']})
     frame = multilevel_dataframe(testdict)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_nested_dicts_and_lists():
@@ -89,7 +100,8 @@ def test_nested_dicts_and_lists():
     expdf = pd.DataFrame({('a', 'b', 0): [1],
                           ('a', 'b', 1): [2]})
     frame = multilevel_dataframe(testdict)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_deeply_nested():
@@ -104,7 +116,8 @@ def test_deeply_nested():
                           ('param', 'exclude', 'exclude', 2): [6]})
     frame = multilevel_dataframe(testdict)
     print(expdf, "\n\n", frame)
-    pdt.assert_frame_equal(expdf, frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
 
 
 def test_many_different_levels():
@@ -124,7 +137,8 @@ def test_set():
     testdict = {'c': [{1, 2, 3}, {4, 5, 6}, {7, 8, 9}]}
     expdf = pd.DataFrame({('c', 0): [1, 4, 7], ('c', 1): [2, 5, 8],
                           ('c', 2): [3, 6, 9]})
-    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict))
+    pdt.assert_frame_equal(expdf, multilevel_dataframe(testdict),
+                           check_like=True)
 
 
 def test_with_samples():
@@ -144,4 +158,22 @@ def test_with_samples():
                           ('samples', 2): [3, 6, 1, 3, 1]})
     frame = multilevel_dataframe(testdict)
     print(expdf, "\n\n", frame)
+    pdt.assert_frame_equal(expdf, frame,
+                           check_like=True)
+
+
+def test_preserves_order():
+    testdict = OrderedDict([
+        ('g', [OrderedDict([('e', [2]),
+                            ('f', [1])])]),
+        ('a', [OrderedDict([('b', [1, 2])])]),
+        ('c', [3])])
+    expdf = pd.DataFrame(OrderedDict([
+        (('g', 'e', 0), [2]),
+        (('g', 'f', 0), [1]),
+        (('a', 'b', 0), [1]),
+        (('a', 'b', 1), [2]),
+        (('c', '', ''), [3])]))
+
+    frame = multilevel_dataframe(testdict)
     pdt.assert_frame_equal(expdf, frame)
