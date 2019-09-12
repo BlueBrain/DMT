@@ -97,12 +97,9 @@ class CircuitAtlas(WithFields):
                         with_descendants=with_descendents,
                         ignore_case=ignore_case)}
 
-    def get_mask(self,
+    def _get_region_layer_mask(self,
             region=None,
-            layer=None,
-            hypercolumn=None,
-            depth=None,
-            height=None):
+            layer=None):
         """
         Mask for combinations of regions and layers.
         """
@@ -132,3 +129,43 @@ class CircuitAtlas(WithFields):
             return layer_mask
 
         return numpy.logical_and(region_mask, layer_mask)
+
+    def _get_principal_axis_mask(self,
+            depth=None,
+            height=None):
+        """
+        A mask for specified depth / height along the principal axis.
+        """
+        if depth is not None and height is not None:
+            raise RuntimeError(
+            "Cannot define a principal axis mask for both depth and height.")
+
+            
+
+    def get_mask(self,
+            region=None,
+            layer=None,
+            depth=None,
+            height=None):
+        """
+        Mask for combinations of given parameters.
+        """
+        region_layer_mask =\
+            self._get_region_layer_mask(
+                region=region,
+                layer=layer)
+        if depth is None and height is None:
+            return region_layer_mask
+
+        if depth is not None and height is not None:
+            raise RuntimeError(
+                "Cannot define a mask for both depth and height.")
+
+        principal_axis_mask =\
+            self._get_principal_axis_mask(depth=depth)\
+            if depth is not None else\
+               self._get_principal_axis_mask(height=height)
+        return numpy\
+            .logical_and(
+                region_layer_mask,
+                principal_axis_mask)
