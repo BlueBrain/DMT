@@ -24,6 +24,8 @@ def multilevel_dataframe(data_dict_s):
     """
     base_df = pd.DataFrame(data_dict_s)
 
+    # for each column, check for mappings and iterables to determine
+    # which subcolumns are necessary
     lv1 = list(base_df.columns)
     lv2 = [[] for c in lv1]
     at_least_one_sub = False
@@ -51,17 +53,21 @@ def multilevel_dataframe(data_dict_s):
         if (has_noniter and has_iter) and 0 not in lv2[c]:
             lv2[c].append(0)
 
+    # if there are no necessary subcolumns, just return the dict
     if not at_least_one_sub:
         return base_df
 
+    # for every necessary subcolumn, put the appropriate values
     newdfdict = OrderedDict()
     for i, l1 in enumerate(lv1):
         if len(lv2[i]) == 0:
+            # when this method recurses, it will encounter tuple column names
             if isinstance(l1, tuple):
                 newdfdict[l1 + ('',)] = base_df[l1].values
             else:
                 newdfdict[(l1, '')] = base_df[l1].values
         for j, l2 in enumerate(lv2[i]):
+            # when this method recurses, it will encounter tuple column names
             if isinstance(l1, tuple):
                 key = l1 + (l2, )
             else:
@@ -78,4 +84,6 @@ def multilevel_dataframe(data_dict_s):
                     values.append(value if l2 == 0 else None)
 
             newdfdict[key] = values
+
+    # recurse to provide sub-subcolumns if needed, and so on
     return pd.DataFrame(multilevel_dataframe(newdfdict))
