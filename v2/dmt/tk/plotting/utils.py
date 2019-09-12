@@ -4,12 +4,10 @@ from collections import Mapping, OrderedDict
 
 
 # TODO: test
-def make_hashable(df, columnlabel):
+def collapse_dataframe_column(df, columnlabel):
     """
-    take a column of dicts in a dataframe and turn them
-    into a hashable column of strings. Assumes that all
-    dicts in the column have the same keys
-    TODO: drop that assumption
+    take a dataframe with potentially multiindexed columns
+    and collapse a column to a single-string representation
 
     Arguments:
         df : a dataframe
@@ -66,3 +64,36 @@ def default_group_desc_shallow(group_dict, toplabel):
 
 def default_group_label(row):
     return ", ".join(str(v) if v is not None else "_" for v in row)
+
+
+# TODO: provide callbacks to name collapsed columns and elements
+# TODO: move in tests from test_prepare_plot, construct
+#       simple tests for tppp
+def pivot_table(df, index, columns, values, **kwargs):
+    """
+    construct a pivot table for a dataframe with potentially
+    multiindexed columns
+
+    Arguments:
+        df: a pandas DataFrame, potentially with multiindexed columns
+        index: str, the column of df to use for index (top-level column name)
+        columns: str, the column of df to use for the columns ''
+        values: the column of the df containing the values to pivot
+        kwargs: additional arguments to pandas.DataFrame.pivot_table can be
+                passed as keyword arguments
+
+    Returns:
+        pandas dataframe with collapsed version of 'index' column as index,
+        collapsed version of 'columns' column as the column values
+        and values as the cell contents
+    """
+    df, fromcol = collapse_dataframe_column(df, index)
+    df, tocol = collapse_dataframe_column(df, columns)
+
+    # flatten out multiindex
+    flat_df = pd.DataFrame({fromcol: df[fromcol],
+                            tocol: df[tocol],
+                            values: df[values]})
+    print(flat_df)
+    return flat_df.pivot_table(columns=tocol, index=fromcol,
+                               values=values)

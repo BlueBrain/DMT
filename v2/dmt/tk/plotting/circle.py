@@ -4,10 +4,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.data import multilevel_dataframe
-from dmt.tk.plotting.utils import make_hashable
+from dmt.tk.plotting.utils import pivot_table
 from dmt.tk.plotting import golden_figure
 
-# TODO: change format of 'pre', 'post' columns, expect multiindexed columns
+
 # TODO: test that rotation works
 class CircleTool:
     """a helper for drawing circles, circle segments, and arcs"""
@@ -223,17 +223,8 @@ class CirclePlot:
                 "found: {}"
                 .format(DATA_KEYS, non_data_columns))
 
-        df, fromcol = make_hashable(df, non_data_columns[0])
-        df, tocol = make_hashable(df, non_data_columns[1])
-
-        # flatten out multiindex
-        flat_df = pd.DataFrame({fromcol: df[fromcol],
-                                tocol: df[tocol],
-                                MEAN: df[MEAN]})
-
-        pivot_table = flat_df.pivot_table(columns=tocol, index=fromcol,
-                                          values=MEAN)
-        return pivot_table
+        return pivot_table(df, non_data_columns[0], non_data_columns[1],
+                           MEAN)
 
     def group_angles(self, pivot_table):
         """
@@ -470,7 +461,8 @@ class CirclePlot:
             figure, axis with CirclePlot
         """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
         pivot_table = self._prepare_plot(df)
-        sz = len(pivot_table.index)*4
+        sz = 60# len(pivot_table.index)*4
+        print(pivot_table.index, len(pivot_table.index))
         fig, ax = golden_figure(width=sz, height=sz)
         # TODO: adapt limits to text
         ax.set_xlim(left=-1.3, right=+1.3)
@@ -492,7 +484,6 @@ class CirclePlot:
         plt.rcParams.update({'font.size': sz})
         textcirc = CircleTool(self.circle.radius * 1.2)
         for t, a in group_angles.items():
-            print(t, a)
             plt.text(*textcirc.angles_to_points(a), t,
                      rotation=90-a*(180/np.pi), rotation_mode="anchor")
         plt.rcParams.update({"font.size": oldfont})

@@ -105,102 +105,21 @@ class TestCircleTool:
 
 class TestCirclePlot:
 
-    class Test_prepare_plot:
+    def test_more_nondata_cols(self):
+        df = pd.DataFrame({
+            MEAN: [1, 2],
+            'a': [1, 2],
+            'b': [2, 3],
+            'c': [4, 5]})
+        with pyt.raises(ValueError):
+            CirclePlot().plot(df)
 
-        # edge cases to do
-        # TODO: columns mismatch
-        # TODO: duplicate pathways
-        # TODO: no MEAN
-        # TODO: more than two non-data columns
-        def test_basic(self):
-            df = pd.DataFrame(OrderedDict([
-                (MEAN, [1, 2, 1, 2]),
-                ('pre', ['a', 'a', 'b', 'b']),
-                ('post', ['a', 'b', 'a', 'b'])]))
-            table = CirclePlot()._prepare_plot(df)
-            pd.testing.assert_frame_equal(
-                table,
-                df.pivot_table(index='pre', columns='post',
-                               values=MEAN))
-
-        def test_2_level_columns(self):
-            df = pd.DataFrame(OrderedDict([
-                ((MEAN, ''), [1, 2, 1, 2]),
-                ((STD, ''), [1, 2, 3, 1]),
-                (('pre', 'mtype'), ['a', 'a', 'b', 'b']),
-                (('post', 'mtype'), ['a', 'b', 'a', 'b'])]))
-            table = CirclePlot()._prepare_plot(df)
-            edf = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                .pivot_table(index='pre: mtype',
-                             columns='post: mtype',
-                             values=MEAN)
-            print(table, "\n\n", edf)
-            pd.testing.assert_frame_equal(
-                table, edf)
-
-        def test_unhashable_columns(self):
-            df = pd.DataFrame(OrderedDict([
-                (MEAN, [1, 2, 1, 2]),
-                (STD, [1, 2, 3, 1]),
-                ('pre', [{'mtype': 'a'}, {'mtype': 'a'},
-                         {'mtype': 'b'}, {'mtype': 'b'}]),
-                ('post', [{'mtype': 'a'}, {'mtype': 'b'},
-                          {'mtype': 'a'}, {'mtype': 'b'}])]))
-            table = CirclePlot()._prepare_plot(df)
-            pd.testing.assert_frame_equal(
-                table,
-                pd.DataFrame({
-                    'pre: mtype': ['a', 'a', 'b', 'b'],
-                    'post: mtype': ['a', 'b', 'a', 'b'],
-                    MEAN: [1, 2, 1, 2]})
-                .pivot_table(index='pre: mtype',
-                             columns='post: mtype',
-                             values=MEAN))
-
-        def test_duplicate_pathways(self):
-            df = pd.DataFrame(OrderedDict([
-                ((MEAN, ''), [1, 2, 1, 2, 3]),
-                ((STD, ''), [1, 2, 3, 1, 3]),
-                (('pre', 'mtype'), ['a', 'a', 'b', 'b', 'b']),
-                (('post', 'mtype'), ['a', 'b', 'a', 'b', 'b'])]))
-            pd.testing.assert_frame_equal(
-                pd.DataFrame({
-                    'pre: mtype': ['a', 'a', 'b', 'b'],
-                    'post: mtype': ['a', 'b', 'a', 'b'],
-                    MEAN: [1, 2, 1, 2.5]})
-                .pivot_table(index='pre: mtype',
-                             columns='post: mtype',
-                             values=MEAN),
-                CirclePlot()._prepare_plot(df))
-
-        def test_columns_mismatch(self):
-            df = pd.DataFrame(OrderedDict([
-                (MEAN, [1, 2]),
-                ('pre', ['a', 'b']),
-                ('post', ['c', 'c'])]))
-
-            pd.testing.assert_frame_equal(
-                df.pivot_table(index='pre', columns='post', values=MEAN),
-                CirclePlot()._prepare_plot(df))
-
-        def test_more_nondata_cols(self):
-            df = pd.DataFrame({
-                MEAN: [1, 2],
-                'a': [1, 2],
-                'b': [2, 3],
-                'c': [4, 5]})
-            with pyt.raises(ValueError):
-                CirclePlot()._prepare_plot(df)
-
-        def test_no_MEAN(self):
-            df = pd.DataFrame({
-                'a': [1, 2],
-                'b': [2, 3]})
-            with pyt.raises(ValueError):
-                CirclePlot()._prepare_plot(df)
+    def test_no_MEAN(self):
+        df = pd.DataFrame({
+            'a': [1, 2],
+            'b': [2, 3]})
+        with pyt.raises(ValueError):
+            CirclePlot().plot(df)
 
     # don't need to test for NaN, as plot will convert to 0 anyway
     class TestGroupAngles:
@@ -391,16 +310,16 @@ class TestCirclePlot:
                 plt.clf()
 
             def test_multilevel(self):
-                df = pd.DataFrame({
-                    (MEAN, ''): [1, 2, 1, 2],
-                    'pre': [{'m': 'a', 'l': 1},
-                            {'m': 'a', 'l': 1},
-                            {'m': 'b', 'l': 2},
-                            {'m': 'b', 'l': 2}],
-                    'post': [{'m': 'a', 'l': 1},
-                             {'m': 'b', 'l': 2},
-                             {'m': 'a', 'l': 1},
-                             {'m': 'b', 'l': 2}]})
+                df = pd.DataFrame(OrderedDict([
+                    ((MEAN, '', '', ''), [1, 2, 1, 2]),
+                    (('pre', 'm', 'a', 'l'), [1, 1, None, None]),
+                    (('pre', 'm', 'b', 'l'), [None, None, 2, 2]),
+                    (('post', 'm', 'a', 'l'), [1, None, 1, None]),
+                    (('post', 'm', 'a', 'l'), [None, 2, None, 2])]))
+                f, a = CirclePlot().plot(df)
+
+                assert isinstance(f, plt.Figure)
+                assert isinstance(a, plt.Axes)
 
             def test_dict_prepost(self):
                 df = pd.DataFrame({
