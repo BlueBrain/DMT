@@ -30,7 +30,7 @@ class RegionLayerRepresentationImplementation(ABCWithFields):
         Initialize for an atlas.
         """
         self._use_paxinos_regions = any(
-            atlas.load_region_map(pattern)
+            atlas.load_region_map().find(pattern, attr="acronym")
             for pattern in ("SSCtx", "S1HL"))
 
     @classmethod

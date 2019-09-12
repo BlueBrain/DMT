@@ -39,7 +39,6 @@ path_atlas = {
         "data/atlas/S1/MEAN/juvenile_L23_MC_BTC_shifted_down",
         "Bio_M")}
 
-
 def test_atlas_paths():
     """
     Paths in `path_atlas` must exist.
@@ -50,6 +49,10 @@ def test_atlas_paths():
 
 def _expect_equal(x, y, message=""):
     try:
+        message += " {} != {}".format(x, y)
+        assert x == y, message
+        return True
+    except ValueError:
         if not message:
             message = """
             Array Left with sum {}
@@ -59,9 +62,6 @@ def _expect_equal(x, y, message=""):
                 np.nansum(y))
         npt.assert_array_equal(x, y, message)
         return True
-    except (TypeError, AttributeError, KeyError):
-        assert x == y, "{} != {}".format(x, y)
-        return True
 
     assert False, "Code execution should not reach here."
 
@@ -69,7 +69,8 @@ def test_representation_applicability():
     """
     One of the `RegionLayerRepresentation`s should apply.
     """
-    path = path_atlas["S1RatSSCxDiss"]
+    atlas_name = "S1RatSSCxDiss"
+    path = path_atlas[atlas_name]
     atlas = Atlas.open(path)
     assert FullLayerRepresentation.is_applicable(atlas)
     assert not SemicolonIntRepresentation.is_applicable(atlas)
@@ -79,15 +80,40 @@ def test_representation_applicability():
 
     _expect_equal(
         representation.get_region_acronym("SSp"),
-        "S1")
+        "S1",
+        "atlas: ".format(atlas_name))
     _expect_equal(
         representation.get_layer_region_regex("L1"),
-        "@L1$")
+        "@L1$",
+        "atlas: {}".format(atlas_name))
+
+    atlas_name = "S1MouseNeoCx"
+    path = path_atlas[atlas_name]
+    atlas = Atlas.open(path)
+    assert not FullLayerRepresentation.is_applicable(atlas)
+    assert not SemicolonIntRepresentation.is_applicable(atlas)
+    assert BlueBrainAtlasRepresentation.is_applicable(atlas)
+    representation = RegionLayerRepresentation.for_atlas(atlas)
+    assert not BlueBrainAtlasRepresentation(atlas)._use_paxinos_regions
+
+    _expect_equal(
+        representation.get_region_acronym("SSp"),
+        "SSp",
+        "atlas: {}".format(atlas_name))
+    _expect_equal(
+        representation.get_layer_region_regex("L2"),
+        "@.*2$",
+        "atlas: {}".format(atlas_name))
+
 
 class CircuitAtlasTest(WithFields):
     """
     Test `CircuitAtlas`.
     """
+    label = Field(
+        """
+        Provide a label to be used when complaining about test failures.
+        """)
     path_atlas = Field(
         """
         Path to the atlas to be tested.
@@ -262,7 +288,6 @@ class CircuitAtlasTest(WithFields):
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
         _expect_equal(circuit_atlas_mask, atlas_mask)
             
-
     def multiple_region_multiple_layer_mask(self):
         """
         Tests that masks for region, layer pairs for a single region
@@ -295,7 +320,48 @@ class CircuitAtlasTest(WithFields):
             axis=0)
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
         _expect_equal(circuit_atlas_mask, atlas_mask)
- 
+
+    def run_mask_tests(self):
+        """
+        Run only mask tests.
+        """
+        self.region_mask()
+        self.layer_mask()
+        self.multiple_layer_mask()
+        self.region_layer_mask()
+        self.multiple_region_multiple_layer_mask()
+        return (True, "All Good")
+
+    def run_density_tests(self):
+        """
+        Run only cell density tests.
+        """
+        return (False, "No cell density tests defined")
+
+    testable_features = ("masks", "densities")
+
+    def __call__(self, *features_to_test):
+        """
+        Run all tests.
+        """
+        if len(features_to_test) > 0:
+            testable_features =\
+                set(features_to_test)\
+                .intersection(self.testable_features)
+            if len(testable_features) == 0:
+                raise ValueError(
+                    "None of the features {}  are testable."\
+                    .format(features_to_test))
+        else:
+            testable_features = self.testable_features
+
+        if "masks" in testable_features:
+            result, message = self.run_mask_tests()
+            assert result, message
+        if "densities" in testable_features:
+            result, message = self.run_density_tests()
+            assert result, message
+
 
 def test_S1RatSSCxDiss():
     """
@@ -304,14 +370,22 @@ def test_S1RatSSCxDiss():
     name_atlas = "S1RatSSCxDiss"
     circuit_atlas_test =\
         CircuitAtlasTest(
+            label=name_atlas,
             path_atlas=path_atlas[name_atlas],
             regions_to_test=["SSp-ll", "SSp-ul"],
             layers_to_test=["L1", "L2"])
-    circuit_atlas = circuit_atlas_test.circuit_atlas
-    atlas = circuit_atlas_test.atlas
+    circuit_atlas_test("masks")
 
-    circuit_atlas_test.region_mask()
-    circuit_atlas_test.layer_mask()
-    circuit_atlas_test.multiple_layer_mask()
-    circuit_atlas_test.region_layer_mask()
-    circuit_atlas_test.multiple_region_multiple_layer_mask()
+
+def test_S1MouseNeoCx():
+    """
+    Test Mouse Neo-cortex atlas.
+    """
+    name_atlas = "S1MouseNeoCx"
+    circuit_atlas_test =\
+        CircuitAtlasTest(
+            label=name_atlas,
+            path_atlas=path_atlas[name_atlas],
+            regions_to_test=["SSp-ll", "SSp-ul"],
+            layers_to_test=["L1", "L2"])
+    circuit_atlas_test("masks")
