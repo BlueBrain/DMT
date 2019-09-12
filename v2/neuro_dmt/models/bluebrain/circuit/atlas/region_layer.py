@@ -3,12 +3,12 @@ Representation of layer regions in an atlas.
 """
 
 from abc import ABC, abstractmethod, abstractclassmethod
-from dmt.tk.field import ClassAttribute, Field, lazyfield, WithFields
+from dmt.tk.field import ClassAttribute, Field, lazyfield, ABCWithFields
 from dmt.tk import collections
 from neuro_dmt.terminology.atlas import translate
 
 
-class RegionLayerRepresentationImplementation(WithFields):
+class RegionLayerRepresentationImplementation(ABCWithFields):
     """
     Implements `RegionLayerRepresentation`.
     """
