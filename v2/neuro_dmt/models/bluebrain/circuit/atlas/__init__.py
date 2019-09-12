@@ -22,7 +22,7 @@ class CircuitAtlas(WithFields):
     and provide tools to load them and work with them.
     """
 
-    path_atlas = Field(
+    path = Field(
         """
         Path to the directory that holds the circuit atlas data.
         This path may be a URL.
@@ -33,7 +33,7 @@ class CircuitAtlas(WithFields):
         """
         `Atlas` instance to load the data.
         """
-        return Atlas.open(self.path_atlas)
+        return Atlas.open(self.path)
 
     @lazyfield
     def hierarchy(self):
@@ -62,36 +62,19 @@ class CircuitAtlas(WithFields):
         __default_value__={
             "cortical": ["L1", "L2", "L3", "L4", "L5", "L6"]})
 
-    def __getattr__(self, attr):
-        """
-        If a method is not defined in `class CircuitAtlas`, 
-        call it on `self.atlas`.
-        """
-        try:
-            return getattr(self.atlas, attr)
-        except AttributeError as error:
-            raise AttributeError(
-                """
-                Attribute {{} defined neither for {} nor the associated {}
-                instance.
-                """.format(
-                    self.__class__.__name__,
-                    self.atlas.__class__.__name__))
-
     @lazyfield
     def region_layer_representation(self):
         """
         An object that expresses how region and layer are combined in the
         atlas, how their acronyms are represented in the hierarchy.
         """
-        return RegionLayerRepresentation.for_atlas(atlas)
+        return RegionLayerRepresentation.for_atlas(self.atlas)
 
     def get_acronyms(self, regions, layers=None):
         """
         Get acronyms used by the atlas for combinations of regions and layers.
         """
         return self.region_layer_representation.get_acronyms(regions, layers)
-
 
     def get_ids(self,
             regions=None,

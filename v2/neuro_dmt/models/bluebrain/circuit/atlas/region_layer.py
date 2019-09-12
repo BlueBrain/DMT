@@ -30,8 +30,8 @@ class RegionLayerRepresentationImplementation(ABCWithFields):
         Initialize for an atlas.
         """
         self._use_paxinos_regions = any(
-            atlas.load_region_map(pattern, "acronym")
-            for pattern in ("SSCtx", "S1HL")):
+            atlas.load_region_map(pattern)
+            for pattern in ("SSCtx", "S1HL"))
 
     @classmethod
     def is_applicable(cls, atlas):
@@ -39,7 +39,7 @@ class RegionLayerRepresentationImplementation(ABCWithFields):
         Is this implementation applicable to given `Atlas` instance.
         """
         return any(
-            atlas.load_region_map().find(pattern)
+            atlas.load_region_map().find(pattern, attr="acronym")
             for pattern in cls.applicable_patterns)
 
     def get_region_acronym(self, region):
@@ -53,7 +53,7 @@ class RegionLayerRepresentationImplementation(ABCWithFields):
     @abstractclassmethod
     def get_query_layer(self, layer):
         """
-        Get layer as the atlas represents itk.
+        Get layer as the atlas represents it.
         """
         pass
 
@@ -67,7 +67,8 @@ class RegionLayerRepresentationImplementation(ABCWithFields):
                    .format(cls.get_query_layer(layer))
                        
 
-class FullLayerRepresentation:
+class FullLayerRepresentation(
+        RegionLayerRepresentationImplementation):
     """
     Layer region acronyms contain the full layer string, e.g. L2 or mc2;L2.
     """
@@ -81,7 +82,8 @@ class FullLayerRepresentation:
         return layer
 
 
-class SemicolonIntRepresentation:
+class SemicolonIntRepresentation(
+        RegionLayerRepresentationImplementation):
     """
     Layer region acronyms separated region from layer by a semicolon,
     <region>;<layer>
@@ -166,17 +168,15 @@ class RegionLayerRepresentation:
         raise Exception(
             "No available implementation applies to atlas {}.".format(atlas))
 
-
     def get_region_acronym(self, region):
         """
         Acronym for a region.
         """
-        self.implementation.get_region_acronym(region)
-
+        return self._implementation.get_region_acronym(region)
 
     def get_layer_region_regex(self, region):
         """
         Get acronym for region.
         """
-        return self.implementation.get_layer_region_regex(region)
+        return self._implementation.get_layer_region_regex(region)
 
