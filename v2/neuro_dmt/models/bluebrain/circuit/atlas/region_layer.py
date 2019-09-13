@@ -220,7 +220,7 @@ class RegionLayer(WithFields):
         Mask for combinations of regions and layers.
         """
         if region is None and layer is None:
-            return self.atlas.load_data("brain_regions") > 0
+            return self.atlas.load_data("brain_regions").raw > 0
 
         if region is not None:
             region_mask = numpy.any(

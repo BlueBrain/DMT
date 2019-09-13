@@ -97,6 +97,7 @@ class CircuitAtlas(WithFields):
             self.region_layer.get_mask(
                 region=region,
                 layer=layer)
+
         if depth is None and height is None:
             return region_layer_mask
 
@@ -108,6 +109,7 @@ class CircuitAtlas(WithFields):
             self.principal_axis.get_mask(
                 depth=depth,
                 height=height)
+
         return numpy\
             .logical_and(
                 region_layer_mask,

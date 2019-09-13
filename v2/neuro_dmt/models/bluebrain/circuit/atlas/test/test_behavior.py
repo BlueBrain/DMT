@@ -167,7 +167,7 @@ class CircuitAtlasTest(WithFields):
             axis=0)
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
         expect_equal(circuit_atlas_mask, atlas_mask)
-            
+
     def multiple_region_multiple_layer_mask(self):
         """
         Tests that masks for region, layer pairs for a single region
@@ -201,6 +201,60 @@ class CircuitAtlasTest(WithFields):
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
         expect_equal(circuit_atlas_mask, atlas_mask)
 
+    def depth_mask(self):
+        """
+        Test that mask for depth is good.
+        """
+        depths_to_test = [(0, 25), (500, 700)]
+
+        circuit_atlas_mask = self.circuit_atlas.get_mask(depth=depths_to_test)
+
+        top = self.atlas.load_data("[PH]1").raw[..., 1]
+        pdy = top - self.atlas.load_data("[PH]y").raw
+
+        valid_voxel = self.atlas.load_data("brain_regions").raw != 0
+        at_depth_voxel = np.any(
+            [np.logical_and(x <= pdy, pdy < y) for x, y in depths_to_test],
+            axis=0)
+        atlas_mask = np.logical_and(at_depth_voxel, valid_voxel)
+
+        expect_equal(
+            circuit_atlas_mask,
+            atlas_mask,
+            """
+            Circuit atlas mask with total Trues: {},
+            Direct Atlas mask with total Trues: {}
+            """.format(
+                np.nansum(circuit_atlas_mask),
+                np.nansum(atlas_mask)))
+
+    def height_mask(self):
+        """
+        Test that mask for height is good.
+        """
+        heights_to_test = [(0, 25), (500, 700)]
+
+        circuit_atlas_mask = self.circuit_atlas.get_mask(height=heights_to_test)
+        
+        bottom = self.atlas.load_data("[PH]6").raw[..., 0]
+        phy = self.atlas.load_data("[PH]y").raw - bottom
+
+        valid_voxel = self.atlas.load_data("brain_regions").raw != 0
+        at_height_voxel = np.any(
+            [np.logical_and(x <= phy, phy < y) for x, y in heights_to_test],
+            axis=0)
+        atlas_mask = np.logical_and(at_height_voxel, valid_voxel)
+
+        expect_equal(
+            circuit_atlas_mask,
+            atlas_mask,
+            """
+            Circuit atlas mask with total Trues: {},
+            Direct Atlas mask with total Trues: {}
+            """.format(
+                np.nansum(circuit_atlas_mask),
+                np.nansum(atlas_mask)))       
+
     def run_mask_tests(self):
         """
         Run only mask tests.
@@ -210,13 +264,15 @@ class CircuitAtlasTest(WithFields):
         self.multiple_layer_mask()
         self.region_layer_mask()
         self.multiple_region_multiple_layer_mask()
+        self.depth_mask()
+        self.height_mask()
         return (True, "All Good")
 
     def run_density_tests(self):
         """
         Run only cell density tests.
         """
-        return (False, "No cell density tests defined")
+        return (False, "No density tests defined.")
 
     testable_features = ("masks", "densities")
 
