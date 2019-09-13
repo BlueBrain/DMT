@@ -3,8 +3,13 @@ import pandas as pd
 from collections import Mapping, OrderedDict
 
 
+def default_group_label(row):
+    return ", ".join(str(v) if v is not None else "_" for v in row)
+
+
 # TODO: test
-def collapse_dataframe_column(df, columnlabel):
+def collapse_dataframe_column(df, columnlabel,
+                              value_callback=default_group_label):
     """
     take a dataframe with potentially multiindexed columns
     and collapse a column to a single-string representation
@@ -24,13 +29,13 @@ def collapse_dataframe_column(df, columnlabel):
         return df.copy(), columnlabel
 
     if isinstance(subdf.columns[0], tuple):
-        group_description = default_group_desc_deep
+        group_description = _default_group_desc_deep
     else:
-        group_description = default_group_desc_shallow
+        group_description = _default_group_desc_shallow
 
     cat_column_label = (
         group_description(_row_to_dict(subdf), columnlabel))
-    column_values = [default_group_label(r)
+    column_values = [value_callback(r)
                      for i, r in subdf.iterrows()]
     return df.drop(columns=columnlabel).assign(
         **{cat_column_label: column_values}), cat_column_label
@@ -45,31 +50,25 @@ def _row_to_dict(row):
     return OrderedDict(((k, _row_to_dict(row[k])) for k in topkeys))
 
 
-def default_group_desc_deep(group_dict, toplabel):
+def _default_group_desc_deep(group_dict, toplabel):
     keys = group_dict.keys()
     pre = ": {" if len(keys) > 1 else ": "
     post = "}" if len(keys) > 1 else ""
     return toplabel + pre +\
-        ", ".join([default_group_desc_deep(group_dict[k], k)
+        ", ".join([_default_group_desc_deep(group_dict[k], k)
                    if isinstance(group_dict[k], Mapping) else str(k)
                    for k in keys]) + post
 
 
-def default_group_desc_shallow(group_dict, toplabel):
+def _default_group_desc_shallow(group_dict, toplabel):
     return toplabel + ": " +\
-        ", ".join([default_group_desc_shallow(group_dict[k], k)
+        ", ".join([_default_group_desc_shallow(group_dict[k], k)
                    if isinstance(group_dict[k], Mapping) else str(k)
                    for k in group_dict.keys()])
 
 
-def default_group_label(row):
-    return ", ".join(str(v) if v is not None else "_" for v in row)
-
-
-# TODO: provide callbacks to name collapsed columns and elements
-# TODO: move in tests from test_prepare_plot, construct
-#       simple tests for tppp
-def pivot_table(df, index, columns, values, **kwargs):
+def pivot_table(df, index, columns, values,
+                value_callback=default_group_label, **kwargs):
     """
     construct a pivot table for a dataframe with potentially
     multiindexed columns
@@ -87,13 +86,13 @@ def pivot_table(df, index, columns, values, **kwargs):
         collapsed version of 'columns' column as the column values
         and values as the cell contents
     """
-    df, fromcol = collapse_dataframe_column(df, index)
-    df, tocol = collapse_dataframe_column(df, columns)
-
+    df, fromcol = collapse_dataframe_column(
+        df, index, value_callback=value_callback)
+    df, tocol = collapse_dataframe_column(
+        df, columns, value_callback=value_callback)
     # flatten out multiindex
     flat_df = pd.DataFrame({fromcol: df[fromcol],
                             tocol: df[tocol],
                             values: df[values]})
-    print(flat_df)
     return flat_df.pivot_table(columns=tocol, index=fromcol,
                                values=values)

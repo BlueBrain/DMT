@@ -103,6 +103,8 @@ class TestCircleTool:
                 [inner_points[0]]]))
 
 
+# TODO: parameterize column to plot (MEAN)
+# TODO: docstrings on all tests
 class TestCirclePlot:
 
     def test_more_nondata_cols(self):
@@ -120,6 +122,28 @@ class TestCirclePlot:
             'b': [2, 3]})
         with pyt.raises(ValueError):
             CirclePlot().plot(df)
+
+    def test_assign_group_labels(self):
+        df = pd.DataFrame(OrderedDict([
+            (('a', 'b'), ['1', '2']),
+            (('a', 'c'), ['3', '4']),
+            (('g', 'f'), ['5', '6']),
+            ((MEAN, ''), [3, 4])]))
+        default = CirclePlot()._prepare_plot(df)
+        assert default.index.name == 'a: b, c'
+        assert all(default.index == ['1, 3', '2, 4'])
+        assert default.columns.name == 'g: f'
+        assert all(default.columns == ['5', '6'])
+
+        custom = CirclePlot(
+            value_callback=lambda row: ''.join(row.values))\
+            ._prepare_plot(df)
+        # assert custom.index.name == 'a'
+        assert all(custom.index == ['13', '24'])
+        # assert custom.columns.name == 'g'
+        assert all(custom.columns == ['5', '6'])
+
+
 
     # don't need to test for NaN, as plot will convert to 0 anyway
     class TestGroupAngles:

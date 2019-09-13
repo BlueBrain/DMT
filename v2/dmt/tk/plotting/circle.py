@@ -171,7 +171,7 @@ class CirclePlot:
     connected by curves, the thickness of which corresponds to the weight
     of the connection
     """
-    def __init__(self, space_between=0.0):
+    def __init__(self, space_between=0.0, value_callback=None):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -183,6 +183,7 @@ class CirclePlot:
 
         self.space_between = space_between
         self.circle = CircleTool(1.0)
+        self.value_callback = value_callback
 
     def _prepare_plot(self, df):
         """
@@ -222,9 +223,13 @@ class CirclePlot:
                 "dataframe must have exactly two columns aside from {}, "
                 "found: {}"
                 .format(DATA_KEYS, non_data_columns))
+        if self.value_callback is not None:
+            return pivot_table(
+                df, non_data_columns[0], non_data_columns[1], MEAN,
+                value_callback=self.value_callback)
 
-        return pivot_table(df, non_data_columns[0], non_data_columns[1],
-                           MEAN)
+        return pivot_table(
+            df, non_data_columns[0], non_data_columns[1], MEAN)
 
     def group_angles(self, pivot_table):
         """

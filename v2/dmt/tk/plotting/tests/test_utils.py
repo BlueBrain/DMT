@@ -55,13 +55,8 @@ class Test_collapse_dataframe_column:
         pd.testing.assert_frame_equal(df, edf)
 
 
-class Test_prepare_plot:
+class Test_pivot_table:
 
-    # edge cases to do
-    # TODO: columns mismatch
-    # TODO: duplicate pathways
-    # TODO: no MEAN
-    # TODO: more than two non-data columns
     def test_basic(self):
         df = pd.DataFrame(OrderedDict([
             (MEAN, [1, 2, 1, 2]),
