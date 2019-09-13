@@ -2,8 +2,17 @@
 Representation of layer regions in an atlas.
 """
 
-from abc import ABC, abstractmethod, abstractclassmethod
-from dmt.tk.field import ClassAttribute, Field, lazyfield, ABCWithFields
+from abc import\
+    ABC,\
+    abstractmethod,\
+    abstractclassmethod
+import numpy
+from dmt.tk.field import\
+    ClassAttribute,\
+    Field,\
+    lazyfield,\
+    WithFields,\
+    ABCWithFields
 from dmt.tk import collections
 from neuro_dmt.terminology.atlas import translate
 
@@ -52,7 +61,8 @@ class RegionLayerRepresentation(
     @classmethod
     def for_atlas(cls, atlas):
         """
-        An instance for the given `Atlas` instance.
+        Return an instance of the concrete subclass that applies to the given
+        atlas.
         """
         for concrete_class in (
                 FullLayerRepresentation,
@@ -61,7 +71,9 @@ class RegionLayerRepresentation(
             if concrete_class.is_applicable(atlas):
                 return concrete_class(atlas)
         raise Exception(
-            "No available implementation applies to atlas {}.".format(atlas))
+            "No available implementaiton applied to atlas {}"\
+            .format(atlas.dirpath))
+
 
     @classmethod
     def is_applicable(cls, atlas):
@@ -146,3 +158,90 @@ class BlueBrainAtlasRepresentation(
         return layer[1:]\
             if layer.startswith('L') and layer[1] in "123456"\
                else layer.lower()
+
+
+
+class RegionLayer(WithFields):
+    """
+    Handles region, layer queries for the circuit atlas.
+    """
+    atlas = Field(
+        """
+        The associated atlas.
+        """)
+
+    @lazyfield
+    def region_map(self):
+        """
+        Map regions
+        """
+        return atlas.load_region_map()
+
+    @lazyfield
+    def representation(self):
+        """
+        `RegionLayerRepresentation` instance applicable to the atlas.
+        """
+        return RegionLayerRepresentation.for_atlas(self.atlas)
+
+    def get_acronyms(self,
+            regions=None,
+            layers=None):
+        """
+        Get acronyms for combinations of regions and layers.
+        """
+        raise NotImplementedError
+
+    def get_ids(self,
+            regions=None,
+            layers=None,
+            with_descendents=True,
+            ignore_case=False):
+        """
+        Get atlas ids used by the atlas for combinations of regions and layers.
+        """
+        if regions is None and layers is None:
+            raise ValueError(
+                "Neither regions, nor layers passed.")
+        return {_id
+                for acronym in self.get_acronyms(
+                        regions,
+                        layers)
+                for _id in self.region_map(
+                        acronym,
+                        attr="acronym",
+                        with_descendants=with_descendents,
+                        ignore_case=ignore_case)}
+
+    def get_mask(self,
+            region=None,
+            layer=None):
+        """
+        Mask for combinations of regions and layers.
+        """
+        if region is None and layer is None:
+            return self.atlas.load_data("brain_regions") > 0
+
+        if region is not None:
+            region_mask = numpy.any(
+                [self.atlas.get_region_mask(
+                    self.representation.get_region_acronym(r),
+                    attr="acronym").raw
+                 for r in collections.get_list(region)],
+                axis=0)
+
+        if layer is None:
+            return region_mask
+
+        atlas_layers = [
+            self.representation.get_layer_region_regex(l)
+            for l in collections.get_list(layer)] 
+        layer_mask = numpy.any(
+            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+             for atlas_layer in atlas_layers],
+            axis=0)
+
+        if region is None:
+            return layer_mask
+
+        return numpy.logical_and(region_mask, layer_mask)

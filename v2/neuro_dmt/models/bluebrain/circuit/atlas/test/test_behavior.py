@@ -2,109 +2,12 @@
 Test develop the behavior of CircuitAtlas
 """
 
-import os
 import numpy as np
-import numpy.testing as npt
 from voxcell.nexus.voxelbrain import Atlas
 from dmt.tk.field import WithFields, Field, lazyfield
 from dmt.tk import collections
-from . import CircuitAtlas
-from .region_layer import *
-
-def project(number):
-    return "/gpfs/bbp.cscs.ch/project/proj{}".format(number)
-
-path_atlas = {
-    "O1MouseSSCx": os.path.join(
-        project(66),
-        "entities/dev/atlas/O1-152"),
-    "O1RatSSCxDiss": os.path.join(
-        project(64),
-        "dissemination/data/atlas/O1/MEAN/mean"),
-    "S1RatSSCx": os.path.join(
-        project(64),
-        "entities/dev/atlas/",
-        "fixed_77831ACA-6198-4AA0-82EF-D0475A4E0647_01-06-2018"),
-    "O1MouseHip": os.path.join(
-        project(42),
-        "entities/dev/atlas/",
-        "20190625-CA3-O1-atlas/"),
-    "S1MouseNeoCx": os.path.join(
-        project(68),
-        "entities/",
-        "dev/atlas/ccf_2017-50um/20181114"),
-    "S1RatSSCxDiss": os.path.join(
-        project(64),
-        "dissemination",
-        "data/atlas/S1/MEAN/juvenile_L23_MC_BTC_shifted_down",
-        "Bio_M")}
-
-def test_atlas_paths():
-    """
-    Paths in `path_atlas` must exist.
-    """
-    for name_atlas, path in path_atlas.items():
-        assert Atlas.open(path),\
-            "Could not open atlas {} at {}.".format(name_atlas, path)
-
-def _expect_equal(x, y, message=""):
-    try:
-        message += " {} != {}".format(x, y)
-        assert x == y, message
-        return True
-    except ValueError:
-        if not message:
-            message = """
-            Array Left with sum {}
-            != Array Right with sum {}
-            """.format(
-                np.nansum(x),
-                np.nansum(y))
-        npt.assert_array_equal(x, y, message)
-        return True
-
-    assert False, "Code execution should not reach here."
-
-def test_representation_applicability():
-    """
-    One of the `RegionLayerRepresentation`s should apply.
-    """
-    atlas_name = "S1RatSSCxDiss"
-    path = path_atlas[atlas_name]
-    atlas = Atlas.open(path)
-    assert FullLayerRepresentation.is_applicable(atlas)
-    assert not SemicolonIntRepresentation.is_applicable(atlas)
-    assert not BlueBrainAtlasRepresentation.is_applicable(atlas)
-    representation = RegionLayerRepresentation.for_atlas(atlas)
-    assert FullLayerRepresentation(atlas)._use_paxinos_regions
-
-    _expect_equal(
-        representation.get_region_acronym("SSp"),
-        "S1",
-        "atlas: ".format(atlas_name))
-    _expect_equal(
-        representation.get_layer_region_regex("L1"),
-        "@L1$",
-        "atlas: {}".format(atlas_name))
-
-    atlas_name = "S1MouseNeoCx"
-    path = path_atlas[atlas_name]
-    atlas = Atlas.open(path)
-    assert not FullLayerRepresentation.is_applicable(atlas)
-    assert not SemicolonIntRepresentation.is_applicable(atlas)
-    assert BlueBrainAtlasRepresentation.is_applicable(atlas)
-    representation = RegionLayerRepresentation.for_atlas(atlas)
-    assert not BlueBrainAtlasRepresentation(atlas)._use_paxinos_regions
-
-    _expect_equal(
-        representation.get_region_acronym("SSp"),
-        "SSp",
-        "atlas: {}".format(atlas_name))
-    _expect_equal(
-        representation.get_layer_region_regex("L2"),
-        "@.*2$",
-        "atlas: {}".format(atlas_name))
-
+from .. import CircuitAtlas
+from . import *
 
 class CircuitAtlasTest(WithFields):
     """
@@ -120,11 +23,22 @@ class CircuitAtlasTest(WithFields):
         """)
     regions_to_test = Field(
         """
-        A list of acronyms to test with.
+        A list of two-tuples of acronyms to test with.
+        The first element of each tuple should be the value that `CircuitAtlas`
+        will accept for queries, the second element should be what the
+        underlying atlas will understand. Notice that these two values can be
+        different --- `CircuitAtlas` will accept terms as used in the ABI
+        atlas, which will be internally translated by the code to adapt to
+        a Paxinos atlas.
         """)
     layers_to_test = Field(
         """
-        A list of lists to test with.
+        A list of two-tuples off acronyms to test with.
+        The first element of each tuple should be the value that `CircuitAtlas`
+        will accept for queries, the second element should be what the
+        underlying atlas will understand. We have to pass both because
+        different implementations of the atlas may differ in their layer-naming
+        convention.
         """)
 
     @lazyfield
@@ -141,45 +55,12 @@ class CircuitAtlasTest(WithFields):
         """
         return Atlas.open(self.path_atlas)
 
-    @lazyfield
-    def atlas_layers(self):
-        """
-        Layers as the underlying atlas understands them.
-        """
-        def __get_one(layer):
-            return self\
-                .circuit_atlas\
-                .region_layer_representation\
-                .get_layer_region_regex(layer)
-        return [
-            __get_one(layer)
-            for layer in collections.get_list(self.layers_to_test)]
-
-    @lazyfield
-    def atlas_regions(self):
-        """
-        Regions as the underlying atlas understands them.
-        """
-        def __get_one(region):
-            return self\
-                .circuit_atlas\
-                .region_layer_representation\
-                .get_region_acronym(region)
-
-        return [
-            __get_one(region)
-            for region in collections.get_list(self.regions_to_test)]
-
     def region_mask(self):
         """
         Test that masks for regions are good.
         """
-        for region in self.regions_to_test:
-            atlas_region = self\
-                .circuit_atlas\
-                .region_layer_representation\
-                .get_region_acronym(region)
-            _expect_equal(
+        for region, atlas_region in collections.get_list(self.regions_to_test):
+            expect_equal(
                 self.circuit_atlas.get_mask(region=region),
                 self.atlas.get_region_mask(atlas_region).raw)
 
@@ -187,29 +68,30 @@ class CircuitAtlasTest(WithFields):
         """
         Test that masks for layers are good.
         """
-        layer = collections.get_list(self.layers_to_test)[0]
+        layer, atlas_layer = collections.get_list(self.layers_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(layer=layer)
         assert len(circuit_atlas_mask.shape) == 3
         assert np.nansum(circuit_atlas_mask) > 0
-        atlas_layer = self.atlas_layers[0]
         atlas_mask = self\
             .atlas\
             .get_region_mask(atlas_layer, attr="acronym")\
             .raw
-        _expect_equal(
+        expect_equal(
             circuit_atlas_mask, atlas_mask,
-            """Compared circuit atlas mask layer {}
-            against atlas mask layer {}""".format(layer, atlas_layer))
+            """
+            Compared circuit atlas mask layer {}
+            against atlas mask layer {}
+            """.format(layer, atlas_layer))
 
     def multiple_layer_mask(self):
         """
         Test that masks for multiple layers at once are good.
         """
-        layers = collections.get_list(self.layers_to_test)
+        layers_to_test = collections.get_list(self.layers_to_test)
 
-        if len(layers) < 2:
+        if len(layers_to_test) < 2:
             raise ValueError(
                 """
                 Cannot run multiple layer mask test if layers to test are < 2:
@@ -218,14 +100,16 @@ class CircuitAtlasTest(WithFields):
 
         circuit_atlas_mask = self\
             .circuit_atlas\
-            .get_mask(layer=collections.get_list(layers))
+            .get_mask(layer=[layer for layer, _ in layers_to_test])
+
         assert len(circuit_atlas_mask.shape) == 3
         assert np.nansum(circuit_atlas_mask) > 0
+
         atlas_mask = np.any(
             [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
-             for atlas_layer in self.atlas_layers],
+             for _, atlas_layer in layers_to_test],
             axis=0)
-        _expect_equal(
+        expect_equal(
             circuit_atlas_mask, atlas_mask,
             """circuit atlas mask with {} Trues
             != atlas mask with {} Trues""".format(
@@ -236,15 +120,12 @@ class CircuitAtlasTest(WithFields):
         """
         Tests that mask for region, layer pair is good.
         """
-        layer = collections.get_list(self.layers_to_test)[0]
-        region = collections.get_list(self.regions_to_test)[0]
+        layer, atlas_layer = collections.get_list(self.layers_to_test)[0]
+        region, atlas_region = collections.get_list(self.regions_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
-            .get_mask(
-                region=region,
-                layer=layer)
-        atlas_layer = self.atlas_layers[0]
-        atlas_region = self.atlas_regions[0]
+            .get_mask(region=region, layer=layer)
+
         atlas_region_mask = self\
             .atlas\
             .get_region_mask(atlas_region, attr="acronym")\
@@ -254,48 +135,47 @@ class CircuitAtlasTest(WithFields):
             .get_region_mask(atlas_layer, attr="acronym")\
             .raw
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
-        _expect_equal(circuit_atlas_mask, atlas_mask)
+        expect_equal(circuit_atlas_mask, atlas_mask)
 
     def region_multiple_layer_mask(self):
         """
         Tests that masks for region, layer pairs for a single region
         and multiple layers are good.
         """
-        layers = collections.get_list(self.layers_to_test)
+        layers_to_test = collections.get_list(self.layers_to_test)
 
-        if len(layers) < 2:
+        if len(layers_to_test) < 2:
             raise ValueError(
                 """
                 Cannot run multiple layer mask test if layers to test are < 2:
                 {}.
                 """.format(self.layers_to_test))
 
-        region = collections.get_list(self.regions_to_test)[0]
+        region, atlas_region = collections.get_list(self.regions_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(
                 region=region,
-                layer=layers)
-        atlas_region = self.atlas_regions[0]
+                layer=[layer for layer, _ in layers_to_test])
         atlas_region_mask = self\
             .atlas\
             .get_region_mask(atlas_region, attr="acronym")\
             .raw
-        atlas_layer_mask =  np.any(
+        atlas_layer_mask = np.any(
             [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
-             for atlas_layer in self.atlas_layers],
+             for _,natlas_layer in layers_to_test],
             axis=0)
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
-        _expect_equal(circuit_atlas_mask, atlas_mask)
+        expect_equal(circuit_atlas_mask, atlas_mask)
             
     def multiple_region_multiple_layer_mask(self):
         """
         Tests that masks for region, layer pairs for a single region
         and multiple layers are good.
         """
-        layers = collections.get_list(self.layers_to_test)
-        regions = collections.get_list(self.regions_to_test)
-        if len(layers) < 2 or len(regions) < 2 :
+        layers_to_test = collections.get_list(self.layers_to_test)
+        regions_to_test = collections.get_list(self.regions_to_test)
+        if len(layers_to_test) < 2 or len(regions_to_test) < 2 :
             raise ValueError(
                 """
                 Cannot run multiple region, layer mask test
@@ -308,18 +188,18 @@ class CircuitAtlasTest(WithFields):
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(
-                region=regions,
-                layer=layers)
+                region=[region for region, _ in regions_to_test],
+                layer=[layer for layer, _ in layers_to_test])
         atlas_region_mask = np.any(
             [self.atlas.get_region_mask(atlas_region, attr="acronym").raw
-             for atlas_region in self.atlas_regions],
+             for _, atlas_region in regions_to_test],
             axis=0)
         atlas_layer_mask =  np.any(
             [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
-             for atlas_layer in self.atlas_layers],
+             for _, atlas_layer in layers_to_test],
             axis=0)
         atlas_mask = np.logical_and(atlas_region_mask, atlas_layer_mask)
-        _expect_equal(circuit_atlas_mask, atlas_mask)
+        expect_equal(circuit_atlas_mask, atlas_mask)
 
     def run_mask_tests(self):
         """
@@ -372,8 +252,8 @@ def test_S1RatSSCxDiss():
         CircuitAtlasTest(
             label=name_atlas,
             path_atlas=path_atlas[name_atlas],
-            regions_to_test=["SSp-ll", "SSp-ul"],
-            layers_to_test=["L1", "L2"])
+            regions_to_test=[("SSp-ll", "S1HL"), ("SSp-ul", "S1FL")],
+            layers_to_test=[("L1", "@L1"), ("L2", "@L2")])
     circuit_atlas_test("masks")
 
 
@@ -386,6 +266,6 @@ def test_S1MouseNeoCx():
         CircuitAtlasTest(
             label=name_atlas,
             path_atlas=path_atlas[name_atlas],
-            regions_to_test=["SSp-ll", "SSp-ul"],
-            layers_to_test=["L1", "L2"])
+            regions_to_test=[("SSp-ll", "SSp-ll"), ("SSp-ul", "SSp-ul")],
+            layers_to_test=[("L1", "@.*1"), ("L2", "@.*2")])
     circuit_atlas_test("masks")

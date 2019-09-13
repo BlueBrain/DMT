@@ -36,7 +36,7 @@ class PrincipalAxis(WithFields):
             for layer in self.layers)
         return {
             layer: Interval(top=boundary[..., 1], bottom=boundary[..., 0])
-            for layer, boundary  layer_boundaries}
+            for layer, boundary in layer_boundaries}
 
     @lazyfield
     def position(self):
