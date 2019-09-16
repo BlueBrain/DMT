@@ -5,9 +5,14 @@ Test develop the behavior of CircuitAtlas
 import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
 from dmt.tk.field import WithFields, Field, lazyfield
-from dmt.tk import collections
+from dmt.tk.collections import take, get_list
+from dmt.tk.journal import Logger
 from .. import CircuitAtlas
 from . import *
+
+logger = Logger(
+    client="CircuitAtlasTest",
+    level=Logger.Level.TEST)
 
 class CircuitAtlasTest(WithFields):
     """
@@ -59,7 +64,7 @@ class CircuitAtlasTest(WithFields):
         """
         Test that masks for regions are good.
         """
-        for region, atlas_region in collections.get_list(self.regions_to_test):
+        for region, atlas_region in get_list(self.regions_to_test):
             expect_equal(
                 self.circuit_atlas.get_mask(region=region),
                 self.atlas.get_region_mask(atlas_region).raw)
@@ -68,7 +73,7 @@ class CircuitAtlasTest(WithFields):
         """
         Test that masks for layers are good.
         """
-        layer, atlas_layer = collections.get_list(self.layers_to_test)[0]
+        layer, atlas_layer = get_list(self.layers_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(layer=layer)
@@ -89,7 +94,7 @@ class CircuitAtlasTest(WithFields):
         """
         Test that masks for multiple layers at once are good.
         """
-        layers_to_test = collections.get_list(self.layers_to_test)
+        layers_to_test = get_list(self.layers_to_test)
 
         if len(layers_to_test) < 2:
             raise ValueError(
@@ -120,8 +125,8 @@ class CircuitAtlasTest(WithFields):
         """
         Tests that mask for region, layer pair is good.
         """
-        layer, atlas_layer = collections.get_list(self.layers_to_test)[0]
-        region, atlas_region = collections.get_list(self.regions_to_test)[0]
+        layer, atlas_layer = get_list(self.layers_to_test)[0]
+        region, atlas_region = get_list(self.regions_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(region=region, layer=layer)
@@ -142,7 +147,7 @@ class CircuitAtlasTest(WithFields):
         Tests that masks for region, layer pairs for a single region
         and multiple layers are good.
         """
-        layers_to_test = collections.get_list(self.layers_to_test)
+        layers_to_test = get_list(self.layers_to_test)
 
         if len(layers_to_test) < 2:
             raise ValueError(
@@ -151,7 +156,7 @@ class CircuitAtlasTest(WithFields):
                 {}.
                 """.format(self.layers_to_test))
 
-        region, atlas_region = collections.get_list(self.regions_to_test)[0]
+        region, atlas_region = get_list(self.regions_to_test)[0]
         circuit_atlas_mask = self\
             .circuit_atlas\
             .get_mask(
@@ -173,8 +178,8 @@ class CircuitAtlasTest(WithFields):
         Tests that masks for region, layer pairs for a single region
         and multiple layers are good.
         """
-        layers_to_test = collections.get_list(self.layers_to_test)
-        regions_to_test = collections.get_list(self.regions_to_test)
+        layers_to_test = get_list(self.layers_to_test)
+        regions_to_test = get_list(self.regions_to_test)
         if len(layers_to_test) < 2 or len(regions_to_test) < 2 :
             raise ValueError(
                 """
@@ -235,7 +240,7 @@ class CircuitAtlasTest(WithFields):
         heights_to_test = [(0, 25), (500, 700)]
 
         circuit_atlas_mask = self.circuit_atlas.get_mask(height=heights_to_test)
-        
+
         bottom = self.atlas.load_data("[PH]6").raw[..., 0]
         phy = self.atlas.load_data("[PH]y").raw - bottom
 
@@ -253,7 +258,7 @@ class CircuitAtlasTest(WithFields):
             Direct Atlas mask with total Trues: {}
             """.format(
                 np.nansum(circuit_atlas_mask),
-                np.nansum(atlas_mask)))       
+                np.nansum(atlas_mask)))
 
     def run_mask_tests(self):
         """
@@ -274,7 +279,72 @@ class CircuitAtlasTest(WithFields):
         """
         return (False, "No density tests defined.")
 
-    testable_features = ("masks", "densities")
+    def random_position_inside_volume(self,  number=1000):
+        """
+        Test that `CircuitAtlas` yields random positions inside voxel data
+        volume.
+        """
+        regions_to_test = [
+            region for region, _ in get_list(self.regions_to_test)]
+        layers_to_test = [
+            layer for layer, _ in get_list(self.layers_to_test)]
+        voxel_data = self.atlas.load_data("brain_regions")
+        for region in regions_to_test:
+            for layer in layers_to_test:
+                logger.info(
+                    logger.get_source_info(),
+                    """
+                    Test random position for region {}, layer {}.
+                    """.format(region, layer))
+                region_layer_mask = self\
+                    .circuit_atlas\
+                    .get_mask(
+                        region=region,
+                        layer=layer)
+                random_positions = self\
+                    .circuit_atlas\
+                    .random_positions(
+                        region=region,
+                        layer=layer)
+                for n, rpos in enumerate(take(number, random_positions)):
+                    voxel_indices = voxel_data.positions_to_indices(rpos)
+                    for axis, index in [("X", 0), ("Y", 1), ("Z", 2)]:
+                        observed = voxel_indices[index]
+                        upper_bound = voxel_data.shape[0]
+                        assert  observed <= upper_bound,\
+                            """
+                            Random position should lie inside the volume.
+                            For position {}, {} index {} is not less than {}
+                            """.format(
+                                rpos,
+                                axis,
+                                observed,
+                                upper_bound)
+                    i = voxel_indices[0]
+                    j = voxel_indices[1]
+                    k = voxel_indices[2]
+                    assert region_layer_mask[i, j, k],\
+                        """
+                        Region layer mask should be True at indices ({}, {}, {})
+                        """.format(i, j, k)
+                assert n == number - 1,\
+                    """
+                    Random position generator should be infinite.
+                    Instead it could generate only {} values (compared
+                    to the requested {}).
+                    """.format(n, number)
+
+        return ("True", "All Good")
+
+    def run_random_position_tests(self):
+        """
+        Run only random position tests.
+        """
+        self.random_position_inside_volume()
+
+        return ("True", "All Good")
+
+    testable_features = ("masks", "densities", "random_positions")
 
     def __call__(self, *features_to_test):
         """
@@ -297,7 +367,10 @@ class CircuitAtlasTest(WithFields):
         if "densities" in testable_features:
             result, message = self.run_density_tests()
             assert result, message
-
+        if "random_positions" in testable_features:
+            result, message = self.run_random_position_tests()
+            assert result, message
+        
 
 def test_S1RatSSCxDiss():
     """
@@ -310,8 +383,8 @@ def test_S1RatSSCxDiss():
             path_atlas=path_atlas[name_atlas],
             regions_to_test=[("SSp-ll", "S1HL"), ("SSp-ul", "S1FL")],
             layers_to_test=[("L1", "@L1"), ("L2", "@L2")])
-    circuit_atlas_test("masks")
-
+    #circuit_atlas_test("masks")
+    circuit_atlas_test("random_positions")
 
 def test_S1MouseNeoCx():
     """
@@ -324,4 +397,5 @@ def test_S1MouseNeoCx():
             path_atlas=path_atlas[name_atlas],
             regions_to_test=[("SSp-ll", "SSp-ll"), ("SSp-ul", "SSp-ul")],
             layers_to_test=[("L1", "@.*1"), ("L2", "@.*2")])
-    circuit_atlas_test("masks")
+    #circuit_atlas_test("masks")
+    circuit_atlas_test("random_positions")

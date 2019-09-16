@@ -10,7 +10,7 @@ class Logger:
     """Log messages.
     This class will not store any messages, but log them eagerly.
     For lazy logging use LazyLogger."""
-
+    Level = Level
     def get_level(self, level):
         """Resolve logging level from available information.
         Arguments
