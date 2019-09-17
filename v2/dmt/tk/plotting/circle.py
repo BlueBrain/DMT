@@ -220,19 +220,28 @@ class CirclePlot:
 
         non_data_columns = [col for col in columns
                             if col not in DATA_KEYS]
-
         if len(non_data_columns) != 2:
             raise ValueError(
                 "dataframe must have exactly two columns aside from {}, "
                 "found: {}"
                 .format(DATA_KEYS, non_data_columns))
+
         if self.value_callback is not None:
-            return pivot_table(
+            pv, fgroups, tgroups = pivot_table(
                 df, non_data_columns[0], non_data_columns[1], MEAN,
                 value_callback=self.value_callback)
+        else:
+            pv, fgroups, tgroups = pivot_table(
+                df, non_data_columns[0], non_data_columns[1], MEAN)
 
-        return pivot_table(
-            df, non_data_columns[0], non_data_columns[1], MEAN)
+        # we want to have groups from-first, but without overwriting
+        # any from-groups with to-groups
+        groups = fgroups
+        for key, value in tgroups.items():
+            if key not in groups:
+                groups[key] = value
+
+        return pv, groups
 
     # TODO: instead of sorting by labels, group order should simply
     #       be preserved from the table, and all dicts passed around
@@ -364,9 +373,8 @@ class CirclePlot:
 
     # TODO: should __plot_components__ return the actual patches?
     def __plot_components__(self, df):
-        pvt = self._prepare_plot(df)
+        pvt, groups = self._prepare_plot(df)
         group_angles = self._group_angles(pvt)
-        groups = OrderedDict([(g, 'TODO:') for g in group_angles.keys()])
         group_colors = self._group_colors(groups)
         conn_angles = self._connection_angles(pvt, group_angles)
         group_patchdata = (group_angles, group_colors)

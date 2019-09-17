@@ -139,15 +139,14 @@ class TestCirclePlot:
             (('g', 'f'), ['5', '6']),
             ((MEAN, ''), [3, 4])]))
         default = CirclePlot().__plot_components__(df)[0]
-        print(default.keys())
-        assert all([grp==exp for grp, exp in
+        assert all([grp == exp for grp, exp in
                     zip(default.keys(), ['1, 3', '2, 4', '5', '6'])])
 
         custom = CirclePlot(
             value_callback=lambda row: ''.join(row.values))\
             .__plot_components__(df)[0]
-        assert all([grp==exp for grp, exp in
-                    zip(custom.keys(), ['1, 3', '2, 4', '5', '6'])])
+        assert all([grp == exp for grp, exp in
+                    zip(custom.keys(), ['13', '24', '5', '6'])])
 
     # don't need to test for NaN, as plot will convert to 0 anyway
     # TODO: sort out testing dilemma: on the one hand, you want to test

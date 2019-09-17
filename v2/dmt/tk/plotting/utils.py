@@ -4,7 +4,9 @@ from collections import Mapping, OrderedDict
 
 
 def default_group_label(row):
-    return ", ".join(str(v) if v is not None else "_" for v in row)
+    if not isinstance(row, pd.Series):
+        return row
+    return ", ".join(str(v) if v is not None else "_" for v in row.values)
 
 
 # TODO: test
@@ -23,22 +25,27 @@ def collapse_dataframe_column(df, columnlabel,
         replaced with a new column representing all values
         of the dataframe
     """
-    subdf = df[columnlabel]
-
-    if not isinstance(subdf, pd.DataFrame):
-        return df.copy(), columnlabel
-
-    if isinstance(subdf.columns[0], tuple):
-        group_description = _default_group_desc_deep
-    else:
-        group_description = _default_group_desc_shallow
+    subdf = df[[columnlabel]]
 
     cat_column_label = (
-        group_description(_row_to_dict(subdf), columnlabel))
+        _default_group_desc(subdf, ''))
     column_values = [value_callback(r)
                      for i, r in subdf.iterrows()]
-    return df.drop(columns=columnlabel).assign(
-        **{cat_column_label: column_values}), cat_column_label
+    groups = OrderedDict([(column_values[i], r)
+                          for i, r in subdf.iterrows()])
+    return pd.DataFrame({cat_column_label: column_values}), groups
+
+
+# TODO: fully refactor
+def _default_group_desc(df, st):
+    if isinstance(df.columns[0], tuple):
+        first = df.columns[0][0]
+        if len(df.columns[0]) == 2:
+            return _default_group_desc_shallow(_row_to_dict(df[first]), first)
+        else:
+            return _default_group_desc_deep(_row_to_dict(df[first]), first)
+    else:
+        return df.columns[0]
 
 
 def _row_to_dict(row):
@@ -86,13 +93,15 @@ def pivot_table(df, index, columns, values,
         collapsed version of 'columns' column as the column values
         and values as the cell contents
     """
-    df, fromcol = collapse_dataframe_column(
+    fromdf, fromgrps = collapse_dataframe_column(
         df, index, value_callback=value_callback)
-    df, tocol = collapse_dataframe_column(
+    fromcol = fromdf.columns[0]
+    todf, togrps = collapse_dataframe_column(
         df, columns, value_callback=value_callback)
+    tocol = todf.columns[0]
     # flatten out multiindex
-    flat_df = pd.DataFrame({fromcol: df[fromcol],
-                            tocol: df[tocol],
-                            values: df[values]})
-    return flat_df.pivot_table(columns=tocol, index=fromcol,
-                               values=values)
+    valdf = pd.DataFrame({values: df[values]})
+    flat_df = pd.concat((fromdf, todf, valdf), axis=1)
+    piv_df = flat_df.pivot_table(columns=tocol, index=fromcol, values=values,
+                                 **kwargs)
+    return piv_df, fromgrps, togrps
