@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
+from collections import OrderedDict
 from dmt.tk.enum import DATA_KEYS, MEAN
 from dmt.tk.data import multilevel_dataframe
-from dmt.tk.plotting.utils import pivot_table
+from dmt.tk.plotting.utils import pivot_table, default_group_label
 from dmt.tk.plotting import golden_figure
 
 
@@ -122,7 +123,8 @@ class CircleTool:
         pts = self.circle_points(N=N)
         plt.plot(pts[:, 0], pts[:, 1], *args, **kwargs)
 
-    def curve_polygon(self, from_angle1, from_angle2, to_angle1, to_angle2):
+    def curve_polygon(self, from_angle1, from_angle2, to_angle1, to_angle2,
+                      **kwargs):
         """
         generate a matplotlib polygon of a curved path connecting two
         segments on the circle.
@@ -144,9 +146,9 @@ class CircleTool:
              self.segment_points(to_angle1, to_angle2),
              self.curve_points(to_angle2, from_angle2),
              self.segment_points(from_angle2, from_angle1)])
-        return matplotlib.patches.Polygon(xy, closed=False)
+        return matplotlib.patches.Polygon(xy, closed=False, **kwargs)
 
-    def segment_polygon(self, from_angle, to_angle, width):
+    def segment_polygon(self, from_angle, to_angle, width, **kwargs):
         """
         generate a matplotlib polygon representing a segment on the circle
 
@@ -162,7 +164,7 @@ class CircleTool:
         xy = np.concatenate(
             [self.segment_points(from_angle, to_angle),
              outer.segment_points(to_angle, from_angle)])
-        return matplotlib.patches.Polygon(xy, closed=True)
+        return matplotlib.patches.Polygon(xy, closed=True, **kwargs)
 
 
 class CirclePlot:
@@ -171,7 +173,7 @@ class CirclePlot:
     connected by curves, the thickness of which corresponds to the weight
     of the connection
     """
-    def __init__(self, space_between=0.0, value_callback=None):
+    def __init__(self, space_between=0.0, value_callback=default_group_label):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -184,6 +186,7 @@ class CirclePlot:
         self.space_between = space_between
         self.circle = CircleTool(1.0)
         self.value_callback = value_callback
+        self.outer_thickness = 0.1
 
     def _prepare_plot(self, df):
         """
@@ -231,6 +234,9 @@ class CirclePlot:
         return pivot_table(
             df, non_data_columns[0], non_data_columns[1], MEAN)
 
+    # TODO: instead of sorting by labels, group order should simply
+    #       be preserved from the table, and all dicts passed around
+    #       should be OrderedDicts or DataFrames
     def group_angles(self, pivot_table):
         """
         find the start and end angles for each segment representing a
@@ -345,111 +351,28 @@ class CirclePlot:
 
         return source_angles, dest_angles
 
-    def connection_patches(self, pivot_table, group_angles):
-        """
-        get matplotlib polygons representing the connections between groups
+    def _conn_patch(self, source, dest, **kwargs):
+        return self.circle.curve_polygon(*source, *dest, **kwargs)
 
-        Arguments:
-            pivot_table: pandas pivot_table
-            group_angles: dict mapping group to the start and end angle
+    def _group_patch(self, angles, **kwargs):
+        return self.circle.segment_polygon(
+            *angles, self.outer_thickness, **kwargs)
 
-        Returns:
-            dict of the form {<group>: {<group>: a::Polygon, ...} ...}
-            for all the groups in pivot_table
-        """
-        source_angles, dest_angles =\
-            self.connection_angles(pivot_table, group_angles)
-        patches = {from_:
-                   {to: self.circle.curve_polygon(*source_angles[from_][to],
-                                                  *dest_angles[from_][to])
-                    for to in source_angles[from_].keys()}
-                   for from_ in source_angles.keys()}
-        return patches
+    def group_colors(self, groups):
+        return OrderedDict((grp, {'color': [1.0, 1.0, 1.0]})
+                           for grp in groups)
 
-    def group_patches(self, group_angles):
-        """
-        get matplotlib polygons representing the locations of groups
-        on the circle
+    def __plot_components__(self, df):
+        pvt = self._prepare_plot(df)
+        group_angles = self.group_angles(pvt)
+        groups = OrderedDict([(g, 'TODO:') for g in group_angles.keys()])
+        group_colors = self.group_colors(groups)
+        conn_angles = self.connection_angles(pvt, group_angles)
+        group_patchdata = (group_angles, group_colors)
 
-        Arguments:
-            group_angles: dict mapping group to the start and end angle
-        """
-        return {
-            grp: self.circle.segment_polygon(*angles, 0.1)
-            for grp, angles in group_angles.items()}
+        group_labels = {grp: np.mean(a) for grp, a in group_angles.items()}
+        return groups, group_labels, group_patchdata, conn_angles
 
-    def get_patches(self, pivot_table):
-        """
-        get the patches for both connections and groups
-
-        Arguments:
-            pivot_table: pandas pivot_table
-
-        Returns:
-            group_patches: dict mapping groups to representative polygons
-                          see group_patches method
-            connection_patches: dict mapping groups to dicts mapping groups to
-                                polygons representing the connection
-                                see connection_patches method
-        """
-        group_angles = self.group_angles(pivot_table)
-        connection_patches = self.connection_patches(pivot_table,
-                                                     group_angles)
-        group_patches = self.group_patches(group_angles)
-        return group_patches, connection_patches
-
-    # TODO: could do with some tests, but PatchCollection has no
-    #       introspection on its patches
-    # TODO: use match_original for colors?
-    #       this would also help testing - then we can assign colors
-    #       when generating the patches and check the results
-    # TODO: we could have a function mapping group to color,
-    #       which can be overwritten to customize color
-    def patch_collections(self, group_patches, connection_patches):
-        """
-        turn the patch_dicts from get_patches into colored PatchCollections
-
-        Arguments:
-            group_patches: dict mapping groups to representative polygons
-                          see group_patches method
-            connection_patches: dict mapping groups to dicts mapping groups to
-                                polygons representing the connection
-                                see connection_patches method
-
-        Returns:
-            PatchCollection of group_patches
-            PatchCollection of connection_patches
-        """
-        groups = sorted(group_patches.keys())
-        group_color = np.arange(len(groups))
-        group_patch_list = [group_patches[grp] for grp in groups]
-        from_groups = [group for group in groups
-                       if group in connection_patches.keys()]
-        connection_color = np.array(
-            [group_color[groups.index(grp)]
-             for grp in from_groups
-             for _ in connection_patches[grp].keys()])
-        print(connection_color)
-        connection_patch_list = [
-            p for grp in from_groups
-            for p in connection_patches[grp].values()]
-
-        group_collection = matplotlib.collections.PatchCollection(
-            group_patch_list)
-        group_collection.set_array(group_color)
-        connections_collection = matplotlib.collections.PatchCollection(
-            connection_patch_list)
-        connections_collection.set_array(connection_color)
-        connections_collection.set_clim(vmin=group_color[0],
-                                        vmax=group_color[-1])
-        alpha = 0.5
-        connections_collection.set_alpha(alpha)
-
-        return group_collection, connections_collection
-
-    # TODO: test the actual plot method once its clear what
-    #        its supposed to do
-    # TODO: test how it handles NaNs
     def plot(self, df):
         """"
         create a CirclePlot of the data in df
@@ -465,9 +388,12 @@ class CirclePlot:
         Returns:
             figure, axis with CirclePlot
         """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
-        pivot_table = self._prepare_plot(df)
-        sz = 60# len(pivot_table.index)*4
-        print(pivot_table.index, len(pivot_table.index))
+
+        groups, group_labels, group_patchdata, conn_angles\
+            = self.__plot_components__(df)
+        group_angles, group_colors = group_patchdata
+        source_angles, dest_angles = conn_angles
+        sz = 60  # len(pivot_table.index)*4
         fig, ax = golden_figure(width=sz, height=sz)
         # TODO: adapt limits to text
         ax.set_xlim(left=-1.3, right=+1.3)
@@ -476,20 +402,67 @@ class CirclePlot:
         ax.get_yaxis().set_visible(False)
         ax.set_xticklabels([])
         ax.set_yticklabels([])
-        group_patches, connection_patches = self.get_patches(pivot_table)
-        group_collection, connections_collection =\
-            self.patch_collections(group_patches, connection_patches)
-        ax.add_collection(group_collection)
-        ax.add_collection(connections_collection)
+        ax.add_collection(matplotlib.collections.PatchCollection([
+            self._conn_patch(s_angles, dest_angles[from_][to],
+                             **group_colors[from_])
+            for from_, conn in source_angles.items()
+            for to, s_angles in conn.items()]))
+        ax.add_collection(matplotlib.collections.PatchCollection([
+            self._group_patch(angles, **group_colors[group])
+            for group, angles in group_angles.items()]))
 
-        # awkward to re-calculate this!
-        group_angles = {t: np.mean(a)
-                        for t, a in self.group_angles(pivot_table).items()}
         oldfont = plt.rcParams.get('font.size')
         plt.rcParams.update({'font.size': sz})
         textcirc = CircleTool(self.circle.radius * 1.2)
-        for t, a in group_angles.items():
+        for t, a in group_labels.items():
             plt.text(*textcirc.angles_to_points(a), t,
                      rotation=90-a*(180/np.pi), rotation_mode="anchor")
         plt.rcParams.update({"font.size": oldfont})
         return fig, ax
+
+    # TODO: test the actual plot method once its clear what
+    #        its supposed to do
+    # TODO: test how it handles NaNs
+    # def plot(self, df):
+    #     """"
+    #     create a CirclePlot of the data in df
+
+    #     Arguments:
+    #          df: a pandas DataFrame which must have a {MEAN} column,
+    #              may have any of {DATA_KEYS} columns,
+    #              and must have exactly two other columns
+    #              the entries of which will define the groups to plot
+    #              the {MEAN} column will determine the connection weight
+    #              between the corresponding groups
+
+    #     Returns:
+    #         figure, axis with CirclePlot
+    #     """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
+    #     pivot_table = self._prepare_plot(df)
+    #     sz = 60# len(pivot_table.index)*4
+    #     print(pivot_table.index, len(pivot_table.index))
+    #     fig, ax = golden_figure(width=sz, height=sz)
+    #     # TODO: adapt limits to text
+    #     ax.set_xlim(left=-1.3, right=+1.3)
+    #     ax.set_ylim(bottom=-1.3, top=+1.3)
+    #     ax.get_xaxis().set_visible(False)
+    #     ax.get_yaxis().set_visible(False)
+    #     ax.set_xticklabels([])
+    #     ax.set_yticklabels([])
+    #     group_patches, connection_patches = self.get_patches(pivot_table)
+    #     group_collection, connections_collection =\
+    #         self.patch_collections(group_patches, connection_patches)
+    #     ax.add_collection(group_collection)
+    #     ax.add_collection(connections_collection)
+
+    #     # awkward to re-calculate this!
+    #     group_angles = {t: np.mean(a)
+    #                     for t, a in self.group_angles(pivot_table).items()}
+    #     oldfont = plt.rcParams.get('font.size')
+    #     plt.rcParams.update({'font.size': sz})
+    #     textcirc = CircleTool(self.circle.radius * 1.2)
+    #     for t, a in group_angles.items():
+    #         plt.text(*textcirc.angles_to_points(a), t,
+    #                  rotation=90-a*(180/np.pi), rotation_mode="anchor")
+    #     plt.rcParams.update({"font.size": oldfont})
+    #     return fig, ax

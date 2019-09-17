@@ -105,6 +105,15 @@ class TestCircleTool:
 
 # TODO: parameterize column to plot (MEAN)
 # TODO: docstrings on all tests
+# TODO: many of these tests test things that do not need to be public methods
+#       this is only because the public interface (.plot) returns such an
+#       untestable object, so we need to test the methods that create it
+#       this is not ideal, need a way to test plot output
+#       TODO: maybe have a __plot_components__ function that outputs all then
+#             patches and labels and components that make up the plot
+#             s.t. plot just assembles these into a figure, making
+#             __plot_components__ the testable interface
+# TODO: technically I should mock CircleTool for this.
 class TestCirclePlot:
 
     def test_more_nondata_cols(self):
@@ -129,35 +138,32 @@ class TestCirclePlot:
             (('a', 'c'), ['3', '4']),
             (('g', 'f'), ['5', '6']),
             ((MEAN, ''), [3, 4])]))
-        default = CirclePlot()._prepare_plot(df)
-        assert default.index.name == 'a: b, c'
-        assert all(default.index == ['1, 3', '2, 4'])
-        assert default.columns.name == 'g: f'
-        assert all(default.columns == ['5', '6'])
+        default = CirclePlot().__plot_components__(df)[0]
+        print(default.keys())
+        assert all([grp==exp for grp, exp in
+                    zip(default.keys(), ['1, 3', '2, 4', '5', '6'])])
 
         custom = CirclePlot(
             value_callback=lambda row: ''.join(row.values))\
-            ._prepare_plot(df)
-        # assert custom.index.name == 'a'
-        assert all(custom.index == ['13', '24'])
-        # assert custom.columns.name == 'g'
-        assert all(custom.columns == ['5', '6'])
-
-
+            .__plot_components__(df)[0]
+        assert all([grp==exp for grp, exp in
+                    zip(custom.keys(), ['1, 3', '2, 4', '5', '6'])])
 
     # don't need to test for NaN, as plot will convert to 0 anyway
+    # TODO: sort out testing dilemma: on the one hand, you want to test
+    #       just public facing methods, leaving the internals free to change
+    #       on the other hand, reasoning through the logic and interfaces of
+    #       the internals is very helpful, and important if you want to
+    #       change some parts of the internals
     class TestGroupAngles:
 
         def test_group_angles(self):
-            pivot_table = pd.DataFrame({
+            df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                MEAN: [1, 2, 1, 2]})
             plotter = CirclePlot()
-            group_angles = plotter.group_angles(pivot_table)
+            group_angles = plotter.__plot_components__(df)[2][0]
 
             exp_angles = {'a': (0, 5/6 * np.pi),
                           'b': (5/6 * np.pi, 12/6 * np.pi)}
@@ -166,15 +172,12 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_NaN(self):
-            pivot_table = pd.DataFrame({
+            df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, np.nan]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                MEAN: [1, 2, 1, np.nan]})
             plotter = CirclePlot()
-            group_angles = plotter.group_angles(pivot_table)
+            group_angles = plotter.__plot_components__(df)[2][0]
 
             exp_angles = {'a': (0, 5/4 * np.pi),
                           'b': (5/4 * np.pi, 8/4 * np.pi)}
@@ -183,13 +186,12 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_asymmetric(self):
-            pivot_table = pd.DataFrame({
+            df = pd.DataFrame({
                 MEAN: [1, 2],
                 'pre': ['a', 'b'],
-                'post': ['c', 'c']}).pivot_table(index='pre', columns='post',
-                                                 values=MEAN)
+                'post': ['c', 'c']})
             plotter = CirclePlot()
-            group_angles = plotter.group_angles(pivot_table)
+            group_angles = plotter.__plot_components__(df)[2][0]
 
             exp_angles = {'a': (0, 1/3 * np.pi),
                           'b': (1/3 * np.pi, 3/3 * np.pi),
@@ -199,15 +201,12 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_space(self):
-            pivot_table = pd.DataFrame({
+            df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                MEAN: [1, 2, 1, 2]})
             plotter = CirclePlot(space_between=np.pi / 4)
-            group_angles = plotter.group_angles(pivot_table)
+            group_angles = plotter.__plot_components__(df)[2][0]
             unit_size = 1.5 / 12
             exp_angles = {'a': (np.pi/8, (1/8 + 5 * unit_size) * np.pi),
                           'b': ((5 * unit_size + 3/8) * np.pi,
@@ -217,18 +216,16 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_overlarge_space_between(self):
-            pivot_table = pd.DataFrame({
+            df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'c', 'g'],
                 'post: mtype': ['a', 'b', 'a', 'd'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+                MEAN: [1, 2, 1, 2]})
+
             with pyt.raises(ValueError):
                 CirclePlot(space_between=np.pi)
 
             with pyt.raises(ValueError):
-                CirclePlot(space_between=np.pi/2).group_angles(pivot_table)
+                CirclePlot(space_between=np.pi/2).__plot_components__(df)[2][0]
 
     class TestConnectionAngles:
 
@@ -316,70 +313,70 @@ class TestCirclePlot:
                     assert source_angles[f].get(t, dummy_value) ==\
                         pyt.approx(exp_source[f].get(t, dummy_value))
 
-        class TestPlot:
-            """
-            very bare-bones checks that the .plot function at least runs
-            since the plot consists mostly of PatchCollections we can't really
-            test the plot itself
-            """
+    class TestPlot:
+        """
+        very bare-bones checks that the .plot function at least runs
+        since the plot consists mostly of PatchCollections we can't really
+        test the plot itself
+        """
 
-            def test_basic(self):
-                df = pd.DataFrame({
-                    MEAN: [1, 2, 1, 2],
-                    'pre': ['a', 'a', 'b', 'b'],
-                    'post': ['a', 'b', 'a', 'b']})
-                f, a = CirclePlot().plot(df)
-                assert isinstance(f, plt.Figure)
-                assert isinstance(a, plt.Axes)
-                plt.clf()
+        def test_basic(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2, 1, 2],
+                'pre': ['a', 'a', 'b', 'b'],
+                'post': ['a', 'b', 'a', 'b']})
+            f, a = CirclePlot().plot(df)
+            assert isinstance(f, plt.Figure)
+            assert isinstance(a, plt.Axes)
+            plt.clf()
 
-            def test_multilevel(self):
-                df = pd.DataFrame(OrderedDict([
-                    ((MEAN, '', '', ''), [1, 2, 1, 2]),
-                    (('pre', 'm', 'a', 'l'), [1, 1, None, None]),
-                    (('pre', 'm', 'b', 'l'), [None, None, 2, 2]),
-                    (('post', 'm', 'a', 'l'), [1, None, 1, None]),
-                    (('post', 'm', 'a', 'l'), [None, 2, None, 2])]))
-                f, a = CirclePlot().plot(df)
+        def test_multilevel(self):
+            df = pd.DataFrame(OrderedDict([
+                ((MEAN, '', '', ''), [1, 2, 1, 2]),
+                (('pre', 'm', 'a', 'l'), [1, 1, None, None]),
+                (('pre', 'm', 'b', 'l'), [None, None, 2, 2]),
+                (('post', 'm', 'a', 'l'), [1, None, 1, None]),
+                (('post', 'm', 'a', 'l'), [None, 2, None, 2])]))
+            f, a = CirclePlot().plot(df)
 
-                assert isinstance(f, plt.Figure)
-                assert isinstance(a, plt.Axes)
+            assert isinstance(f, plt.Figure)
+            assert isinstance(a, plt.Axes)
 
-            def test_dict_prepost(self):
-                df = pd.DataFrame({
-                    MEAN: [1, 2, 1, 2],
-                    'pre': [{'m': 'a', 'l': 1},
-                            {'m': 'a', 'l': 1},
-                            {'m': 'b', 'l': 2},
-                            {'m': 'b', 'l': 2}],
-                    'post': [{'m': 'a', 'l': 1},
-                             {'m': 'b', 'l': 2},
-                             {'m': 'a', 'l': 1},
-                             {'m': 'b', 'l': 2}]})
-                f, a = CirclePlot().plot(df)
+        def test_dict_prepost(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2, 1, 2],
+                'pre': [{'m': 'a', 'l': 1},
+                        {'m': 'a', 'l': 1},
+                        {'m': 'b', 'l': 2},
+                        {'m': 'b', 'l': 2}],
+                'post': [{'m': 'a', 'l': 1},
+                         {'m': 'b', 'l': 2},
+                         {'m': 'a', 'l': 1},
+                         {'m': 'b', 'l': 2}]})
+            f, a = CirclePlot().plot(df)
 
-                assert isinstance(f, plt.Figure)
-                assert isinstance(a, plt.Axes)
-                plt.clf()
+            assert isinstance(f, plt.Figure)
+            assert isinstance(a, plt.Axes)
+            plt.clf()
 
-            def test_asymmetric(self):
-                df = pd.DataFrame({
-                    MEAN: [1, 2],
-                    'pre': ['a', 'b'],
-                    'post': ['c', 'c']})
-                f, a = CirclePlot().plot(df)
+        def test_asymmetric(self):
+            df = pd.DataFrame({
+                MEAN: [1, 2],
+                'pre': ['a', 'b'],
+                'post': ['c', 'c']})
+            f, a = CirclePlot().plot(df)
 
-                assert isinstance(f, plt.Figure)
-                assert isinstance(a, plt.Axes)
-                plt.clf()
+            assert isinstance(f, plt.Figure)
+            assert isinstance(a, plt.Axes)
+            plt.clf()
 
-            def test_nan(self):
-                df = pd.DataFrame({
-                    'pre: mtype': ['a', 'a', 'b', 'b'],
-                    'post: mtype': ['a', 'b', 'a', 'b'],
-                    MEAN: [1, 2, 1, np.nan]})
-                f, a = CirclePlot().plot(df)
+        def test_nan(self):
+            df = pd.DataFrame({
+                'pre: mtype': ['a', 'a', 'b', 'b'],
+                'post: mtype': ['a', 'b', 'a', 'b'],
+                MEAN: [1, 2, 1, np.nan]})
+            f, a = CirclePlot().plot(df)
 
-                assert isinstance(f, plt.Figure)
-                assert isinstance(a, plt.Axes)
-                plt.clf()
+            assert isinstance(f, plt.Figure)
+            assert isinstance(a, plt.Axes)
+            plt.clf()
