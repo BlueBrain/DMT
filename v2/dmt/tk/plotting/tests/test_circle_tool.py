@@ -230,17 +230,13 @@ class TestCirclePlot:
     class TestConnectionAngles:
 
         def test_connection_angles(self):
-            pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, 2]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+            df = pd.DataFrame(OrderedDict([
+                ('pre: mtype', ['a', 'a', 'b', 'b']),
+                ('post: mtype', ['a', 'b', 'a', 'b']),
+                (MEAN, [1, 2, 1, 2])]))
 
             plotter = CirclePlot()
-            source_angles, dest_angles = plotter.connection_angles(
-                pivot_table, plotter.group_angles(pivot_table))
+            source_angles, dest_angles = plotter.__plot_components__(df)[3]
 
             exp_source = {'a': {'a': (2/6 * np.pi, 3/6 * np.pi),
                                 'b': (3/6 * np.pi, 5/6 * np.pi)},
@@ -258,17 +254,13 @@ class TestCirclePlot:
                     assert source_angles[f][t] == pyt.approx(exp_source[f][t])
 
         def test_connection_angles_NaN(self):
-            pivot_table = pd.DataFrame({
-                'pre: mtype': ['a', 'a', 'b', 'b'],
-                'post: mtype': ['a', 'b', 'a', 'b'],
-                MEAN: [1, 2, 1, np.nan]})\
-                            .pivot_table(index='pre: mtype',
-                                         columns='post: mtype',
-                                         values=MEAN)
+            df = pd.DataFrame(OrderedDict([
+                ('pre: mtype', ['a', 'a', 'b', 'b']),
+                ('post: mtype', ['a', 'b', 'a', 'b']),
+                (MEAN, [1, 2, 1, np.nan])]))
 
             plotter = CirclePlot()
-            source_angles, dest_angles = plotter.connection_angles(
-                pivot_table, plotter.group_angles(pivot_table))
+            source_angles, dest_angles = plotter.__plot_components__(df)[3]
 
             exp_source = {'a': {'a': (2/4 * np.pi, 3/4 * np.pi),
                                 'b': (3/4 * np.pi, 5/4 * np.pi)},
@@ -288,15 +280,13 @@ class TestCirclePlot:
                         pyt.approx(exp_source[f].get(t, dummy_value))
 
         def test_nonsymmetric_groups(self):
-            pivot_table = pd.DataFrame({
-                MEAN: [1, 2],
-                'pre': ['a', 'b'],
-                'post': ['c', 'c']}).pivot_table(index='pre', columns='post',
-                                                 values=MEAN)
+            df = pd.DataFrame(OrderedDict([
+                (MEAN, [1, 2]),
+                ('pre', ['a', 'b']),
+                ('post', ['c', 'c'])]))
 
             plotter = CirclePlot()
-            source_angles, dest_angles = plotter.connection_angles(
-                pivot_table, plotter.group_angles(pivot_table))
+            source_angles, dest_angles = plotter.__plot_components__(df)[3]
 
             exp_source = {'a': {'c': (0/3 * np.pi, 1/3 * np.pi)},
                           'b': {'c': (1/3 * np.pi, 3/3 * np.pi)}}

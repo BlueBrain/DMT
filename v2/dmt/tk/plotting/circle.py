@@ -237,7 +237,7 @@ class CirclePlot:
     # TODO: instead of sorting by labels, group order should simply
     #       be preserved from the table, and all dicts passed around
     #       should be OrderedDicts or DataFrames
-    def group_angles(self, pivot_table):
+    def _group_angles(self, pivot_table):
         """
         find the start and end angles for each segment representing a
         group in the table.
@@ -283,7 +283,7 @@ class CirclePlot:
             angle = end + space
         return group_angles
 
-    def connection_angles(self, pivot_table, group_angles):
+    def _connection_angles(self, pivot_table, group_angles):
         """
         get the source and target angles for the curves representing
         the connections between groups
@@ -358,18 +358,20 @@ class CirclePlot:
         return self.circle.segment_polygon(
             *angles, self.outer_thickness, **kwargs)
 
-    def group_colors(self, groups):
+    def _group_colors(self, groups):
         return OrderedDict((grp, {'color': [1.0, 1.0, 1.0]})
                            for grp in groups)
 
+    # TODO: should __plot_components__ return the actual patches?
     def __plot_components__(self, df):
         pvt = self._prepare_plot(df)
-        group_angles = self.group_angles(pvt)
+        group_angles = self._group_angles(pvt)
         groups = OrderedDict([(g, 'TODO:') for g in group_angles.keys()])
-        group_colors = self.group_colors(groups)
-        conn_angles = self.connection_angles(pvt, group_angles)
+        group_colors = self._group_colors(groups)
+        conn_angles = self._connection_angles(pvt, group_angles)
         group_patchdata = (group_angles, group_colors)
 
+        # TODO: move more code relating to label positions and size here
         group_labels = {grp: np.mean(a) for grp, a in group_angles.items()}
         return groups, group_labels, group_patchdata, conn_angles
 
@@ -457,7 +459,7 @@ class CirclePlot:
 
     #     # awkward to re-calculate this!
     #     group_angles = {t: np.mean(a)
-    #                     for t, a in self.group_angles(pivot_table).items()}
+    #                     for t, a in self._group_angles(pivot_table).items()}
     #     oldfont = plt.rcParams.get('font.size')
     #     plt.rcParams.update({'font.size': sz})
     #     textcirc = CircleTool(self.circle.radius * 1.2)
