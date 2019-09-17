@@ -19,11 +19,12 @@ def collapse_dataframe_column(df, columnlabel,
     Arguments:
         df : a dataframe
         columnlabel : the label of the column to make hashable
-
+        value_callback : the callback used to produce collapsed values
+                         for each row in df
     Returns:
-        a new dataframe with the column of columnlabel
-        replaced with a new column representing all values
-        of the dataframe
+        a new dataframe consisting of the collapsed column
+        an OrderedDict mapping collapsed values onto the original rows they
+        represent
     """
     subdf = df[[columnlabel]]
 
@@ -36,8 +37,31 @@ def collapse_dataframe_column(df, columnlabel,
     return pd.DataFrame({cat_column_label: column_values}), groups
 
 
-# TODO: fully refactor
+# TODO: ugly default, refactor
 def _default_group_desc(df, st):
+
+    def _row_to_dict(row):
+        if not isinstance(row.keys()[0], tuple):
+            return OrderedDict(row.items())
+
+        topkeys = [k[0] for k in row.keys()]
+        return OrderedDict(((k, _row_to_dict(row[k])) for k in topkeys))
+
+    def _default_group_desc_deep(group_dict, toplabel):
+        keys = group_dict.keys()
+        pre = ": {" if len(keys) > 1 else ": "
+        post = "}" if len(keys) > 1 else ""
+        return toplabel + pre +\
+            ", ".join([_default_group_desc_deep(group_dict[k], k)
+                       if isinstance(group_dict[k], Mapping) else str(k)
+                       for k in keys]) + post
+
+    def _default_group_desc_shallow(group_dict, toplabel):
+        return toplabel + ": " +\
+            ", ".join([_default_group_desc_shallow(group_dict[k], k)
+                       if isinstance(group_dict[k], Mapping) else str(k)
+                       for k in group_dict.keys()])
+
     if isinstance(df.columns[0], tuple):
         first = df.columns[0][0]
         if len(df.columns[0]) == 2:
@@ -46,32 +70,6 @@ def _default_group_desc(df, st):
             return _default_group_desc_deep(_row_to_dict(df[first]), first)
     else:
         return df.columns[0]
-
-
-def _row_to_dict(row):
-
-    if not isinstance(row.keys()[0], tuple):
-        return OrderedDict(row.items())
-
-    topkeys = [k[0] for k in row.keys()]
-    return OrderedDict(((k, _row_to_dict(row[k])) for k in topkeys))
-
-
-def _default_group_desc_deep(group_dict, toplabel):
-    keys = group_dict.keys()
-    pre = ": {" if len(keys) > 1 else ": "
-    post = "}" if len(keys) > 1 else ""
-    return toplabel + pre +\
-        ", ".join([_default_group_desc_deep(group_dict[k], k)
-                   if isinstance(group_dict[k], Mapping) else str(k)
-                   for k in keys]) + post
-
-
-def _default_group_desc_shallow(group_dict, toplabel):
-    return toplabel + ": " +\
-        ", ".join([_default_group_desc_shallow(group_dict[k], k)
-                   if isinstance(group_dict[k], Mapping) else str(k)
-                   for k in group_dict.keys()])
 
 
 def pivot_table(df, index, columns, values,
@@ -85,13 +83,19 @@ def pivot_table(df, index, columns, values,
         index: str, the column of df to use for index (top-level column name)
         columns: str, the column of df to use for the columns ''
         values: the column of the df containing the values to pivot
+        value_callback: a callback used to collapse the index and columns
+                        columns (see collapse_dataframe_column)
         kwargs: additional arguments to pandas.DataFrame.pivot_table can be
                 passed as keyword arguments
 
     Returns:
-        pandas dataframe with collapsed version of 'index' column as index,
-        collapsed version of 'columns' column as the column values
-        and values as the cell contents
+        piv_df: pandas dataframe with collapsed version of
+                'index' column as index, collapsed version of 'columns' column
+                 as the column values and values as the cell contents
+        fromgrps: OrderedDict mapping collapsed values in the index column
+                  to their initial state
+        togrps: OrderedDict mapping collapsed values in the columns column
+                to their initial state
     """
     fromdf, fromgrps = collapse_dataframe_column(
         df, index, value_callback=value_callback)

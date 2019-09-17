@@ -171,7 +171,7 @@ class CirclePlot:
     """
     a plotter for circle-plots. CirclePlots consist of circle segments
     connected by curves, the thickness of which corresponds to the weight
-    of the connection
+    of the connection between the groups the segments represent
     """
     def __init__(self, space_between=0.0, value_callback=default_group_label):
         """
@@ -198,7 +198,9 @@ class CirclePlot:
             df: DataFrame with {MEAN} column
 
         Returns:
-            pivot table of {MEAN}
+            pivot table of {MEAN},
+            OrderedDict mapping group labels to dataframe rows
+                representing them
         """.format(MEAN=MEAN)
 
         try:
@@ -361,18 +363,43 @@ class CirclePlot:
         return source_angles, dest_angles
 
     def _conn_patch(self, source, dest, **kwargs):
+        """generate a patch for a connection"""
         return self.circle.curve_polygon(*source, *dest, **kwargs)
 
     def _group_patch(self, angles, **kwargs):
+        """generate a patch for a group"""
         return self.circle.segment_polygon(
             *angles, self.outer_thickness, **kwargs)
 
     def _group_colors(self, groups):
+        """choose a color for each group in groups"""
         return OrderedDict((grp, {'color': [1.0, 1.0, 1.0]})
                            for grp in groups)
 
     # TODO: should __plot_components__ return the actual patches?
     def __plot_components__(self, df):
+        """
+        provide all the geometric and textual plotting information
+
+        Arguments:
+            df: a pandas DataFrame with MEAN and two non-data columns
+                containing measurement parameters describing the
+                from and to groups. The first non-data column is assumed
+                to be the from group (e.g. 'pre') and the second is
+                assumed to be the to group (e.g. 'post')
+
+        Returns:
+            groups: OrderedDict mapping group labels to parameter sets
+            group_labels: the locations(angles) of group labels
+            group_patchdata: tuple containing:
+                group_angles: dict mapping group labels to the start and
+                              end angles of the patches that represent them
+                group_colors: dict mapping group labels to the color of the
+                              patches that represent them
+            conn_angles: tuple of dicts of dicts:
+                source_angles : source angle for each connection {from:{to:a}}
+                dest_angles : destination angle for each conn {from:{to:a}}
+        """
         pvt, groups = self._prepare_plot(df)
         group_angles = self._group_angles(pvt)
         group_colors = self._group_colors(groups)
