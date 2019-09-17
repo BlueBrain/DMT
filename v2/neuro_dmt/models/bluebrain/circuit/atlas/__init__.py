@@ -13,7 +13,7 @@ from .region_layer import RegionLayer
 from .principal_axis import PrincipalAxis
 
 
-class CircuitAtlas(WithFields):
+class BlueBrainCircuitAtlas(WithFields):
     """
     Document all the artefacts that define a circuit atlas,
     and provide tools to load them and work with them.

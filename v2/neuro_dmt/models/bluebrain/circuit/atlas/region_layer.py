@@ -1,10 +1,7 @@
 """
 Representation of layer regions in an atlas.
 """
-
 from abc import\
-    ABC,\
-    abstractmethod,\
     abstractclassmethod
 import numpy
 from dmt.tk.field import\
@@ -15,6 +12,101 @@ from dmt.tk.field import\
     ABCWithFields
 from dmt.tk import collections
 from neuro_dmt.terminology.atlas import translate
+
+
+class RegionAcronymGenerator:
+    """
+    Provide a uniform interface to (brain-)region acronyms in an atlas.
+    Two atlases may differ in how they call the same region acronyms.
+    """
+    def __init__(self,
+            *args, **kwargs):
+        """
+        By excepting any arguments in this base-class initializer,
+        it's subclasses may implement any behavior.
+        """
+        pass
+
+    @classmethod
+    def for_atlas(cls, atlas):
+        """
+        `RegionAcronymGenerator` concrete implementation applicable to an
+        `Atlas` instance.
+        """
+        for concrete_type in (
+                PaxinosBrainAtlasRegions,
+                O1ColumnarAtlasRegions):
+           if concrete_type.is_applicable(atlas):
+               return concrete_type(atlas)
+        return RegionAcronymGenerator()
+
+    @classmethod
+    def is_applicable(cls, atlas):
+        """
+        Check if the concrete implementation `cls` is applicable to a `Atlas`
+        instance.
+        Default behavior for a `RegionAcronymGenerator` is implemented in
+        this base-class, which an appropriate subclass should override.
+        """
+        return True
+
+    def get(self, region):
+        """
+        Default behavior for a `RegionAcronymGenerator` is implemented in
+        this base-class, which an appropriate subclass should override.
+        """
+        return region
+
+    def get_region_acronym(self, region):
+        """
+        Same as get, but allows `RegionAcronymGenerator` to be mixed in.
+        """
+        return self.get(region)
+
+
+class PaxinosBrainAtlasRegions(
+        RegionAcronymGenerator):
+    """
+    Brain region acronyms according to Paxinos-Watson atlas.
+    """
+    @classmethod
+    def is_applicable(cls, atlas):
+        """..."""
+        return any(
+            atlas.load_region_map().find(pattern, attr="acronym")
+            for pattern in ("SSCtx", "S1HL"))
+
+    @classmethod
+    def get(cls, region):
+        """
+        Translate from ABI.
+        """
+        return translate.ABI_to_Paxinos(region)
+
+
+class O1ColumnarAtlasRegions(
+        RegionAcronymGenerator):
+    """
+    Brain region acronyms in an O1 atlas.
+    """
+    def __init__(self, atlas):
+        """
+        Initialize me
+        """
+        self._region_map = atlas.load_region_map()
+
+    @classmethod
+    def is_applicable(cls, atlas):
+        """..."""
+        rmap = atlas.load_region_map()
+        return rmap.find("O1", "acronym") or rmap.find("O1 mosaic", "name")
+
+    def get(self, region):
+        """..."""
+        for acronym in (region, "{}_Column".format(region)):
+            if self._region_map.find(acronym, "acronym"):
+                return acronym
+        return None
 
 
 class RegionLayerRepresentation(
@@ -43,37 +135,46 @@ class RegionLayerRepresentation(
         Regex patterns that can be used to resolve how the atlas represents
         layer regions.
         """)
-
     layer_acronym_pattern_template = ClassAttribute(
         """
         Regex expression template that can used to generate a regex expression
         for layer region acronyms needed to get a region mask from the atlas.
         """)
-
-    def __init__(self, atlas):
+    region_acronym = Field(
         """
-        Initialize for an atlas.
-        """
-        self._use_paxinos_regions = any(
-            atlas.load_region_map().find(pattern, attr="acronym")
-            for pattern in ("SSCtx", "S1HL"))
+        A `RegionAcronymGenerator` that can return acronyms for a region as
+        the atlas understands.
+        """)
 
     @classmethod
-    def for_atlas(cls, atlas):
+    def with_region_acronym_type(cls, region_acronym_type):
+        """
+        Get a new type that mixes in a `RegionAcronymGenerator` type.
+
+        Arguments
+        `region_acronym_type`: `RegionAcronymGenerator` or subclass.
+        """
+        return type(
+            "{}With{}".format(cls.__name__, region_acronym_type.__name__),
+            (cls, region_acronym_type),
+            {})
+
+    @staticmethod
+    def for_atlas(atlas):
         """
         Return an instance of the concrete subclass that applies to the given
         atlas.
         """
-        for concrete_class in (
+        for concrete_type in (
                 FullLayerRepresentation,
                 SemicolonIntRepresentation,
                 BlueBrainAtlasRepresentation):
-            if concrete_class.is_applicable(atlas):
-                return concrete_class(atlas)
+            if concrete_type.is_applicable(atlas):
+                return concrete_type(
+                    region_acronym=RegionAcronymGenerator.for_atlas(atlas))
         raise Exception(
             "No available implementaiton applied to atlas {}"\
             .format(atlas.dirpath))
-
 
     @classmethod
     def is_applicable(cls, atlas):
@@ -88,9 +189,7 @@ class RegionLayerRepresentation(
         """
         Get acronym for region.
         """
-        return translate.ABI_to_Paxinos(region)\
-            if self._use_paxinos_regions else\
-               region
+        return self.region_acronym.get(region)
 
     @abstractclassmethod
     def get_query_layer(cls, layer):
@@ -107,7 +206,7 @@ class RegionLayerRepresentation(
         """
         return cls.layer_acronym_pattern_template\
                    .format(cls.get_query_layer(layer))
-                       
+
 
 class FullLayerRepresentation(
         RegionLayerRepresentation):
@@ -237,7 +336,9 @@ class RegionLayer(WithFields):
             self.representation.get_layer_region_regex(l)
             for l in collections.get_list(layer)] 
         layer_mask = numpy.any(
-            [self.atlas.get_region_mask(atlas_layer, attr="acronym").raw
+            [self.atlas.get_region_mask(
+                atlas_layer,
+                attr="acronym").raw
              for atlas_layer in atlas_layers],
             axis=0)
 
