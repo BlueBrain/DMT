@@ -63,6 +63,7 @@ logger = Logger(
     client="CircuitAtlasTest",
     level=Logger.Level.TEST)
 
+
 class CircuitAtlasTest(WithFields):
     """
     Test `BlueBrainCircuitAtlas`.
@@ -339,6 +340,7 @@ class CircuitAtlasTest(WithFields):
         layers_to_test = [
             layer for layer, _ in get_list(self.layers_to_test)]
         voxel_data = self.atlas.load_data("brain_regions")
+        brain_regions = voxel_data.raw
         for region in regions_to_test:
             for layer in layers_to_test:
                 logger.info(
@@ -356,6 +358,10 @@ class CircuitAtlasTest(WithFields):
                     .random_positions(
                         region=region,
                         layer=layer)
+                layer_region_ids = self\
+                    .circuit_atlas\
+                    .region_layer\
+                    .get_ids(region, layer)
                 for n, rpos in enumerate(take(number, random_positions)):
                     voxel_indices = voxel_data.positions_to_indices(rpos)
                     for axis, index in [("X", 0), ("Y", 1), ("Z", 2)]:
@@ -377,6 +383,10 @@ class CircuitAtlasTest(WithFields):
                         """
                         Region layer mask should be True at indices ({}, {}, {})
                         """.format(i, j, k)
+                    _id = brain_regions[i, j, k]
+                    assert _id in layer_region_ids,\
+                        "ID {} should be in layer region ids {}".format(
+                            _id, layer_region_ids)
                 assert n == number - 1,\
                     """
                     Random position generator should be infinite.

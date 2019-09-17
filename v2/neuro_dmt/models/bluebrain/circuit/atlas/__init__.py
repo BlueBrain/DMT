@@ -53,6 +53,13 @@ class BlueBrainCircuitAtlas(WithFields):
         __default_value__="brain_regions")
 
     @lazyfield
+    def brain_regions(self):
+        """
+        Volumetric data that provides brain regions in the atlas.
+        """
+        return self.atlas.load_data(self.dataset_brain_regions).raw
+
+    @lazyfield
     def voxel_data(self):
         """
         A representative `VoxelData` object associated with `self.atlas`.
@@ -85,7 +92,6 @@ class BlueBrainCircuitAtlas(WithFields):
         An object to handle queries concerning the voxel principal axis.
         """
         return PrincipalAxis(atlas=self.atlas)
-
 
     def _get_principal_axis_mask(self,
             depth=None,
