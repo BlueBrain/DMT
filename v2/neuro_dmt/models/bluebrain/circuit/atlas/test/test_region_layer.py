@@ -80,4 +80,28 @@ def test_representation_applicability():
         "@.*2$",
         "atlas: {}".format(atlas_name))
 
+def test_layer_region_ids():
+    """
+    `RegionLayer` should be able to retrieve ids for layer regions.
+    """
+    name_atlas =\
+        "O1MouseSSCx"
+    atlas =\
+        Atlas.open(path_atlas[name_atlas])
+    region_layer =\
+        RegionLayer(atlas=atlas)
 
+    assert region_layer.get_ids(region="mc0") == {1}
+    assert region_layer.get_ids(region=["mc0", "mc1"]) == {1,2}
+
+    expect_equal(
+        region_layer.get_ids(layer="L1"),
+        {43, 44, 45, 46, 47, 48, 49})
+    observed = region_layer.get_ids(region="mc0", layer="L6")
+    assert 8 in observed, "8 not in {}" .format(observed)
+
+    layers = ["L{}".format(l) for l in range(1, 7)]
+    expected = {8, 15, 22, 29, 36, 43}
+    observed = region_layer.get_ids(region="mc0", layer=layers)
+    assert all(_id in observed for _id in expected)
+    assert all(_id in expected for _id in observed)

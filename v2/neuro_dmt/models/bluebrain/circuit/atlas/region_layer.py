@@ -274,7 +274,7 @@ class RegionLayer(WithFields):
         """
         Map regions
         """
-        return atlas.load_region_map()
+        return self.atlas.load_region_map()
 
     @lazyfield
     def representation(self):
@@ -283,34 +283,47 @@ class RegionLayer(WithFields):
         """
         return RegionLayerRepresentation.for_atlas(self.atlas)
 
-    def get_acronyms(self,
-            regions=None,
-            layers=None):
-        """
-        Get acronyms for combinations of regions and layers.
-        """
-        raise NotImplementedError
-
     def get_ids(self,
-            regions=None,
-            layers=None,
-            with_descendents=True,
-            ignore_case=False):
+            region=None,
+            layer=None):
         """
         Get atlas ids used by the atlas for combinations of regions and layers.
         """
-        if regions is None and layers is None:
+        def _get_one(region=None, layer=None):
+            """
+            Get ids for one (region, layer) pair.
+            """
+            if region is not None:
+                region_ids = self\
+                    .region_map.find(
+                        self.representation.get_region_acronym(region),
+                        attr="acronym",
+                        with_descendants=layer is not None)
+                if layer is None:
+                    return region_ids
+            layer_ids = self\
+                .region_map.find(
+                    self.representation.get_layer_region_regex(layer),
+                    attr="acronym")
+            if region is None:
+                return layer_ids
+
+            return region_ids.intersection(layer_ids)
+
+        if region is None and layer is None:
             raise ValueError(
                 "Neither regions, nor layers passed.")
-        return {_id
-                for acronym in self.get_acronyms(
-                        regions,
-                        layers)
-                for _id in self.region_map(
-                        acronym,
-                        attr="acronym",
-                        with_descendants=with_descendents,
-                        ignore_case=ignore_case)}
+        #assert False, "{}\n{}".format(region, layer)
+        regions = collections.get_list(region)\
+            if region is not None else [None]
+        layers = collections.get_list(layer)\
+            if layer is not None else [None]
+        return {
+            _id 
+            for r in regions
+            for l in layers
+            for _id in _get_one(r, l)}
+
 
     def get_mask(self,
             region=None,
