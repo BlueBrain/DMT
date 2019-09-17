@@ -41,7 +41,6 @@ def test_acronym_generator():
         "S1HL;L1",
         "atlas: {}".format(name_atlas))
 
-
 def test_representation_applicability():
     """
     One of the `RegionLayerRepresentation`s should apply.
@@ -69,16 +68,6 @@ def test_representation_applicability():
     assert not FullLayerRepresentation.is_applicable(atlas)
     assert not SemicolonIntRepresentation.is_applicable(atlas)
     assert BlueBrainAtlasRepresentation.is_applicable(atlas)
-    representation = RegionLayerRepresentation.for_atlas(atlas)
-
-    expect_equal(
-        representation.get_region_acronym("SSp"),
-        "SSp",
-        "atlas: {}".format(atlas_name))
-    expect_equal(
-        representation.get_layer_region_regex("L2"),
-        "@.*2$",
-        "atlas: {}".format(atlas_name))
 
 def test_layer_region_ids():
     """
@@ -90,18 +79,35 @@ def test_layer_region_ids():
         Atlas.open(path_atlas[name_atlas])
     region_layer =\
         RegionLayer(atlas=atlas)
+    expect_equal(
+        region_layer.get_ids(region="mc0", layer="L6"), {8})
+    expect_equal(
+        region_layer.get_ids(region="mc0", layer="L1"), {43})
+    expect_equal(
+        region_layer.get_ids(region="mc6", layer="L6"), {14})
+    expect_equal(
+        region_layer.get_ids(region="mc6", layer="L1"), {49})
 
-    assert region_layer.get_ids(region="mc0") == {1}
-    assert region_layer.get_ids(region=["mc0", "mc1"]) == {1,2}
+    atlas_name =\
+        "S1RatSSCxDiss"
+    atlas =\
+        Atlas.open(path_atlas[atlas_name])
+    region_layer =\
+        RegionLayer(atlas=atlas)
 
     expect_equal(
-        region_layer.get_ids(layer="L1"),
-        {43, 44, 45, 46, 47, 48, 49})
-    observed = region_layer.get_ids(region="mc0", layer="L6")
-    assert 8 in observed, "8 not in {}" .format(observed)
+        region_layer.get_ids(region="SSp-ll", layer="L1"), {1125})
+    expect_equal(
+        region_layer.get_ids(region="SSp-ll", layer="L6"), {1130})
 
-    layers = ["L{}".format(l) for l in range(1, 7)]
-    expected = {8, 15, 22, 29, 36, 43}
-    observed = region_layer.get_ids(region="mc0", layer=layers)
-    assert all(_id in observed for _id in expected)
-    assert all(_id in expected for _id in observed)
+    atlas_name =\
+        "S1MouseNeoCx"
+    atlas =\
+        Atlas.open(path_atlas[atlas_name])
+    region_layer =\
+        RegionLayer(atlas=atlas)
+
+    expect_equal(
+        region_layer.get_ids(region="SSp-ll", layer="L1"), {1030})
+    expect_equal(
+        region_layer.get_ids(region="SSp-ll", layer="L6"), {478, 510})

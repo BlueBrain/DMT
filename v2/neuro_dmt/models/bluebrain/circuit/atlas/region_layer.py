@@ -135,7 +135,7 @@ class RegionLayerRepresentation(
         Regex patterns that can be used to resolve how the atlas represents
         layer regions.
         """)
-    layer_acronym_pattern_template = ClassAttribute(
+    layer_acronym_regex_pattern_template = ClassAttribute(
         """
         Regex expression template that can used to generate a regex expression
         for layer region acronyms needed to get a region mask from the atlas.
@@ -204,7 +204,7 @@ class RegionLayerRepresentation(
         Get regex that can be used to retrieve all layer-regions for a given
         layer.
         """
-        return cls.layer_acronym_pattern_template\
+        return cls.layer_acronym_regex_pattern_template\
                    .format(cls.get_query_layer(layer))
 
 
@@ -215,7 +215,7 @@ class FullLayerRepresentation(
     """
     applicable_patterns = ("@^L1$|.*;L1$", "@^SP$|.*;SP$")
 
-    layer_acronym_pattern_template = "@{}$"
+    layer_acronym_regex_pattern_template = "@{}$"
 
     @classmethod
     def get_query_layer(cls, layer):
@@ -231,7 +231,7 @@ class SemicolonIntRepresentation(
     """
     applicable_patterns = ("@.*;6$", "@.*;SP$")
 
-    layer_acronym_pattern_template = "@;{}$"
+    layer_acronym_regex_pattern_template = "@;{}$"
 
     @classmethod
     def get_query_layer(self, layer):
@@ -246,7 +246,7 @@ class BlueBrainAtlasRepresentation(
     """
     applicable_patterns = ("@.*6a$", "@.*SP$")
 
-    layer_acronym_pattern_template = "@.*{}$"
+    layer_acronym_regex_pattern_template = "@.*{}[ab]?$"
 
     @classmethod
     def get_query_layer(cls, layer):
@@ -284,46 +284,27 @@ class RegionLayer(WithFields):
         return RegionLayerRepresentation.for_atlas(self.atlas)
 
     def get_ids(self,
-            region=None,
-            layer=None):
+            region, layer):
         """
-        Get atlas ids used by the atlas for combinations of regions and layers.
+        Get atlas IDs for a layer-region represented by the combination
+        (region, layer), i.e. layer in region.
+
+        Arguments
+        ----------
+        region: Brain region to search for 
+        layer: Layer to search for (cortical layers should be L1, L2, ...)
         """
-        def _get_one(region=None, layer=None):
-            """
-            Get ids for one (region, layer) pair.
-            """
-            if region is not None:
-                region_ids = self\
-                    .region_map.find(
-                        self.representation.get_region_acronym(region),
-                        attr="acronym",
-                        with_descendants=layer is not None)
-                if layer is None:
-                    return region_ids
-            layer_ids = self\
-                .region_map.find(
-                    self.representation.get_layer_region_regex(layer),
-                    attr="acronym")
-            if region is None:
-                return layer_ids
-
-            return region_ids.intersection(layer_ids)
-
-        if region is None and layer is None:
-            raise ValueError(
-                "Neither regions, nor layers passed.")
-        #assert False, "{}\n{}".format(region, layer)
-        regions = collections.get_list(region)\
-            if region is not None else [None]
-        layers = collections.get_list(layer)\
-            if layer is not None else [None]
-        return {
-            _id 
-            for r in regions
-            for l in layers
-            for _id in _get_one(r, l)}
-
+        region_ids = self\
+            .region_map.find(
+                self.representation.get_region_acronym(region),
+                attr="acronym",
+                with_descendants=True)
+        layer_ids = self\
+            .region_map.find(
+                self.representation.get_layer_region_regex(layer),
+                attr="acronym",
+                with_descendants=True)
+        return region_ids.intersection(layer_ids)
 
     def get_mask(self,
             region=None,
