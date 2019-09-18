@@ -28,11 +28,8 @@ class Test_collapse_dataframe_column:
         tdf = pd.DataFrame(dict(pre=['a', 'b', 'c', 'd']))
         coldf, groups = collapse_dataframe_column(tdf,  'pre')
         pd.testing.assert_frame_equal(coldf, tdf)
-        rows = [r for _, r in tdf.iterrows()]
         assert coldf.columns[0] == 'pre'
-        assert_odicts_of_pd_equal(
-            groups,
-            OrderedDict([(base, rows[i]) for i, base in enumerate(tdf.pre)]))
+        groups == OrderedDict([(value, value) for value in tdf.pre])
 
     def test_2_level_columns(self):
         """
@@ -51,7 +48,7 @@ class Test_collapse_dataframe_column:
         pd.testing.assert_frame_equal(df, edf)
         assert_odicts_of_pd_equal(
             groups,
-            OrderedDict((v, tdf.iloc[i])
+            OrderedDict((v, tdf['pre'].iloc[i])
                         for i, v in enumerate(edf[edf.columns[0]])))
 
     def test_mismatched_columns(self):
@@ -74,7 +71,7 @@ class Test_collapse_dataframe_column:
         print(df, "\n\n", edf)
         pd.testing.assert_frame_equal(df, edf)
         assert_odicts_of_pd_equal(
-            groups, OrderedDict((v, tdf.iloc[i])
+            groups, OrderedDict((v, tdf['buh'].iloc[i])
                                 for i, v in enumerate(edf[edf.columns[0]])))
 
     def test_deeper(self):
@@ -94,7 +91,7 @@ class Test_collapse_dataframe_column:
         print(df, "\n\n", edf)
         pd.testing.assert_frame_equal(df, edf)
         assert_odicts_of_pd_equal(
-            groups, OrderedDict((v, tdf.iloc[i])
+            groups, OrderedDict((v, tdf['a'].iloc[i])
                                 for i, v in enumerate(edf[edf.columns[0]])))
 
 

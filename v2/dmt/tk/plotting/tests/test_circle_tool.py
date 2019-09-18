@@ -286,6 +286,37 @@ class TestCirclePlot:
                 "L4_MC, INH, L4": {'color': default_cmap(2/3)},
                 "L4_PC, EXC, L4": {'color': default_cmap(1.)}}
 
+            cmap = matplotlib.cm.get_cmap('gist_rainbow')
+
+            def custom_color_callback(groups):
+                print(pd.DataFrame(list(groups.values())))
+                layers = list(pd.DataFrame(list(groups.values())).layer.unique())
+                nlayers = len(layers)
+                max_color = nlayers - 1
+                return {grp: {
+                    'color':
+                    tuple(
+                        v for v in (
+                            cmap(layers.index(params['layer']) / max_color)
+                            * (np.array([0.5, 0.5, 0.5, 1.0])
+                               if params['sclass'] == 'INH' else
+                               np.array([1.0, 1.0, 1.0, 1.0]))))}
+                        for grp, params in groups.items()}
+
+            grps, _, custom_ptch =\
+                CirclePlot(color_callback=custom_color_callback)\
+                .__plot_components__(df)[:3]
+            custom_colors = custom_ptch[1]
+            assert custom_colors == {
+                'L23_MC, INH, L2': {'color':
+                                    tuple(v * 0.5 if i < 3 else v
+                                          for i, v in enumerate(cmap(0.)))},
+                'L23_PC, EXC, L2': {'color': cmap(0.)},
+                "L4_MC, INH, L4": {'color':
+                                   tuple(v * 0.5 if i < 3 else v
+                                         for i, v in enumerate(cmap(1.)))},
+                "L4_PC, EXC, L4": {'color': cmap(1.)}}
+
     class TestConnectionAngles:
         """test the angles of the connections between groups"""
 

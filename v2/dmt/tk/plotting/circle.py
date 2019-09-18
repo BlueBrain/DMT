@@ -167,6 +167,17 @@ class CircleTool:
         return matplotlib.patches.Polygon(xy, closed=True, **kwargs)
 
 
+def default_color_callback(groups):
+    ngroups = len(groups)
+    cmap = matplotlib.cm.get_cmap()
+    if ngroups > 1:
+        max_color = ngroups - 1
+    else:
+        max_color = ngroups
+    return OrderedDict((grp, {'color': cmap(i/max_color)})
+                       for i, grp in enumerate(groups))
+
+
 # TODO: customize group sort order
 class CirclePlot:
     """
@@ -174,7 +185,8 @@ class CirclePlot:
     connected by curves, the thickness of which corresponds to the weight
     of the connection between the groups the segments represent
     """
-    def __init__(self, space_between=0.0, value_callback=default_group_label):
+    def __init__(self, space_between=0.0, value_callback=default_group_label,
+                 color_callback=default_color_callback):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -188,6 +200,7 @@ class CirclePlot:
         self.circle = CircleTool(1.0)
         self.value_callback = value_callback
         self.outer_thickness = 0.1
+        self.color_callback = color_callback
 
     def _prepare_plot(self, df):
         """
@@ -374,14 +387,7 @@ class CirclePlot:
 
     def _group_colors(self, groups):
         """choose a color for each group in groups"""
-        ngroups = len(groups)
-        cmap = matplotlib.cm.get_cmap()
-        if ngroups > 1:
-            max_color = ngroups - 1
-        else:
-            max_color = ngroups
-        return OrderedDict((grp, {'color': cmap(i/max_color)})
-                           for i, grp in enumerate(groups))
+        return self.color_callback(groups)
 
     # TODO: should __plot_components__ return the actual patches?
     def __plot_components__(self, df):

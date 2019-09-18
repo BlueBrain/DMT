@@ -32,8 +32,13 @@ def collapse_dataframe_column(df, columnlabel,
         _default_group_desc(subdf, ''))
     column_values = [value_callback(r)
                      for i, r in subdf.iterrows()]
+    if isinstance(subdf[columnlabel], pd.Series):
+        iterator = subdf[columnlabel].iteritems()
+    else:
+        iterator = subdf[columnlabel].iterrows()
+
     groups = OrderedDict([(column_values[i], r)
-                          for i, r in subdf.iterrows()])
+                          for i, r in iterator])
     return pd.DataFrame({cat_column_label: column_values}), groups
 
 
