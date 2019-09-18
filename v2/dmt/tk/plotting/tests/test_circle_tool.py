@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import numpy.testing as npt
 import pytest as pyt
+import matplotlib
 import matplotlib.pyplot as plt
 from dmt.tk.enum import MEAN, STD
 from dmt.tk.plotting.circle import CircleTool, CirclePlot
@@ -171,12 +172,7 @@ class TestCirclePlot:
         assert all([grp == exp for grp, exp in
                     zip(custom.keys(), ['13', '24', '5', '6'])])
 
-    # don't need to test for NaN, as plot will convert to 0 anyway
-    # TODO: sort out testing dilemma: on the one hand, you want to test
-    #       just public facing methods, leaving the internals free to change
-    #       on the other hand, reasoning through the logic and interfaces of
-    #       the internals is very helpful, and important if you want to
-    #       change some parts of the internals
+    # TODO: test group order is occurrence not sorted
     class TestGroupAngles:
         """test that the locations of group patches
         are being placed correctly"""
@@ -264,6 +260,31 @@ class TestCirclePlot:
 
             with pyt.raises(ValueError):
                 CirclePlot(space_between=np.pi/2).__plot_components__(df)[2][0]
+
+    class TestColors:
+        """test the colors assigned to patches"""
+
+        def test_default_and_custom(self):
+            """
+            the default colors should use the matplotlib default cm
+            but passing a callback should allow overriding this
+            """
+
+            df = pd.DataFrame(OrderedDict([
+                (('pre', 'mtype'), ['L23_MC', 'L23_PC', 'L4_MC', 'L4_PC']),
+                (('pre', 'sclass'), ['INH', 'EXC', 'INH', 'EXC']),
+                (('pre', 'layer'), ['L2', 'L2', 'L4', 'L4']),
+                (('post', 'mtype'), ['L4_MC', 'L23_MC', 'L4_PC', 'L23_PC']),
+                (('post', 'sclass'), ['INH', 'INH', 'EXC', 'EXC']),
+                (('post', 'layer'), ['L4', 'L2', 'L4', 'L2']),
+                (('mean', ''), [1, 2, 3, 4])]))
+            default_colors = CirclePlot().__plot_components__(df)[2][1]
+            default_cmap = matplotlib.cm.get_cmap()
+            assert default_colors == {
+                'L23_MC, INH, L2': {'color': default_cmap(0.)},
+                'L23_PC, EXC, L2': {'color': default_cmap(1/3)},
+                "L4_MC, INH, L4": {'color': default_cmap(2/3)},
+                "L4_PC, EXC, L4": {'color': default_cmap(1.)}}
 
     class TestConnectionAngles:
         """test the angles of the connections between groups"""

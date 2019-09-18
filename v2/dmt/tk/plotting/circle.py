@@ -167,6 +167,7 @@ class CircleTool:
         return matplotlib.patches.Polygon(xy, closed=True, **kwargs)
 
 
+# TODO: customize group sort order
 class CirclePlot:
     """
     a plotter for circle-plots. CirclePlots consist of circle segments
@@ -373,8 +374,14 @@ class CirclePlot:
 
     def _group_colors(self, groups):
         """choose a color for each group in groups"""
-        return OrderedDict((grp, {'color': [1.0, 1.0, 1.0]})
-                           for grp in groups)
+        ngroups = len(groups)
+        cmap = matplotlib.cm.get_cmap()
+        if ngroups > 1:
+            max_color = ngroups - 1
+        else:
+            max_color = ngroups
+        return OrderedDict((grp, {'color': cmap(i/max_color)})
+                           for i, grp in enumerate(groups))
 
     # TODO: should __plot_components__ return the actual patches?
     def __plot_components__(self, df):
@@ -443,10 +450,10 @@ class CirclePlot:
             self._conn_patch(s_angles, dest_angles[from_][to],
                              **group_colors[from_])
             for from_, conn in source_angles.items()
-            for to, s_angles in conn.items()]))
+            for to, s_angles in conn.items()], match_original=True))
         ax.add_collection(matplotlib.collections.PatchCollection([
             self._group_patch(angles, **group_colors[group])
-            for group, angles in group_angles.items()]))
+            for group, angles in group_angles.items()], match_original=True))
 
         oldfont = plt.rcParams.get('font.size')
         plt.rcParams.update({'font.size': sz})
