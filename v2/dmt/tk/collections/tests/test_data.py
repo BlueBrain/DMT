@@ -102,7 +102,6 @@ def test_dict_and_str():
     expdf = pd.DataFrame({('pre', 0): [None, 'string'],
                           ('pre', 'a'): ['b', None]})
     frame = multilevel_dataframe(testdict)
-    print(frame)
     pdt.assert_frame_equal(expdf, frame,
                            check_like=True)
 

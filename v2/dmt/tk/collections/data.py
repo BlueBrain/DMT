@@ -24,10 +24,35 @@ def multilevel_dataframe(data_dict_s):
     """
     base_df = pd.DataFrame(data_dict_s)
 
+    def with_subcol(col, subcol):
+        """create subcolumn name from supercolumn and subcolumn"""
+        if isinstance(col, tuple):
+            return col + (subcol, )
+        return (col, subcol)
+
+    def get_values(df, col, k):
+        """
+        check col in df for the values of subcolumn k,
+        where k is absent, fill None instead
+        """
+        vals = []
+        for v in df[col]:
+            try:
+                if isinstance(v, str):
+                    raise TypeError
+                vals.append(v[k])
+            except (KeyError, IndexError):
+                vals.append(None)
+            except TypeError:
+                # scalar values are subcolumn 0
+                vals.append(v if k == 0 else None)
+        return vals
+
     def collect_subcolumns(base_df):
         """get the next level of subcolumns for each column in base_df"""
         columns = list(base_df.columns)
         subcolumns = [[] for c in columns]
+        newdfdict = OrderedDict()
         for c, col in enumerate(columns):
             has_noniter = False
             has_iter = False
@@ -36,6 +61,8 @@ def multilevel_dataframe(data_dict_s):
                     for k in v.keys():
                         if k not in subcolumns[c]:
                             subcolumns[c].append(k)
+                            newdfdict[with_subcol(col, k)]\
+                                = get_values(base_df, col, k)
                     has_iter = True
                 elif (
                     isinstance(v, Iterable) and
@@ -43,50 +70,22 @@ def multilevel_dataframe(data_dict_s):
                     for n, _ in enumerate(v):
                         if n not in subcolumns[c]:
                             subcolumns[c].append(n)
+                            newdfdict[with_subcol(col, n)]\
+                                = get_values(base_df, col, n)
                     has_iter = True
                 else:
                     has_noniter = True
 
             if (has_noniter and has_iter) and 0 not in subcolumns[c]:
                 subcolumns[c].append(0)
-        return columns, subcolumns
+                newdfdict[with_subcol(col, 0)] = get_values(base_df, col, 0)
+            if not has_iter:
+                newdfdict[with_subcol(col, '')] = base_df[col]
 
-    def fill_subcolumns(columns, subcolumns, base_df):
-        """
-        convert columns and subcolumns into an OrderedDict
-        of tuples : values representing a dataframe with multi-indexed columns
-        """
-        newdfdict = OrderedDict()
-        for i, col in enumerate(columns):
-            if len(subcolumns[i]) == 0:
-                if isinstance(col, tuple):
-                    newdfdict[col + ('',)] = base_df[col].values
-                else:
-                    newdfdict[(col, '')] = base_df[col].values
-            for j, subcol in enumerate(subcolumns[i]):
+        return newdfdict, columns, subcolumns
 
-                if isinstance(col, tuple):
-                    key = col + (subcol, )
-                else:
-                    key = (col, subcol)
-                values = []
-                for value in base_df[col]:
-                    try:
-                        if isinstance(value, str):
-                            raise TypeError
-                        values.append(value[subcol])
-                    except (IndexError, KeyError):
-                        values.append(None)
-                    except TypeError:
-                        values.append(value if subcol == 0 else None)
-
-                newdfdict[key] = values
-        return newdfdict
-
-    columns, subcolumns = collect_subcolumns(base_df)
+    newdfdict, columns, subcolumns = collect_subcolumns(base_df)
 
     if all(len(sc) == 0 for sc in subcolumns):
         return base_df
-
-    new_dict = fill_subcolumns(columns, subcolumns, base_df)
-    return multilevel_dataframe(new_dict)
+    return multilevel_dataframe(newdfdict)
