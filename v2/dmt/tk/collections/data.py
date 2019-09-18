@@ -24,66 +24,69 @@ def multilevel_dataframe(data_dict_s):
     """
     base_df = pd.DataFrame(data_dict_s)
 
-    # for each column, check for mappings and iterables to determine
-    # which subcolumns are necessary
-    lv1 = list(base_df.columns)
-    lv2 = [[] for c in lv1]
-    at_least_one_sub = False
-    for c, col in enumerate(lv1):
-        has_noniter = False
-        has_iter = False
-        for i, v in enumerate(base_df[col]):
-            if isinstance(v, Mapping):
-                for k in v.keys():
-                    if k not in lv2[c]:
-                        lv2[c].append(k)
-                has_iter = True
-                at_least_one_sub = True
-            elif (
-                isinstance(v, Iterable) and
-                    (not isinstance(v, str) and not isinstance(v, set))):
-                for n, _ in enumerate(v):
-                    if n not in lv2[c]:
-                        lv2[c].append(n)
-                has_iter = True
-                at_least_one_sub = True
-            else:
-                has_noniter = True
+    def collect_subcolumns(base_df):
+        """get the next level of subcolumns for each column in base_df"""
+        columns = list(base_df.columns)
+        subcolumns = [[] for c in columns]
+        for c, col in enumerate(columns):
+            has_noniter = False
+            has_iter = False
+            for i, v in enumerate(base_df[col]):
+                if isinstance(v, Mapping):
+                    for k in v.keys():
+                        if k not in subcolumns[c]:
+                            subcolumns[c].append(k)
+                    has_iter = True
+                elif (
+                    isinstance(v, Iterable) and
+                        (not isinstance(v, str) and not isinstance(v, set))):
+                    for n, _ in enumerate(v):
+                        if n not in subcolumns[c]:
+                            subcolumns[c].append(n)
+                    has_iter = True
+                else:
+                    has_noniter = True
 
-        if (has_noniter and has_iter) and 0 not in lv2[c]:
-            lv2[c].append(0)
+            if (has_noniter and has_iter) and 0 not in subcolumns[c]:
+                subcolumns[c].append(0)
+        return columns, subcolumns
 
-    # if there are no necessary subcolumns, just return the dict
-    if not at_least_one_sub:
+    def fill_subcolumns(columns, subcolumns, base_df):
+        """
+        convert columns and subcolumns into an OrderedDict
+        of tuples : values representing a dataframe with multi-indexed columns
+        """
+        newdfdict = OrderedDict()
+        for i, col in enumerate(columns):
+            if len(subcolumns[i]) == 0:
+                if isinstance(col, tuple):
+                    newdfdict[col + ('',)] = base_df[col].values
+                else:
+                    newdfdict[(col, '')] = base_df[col].values
+            for j, subcol in enumerate(subcolumns[i]):
+
+                if isinstance(col, tuple):
+                    key = col + (subcol, )
+                else:
+                    key = (col, subcol)
+                values = []
+                for value in base_df[col]:
+                    try:
+                        if isinstance(value, str):
+                            raise TypeError
+                        values.append(value[subcol])
+                    except (IndexError, KeyError):
+                        values.append(None)
+                    except TypeError:
+                        values.append(value if subcol == 0 else None)
+
+                newdfdict[key] = values
+        return newdfdict
+
+    columns, subcolumns = collect_subcolumns(base_df)
+
+    if all(len(sc) == 0 for sc in subcolumns):
         return base_df
 
-    # for every necessary subcolumn, put the appropriate values
-    newdfdict = OrderedDict()
-    for i, l1 in enumerate(lv1):
-        if len(lv2[i]) == 0:
-            # when this method recurses, it will encounter tuple column names
-            if isinstance(l1, tuple):
-                newdfdict[l1 + ('',)] = base_df[l1].values
-            else:
-                newdfdict[(l1, '')] = base_df[l1].values
-        for j, l2 in enumerate(lv2[i]):
-            # when this method recurses, it will encounter tuple column names
-            if isinstance(l1, tuple):
-                key = l1 + (l2, )
-            else:
-                key = (l1, l2)
-            values = []
-            for value in base_df[l1]:
-                try:
-                    if isinstance(value, str):
-                        raise TypeError
-                    values.append(value[l2])
-                except (IndexError, KeyError):
-                    values.append(None)
-                except TypeError:
-                    values.append(value if l2 == 0 else None)
-
-            newdfdict[key] = values
-
-    # recurse to provide sub-subcolumns if needed, and so on
-    return pd.DataFrame(multilevel_dataframe(newdfdict))
+    new_dict = fill_subcolumns(columns, subcolumns, base_df)
+    return multilevel_dataframe(new_dict)
