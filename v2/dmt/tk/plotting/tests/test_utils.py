@@ -6,6 +6,7 @@ from dmt.tk.plotting.utils import collapse_dataframe_column, pivot_table
 
 
 def assert_odicts_of_pd_equal(d1, d2):
+    """assert that two OrderedDicts with pandas series as values are equal"""
     try:
         assert d1.keys() == d2.keys()
         for v1, v2 in zip(d1.values(), d2.values()):
@@ -16,10 +17,14 @@ def assert_odicts_of_pd_equal(d1, d2):
         raise ae
 
 
-# TODO: dicts and strings
+# TODO: handle lists differently by default: represent as '[<elements>]'
 class Test_collapse_dataframe_column:
 
     def test_given_strings(self):
+        """
+        when there is nothing to collapse, return a copy of the column
+        and a simple value-row mapping for groups
+        """
         tdf = pd.DataFrame(dict(pre=['a', 'b', 'c', 'd']))
         coldf, groups = collapse_dataframe_column(tdf,  'pre')
         pd.testing.assert_frame_equal(coldf, tdf)
@@ -29,7 +34,11 @@ class Test_collapse_dataframe_column:
             groups,
             OrderedDict([(base, rows[i]) for i, base in enumerate(tdf.pre)]))
 
-    def test_given_dicts(self):
+    def test_2_level_columns(self):
+        """
+        test collapsing a column two layers deep
+        should combine the labels and values of the subcolumn
+        """
         tdf = pd.DataFrame(OrderedDict(
             [(('pre', 'layer'), range(4)),
              (('pre', 'mtype'), ['a', 'b', 'c', 'd'])]))
@@ -45,7 +54,11 @@ class Test_collapse_dataframe_column:
             OrderedDict((v, tdf.iloc[i])
                         for i, v in enumerate(edf[edf.columns[0]])))
 
-    def test_mismatched_dicts(self):
+    def test_mismatched_columns(self):
+        """
+        when there are Nones or NaNs in the table, default behavior should be
+        to place '_' as the value in the collapsed dataframe
+        """
         tdf = pd.DataFrame(OrderedDict([
             (('buh', 'layer'), ['1', '3', '2', '3']),
             (('buh', 'mtype'), ['a', None, 'b', 'c']),
@@ -65,6 +78,11 @@ class Test_collapse_dataframe_column:
                                 for i, v in enumerate(edf[edf.columns[0]])))
 
     def test_deeper(self):
+        """
+        test that this works up to at least three layers deep
+        for deeper dataframes we need to use braces to indicate
+        which sub-columns belong where
+        """
         tdf = pd.DataFrame(OrderedDict([
             (('a', 'b', 'c'), [1, 2, 3]),
             (('a', 'b', 'd'), [1, 3, 4]),
@@ -82,11 +100,13 @@ class Test_collapse_dataframe_column:
 
 class Test_pivot_table:
     """
-    fromgrps and togrps already tested by collapse_dataframe_column
+    the second and third outputs of this function are
+    already tested by collapse_dataframe_column
     TODO: what is the best way to test in such a situation
     """
 
     def test_basic(self):
+        """test the returned table for simple input"""
         df = pd.DataFrame(OrderedDict([
             (MEAN, [1, 2, 1, 2]),
             ('pre', ['a', 'a', 'b', 'b']),
@@ -98,6 +118,9 @@ class Test_pivot_table:
                            values=MEAN))
 
     def test_2_level_columns(self):
+        """
+        test handling of multilevel dataframes
+        the 'index' and 'columns' columns should be collapsed as necessary"""
         df = pd.DataFrame(OrderedDict([
             ((MEAN, ''), [1, 2, 1, 2]),
             ((STD, ''), [1, 2, 3, 1]),
@@ -116,6 +139,9 @@ class Test_pivot_table:
             table, edf)
 
     def test_duplicate_pathways(self):
+        """
+        when pathways are duplicated, take their mean as pandas does by default
+        """
         df = pd.DataFrame(OrderedDict([
             ((MEAN, ''), [1, 2, 1, 2, 3]),
             ((STD, ''), [1, 2, 3, 1, 3]),
@@ -132,6 +158,9 @@ class Test_pivot_table:
             pivot_table(df, 'pre', 'post', MEAN)[0])
 
     def test_columns_mismatch(self):
+        """
+        both columns do not need to contain the same values
+        """
         df = pd.DataFrame(OrderedDict([
             (MEAN, [1, 2]),
             ('pre', ['a', 'b']),

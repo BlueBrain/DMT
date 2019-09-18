@@ -9,8 +9,11 @@ from dmt.tk.plotting.circle import CircleTool, CirclePlot
 
 
 class TestCircleTool:
+    """test the geometric helper CircleTool"""
 
     def test_angles_to_points(self):
+        """test conversion of clockwise angles from [0, 1] to
+        cartesian coordinates"""
         unitcircle = CircleTool(1.0)
         npt.assert_array_equal(unitcircle.angles_to_points(0), [0, 1])
         npt.assert_array_equal(unitcircle.angles_to_points([0]), [[0, 1]])
@@ -18,6 +21,7 @@ class TestCircleTool:
             [np.pi/2, np.pi]), [[1, 0], [0, -1]])
 
     def test_segment_points(self):
+        """test getting N points between two angles on the circle"""
         unitcircle = CircleTool(1.0)
 
         def assert_points_at_angles(points, angles):
@@ -50,6 +54,7 @@ class TestCircleTool:
             np.flip(unitcircle.segment_points(0, 2 * np.pi / 3), axis=0))
 
     def test_circle_points(self):
+        """test getting a circle consisting of N points"""
         unitcircle = CircleTool(1.0)
         npt.assert_array_equal(unitcircle.circle_points(0),
                                np.zeros((0, 2)))
@@ -66,6 +71,8 @@ class TestCircleTool:
             drawpoints[:, 0]**2 + drawpoints[:, 1]**2, unitcircle.radius)
 
     def test_curve_points(self):
+        """test getting N points drawing a curve inside the circle
+        from one angle to another"""
         unitcircle = CircleTool(1.0)
         pts = unitcircle.curve_points(0, np.pi/2)
         start = pts[0]
@@ -79,6 +86,7 @@ class TestCircleTool:
 
     # TODO: test and implement curve_polygon
     def test_curve_polygon(self):
+        """test generate a matplotlib polygon for a particular curve"""
         unitcircle = CircleTool(1.0)
         f1, f2, t1, t2 = np.pi/2, 3 * np.pi / 4, np.pi, 8 * np.pi / 7
         poly = unitcircle.curve_polygon(f1, f2, t1, t2)
@@ -90,6 +98,7 @@ class TestCircleTool:
                                poly.get_xy())
 
     def test_segment_polygon(self):
+        """test generate a matplotlib polygon for a segment"""
         unitcircle = CircleTool(1.0)
         angle1, angle2 = 2 * np.pi/3, np.pi
         width = 0.01
@@ -115,8 +124,16 @@ class TestCircleTool:
 #             __plot_components__ the testable interface
 # TODO: technically I should mock CircleTool for this.
 class TestCirclePlot:
+    """
+    test CirclePlots
+    remember that the real test will have to be manual
+    """
 
     def test_more_nondata_cols(self):
+        """
+        if there are more than two columns which may contain
+        group parameters, raise a ValueError
+        """
         df = pd.DataFrame({
             MEAN: [1, 2],
             'a': [1, 2],
@@ -126,6 +143,9 @@ class TestCirclePlot:
             CirclePlot().plot(df)
 
     def test_no_MEAN(self):
+        """
+        if there is no MEAN column, we cannot plot. raise a ValueError
+        """
         df = pd.DataFrame({
             'a': [1, 2],
             'b': [2, 3]})
@@ -133,6 +153,9 @@ class TestCirclePlot:
             CirclePlot().plot(df)
 
     def test_assign_group_labels(self):
+        """
+        test using a callback to create custom group labels
+        """
         df = pd.DataFrame(OrderedDict([
             (('a', 'b'), ['1', '2']),
             (('a', 'c'), ['3', '4']),
@@ -155,8 +178,17 @@ class TestCirclePlot:
     #       the internals is very helpful, and important if you want to
     #       change some parts of the internals
     class TestGroupAngles:
+        """test that the locations of group patches
+        are being placed correctly"""
 
         def test_group_angles(self):
+            """
+            test basic with two groups,
+            patch size should be proportional to the number of
+            connections to and from a group
+            groups start at top of circle, an show clockwise in order
+            of occurrence in the 'from' column
+            """
             df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
@@ -171,6 +203,7 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_NaN(self):
+            """test that nan is treated as 0 in terms of group size"""
             df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
@@ -185,6 +218,8 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_asymmetric(self):
+            """groups that only show up in 'to' column should occur
+            after (clockwise of) the groups occurring in 'from'"""
             df = pd.DataFrame({
                 MEAN: [1, 2],
                 'pre': ['a', 'b'],
@@ -200,6 +235,8 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_group_angles_space(self):
+            """check that the size of groups shrinks appropriately when
+            spaces are put between them"""
             df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'b', 'b'],
                 'post: mtype': ['a', 'b', 'a', 'b'],
@@ -215,6 +252,8 @@ class TestCirclePlot:
                 assert group_angles[f] == pyt.approx(exp_angles[f])
 
         def test_overlarge_space_between(self):
+            """If the space_between groups is too large to plot the
+            image, raise a ValueError"""
             df = pd.DataFrame({
                 'pre: mtype': ['a', 'a', 'c', 'g'],
                 'post: mtype': ['a', 'b', 'a', 'd'],
@@ -227,8 +266,17 @@ class TestCirclePlot:
                 CirclePlot(space_between=np.pi/2).__plot_components__(df)[2][0]
 
     class TestConnectionAngles:
+        """test the angles of the connections between groups"""
 
         def test_connection_angles(self):
+            """basic test for two groups
+            connections 'from' a group have their source on the clockwise
+            side of the group. Angles 'to' a group have their destination
+            on the counterclockwise side of a group. The thickness of a
+            connection (the difference in the two source angles, and in
+            the two destination angles) is proportional to the strength
+            of the connection.
+            """
             df = pd.DataFrame(OrderedDict([
                 ('pre: mtype', ['a', 'a', 'b', 'b']),
                 ('post: mtype', ['a', 'b', 'a', 'b']),
@@ -253,6 +301,7 @@ class TestCirclePlot:
                     assert source_angles[f][t] == pyt.approx(exp_source[f][t])
 
         def test_connection_angles_NaN(self):
+            """nan connections are not drawn"""
             df = pd.DataFrame(OrderedDict([
                 ('pre: mtype', ['a', 'a', 'b', 'b']),
                 ('post: mtype', ['a', 'b', 'a', 'b']),
@@ -279,6 +328,8 @@ class TestCirclePlot:
                         pyt.approx(exp_source[f].get(t, dummy_value))
 
         def test_nonsymmetric_groups(self):
+            """test that when only receiving connections, all the group's space
+            is occupied by the thickness"""
             df = pd.DataFrame(OrderedDict([
                 (MEAN, [1, 2]),
                 ('pre', ['a', 'b']),
@@ -332,6 +383,7 @@ class TestCirclePlot:
             assert isinstance(a, plt.Axes)
 
         def test_dict_prepost(self):
+            """test that it automatically converts to multilevel_dataframe"""
             df = pd.DataFrame({
                 MEAN: [1, 2, 1, 2],
                 'pre': [{'m': 'a', 'l': 1},
