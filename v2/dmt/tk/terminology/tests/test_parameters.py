@@ -1,13 +1,13 @@
 import pytest as pyt
-from dmt.tk.terminology.parameters import Parameter, with_parameters, MissingParameterException
+from dmt.tk import terminology
 
 
 class tparams():
-    region = Parameter('region', 'a brain region')
-    layer = Parameter('layer', 'some layer of a brain region')
+    region = terminology.Term('region', 'a brain region')
+    layer = terminology.Term('layer', 'some layer of a brain region')
 
 
-class Test_with_parameters:
+class Test_use:
     """test the decorator"""
 
     def test_parameters_present(self):
@@ -15,29 +15,28 @@ class Test_with_parameters:
         if all arguments are present, the docstring should be amended
         and the method should otherwise work as normal
         """
-        @with_parameters(tparams.region, tparams.layer)
         def afuncof(region='lala', layer='lolo', different=''):
             """
             Arguments: {parameters}
             """
             return region + layer + different
 
-        assert afuncof.__doc__ ==\
+        decorated = terminology.use(tparams.region, tparams.layer)(afuncof)
+
+        assert decorated.__doc__ ==\
             """
             Arguments: region: a brain region
                        layer: some layer of a brain region
             """
-        assert afuncof() == 'lalalolo'
-        assert afuncof(region="a region", layer="a layer") == "a regiona layer"
-        assert afuncof(different='. yep.') == 'lalalolo. yep.'
+        assert decorated() == 'lalalolo'
+        assert decorated(region="a region", layer="a layer")\
+            == "a regiona layer"
+        assert decorated(different='. yep.') == 'lalalolo. yep.'
+
         with pyt.raises(TypeError) as e:
-            afuncof(otherkwarg='a value')
+            decorated(otherkwarg='a value')
+
         with pyt.raises(TypeError) as unwrapped_e:
-            def afuncof(region='lala', layer='lolo', different=''):
-                """
-                Arguments: {parameters}
-                """
-                return region + layer + different
             afuncof(otherkwarg='a value')
 
         assert str(e.value) == str(unwrapped_e.value)
@@ -46,31 +45,47 @@ class Test_with_parameters:
         """
         **-like parameters in principle satisfy any kwargs
         """
-        @with_parameters(tparams.region, tparams.layer)
-        def kwargyparams(**parameters):
+        @terminology.use(tparams.region, tparams.layer)
+        def varkwargyparams(**parameters):
             """
             a docstring for:
                 {parameters}
             """
             return parameters
-        assert kwargyparams.__doc__ ==\
+
+        assert varkwargyparams.__doc__ ==\
             """
             a docstring for:
                 region: a brain region
                 layer: some layer of a brain region
             """
-        assert kwargyparams() == {}
-        assert kwargyparams(region="a region", layer="a layer") ==\
+        assert varkwargyparams() == {}
+        assert varkwargyparams(region="a region", layer="a layer") ==\
             {'region': 'a region', 'layer': 'a layer'}
-        assert kwargyparams(blr='blr') == {'blr': 'blr'}
+        with pyt.raises(TypeError):
+            varkwargyparams(blr='blr')
+
+    def test_kwargs_and_varkwargs(self):
+        """
+        test that this works smoothly for methods with both
+        explicit kwargs and varkwargs
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def kwargsandvarkwargs(region='', nsamples=1, **kwargs):
+            """{parameters}"""
+            return
+        kwargsandvarkwargs()
+        kwargsandvarkwargs(region='dsasad', nsamples=100, layer='')
+        with pyt.raises(TypeError):
+            kwargsandvarkwargs(blah='')
 
     def test_params_missing(self):
         """
         if some parameter in the decorator is not defined for the method
         an exception should be raised
         """
-        with pyt.raises(MissingParameterException):
-            @with_parameters(tparams.layer)
+        with pyt.raises(TypeError):
+            @terminology.use(tparams.layer)
             def missingparams(blorgl=None):
                 """...{parameters}"""
                 return None
@@ -80,7 +95,7 @@ class Test_with_parameters:
         positional arguments can be passed to with = just like kwargs can
         so they can qualify if they have the right name
         """
-        @with_parameters(tparams.region)
+        @terminology.use(tparams.region)
         def afuncof(region):
             """
             Arguments: {parameters}
@@ -93,7 +108,7 @@ class Test_with_parameters:
         """
         if {parameters} is not in the docstring, what do we do?
         """
-        @with_parameters(tparams.region)
+        @terminology.use(tparams.region)
         def nodocfun(region):
             """no params here"""
             return None
@@ -106,7 +121,7 @@ class Test_with_parameters:
         """
         if there is no docstring, what do we do?
         """
-        @with_parameters(tparams.region)
+        @terminology.use(tparams.region)
         def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
             return None
         assert nodocfun.__doc__ == \
