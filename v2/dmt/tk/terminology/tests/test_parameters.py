@@ -72,3 +72,9 @@ class Test_with_parameters:
             def missingparams(blorgl=None):
                 """...{parameters}"""
                 return None
+
+    @pyt.mark.xfail
+    def test_empty_docstring(self):
+        @with_parameters(self.region)
+        def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
+            return None
