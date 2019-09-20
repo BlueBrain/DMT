@@ -73,6 +73,20 @@ class Test_with_parameters:
                 """...{parameters}"""
                 return None
 
+    def test_positional_args(self):
+        """
+        positional arguments can be passed to with = just like kwargs can
+        so they can qualify if they have the right name
+        """
+        @with_parameters(self.region)
+        def afuncof(region):
+            """
+            Arguments: {parameters}
+            """
+            return region
+
+        assert afuncof("region") == "region"
+
     @pyt.mark.xfail
     def test_empty_docstring(self):
         @with_parameters(self.region)
