@@ -20,7 +20,7 @@ class Parameter(str):
         return ": ".join([self, self.description])
 
 
-class MissingParameterException(RuntimeError):
+class MissingParameterException(TypeError):
     pass
 
 
@@ -30,8 +30,12 @@ def with_parameters(*params):
         sig = inspect.signature(method)
         sigparams = sig.parameters
         missing_params = [p for p in params if p not in sigparams]
-        if any(missing_params) and\
-           not any(p.kind == p.VAR_KEYWORD for p in sigparams.values()):
+
+        def has_varkwargs(sigparams):
+            """test for **kwargs-style argument"""
+            return any(p.kind == p.VAR_KEYWORD for p in sigparams.values())
+
+        if any(missing_params) and not has_varkwargs(sigparams):
             raise MissingParameterException(
                 "parameters: {} are not found in the signature"
                 "{} of function {}".format(
