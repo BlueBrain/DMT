@@ -2,18 +2,20 @@ import pytest as pyt
 from dmt.tk.terminology.parameters import Parameter, with_parameters, MissingParameterException
 
 
-class Test_with_parameters:
-    """test the decorator"""
-
+class tparams():
     region = Parameter('region', 'a brain region')
     layer = Parameter('layer', 'some layer of a brain region')
+
+
+class Test_with_parameters:
+    """test the decorator"""
 
     def test_parameters_present(self):
         """
         if all arguments are present, the docstring should be amended
         and the method should otherwise work as normal
         """
-        @with_parameters(self.region, self.layer)
+        @with_parameters(tparams.region, tparams.layer)
         def afuncof(region='lala', layer='lolo', different=''):
             """
             Arguments: {parameters}
@@ -44,7 +46,7 @@ class Test_with_parameters:
         """
         **-like parameters in principle satisfy any kwargs
         """
-        @with_parameters(self.region, self.layer)
+        @with_parameters(tparams.region, tparams.layer)
         def kwargyparams(**parameters):
             """
             a docstring for:
@@ -68,7 +70,7 @@ class Test_with_parameters:
         an exception should be raised
         """
         with pyt.raises(MissingParameterException):
-            @with_parameters(self.layer)
+            @with_parameters(tparams.layer)
             def missingparams(blorgl=None):
                 """...{parameters}"""
                 return None
@@ -78,7 +80,7 @@ class Test_with_parameters:
         positional arguments can be passed to with = just like kwargs can
         so they can qualify if they have the right name
         """
-        @with_parameters(self.region)
+        @with_parameters(tparams.region)
         def afuncof(region):
             """
             Arguments: {parameters}
@@ -87,21 +89,26 @@ class Test_with_parameters:
 
         assert afuncof("region") == "region"
 
-    @pyt.mark.xfail
     def unformattable_docstring(self):
         """
         if {parameters} is not in the docstring, what do we do?
         """
-        @with_parameters(self.region)
+        @with_parameters(tparams.region)
         def nodocfun(region):
             """no params here"""
             return None
+        assert nodocfun.__doc__ ==\
+            ("no params here\n"
+             "Parameters:\n"
+             "    region: a brain region")
 
-    @pyt.mark.xfail
     def test_empty_docstring(self):
         """
         if there is no docstring, what do we do?
         """
-        @with_parameters(self.region)
+        @with_parameters(tparams.region)
         def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
             return None
+        assert nodocfun.__doc__ == \
+            ("Parameters:\n"
+             "    region: a brain region")

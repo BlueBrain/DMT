@@ -46,6 +46,12 @@ def with_parameters(*params):
             return method(*args, **kwargs)
 
         docstring = wrapped_method.__doc__
+        if docstring is None:
+            docstring = ""
+
+        if "{parameters}" not in docstring:
+            docstring = docstring + "Parameters:\n    {parameters}"
+
         params_posn = docstring.find("{parameters}")
         preceding_newline = docstring[:params_posn].rfind("\n") + 1
         leading_whitespace = " " * (params_posn - preceding_newline)
