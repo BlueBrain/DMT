@@ -88,7 +88,20 @@ class Test_with_parameters:
         assert afuncof("region") == "region"
 
     @pyt.mark.xfail
+    def unformattable_docstring(self):
+        """
+        if {parameters} is not in the docstring, what do we do?
+        """
+        @with_parameters(self.region)
+        def nodocfun(region):
+            """no params here"""
+            return None
+
+    @pyt.mark.xfail
     def test_empty_docstring(self):
+        """
+        if there is no docstring, what do we do?
+        """
         @with_parameters(self.region)
         def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
             return None
