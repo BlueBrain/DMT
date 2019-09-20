@@ -93,16 +93,6 @@ class BlueBrainCircuitAtlas(WithFields):
         """
         return PrincipalAxis(atlas=self.atlas)
 
-    def _get_principal_axis_mask(self,
-            depth=None,
-            height=None):
-        """
-        A mask for specified depth / height along the principal axis.
-        """
-        if depth is not None and height is not None:
-            raise RuntimeError(
-            "Cannot define a principal axis mask for both depth and height.")
-
     def get_mask(self,
             region=None,
             layer=None,
