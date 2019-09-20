@@ -113,7 +113,7 @@ class AtlasBasedLayeredCircuitSpecialization(
             region_id
             for region_acronym in acronyms
             for region_id in hierarchy.collect("acronym",region_acronym,"id")}
-                    
+
     @property
     def target(self):
         """..."""

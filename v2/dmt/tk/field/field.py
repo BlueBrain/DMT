@@ -49,10 +49,12 @@ class Field:
         does not derive from WithFields.
         """
         if self.__attr_name__ is None:
-            raise ValueError("""
-              Field instance does not have a name (__attr_name__).
-              Check if the containing class was based on WithFields.
-              """)
+            raise AttributeError(
+                """
+                Field instance does not have a name (__attr_name__).
+                Check if the containing class was based on WithFields.
+                Field documentation:
+                """.format(self.__doc__))
 
     def assert_validity(self, value):
         """Is 'value' valid value of this Field?"""

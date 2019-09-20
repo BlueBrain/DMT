@@ -6,6 +6,18 @@ import sys
 import collections
 from .field import Field
 
+
+class UndefinedClassAttribute(TypeError):
+    """
+    Exception to be raised when a (sub)-class does not implement a
+    ClassAttribute. This exception will be called when the expected
+    behavior from a class-attribute is invoked.
+    """
+    def __init__(self, key, *args):
+        self.message = key
+        super().__init__(key, *args)
+
+
 class ClassAttribute:
     """
     ClassAttribute of a class is defined on the class itself, not an instance.
@@ -32,6 +44,12 @@ class ClassAttribute:
     def description(self):
         """Describe this ClassAttribute"""
         return "ClassAttribute<{}>".format(self.__doc__)
+
+    def set_defining_class(self, cls):
+        """
+        Where was this `Field` defined.
+        """
+        self.__defined_in__ = cls.__name__
 
     def assert_validity(self, value):
         """Is 'value' valid value of this Field?"""

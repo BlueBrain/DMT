@@ -1,5 +1,3 @@
-from dmt.tk.terminology.parameters import Parameter
-
 LAYER = Parameter('layer', 'a layer of some brain region')
 MTYPE = Parameter('mtype', 'mtype classification')
 SYNAPSE_CLASS = Parameter("synapse_class", 'synapse class of cell, excitatory, inhibitory, etc.')

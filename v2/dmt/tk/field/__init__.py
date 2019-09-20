@@ -10,10 +10,10 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 """
 
 from sys import stdout
-from abc import ABCMeta
+from abc import ABC
 from .field import Field
 from .prop import Property
-from .class_attribute import ClassAttribute
+from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
 
 def set_name(
@@ -125,7 +125,7 @@ class WithFields:
                 field)
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
-                continue
+                self._check_class_attribute(class_field)
             value = __get_value(field)
 
             if value is not None:
@@ -172,6 +172,23 @@ class WithFields:
         except TypeError as error:
             pass
 
+    def _check_class_attribute(self, field):
+        """
+        Complain that class attribute has not been defined.
+        """
+        if isinstance(field, ClassAttribute):
+            raise UndefinedClassAttribute(
+                """
+                Attempt to instantiate class {} with undefined ClassAttribute.
+                You can instantiate a subclass that defines {}.
+                Please take a look at ClassAttribute {}'s documentation:
+                \t{}
+                """.format(
+                    self.__class__.__name__,
+                    field.__attr_name__,
+                    field.__attr_name__,
+                    field.__doc__))
+
     def describe(self, field):
         """
         Describe a Field
@@ -196,7 +213,7 @@ class WithFields:
         """..."""
         fields =[
             attr for attr in dir(cls)
-            if isinstance(getattr(cls, attr), Field)]
+            if isinstance(getattr(cls, attr), (Field, ClassAttribute))]
         if not only_required:
             return fields
         return [
@@ -219,6 +236,8 @@ class WithFields:
             field: value
             for field, value in field_values
             if not isinstance(field, Field)}
+
+ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})
 
 
 class ClassAttributeMetaBase(type):
