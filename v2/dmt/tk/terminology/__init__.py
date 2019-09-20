@@ -39,13 +39,8 @@ class Term(str):
     @property
     def document(self):	
         return "{}: {}" .format(self, self.description)
-#     return ": ".join([self, self.description])	
 
-
-class MissingParameterException(TypeError):	
-    pass	
-
-
+    
 def use(head, *tail):	
     """
     Decorate a method with terms used in its body.
@@ -69,7 +64,7 @@ def use(head, *tail):
                             method, param))
 
         if any(missing_params) and not signature_has_varkwargs:	
-            raise MissingParameterException(	
+            raise TypeError(	
                 "parameters: {} are not found in the signature"	
                 "{} of function {}".format(	
                     missing_params, sig, method))	
