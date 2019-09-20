@@ -42,4 +42,16 @@ def check(xs):
         isinstance(xs, collections.Iterable) and
         not isinstance(xs, (str, bytes)) )
 
+def get_list(head, *tail):
+    """
+    Make a list from items [head, tail...]
+
+    Arguments
+    head: An element
+    tail: A sequence of elements
+    """
+    if check(head):
+        return head
+    return [head] + list(tail)
+
 from .emuset import emuset
