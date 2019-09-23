@@ -45,7 +45,7 @@ class MissingParameterException(TypeError):
     pass	
 
 
-def _check_terms(expected, method):
+def _check_missing_in_signature(expected, method):
     """
     Check that the method accepts expected parameters.
 
@@ -91,10 +91,12 @@ def use(head, *tail):
     def decorator(method):	
         signature = inspect.signature(method)	
 
+        signature_has_varargs = any(
+            p.kind == p.VAR_POSITIONAL for p in signature.parameters.values())
         signature_has_varkwargs = any(
             p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
 
-        _check_terms(terms, method)
+        _check_missing_in_signature(terms, method)
 
         @functools.wraps(method)	
         def wrapped_method(*args, **kwargs):	
@@ -105,7 +107,13 @@ def use(head, *tail):
                 _check_varkwargs(
                     terms + tuple(p for p in signature.parameters),
                     method, kwargs)
-            return method(*args, **kwargs)	
+            try:
+                return method(*args, **kwargs)
+            except KeyError as key_error:
+                if key_error[0] in terms:
+                    raise TypeError(
+                        "Missing keyword argument {}".format(key_error[0]))
+                raise key_error
 
         docstring = wrapped_method.__doc__	
         if docstring is None:	
@@ -129,3 +137,5 @@ def use(head, *tail):
         return wrapped_method	
 
     return decorator
+
+

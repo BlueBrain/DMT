@@ -38,80 +38,37 @@ class Test_use:
                 doc_observed,
                 doc_expected)
 
-
-    def test_parameters_present(self):
+    def test_empty_docstring(self):
         """
-        if all arguments are present, the docstring should be amended
-        and the method should otherwise work as normal
+        Decorator should provide a docstring even if the original method
+        lacks one.
         """
-        def afuncof(region='lala', layer='lolo', different=''):
-            """
-            Arguments: {parameters}
-            """
-            return region + layer + different
+        @terminology.use(tparams.region)
+        def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
+            return None
+        assert nodocfun.__doc__ == \
+            ("Arguments:\n"
+             "    region: a brain region")
 
-        decorated = terminology.use(tparams.region, tparams.layer)(afuncof)
-
-        assert decorated() == 'lalalolo'
-        assert decorated(region="a region", layer="a layer")\
-            == "a regiona layer"
-        assert decorated(different='. yep.') == 'lalalolo. yep.'
-
-        with pyt.raises(TypeError) as e:
-            decorated(otherkwarg='a value')
-
-        with pyt.raises(TypeError) as unwrapped_e:
-            afuncof(otherkwarg='a value')
-
-        assert str(e.value) == str(unwrapped_e.value)
-
-    def test_params_asterisk(self):
+    def test_missing_params_in_signature(self):
         """
-        **-like parameters in principle satisfy any kwargs
-        """
-        @terminology.use(tparams.region, tparams.layer)
-        def varkwargyparams(**parameters):
-            """
-            a docstring for:
-                {parameters}
-            """
-            return parameters
-
-        assert varkwargyparams() == {}
-        assert varkwargyparams(region="a region", layer="a layer") ==\
-            {'region': 'a region', 'layer': 'a layer'}
-        with pyt.raises(TypeError):
-            varkwargyparams(blr='blr')
-
-    def test_kwargs_and_varkwargs(self):
-        """
-        test that this works smoothly for methods with both
-        explicit kwargs and varkwargs
-        """
-        @terminology.use(tparams.region, tparams.layer)
-        def kwargsandvarkwargs(region='', nsamples=1, **kwargs):
-            """{parameters}"""
-            return
-        kwargsandvarkwargs()
-        kwargsandvarkwargs(region='dsasad', nsamples=100, layer='')
-        with pyt.raises(TypeError):
-            kwargsandvarkwargs(blah='')
-
-    def test_params_missing(self):
-        """
-        if some parameter in the decorator is not defined for the method
-        an exception should be raised
+        Raise a `TypeError` if there are terms missing in the signature of a
+        method decorated by `terminology.use`.
         """
         with pyt.raises(TypeError):
             @terminology.use(tparams.layer)
-            def missingparams(blorgl=None):
+            def missingparams(region="SSp-ll"):
                 """...{parameters}"""
-                return None
+                return region
+        with pyt.raises(TypeError):
+            @terminology.use(tparams.layer)
+            def missingparams(region):
+                """...{parameters}"""
+                return region
 
     def test_positional_args(self):
         """
-        positional arguments can be passed to with = just like kwargs can
-        so they can qualify if they have the right name
+        Pass positional arguments or keyword arguments to a decorated method.
         """
         @terminology.use(tparams.region)
         def afuncof(region):
@@ -121,6 +78,114 @@ class Test_use:
             return region
 
         assert afuncof("region") == "region"
+        assert afuncof(region="region") == "region"
+
+    def test_method_with_only_positional_args(self):
+        """
+        A method that only take positional arguments, and
+        decorated with `terminology.use` should behave like as if there
+        was no decoration except that of their doc-string.
+        """
+        def get_region_layer(region, layer):
+            """
+            Get a layer region acronym.
+            Arguments: {parameters}
+            """
+            return "{};{}".format(region, layer)
+
+        decorated = terminology.use(
+            tparams.region, tparams.layer)(
+                get_region_layer)
+
+        doc_observed = decorated.__doc__.strip()
+        doc_expected =\
+            """
+            Get a layer region acronym.
+            Arguments: region: a brain region
+                       layer: some layer of a brain region
+            """.strip()
+        assert doc_observed  == doc_expected,\
+            """
+            Observed: {}
+            Expected: {}
+            """.format(
+                doc_observed,
+                doc_expected)
+        assert get_region_layer("SSp-ll", "L1") == decorated("SSp-ll", "L1")
+
+        with pyt.raises(TypeError) as decorated_error:
+            decorated("SSp-ll", "L1", "L23_MC")
+        with pyt.raises(TypeError) as naked_error:
+            get_region_layer("SSp-ll", "L1", "L23_MC")
+        assert str(decorated_error.value) == str(naked_error.value)
+
+        with pyt.raises(TypeError) as decorated_error:
+            decorated("SSp-ll", "L1", mtype="L23_MC")
+        with pyt.raises(TypeError) as naked_error:
+            get_region_layer("SSp-ll", "L1", mtype="L23_MC")
+        assert str(decorated_error.value) == str(naked_error.value)
+
+    def test_unexpected_varkwargs_key(self):
+        """
+        Unexpected key in var-kwargs should throw a TypeError.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_layer_region(**kwargs):
+            """
+            a docstring for:
+                {parameters}
+            """
+            region = kwargs[tparams.region]
+            layer = kwargs[tparams.layer]
+            return "{};{}".format(region, layer)
+
+        with pyt.raises(TypeError):
+            get_layer_region(mtype="L23_MC")
+
+        @terminology.use(tparams.region, tparams.layer)
+        def get_layer_region(region="SSp-ll", nsamples=1, **kwargs):
+            """{parameters}"""
+            layer = kwargs.get("layer")
+            layer_region = region if not layer\
+                else "{};{}".format(region, layer)
+            return "-".join(layer_region for _ in range(nsamples))
+
+        with pyt.raises(TypeError):
+            get_layer_region(mtype="L23_MC")
+
+    def test_varkwargs(self):
+        """
+        Missing or unknown keyword arguments should raise TypeErrors.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_layer_region(**kwargs):
+            """
+            a docstring for:
+                {parameters}
+            """
+            region = kwargs[tparams.region]
+            layer = kwargs[tparams.layer]
+            return "{};{}".format(region, layer)
+
+        assert get_layer_region(region="SSp-ll", layer="L1") == "SSp-ll;L1"
+        with pyt.raises(TypeError):
+            get_layer_region()
+
+    def test_kwargs_and_varkwargs(self):
+        """
+        A method with explicit kwargs and var-kwargs can be decorated.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_layer_region(region="SSp-ll", nsamples=1, **kwargs):
+            """{parameters}"""
+            layer = kwargs.get("layer")
+            layer_region = region if not layer\
+                else "{};{}".format(region, layer)
+            return "-".join(layer_region for _ in range(nsamples))
+
+        assert get_layer_region() == "SSp-ll"
+        observed_2 = get_layer_region(region='SSp-hl', nsamples=2, layer="L2")
+        assert observed_2 == "SSp-hl;L2-SSp-hl;L2", observed_2
 
     def unformattable_docstring(self):
         """
@@ -131,14 +196,4 @@ class Test_use:
             """no params here"""
             return None
 
-    def test_empty_docstring(self):
-        """
-        if there is no docstring, what do we do?
-        """
-        @terminology.use(tparams.region)
-        def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
-            return None
-        assert nodocfun.__doc__ == \
-            ("Arguments:\n"
-             "    region: a brain region")
 
