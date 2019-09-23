@@ -113,7 +113,7 @@ def _match_kwargs(**term_dict):
         """
         Decorate a method
         """
-        signature = inspect.signature(method)	
+        signature = inspect.signature(method)
         signature_has_varkwargs = any(
             p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
 
@@ -230,11 +230,11 @@ def where(**term_dict):
             raise TypeError(
                 "terminology.where does not support var-args or var-kwargs")
 
-        def wrapped_method(*args):
+        def wrapped_method(*args, **kwargs):
             """
             The decorated method.
             """
-            return method(*args)
+            return method(*args, **kwargs)
             # return method(**{
             #     label: kwargs.get("{}".format(term))
             #     for label, term in term_dict.items()})
