@@ -10,7 +10,7 @@ class tparams():
 class Test_use:
     """test the decorator"""
 
-    def test_documentation(self):
+    def test_documentation_with_stripping(self):
         """
         A method decorated with `terminology.use` should have the
         expected documentation.
