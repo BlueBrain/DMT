@@ -13,7 +13,7 @@ class Test_use:
     def test_documentation_with_stripping(self):
         """
         A method decorated with `terminology.use` should have the
-        expected documentation.
+        expected documentation, with whitespace stripped.
         """
         @terminology.use(tparams.region, tparams.layer)
         def get_region_layer(region, layer):
@@ -38,10 +38,14 @@ class Test_use:
                 doc_observed,
                 doc_expected)
 
-    def test_documentation_no_stripping(self):
+    def test_documentation_with_formatting(self):
         """
         A method decorated with `terminology.use` should have the
-        expected documentation, and the docstring should be formatted.
+        expected documentation, and the docstring should be well formatted,
+        to the extend that it respects the expected whitespace.
+
+        Add extensive edge-cases below to make sure that the `terminology`
+        decorators produce good docstrings.
         """
         @terminology.use(tparams.region, tparams.layer)
         def get_region_layer(region, layer):
@@ -65,6 +69,14 @@ class Test_use:
             """.format(
                 doc_observed,
                 doc_expected)
+
+    def test_documentation(self):
+        """
+        A method decorated with `terminology.use` should have the
+        expected documentation.
+        """
+        self.test_documentation_with_formatting()
+
 
     def test_empty_docstring(self):
         """
