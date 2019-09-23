@@ -10,6 +10,35 @@ class tparams():
 class Test_use:
     """test the decorator"""
 
+    def test_documentation(self):
+        """
+        A method decorated with `terminology.use` should have the
+        expected documentation.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_region_layer(region, layer):
+            """
+            Get a layer region acronym.
+            Arguments: {parameters}
+            """
+            pass
+
+        doc_observed = get_region_layer.__doc__.strip()
+        doc_expected =\
+            """
+            Get a layer region acronym.
+            Arguments: region: a brain region
+                       layer: some layer of a brain region
+            """.strip()
+        assert doc_observed  == doc_expected,\
+            """
+            Observed: {}
+            Expected: {}
+            """.format(
+                doc_observed,
+                doc_expected)
+
+
     def test_parameters_present(self):
         """
         if all arguments are present, the docstring should be amended
@@ -23,11 +52,6 @@ class Test_use:
 
         decorated = terminology.use(tparams.region, tparams.layer)(afuncof)
 
-        assert decorated.__doc__ ==\
-            """
-            Arguments: region: a brain region
-                       layer: some layer of a brain region
-            """
         assert decorated() == 'lalalolo'
         assert decorated(region="a region", layer="a layer")\
             == "a regiona layer"
@@ -53,12 +77,6 @@ class Test_use:
             """
             return parameters
 
-        assert varkwargyparams.__doc__ ==\
-            """
-            a docstring for:
-                region: a brain region
-                layer: some layer of a brain region
-            """
         assert varkwargyparams() == {}
         assert varkwargyparams(region="a region", layer="a layer") ==\
             {'region': 'a region', 'layer': 'a layer'}
@@ -98,7 +116,7 @@ class Test_use:
         @terminology.use(tparams.region)
         def afuncof(region):
             """
-            Arguments: {parameters}
+            Arguments: {arguments}
             """
             return region
 
@@ -112,10 +130,6 @@ class Test_use:
         def nodocfun(region):
             """no params here"""
             return None
-        assert nodocfun.__doc__ ==\
-            ("no params here\n"
-             "Parameters:\n"
-             "    region: a brain region")
 
     def test_empty_docstring(self):
         """
@@ -125,5 +139,6 @@ class Test_use:
         def nodocfun(region='v', idonthaveadocstring="whatchugonnadoaboutit?"):
             return None
         assert nodocfun.__doc__ == \
-            ("Parameters:\n"
+            ("Arguments:\n"
              "    region: a brain region")
+

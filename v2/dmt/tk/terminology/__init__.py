@@ -39,12 +39,48 @@ class Term(str):
     @property
     def document(self):	
         return "{}: {}" .format(self, self.description)
-#     return ": ".join([self, self.description])	
 
 
 class MissingParameterException(TypeError):	
     pass	
 
+
+def _check_terms(expected, method):
+    """
+    Check that the method accepts expected parameters.
+
+    Arguments
+    `expected`: Expected terms
+    """
+    signature = inspect.signature(method)
+    missing_params = [
+        term for term in expected
+        if term not in signature.parameters]
+    signature_has_varkwargs = any(
+        p.kind == p.VAR_KEYWORD
+        for p in signature.parameters.values())
+    if any(missing_params) and not signature_has_varkwargs:
+        raise TypeError(
+            "parameters: {} are not found in the signature"	
+            "{} of function {}".format(	
+                missing_params, signature, method.__name__))
+
+    return True
+    
+def _check_varkwargs(
+        expected_params,
+        method,
+        varkwargs):
+    """
+    Check that method kwargs does not contain unknown arguments.
+    """
+    for param in varkwargs:
+        if not param in expected_params:
+            raise TypeError(
+                "{} got an unexpected keyword argument {}".format(
+                    method, param))
+
+    return True
 
 def use(head, *tail):	
     """
@@ -53,26 +89,12 @@ def use(head, *tail):
     terms = (head,) + tail
 
     def decorator(method):	
-        sig = inspect.signature(method)	
-        sigparams = sig.parameters
-        missing_params = [p for p in terms if p not in sigparams]	
+        signature = inspect.signature(method)	
 
         signature_has_varkwargs = any(
-            p.kind == p.VAR_KEYWORD for p in sigparams.values())
+            p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
 
-        def check_varkwargs(kwargs):
-            """check that kwargs does not contain unknown arguments."""
-            for param in kwargs:
-                if not param in sigparams and not param in terms:
-                    raise TypeError(
-                        "{} got an unexpected keyword argument {}".format(
-                            method, param))
-
-        if any(missing_params) and not signature_has_varkwargs:	
-            raise MissingParameterException(	
-                "parameters: {} are not found in the signature"	
-                "{} of function {}".format(	
-                    missing_params, sig, method))	
+        _check_terms(terms, method)
 
         @functools.wraps(method)	
         def wrapped_method(*args, **kwargs):	
@@ -80,22 +102,30 @@ def use(head, *tail):
             The decorated method.
             """
             if signature_has_varkwargs:
-                check_varkwargs(kwargs)
+                _check_varkwargs(
+                    terms + tuple(p for p in signature.parameters),
+                    method, kwargs)
             return method(*args, **kwargs)	
 
         docstring = wrapped_method.__doc__	
         if docstring is None:	
             docstring = ""	
 
-        if "{parameters}" not in docstring:	
-            docstring = docstring + "Parameters:\n    {parameters}"	
+        if "{parameters}" in docstring:
+            arguments_label = "parameters"
+        elif "{arguments}" in docstring:
+            arguments_label = "arguments"
+        else:
+            docstring = docstring + "Arguments:\n    {arguments}"
+            arguments_label = "arguments"
 
-        params_posn = docstring.find("{parameters}")	
+        params_posn = docstring.find("{" + arguments_label + "}")
         preceding_newline = docstring[:params_posn].rfind("\n") + 1	
-        leading_whitespace = " " * (params_posn - preceding_newline)	
-        wrapped_method.__doc__ = docstring.format(	
-            parameters=("\n" + leading_whitespace)	
-            .join(p.document for p in terms))	
+        leading_whitespace = "\n" + " " * (params_posn - preceding_newline)	
+        wrapped_method.__doc__ = docstring.format(**{
+            arguments_label: leading_whitespace.join(
+                term.document for term in terms)})
+            
         return wrapped_method	
 
     return decorator
