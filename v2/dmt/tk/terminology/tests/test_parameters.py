@@ -104,7 +104,7 @@ class Test_use:
             Arguments: region: a brain region
                        layer: some layer of a brain region
             """.strip()
-        assert doc_observed  == doc_expected,\
+        assert doc_observed == doc_expected,\
             """
             Observed: {}
             Expected: {}
@@ -196,4 +196,211 @@ class Test_use:
             """no params here"""
             return None
 
+    def test_only_var_kwargs(self):
+        """
+        A method with only variable kwargs can be decorated to match
+        the kwargs with a terminology.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_region_layer(**kwargs):
+            """
+            Get a layer region acronym.
+            Arguments: {parameters}
+            """
+            x = kwargs[tparams.region]
+            y = kwargs[tparams.layer]
+            return "{};{}".format(x, y)
 
+        with pyt.raises(TypeError):
+            """
+            A method defined as `get_region_layer` above has to be
+            called with variable keyword arguments alone.
+            """
+            get_region_layer()
+            get_region_layer("SSp-ll", "L1")
+
+        with pyt.raises(TypeError):
+            """
+            The keywords used to call such a method must agree with the
+            terminology declared in the decorator.
+            """
+            get_region_layer(area="SSp-ll", layer="L1")
+
+        observed = get_region_layer(region="SSp-ll", layer="L1")
+        expected = "SSp-ll;L1"
+        assert observed  == expected, "{} != {}".format(observed, expected)
+
+        doc_observed = get_region_layer.__doc__.strip()
+        doc_expected =\
+            """
+            Get a layer region acronym.
+            Arguments: region: a brain region
+                       layer: some layer of a brain region
+            """.strip()
+        assert doc_observed  == doc_expected,\
+            """
+            Observed: {}
+            Expected: {}
+            """.format(
+                doc_observed,
+                doc_expected)
+
+
+class Test_where():
+    """
+    Test decorating with `terminology.where`
+    """
+
+    def test_(self):
+        """
+        Test the declaration of terms used in a method.
+        """
+        @terminology.where(
+            x=tparams.region,
+            y=tparams.layer)
+        def get_layer_region(x, y):
+            """
+            Demonstrate use of layer and region.
+            """
+            return "{};{}".format(x, y)
+
+        assert get_layer_region("SSp-ll", "L1") == "SSp-ll;L1"
+
+        with pyt.raises(TypeError):
+            get_layer_region()
+        with pyt.raises(TypeError):
+            get_layer_region(region="V", nucleus="L1")
+
+    def test_documentation(self):
+        """
+        A method decorated with `terminology.use` should have the
+        expected documentation.
+        """
+        @terminology.where(
+            x=tparams.region,
+            y=tparams.layer)
+        def get_region_layer(x, y):
+            """
+            Get a layer region acronym.
+            Arguments: {parameters}
+            """
+            pass
+
+        doc_observed = get_region_layer.__doc__.strip()
+        doc_expected =\
+            """
+            Get a layer region acronym.
+            Arguments: x: a brain region
+                       y: some layer of a brain region
+            """.strip()
+        assert doc_observed  == doc_expected,\
+            """
+            Observed: {}
+            Expected: {}
+            """.format(
+                doc_observed,
+                doc_expected)
+
+    def test_argument_order(self):
+        """
+        Order of arguments may not match the order declared in
+        `terminology.where`
+        """
+        @terminology.where(
+            x=tparams.region,
+            y=tparams.layer)
+        def get_layer_region(y, x):
+            """
+            demonstrate use of layer and region.
+            """
+            return "{};{}".format(x, y)
+
+        observed = get_layer_region("L1", "SSp-ll")
+        expected = "SSp-ll;L1"
+        assert observed  == expected, "{} != {}".format(observed, expected)
+
+        @terminology.where(
+            x=tparams.region,
+            y=tparams.layer)
+        def get_layer_region(x, y):
+            """
+            demonstrate use of layer and region.
+            """
+            return "{};{}".format(x, y)
+
+        observed = get_layer_region("SSp-ll", "L1")
+        expected = "SSp-ll;L1"
+        assert observed  == expected, "{} != {}".format(observed, expected)
+
+    def test_only_var_kwargs(self):
+        """
+        A method with only variable kwargs can be decorated to match
+        the kwargs with a terminology.
+        """
+        @terminology.where(
+            region=tparams.region,
+            layer=tparams.layer)
+        def get_region_layer(**kwargs):
+            """
+                Get a layer region acronym.
+                Arguments: {parameters}
+                """
+            x = kwargs[tparams.region]
+            y = kwargs[tparams.layer]
+            return "{};{}".format(x, y)
+
+        with pyt.raises(TypeError):
+            """
+            A method defined as `get_region_layer` above has to be
+            called with variable keyword arguments alone.
+            """
+            get_region_layer()
+            get_region_layer("SSp-ll", "L1")
+
+        with pyt.raises(TypeError):
+            """
+            The keywords used to call such a method must agree with the
+            terminology declared in the decorator.
+            """
+            get_region_layer(area="SSp-ll", layer="L1")
+
+        observed = get_region_layer(region="SSp-ll", layer="L1")
+        expected = "SSp-ll;L1"
+        assert observed  == expected, "{} != {}".format(observed, expected)
+
+    def test_no_var_args_kwargs(self):
+        """
+        Cannot use variable args and kwargs with `terminology.where`
+        """
+        with pyt.raises(TypeError):
+            @terminology.where(
+                x=tparams.region,
+                y=tparams.layer)
+            def get_region_layer(x, y, *args):
+                """
+                Get a layer region acronym.
+                Arguments: {parameters}
+                """
+                pass
+
+        with pyt.raises(TypeError):
+            @terminology.where(
+                x=tparams.region,
+                y=tparams.layer)
+            def get_region_layer(x, y, **kwargs):
+                """
+                Get a layer region acronym.
+                Arguments: {parameters}
+                """
+                pass
+
+        with pyt.raises(TypeError):
+            @terminology.where(
+                x=tparams.region,
+                y=tparams.layer)
+            def get_region_layer(x, y, *args, **kwargs):
+                """
+                Get a layer region acronym.
+                Arguments: {parameters}
+                """
+                pass
