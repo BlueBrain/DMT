@@ -38,6 +38,34 @@ class Test_use:
                 doc_observed,
                 doc_expected)
 
+    def test_documentation_no_stripping(self):
+        """
+        A method decorated with `terminology.use` should have the
+        expected documentation, and the docstring should be formatted.
+        """
+        @terminology.use(tparams.region, tparams.layer)
+        def get_region_layer(region, layer):
+            """
+            Get a layer region acronym.
+            Arguments: {parameters}
+            """
+            pass
+
+        doc_observed = get_region_layer.__doc__
+        doc_expected =\
+            """
+            Get a layer region acronym.
+            Arguments: region: a brain region
+                       layer: some layer of a brain region
+            """
+        assert doc_observed  == doc_expected,\
+            """
+            Observed: {}
+            Expected: {}
+            """.format(
+                doc_observed,
+                doc_expected)
+
     def test_empty_docstring(self):
         """
         Decorator should provide a docstring even if the original method
