@@ -36,38 +36,138 @@ class Term(str):
         self.description = description
         return super().__init__()	
 
-    @property
-    def document(self):	
-        return "{}: {}" .format(self, self.description)
+    def document(self, label=None):	
+        if label is None:
+            label = self
+        return "{}: {}" .format(label, self.description)
 
-    
-def use(head, *tail):	
+
+def _check_missing_in_signature(expected, method):
     """
-    Decorate a method with terms used in its body.
+    Check that the method accepts expected parameters.
+
+    Arguments
+    `expected`: Expected terms
+    """
+    signature = inspect.signature(method)
+    missing_params = [
+        term for term in expected
+        if term not in signature.parameters]
+    signature_has_varkwargs = any(
+        p.kind == p.VAR_KEYWORD
+        for p in signature.parameters.values())
+    if any(missing_params) and not signature_has_varkwargs:
+        raise TypeError(
+            "parameters: {} are not found in the signature"	
+            "{} of function {}".format(	
+                missing_params, signature, method.__name__))
+
+    return True
+    
+def _check_varkwargs(
+        expected_params,
+        method,
+        varkwargs):
+    """
+    Check that method kwargs does not contain unknown arguments.
+    """
+    for param in varkwargs:
+        if not param in expected_params:
+            raise TypeError(
+                "{} got an unexpected keyword argument {}".format(
+                    method, param))
+
+    return True
+
+def _terms_decorated_doc_string(terms, docstring):
+    """
+    Add term-arguments to the doc string.
+    """
+    if docstring is None:	
+        docstring = ""	
+    if "{parameters}" in docstring:
+        arguments_label = "parameters"
+    elif "{arguments}" in docstring:
+        arguments_label = "arguments"
+    else:
+        docstring = docstring + "Arguments:\n    {arguments}"
+        arguments_label = "arguments"
+    params_posn = docstring.find("{" + arguments_label + "}")
+    preceding_newline = docstring[:params_posn].rfind("\n") + 1	
+    leading_whitespace = "\n" + " " * (params_posn - preceding_newline)	
+    try:
+        return docstring.format(**{
+            arguments_label: leading_whitespace.join(
+                term.document(label) for label, term in terms.items())})
+    except AttributeError:
+        return docstring.format(**{
+            arguments_label: leading_whitespace.join(
+                term.document() for term in terms)})
+
+def _match_kwargs(**term_dict):
+    """
+    Decorate a method to match keyword arguments to those declared in the
+    decoration.
+    """
+    def decorator(method):
+        """
+        Decorate a method
+        """
+        signature = inspect.signature(method)	
+        signature_has_varkwargs = any(
+            p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
+
+        assert len(signature.parameters) == 1 and signature_has_varkwargs,\
+            "_match_kwargs applies only to methods that accept only var-kwargs"
+
+        def wrapped_method(**kwargs):
+            """
+            The decorated method.
+            """
+            for p in term_dict.values():
+                if p not in kwargs:
+                    raise TypeError(
+                        "Missing required keyword argument {}".format(p))
+
+            return method(**{
+                label: kwargs.get("{}".format(term))
+                for label, term in term_dict.items()}) 
+
+        wrapped_method.__name__ = method.__name__
+        wrapped_method.__doc__ = _terms_decorated_doc_string(
+            term_dict,
+            method.__doc__)
+        return wrapped_method
+
+    return decorator
+
+def _require_if(head, *tail, with_required_kwargs=True):	
+    """
+    Decorate a method with terms used in its body,
+    requiring keywords if `with_required_kwargs`.
     """
     terms = (head,) + tail
 
-    def decorator(method):	
-        sig = inspect.signature(method)	
-        sigparams = sig.parameters
-        missing_params = [p for p in terms if p not in sigparams]	
+    def decorator(method):
+        """
+        Decorate a method
+        """
+        if with_required_kwargs:
+            try:
+                return _match_kwargs(**{
+                    "{}".format(term): term
+                    for term in terms})(method)
+            except AssertionError:
+                pass
 
+        signature = inspect.signature(method)	
+
+        signature_has_varargs = any(
+            p.kind == p.VAR_POSITIONAL for p in signature.parameters.values())
         signature_has_varkwargs = any(
-            p.kind == p.VAR_KEYWORD for p in sigparams.values())
+            p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
 
-        def check_varkwargs(kwargs):
-            """check that kwargs does not contain unknown arguments."""
-            for param in kwargs:
-                if not param in sigparams and not param in terms:
-                    raise TypeError(
-                        "{} got an unexpected keyword argument {}".format(
-                            method, param))
-
-        if any(missing_params) and not signature_has_varkwargs:	
-            raise TypeError(	
-                "parameters: {} are not found in the signature"	
-                "{} of function {}".format(	
-                    missing_params, sig, method))	
+        _check_missing_in_signature(terms, method)
 
         @functools.wraps(method)	
         def wrapped_method(*args, **kwargs):	
@@ -75,22 +175,76 @@ def use(head, *tail):
             The decorated method.
             """
             if signature_has_varkwargs:
-                check_varkwargs(kwargs)
-            return method(*args, **kwargs)	
+                _check_varkwargs(
+                    terms + tuple(p for p in signature.parameters),
+                    method, kwargs)
+            try:
+                return method(*args, **kwargs)
+            except KeyError as key_error:
+                if key_error[0] in terms:
+                    raise TypeError(
+                        "Missing keyword argument {}".format(key_error[0]))
+                raise key_error
 
-        docstring = wrapped_method.__doc__	
-        if docstring is None:	
-            docstring = ""	
-
-        if "{parameters}" not in docstring:	
-            docstring = docstring + "Parameters:\n    {parameters}"	
-
-        params_posn = docstring.find("{parameters}")	
-        preceding_newline = docstring[:params_posn].rfind("\n") + 1	
-        leading_whitespace = " " * (params_posn - preceding_newline)	
-        wrapped_method.__doc__ = docstring.format(	
-            parameters=("\n" + leading_whitespace)	
-            .join(p.document for p in terms))	
+        wrapped_method.__name__ = method.__name__
+        wrapped_method.__doc__ = _terms_decorated_doc_string(
+            terms,
+            method.__doc__)
+            
         return wrapped_method	
 
     return decorator
+
+
+def require(head, *tail):
+    """
+    Always require keyword
+    """
+    return _require_if(head, *tail, with_required_kwargs=True)
+
+def use(head, *tail):
+    """
+    Decorate a method with terms used in its body.
+    """
+    return _require_if(head, *tail, with_required_kwargs=False)
+
+def where(**term_dict):
+    """
+    Declare what a method means by the terms it uses in its argument list.
+    """
+    def decorator(method):
+        """
+        Decorate a method
+        """
+        try:
+            return _match_kwargs(**term_dict)(method)
+        except AssertionError:
+            pass
+
+        signature = inspect.signature(method)	
+        signature_has_varargs = any(
+            p.kind == p.VAR_POSITIONAL for p in signature.parameters.values())
+        signature_has_varkwargs = any(
+            p.kind == p.VAR_KEYWORD for p in signature.parameters.values())
+        if signature_has_varkwargs or signature_has_varargs:
+            raise TypeError(
+                "terminology.where does not support var-args or var-kwargs")
+
+        def wrapped_method(*args):
+            """
+            The decorated method.
+            """
+            return method(*args)
+            # return method(**{
+            #     label: kwargs.get("{}".format(term))
+            #     for label, term in term_dict.items()})
+
+        wrapped_method.__name__ = method.__name__
+        wrapped_method.__doc__ = _terms_decorated_doc_string(
+            term_dict,
+            method.__doc__)
+        return wrapped_method
+
+    return decorator
+
+
