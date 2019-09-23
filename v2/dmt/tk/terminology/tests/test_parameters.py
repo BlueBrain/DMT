@@ -194,14 +194,21 @@ class Test_use:
         @terminology.use(tparams.region)
         def nodocfun(region):
             """no params here"""
-            return None
+            return True
 
+        return nodocfun("SSp-ll")
+
+
+class Test_require():
+    """
+    Test `terminology.require`
+    """
     def test_only_var_kwargs(self):
         """
         A method with only variable kwargs can be decorated to match
         the kwargs with a terminology.
         """
-        @terminology.use(tparams.region, tparams.layer)
+        @terminology.require(tparams.region, tparams.layer)
         def get_region_layer(**kwargs):
             """
             Get a layer region acronym.
@@ -349,7 +356,6 @@ class Test_where():
             y = kwargs[tparams.layer]
             return "{};{}".format(x, y)
 
-        with pyt.raises(TypeError):
             """
             A method defined as `get_region_layer` above has to be
             called with variable keyword arguments alone.
@@ -367,6 +373,25 @@ class Test_where():
         observed = get_region_layer(region="SSp-ll", layer="L1")
         expected = "SSp-ll;L1"
         assert observed  == expected, "{} != {}".format(observed, expected)
+
+        @terminology.where(
+            region=tparams.region,
+            layer=tparams.layer)
+        def get_region_layer(**kwargs):
+            """
+                Get a layer region acronym.
+                Arguments: {parameters}
+                """
+            x = kwargs[tparams.region]
+            y = kwargs[tparams.layer]
+            return "{};{}".format(x, y)
+
+            """
+            A method defined as `get_region_layer` above has to be
+            called with variable keyword arguments alone.
+            """
+            get_region_layer()
+            get_region_layer("SSp-ll", "L1")
 
     def test_no_var_args_kwargs(self):
         """

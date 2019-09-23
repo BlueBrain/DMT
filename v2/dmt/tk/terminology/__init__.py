@@ -141,9 +141,10 @@ def _match_kwargs(**term_dict):
 
     return decorator
 
-def use(head, *tail):	
+def _require_if(head, *tail, with_required_kwargs=True):	
     """
-    Decorate a method with terms used in its body.
+    Decorate a method with terms used in its body,
+    requiring keywords if `with_required_kwargs`.
     """
     terms = (head,) + tail
 
@@ -151,12 +152,13 @@ def use(head, *tail):
         """
         Decorate a method
         """
-        try:
-            return _match_kwargs(**{
-                "{}".format(term): term
-                for term in terms})(method)
-        except AssertionError:
-            pass
+        if with_required_kwargs:
+            try:
+                return _match_kwargs(**{
+                    "{}".format(term): term
+                    for term in terms})(method)
+            except AssertionError:
+                pass
 
         signature = inspect.signature(method)	
 
@@ -193,6 +195,19 @@ def use(head, *tail):
 
     return decorator
 
+
+def require(head, *tail):
+    """
+    Always require keyword
+    """
+    return _require_if(head, *tail, with_required_kwargs=True)
+
+def use(head, *tail):
+    """
+    Decorate a method with terms used in its body.
+    """
+    return _require_if(head, *tail, with_required_kwargs=False)
+
 def where(**term_dict):
     """
     Declare what a method means by the terms it uses in its argument list.
@@ -222,7 +237,7 @@ def where(**term_dict):
             return method(*args)
             # return method(**{
             #     label: kwargs.get("{}".format(term))
-            #     for label, term in term_dict.items()}) 
+            #     for label, term in term_dict.items()})
 
         wrapped_method.__name__ = method.__name__
         wrapped_method.__doc__ = _terms_decorated_doc_string(

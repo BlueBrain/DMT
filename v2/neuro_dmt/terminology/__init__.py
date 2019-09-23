@@ -49,10 +49,16 @@ class cell(Singleton):
         "Synapse class of a cell can be either excitatory, or inhibitory")
     postsynaptic = Term(
         "postsynaptic",
-        "Indiciates that the cell is on the post side of a synapse.")
+        """
+        The value of this parameter should describe,
+        the postsynaptic cell group of a pathway.
+        """)
     presynaptic = Term(
         "presynaptic",
-        "Indicates that the cell is on the pre side of a synapse.")
+        """
+        The value of this parameter should describe,
+        the presynaptic cell group of a pathway.
+        """)
 
 
 class synapse(Singleton):
