@@ -5,6 +5,10 @@ import inspect
 import functools	
 
 
+class MissingTermError(TypeError):
+    pass
+
+
 class Term(str):	
     """	
     Terms are used in an analysis as query parameters, or dataframe column
@@ -57,7 +61,7 @@ def _check_missing_in_signature(expected, method):
         p.kind == p.VAR_KEYWORD
         for p in signature.parameters.values())
     if any(missing_params) and not signature_has_varkwargs:
-        raise TypeError(
+        raise MissingTermError(
             "parameters: {} are not found in the signature"	
             "{} of function {}".format(	
                 missing_params, signature, method.__name__))
@@ -73,7 +77,7 @@ def _check_varkwargs(
     """
     for param in varkwargs:
         if not param in expected_params:
-            raise TypeError(
+            raise MissingTermError(
                 "{} got an unexpected keyword argument {}".format(
                     method, param))
 
@@ -94,7 +98,8 @@ def _terms_decorated_doc_string(terms, docstring):
         arguments_label = "arguments"
     params_posn = docstring.find("{" + arguments_label + "}")
     preceding_newline = docstring[:params_posn].rfind("\n") + 1	
-    leading_whitespace = "\n" + " " * (params_posn - preceding_newline)	
+    leading_whitespace = "\n" + " " * (params_posn - preceding_newline)
+    print(terms)
     try:
         return docstring.format(**{
             arguments_label: leading_whitespace.join(
@@ -126,7 +131,7 @@ def _match_kwargs(**term_dict):
             """
             for p in term_dict.values():
                 if p not in kwargs:
-                    raise TypeError(
+                    raise MissingTermError(
                         "Missing required keyword argument {}".format(p))
 
             return method(**{
@@ -181,9 +186,10 @@ def _require_if(head, *tail, with_required_kwargs=True):
             try:
                 return method(*args, **kwargs)
             except KeyError as key_error:
-                if key_error[0] in terms:
-                    raise TypeError(
-                        "Missing keyword argument {}".format(key_error[0]))
+                if key_error.args[0] in terms:
+                    raise KeyError(
+                        "{}; are you sure you provided {} in {}?"
+                        .format(key_error, key_error.args[0], method.__name__))
                 raise key_error
 
         wrapped_method.__name__ = method.__name__
