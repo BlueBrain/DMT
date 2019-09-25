@@ -167,7 +167,7 @@ class SimpleValidation(Analysis, ABC):
         for label, measurement in measurements:
             results.append(ensure_mean_and_std(measurement))
             labels.append(label)
-
+        print("plotting")
         plot = self.plot(labels, results)
         stats = self.get_stats(*measurements)
         report.plot = plot

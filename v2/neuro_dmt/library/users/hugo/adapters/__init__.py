@@ -325,7 +325,8 @@ class CircuitAdapter:
         return [conn[2] for conn in connectome.iter_connections(
             pre=pre_ids, post=post_ids, return_synapse_count=True)]
 
-    def pathway_synapses(self, measurement_parameters):
+    def pathway_synapses(self, measurement_parameters,
+                         nsamples=100, sample_size=50):
         """
         get the total number of synapses between two groups of cells
 
@@ -336,13 +337,12 @@ class CircuitAdapter:
         Returns:
             number of synapses:: int
         """.format(PRESYNAPTIC, POSTSYNAPTIC)
-        return len(
-            self.get_connectome(measurement_parameters).pathway_synapses(
-                pre=self._translate_parameters_cells(
-                    measurement_parameters[PRESYNAPTIC]),
-                post=self._translate_parameters_cells(
-                    measurement_parameters[POSTSYNAPTIC])
-            ))
+
+        def pathway_synapses(conn, pre, post):
+            return len(conn.pathway_synapses(pre=pre, post=post))
+
+        return self._sample_connectome(
+            pathway_synapses, nsamples, sample_size, measurement_parameters)
 
     # TODO: get all data from iter_connections, cache results?
     def _sample_connectome(self, method, nsamples, sample_size,
