@@ -56,13 +56,13 @@ def _default_group_desc(df, st):
         keys = group_dict.keys()
         pre = ": {" if len(keys) > 1 else ": "
         post = "}" if len(keys) > 1 else ""
-        return toplabel + pre +\
+        return str(toplabel) + pre +\
             ", ".join([_default_group_desc_deep(group_dict[k], k)
                        if isinstance(group_dict[k], Mapping) else str(k)
                        for k in keys]) + post
 
     def _default_group_desc_shallow(group_dict, toplabel):
-        return toplabel + ": " +\
+        return str(toplabel) + ": " +\
             ", ".join([_default_group_desc_shallow(group_dict[k], k)
                        if isinstance(group_dict[k], Mapping) else str(k)
                        for k in group_dict.keys()])
