@@ -9,6 +9,17 @@ from dmt.tk.enum import MEAN, STD
 from dmt.tk.plotting.circle import CircleTool, CirclePlot
 
 
+def assert_nested_dicts_approx_equal(d1, d2):
+    if not isinstance(d1, dict):
+        assert d1 == pyt.approx(d2)
+        return
+    d1k = sorted(d1.keys())
+    assert d1k == sorted(d2.keys())
+    for k in d1k:
+        assert_nested_dicts_approx_equal(d1[k], d2[k])
+    return
+
+
 class TestCircleTool:
     """test the geometric helper CircleTool"""
 
@@ -216,13 +227,13 @@ class TestCirclePlot:
         def test_group_angles_asymmetric(self):
             """groups that only show up in 'to' column should occur
             after (clockwise of) the groups occurring in 'from'"""
-            df = pd.DataFrame({
-                MEAN: [1, 2],
-                'pre': ['a', 'b'],
-                'post': ['c', 'c']})
+            df = pd.DataFrame(OrderedDict([
+                (MEAN, [1, 2]),
+                ('pre', ['a', 'b']),
+                ('post', ['c', 'c'])]))
             plotter = CirclePlot()
             group_angles = plotter.__plot_components__(df)[2][0]
-
+            print(*group_angles.keys())
             exp_angles = {'a': (0, 1/3 * np.pi),
                           'b': (1/3 * np.pi, 3/3 * np.pi),
                           'c': (3/3 * np.pi, 6/3 * np.pi)}
@@ -346,11 +357,9 @@ class TestCirclePlot:
                               'b': (9/6 * np.pi, 7/6 * np.pi)},
                         'a': {'a': (2/6 * np.pi, 1/6 * np.pi),
                               'b': (7/6 * np.pi, 5/6 * np.pi)}}
-            for f in ['a', 'b']:
-                for t in ['a', 'b']:
-                    print('f=', f, 't=', t)
-                    assert dest_angles[f][t] == pyt.approx(exp_dest[f][t])
-                    assert source_angles[f][t] == pyt.approx(exp_source[f][t])
+
+            assert_nested_dicts_approx_equal(source_angles, exp_source)
+            assert_nested_dicts_approx_equal(dest_angles, exp_dest)
 
         def test_connection_angles_NaN(self):
             """nan connections are not drawn"""
@@ -369,15 +378,8 @@ class TestCirclePlot:
             exp_dest = {'b': {'a': (1/4 * np.pi, 0)},
                         'a': {'a': (2/4 * np.pi, 1/4 * np.pi),
                               'b': (7/4 * np.pi, 5/4 * np.pi)}}
-
-            dummy_value = (0, 0)
-            for f in ['a', 'b']:
-                for t in ['a', 'b']:
-                    print('f=', f, 't=', t)
-                    assert dest_angles[f].get(t, dummy_value)\
-                        == pyt.approx(exp_dest[f].get(t, dummy_value))
-                    assert source_angles[f].get(t, dummy_value) ==\
-                        pyt.approx(exp_source[f].get(t, dummy_value))
+            assert_nested_dicts_approx_equal(source_angles, exp_source)
+            assert_nested_dicts_approx_equal(dest_angles, exp_dest)
 
         def test_nonsymmetric_groups(self):
             """test that when only receiving connections, all the group's space
@@ -396,14 +398,20 @@ class TestCirclePlot:
             exp_dest = {'a': {'c': (6/3 * np.pi, 5/3 * np.pi)},
                         'b': {'c': (5/3 * np.pi, 3/3 * np.pi)}}
 
-            dummy_value = (0, 0)
-            for f in ['a', 'b']:
-                for t in ['a', 'b']:
-                    print('f=', f, 't=', t)
-                    assert dest_angles[f].get(t, dummy_value)\
-                        == pyt.approx(exp_dest[f].get(t, dummy_value))
-                    assert source_angles[f].get(t, dummy_value) ==\
-                        pyt.approx(exp_source[f].get(t, dummy_value))
+            assert_nested_dicts_approx_equal(source_angles, exp_source)
+            assert_nested_dicts_approx_equal(dest_angles, exp_dest)
+
+        def test_exclude_tiny_angles(self):
+            """test a parameter which removes small connections from the plot
+            """
+            plotter = CirclePlot(min_conn_size=np.pi/32)
+            df = pd.DataFrame(OrderedDict([
+                ('pre: mtype', ['a', 'a', 'b', 'b', 'c',]),
+                ('post: mtype', ['a', 'b', 'a', 'b', 'c']),
+                (MEAN, [10, 20, 10, 20, np.nan])]))
+            src, dst = plotter.__plot_components__(df)[3]
+            assert src['c'] == {}
+            assert dst['c'] == {}
 
     class TestPlot:
         """

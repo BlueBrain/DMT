@@ -186,7 +186,8 @@ class CirclePlot:
     of the connection between the groups the segments represent
     """
     def __init__(self, space_between=0.0, value_callback=default_group_label,
-                 color_callback=default_color_callback):
+                 color_callback=default_color_callback, min_conn_size=0,
+                 segment_thickness=0.05):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -199,8 +200,9 @@ class CirclePlot:
         self.space_between = space_between
         self.circle = CircleTool(1.0)
         self.value_callback = value_callback
-        self.outer_thickness = 0.1
+        self.segment_thickness = segment_thickness
         self.color_callback = color_callback
+        self.min_conn_size = min_conn_size
 
     def _prepare_plot(self, df):
         """
@@ -262,20 +264,20 @@ class CirclePlot:
     # TODO: instead of sorting by labels, group order should simply
     #       be preserved from the table, and all dicts passed around
     #       should be OrderedDicts or DataFrames
-    def _group_angles(self, pivot_table):
+    def _group_angles(self, groups, pivot_table):
         """
         find the start and end angles for each segment representing a
         group in the table.
 
         Arguments:
+            groups: the groups, in order
             pivot_table: pandas pivot table with groups as index and columns
 
         Returns:
             dict {group: (start_angle, end_angle)}
         """
         tot_conn = np.nansum(pivot_table.values)
-        group_angles = {}
-        groups = sorted(set(pivot_table.index) | set(pivot_table.columns))
+        group_angles = OrderedDict()
         angle = 0
         occupied_space = self.space_between * len(groups)
 
@@ -319,7 +321,7 @@ class CirclePlot:
 
         Returns:
             tuple of dict (source_angles, dest_angles)
-            each of the form {<group1>: {<group1>: start angle, end angle,
+            each of the form {<group1>: {<group1>: angle,
                                          <group2>: ...
                                          ...}
                               <group2>: {...}
@@ -329,7 +331,7 @@ class CirclePlot:
         """
         source_angles = {ind: {} for ind in pivot_table.index}
         dest_angles = {ind: {} for ind in pivot_table.index}
-        groups = sorted(group_angles.keys())
+        groups = list(group_angles.keys())
         for i, grp in enumerate(groups):
             start_angle, end_angle = group_angles[grp]
             group_angle_size = end_angle - start_angle
@@ -358,7 +360,7 @@ class CirclePlot:
                 try:
                     angle_size = group_angle_size * pivot_table.loc[from_, grp]\
                                  / tot_conn
-                    if not np.isnan(angle_size):
+                    if not np.isnan(angle_size) and angle_size > self.min_conn_size:
                         dest_angles[from_][grp] = (angle + angle_size, angle)
                         angle += angle_size
                 except KeyError:
@@ -368,7 +370,7 @@ class CirclePlot:
                 try:
                     angle_size = group_angle_size * pivot_table.loc[grp, to]\
                                  / tot_conn
-                    if not np.isnan(angle_size):
+                    if not np.isnan(angle_size) and angle_size > self.min_conn_size:
                         source_angles[grp][to] = (angle, angle + angle_size)
                         angle += angle_size
                 except KeyError:
@@ -383,7 +385,7 @@ class CirclePlot:
     def _group_patch(self, angles, **kwargs):
         """generate a patch for a group"""
         return self.circle.segment_polygon(
-            *angles, self.outer_thickness, **kwargs)
+            *angles, self.segment_thickness, **kwargs)
 
     def _group_colors(self, groups):
         """choose a color for each group in groups"""
@@ -414,7 +416,7 @@ class CirclePlot:
                 dest_angles : destination angle for each conn {from:{to:a}}
         """
         pvt, groups = self._prepare_plot(df)
-        group_angles = self._group_angles(pvt)
+        group_angles = self._group_angles(groups, pvt)
         group_colors = self._group_colors(groups)
         conn_angles = self._connection_angles(pvt, group_angles)
         group_patchdata = (group_angles, group_colors)
