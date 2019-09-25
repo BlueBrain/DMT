@@ -51,10 +51,8 @@ class BrainCircuitAnalysis(
         It is up to the reporter what kind of report to generate. For example,
         the report can be a (interactive) webpage, or a static PDF.
         """,
-        __required__=False,
-        __examples__=[
-            Reporter(path_output_folder=os.getcwd())])
-                
+        __default_value__=Reporter(
+            path_output_folder=os.getcwd()))
     reference_data = Field(
         """
         A pandas.DataFrame containing reference data to compare with the
@@ -76,17 +74,17 @@ class BrainCircuitAnalysis(
         except AttributeError:
             return getattr(self.adapter, "get_{}".format(measurement_name))
 
-    def _get_sample_measurement(self,
+    def get_measurement(self,
             circuit_model,
             **measurement_parameters):
         """
-        Get measurement for a single sample.
+        ...
         """
         return self.adapter_method(
             circuit_model,
             **measurement_parameters)
 
-    def get_measurement(self,
+    def _get_statistical_measurement(self,
             circuit_model,
             sample_size=None,
             *args, **kwargs):
@@ -95,20 +93,20 @@ class BrainCircuitAnalysis(
         """
         measurement = pandas\
             .DataFrame(
-                [self._get_sample_measurement(circuit_model, **p)
+                [self.get_measurement(circuit_model, **p)
                  for p in self.measurement_parameters.for_sampling(sample_size)],
                 columns=[self.phenomenon.label],
-                index=self.measurement_parameters.index(sample_size))\
+                index=self.measurement_parameters.index(sample_size))
+
+        if self.reference_data.empty:
+            return measurement
+
+        model_measurement = measurement\
             .reset_index()\
             .assign(
                 dataset=self.adapter.get_label(circuit_model))\
             .set_index(
                 ["dataset"] + self.measurement_parameters.variables)
-                
-
-        if self.reference_data.empty:
-            return measurement
-
         return pandas\
             .concat([
                 self.reference_data,
@@ -127,32 +125,6 @@ class BrainCircuitAnalysis(
             .assign(
                 dataset=self.adapter.get_label())])
 
-    @property
-    def number_measurement_parameters(self):
-        """
-        How many parameters are the measurements made with?
-        For example, if the measurement parameters are region, layer,
-        the number is two.
-
-        The implementation below uses the implementation of
-        `self.measurement_parameters`. However, if you change the type of that
-        component, you will have to override However, if you change the type of that
-        component, you will have to override.
-        """
-        return self.measurement_parameters.values.shape[1]
-
-    @property
-    def names_measurement_parameters(self):
-        """
-        What are the names of the parameters that the measurements are made with?
-
-        The implementation below uses the implementation of
-        `self.measurement_parameters`. However, if you change the type of that
-        component, you will have to override However, if you change the type of that
-        component, you will have to override.
-        """
-        return list(self.measurement_parameters.values.columns.values)
-
     def get_figures(self,
             circuit_model=None,
             measurement=None,
@@ -167,6 +139,11 @@ class BrainCircuitAnalysis(
 
         Either a `circuit_model` or a `measurement` must be provided.
         """
+        measurement = measurement\
+            if measurement is not None else\
+               self._get_statistical_measurement(
+                   circuit_model,
+                   *args, **kwargs)
         return {
             self.phenomenon.label: self.plotter.get_figure(
                 measurement.reset_index(),
@@ -178,11 +155,8 @@ class BrainCircuitAnalysis(
         """
         Get a report for the given `circuit_model`.
         """
-        measurement = self.get_measurement(circuit_model, *args, **kwargs)
         return Report(
-            phenomenon=self.phenomenon.label,
-            measurement=measurement,
-            figures=self.get_figures(measurement=measurement),
+            figures=self.get_figures(circuit_model=circuit_model),
             introduction="{}, measured by layer\n{}.".format(
                 self.phenomenon.name,
                 self.phenomenon.description),
@@ -199,10 +173,9 @@ class BrainCircuitAnalysis(
         """
         if adapter is not None:
             self.adapter = adapter
-        report = self.get_report(
-            circuit_model,
-            *args, **kwargs)
-        try:
-            return self.reporter.post(report)
-        except AttributeError:
-            return report
+        return self\
+            .reporter\
+            .post(
+                self.get_report(
+                    circuit_model,
+                    *args, **kwargs))

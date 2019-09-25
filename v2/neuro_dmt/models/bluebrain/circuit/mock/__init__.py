@@ -12,7 +12,6 @@ from .composition import CircuitComposition
 from .connectivity import CircuitConnectivity, SimpleUniformRandomConnectivity
 from .builder import CircuitBuilder
 from .circuit import MockCircuit
-from .adapter import MockCircuitAdapter
 from .synapse import Synapse
 from .cell import Cell
 
