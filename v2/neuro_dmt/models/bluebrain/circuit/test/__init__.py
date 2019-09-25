@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.reporting import Report
+from dmt.tk.utils import get_label
 
 def path_project(number):
     """
@@ -65,10 +66,11 @@ class CircuitAnalysisTest(WithFields):
         """
         The reporter should place the report in a folder.
         """
+        phenomenon = get_label(self.analysis.phenomenon)
         report = self.analysis(self.circuit_model, adapter=self.adapter)
         path_report = Path(self.reporter.post(report))
         assert path_report\
-            == Path.cwd().joinpath(self.analysis.phenomenon.label)
+            == Path.cwd().joinpath(get_label(phenomenon))
         assert path_report.is_dir()
         assert any(p.is_file() for p in path_report.glob("report*")),\
             "Did not find a report file."
@@ -80,7 +82,7 @@ class CircuitAnalysisTest(WithFields):
                 .joinpath("{}.png".format(name_figure))
             assert path_figure.is_file()
 
-        name_measurement = "{}.csv".format(self.analysis.phenomenon.label)
+        name_measurement = "{}.csv".format(phenomenon)
         path_measurement = path_report.joinpath(name_measurement)
         assert path_measurement.is_file(),\
             "Analysis did not save a measurement {}.".format(name_measurement)
@@ -89,7 +91,7 @@ class CircuitAnalysisTest(WithFields):
             assert p in measurement.columns,\
                 "Saved measurement did not have a column for parameter {}"\
                 .format(p)
-        assert self.analysis.phenomenon.label in measurement.columns,\
+        assert phenomenon in measurement.columns,\
             "Saved measurement did not have a column for the phenomenon"
 
 

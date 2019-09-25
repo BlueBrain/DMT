@@ -38,14 +38,11 @@ def test_mock_circuit():
                 ylabel=cell_density_phenomenon.name,
                 gvar="dataset"),
             adapter=mock_adapter)
-
-
     analysis_test = CircuitAnalysisTest(
         analysis=cell_density_analysis,
         circuit_model=mock_circuit_model,
         adapter=mock_adapter,
         reporter=Reporter())
-
     analysis_test.test_get_measurement()
     analysis_test.test_get_report()
     analysis_test.test_call_analysis()
