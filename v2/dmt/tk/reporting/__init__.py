@@ -13,6 +13,11 @@ class Report(WithFields):
     We follow the principle of IMRAD (Introduction, Methods, Results, and
     Discussion: https://en.wikipedia.org/wiki/IMRAD  )
     """
+    phenomenon = Field(
+        """
+        Label for the phenomenon that this report is about.
+        """,
+        __default_value__="measurement")
     figures = Field(
         """
         A dict mapping label to an object with a `.graphic` and `.caption`
@@ -100,7 +105,9 @@ class Reporter(WithFields):
         """
         Save report at the path provided.
         """
-        output_folder = self.get_output_folder(path_output_folder)
+        output_folder = os.path.join(
+            self.get_output_folder(path_output_folder),
+            report.phenomenon)
         figures_folder = self.get_figures_folder(output_folder)
 
         def __write(output_file, attribute, text=""):
@@ -135,9 +142,9 @@ class Reporter(WithFields):
                     for label, figure in report.figures.items()))
 
         try:
-            report.measurement.to_csv(
+            report.measurement.reset_index().to_csv(
                 os.path.join(
-                    output_folder, "measurement.csv"))
+                    output_folder, "{}.csv".format(report.phenomenon)))
         except AttributeError:
             pass
 
