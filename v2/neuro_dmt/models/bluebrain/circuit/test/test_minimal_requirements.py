@@ -38,15 +38,11 @@ def test_mock_circuit():
                 ylabel=cell_density_phenomenon.name,
                 gvar="dataset"),
             adapter=mock_adapter)
-    analysis_test = CircuitAnalysisTest(
-        analysis=cell_density_analysis,
-        circuit_model=mock_circuit_model,
-        adapter=mock_adapter,
-        reporter=Reporter())
-    analysis_test.test_get_measurement()
-    analysis_test.test_get_report()
-    analysis_test.test_call_analysis()
-    analysis_test.test_post_report()
+    analysis_test = CircuitAnalysisTest(analysis=cell_density_analysis)
+    analysis_test.test_get_measurement(mock_circuit_model)
+    analysis_test.test_get_report(mock_circuit_model)
+    analysis_test.test_call_analysis(mock_circuit_model)
+    analysis_test.test_post_report(mock_circuit_model)
 
 def test_sscx_dissemination_circuit():
     """
