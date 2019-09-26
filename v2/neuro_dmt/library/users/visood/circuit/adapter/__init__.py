@@ -41,13 +41,19 @@ class BlueBrainModelAdapter(WithFields):
         the circuit.
         """,
         __default_value__=100. * numpy.ones(3))
-
     random_position_generator = Field(
         """
         A (nested) dict mapping circuit, and a spatial query to their
-        random position generator.
+        random position generator. 
         """,
         __default_value__={})
+
+    @classmethod
+    def for_circuit_model(cls, circuit_model, **kwargs):
+        """
+        Instance of this BlueBrainModelAdapter prepared for a circuit model.
+        """
+        pass
 
     def _resolve(self, circuit_model):
         """
