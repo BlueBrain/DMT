@@ -11,21 +11,8 @@ from dmt.tk.field import\
     WithFields,\
     ClassAttributeMetaBase
 from dmt.tk.quantity import Quantity
+from dmt.tk.utils import get_label
 
-
-#move this helper method elsewhere
-def get_label(something):
-    """
-    Get label of something that may have a label attribute.
-    """
-    if isinstance(something, str):
-        return something
-    if isinstance(something, dict):
-        return something.get("label", "unavailable")
-    return getattr(
-        something, "label",
-        "unavailable_{}".format(
-            something.__class__.__name__))
 
 def get_variables(phenomenon):
     """

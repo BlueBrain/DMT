@@ -58,4 +58,3 @@ class Parameters(WithFields):
         Names of the parameters.
         """
         return list(self.values.columns.values)
-
