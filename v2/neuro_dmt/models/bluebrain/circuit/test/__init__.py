@@ -4,9 +4,18 @@ with some "real-world" test-cases.
 """
 from pathlib import Path
 import pandas as pd
+from dmt.analysis import Suite as AnalysisSuite
+from dmt.tk.parameters import Parameters
+from dmt.tk.plotting.bars import Bars
+from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import get_label
+from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
+from neuro_dmt.analysis.circuit.composition.interfaces import\
+    CellDensityAdapterInterface
+from . import *
+from . import mock
 
 def path_project(number):
     """
@@ -82,6 +91,38 @@ class CircuitAnalysisTest(WithFields):
         assert phenomenon in measurement.columns,\
             "Saved measurement did not have a column for the phenomenon"
 
+    @classmethod
+    def suite(cls, adapter):
+        """
+        A suit of analyses.
+        """
+        cell_density_phenomenon =\
+            Phenomenon(
+                "Cell Density",
+                "Count of cells in a unit volume",
+                group="Composition")
+        return AnalysisSuite(*(
+            BrainCircuitAnalysis(
+                phenomenon=phenomenon,
+                AdapterInterface=AdapterInterface,
+                measurement_parameters=Parameters(
+                    pd.DataFrame({"layer": range(1,7)})),
+                plotter=Bars(
+                    xvar="layer",
+                    xlabel="Layer",
+                    yvar=phenomenon.label,
+                    ylabel=phenomenon.name,
+                    gvar="dataset"),
+                adapter=adapter)
+            for phenomenon, AdapterInterface in (
+                    (cell_density_phenomenon, CellDensityAdapterInterface),)))
+
+    @classmethod
+    def suite_mock(cls, circuit_model=None):
+        """
+        CircuitAnalysisTest instance for a mock circuit.
+        """
+        return cls.suite(mock.get_circuit_adapter(circuit_model))
 
 
 

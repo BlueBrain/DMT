@@ -55,7 +55,6 @@ class BrainCircuitAnalysis(
         __required__=False,
         __examples__=[
             Reporter(path_output_folder=os.getcwd())])
-                
     reference_data = Field(
         """
         A pandas.DataFrame containing reference data to compare with the
@@ -82,11 +81,12 @@ class BrainCircuitAnalysis(
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            sample_size=None,
-            *args, **kwargs):
+            sample_size=None):
         """
         Get a statistical measurement.
         """
+        assert not sample_size or isinstance(sample_size, int),\
+            "Expected int, received {}".format(type(sample_size))
         adapter = self._resolve_adapter(adapter)
         return pandas\
             .DataFrame(
@@ -154,19 +154,14 @@ class BrainCircuitAnalysis(
         return list(self.measurement_parameters.values.columns.values)
 
     def get_figures(self,
-            circuit_model=None,
             measurement=None,
-            caption=None,
-            *args, **kwargs):
+            caption=None):
         """
         Get a figure for the analysis of `circuit_model`.
 
         Arguments
         ----------
-        `circuit_model`: A circuit model.
         `measurement`: The data frame to make a figure for.
-
-        Either a `circuit_model` or a `measurement` must be provided.
         """
         return {
             self.phenomenon.label: self.plotter.get_figure(
@@ -177,8 +172,7 @@ class BrainCircuitAnalysis(
             measurement,
             method_measurement="Not available.",
             figures=None,
-            reference_data=None,
-            *args, **kwargs):
+            reference_data=None):
         """
         Get a report for the given `measurement`.
         """
@@ -200,7 +194,7 @@ class BrainCircuitAnalysis(
         a = len(args)
 
         if a == 2:
-            return args
+            return (args[1], args[0])
 
         if a == 1:
             try: 
@@ -217,7 +211,7 @@ class BrainCircuitAnalysis(
             _resolve_adapter_and_model() takes 1 or 2 positional arguments,
             but {} were given.
             """.format(a))
-               
+
     def _resolve_adapter(self, adapter=None):
         """
         Resolve which adapter to use.
@@ -270,18 +264,17 @@ class BrainCircuitAnalysis(
                 *args, **kwargs)
 
     def __call__(self,
-            circuit_model,
-            adapter=None,
             *args, **kwargs):
         """
         Make this `Analysis` masquerade as a function.
 
         """
+        adapter, circuit_model = self._resolve_adapter_and_model(*args)
         measurement =\
             self.get_measurement(
                 circuit_model,
-                adapter,
-                *args, **kwargs)
+                adapter=adapter,
+                sample_size=kwargs.get("sample_size", None))
         measurement_method = self._get_measurement_method(adapter).__doc__
         report =\
             self.get_report(
@@ -291,7 +284,8 @@ class BrainCircuitAnalysis(
                 figures=self.get_figures(
                     measurement=measurement,
                     caption=measurement_method),
-                *args, **kwargs)
+                reference_data=kwargs.get("reference_data", pandas.DataFrame()))
+
         try:
             return self.reporter.post(report)
         except AttributeError:

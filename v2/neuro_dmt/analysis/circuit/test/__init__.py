@@ -35,7 +35,7 @@ def test_adapter_resolution():
                 ylabel=cell_density_phenomenon.name,
                 gvar="dataset"))
 
-    with pyt.raises(AttributeError):
+    with pyt.raises(TypeError):
         analysis(model)
 
     with pyt.raises(TypeError):
@@ -43,7 +43,11 @@ def test_adapter_resolution():
 
     analysis.adapter = adapter
 
-    assert analysis._resolve_adapter_and_model(model) == (adapter, model)
+    assert analysis._resolve_adapter_and_model(model)\
+        == (adapter, model)
+
+    assert analysis._resolve_adapter_and_model(model, adapter)\
+        == (adapter, model)
 
     for a, m in 10 * [(adapter, model)]:
         assert analysis._resolve_adapter_and_model(model) == (a, m)
