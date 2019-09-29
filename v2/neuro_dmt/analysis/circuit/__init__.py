@@ -55,7 +55,6 @@ class BrainCircuitAnalysis(
         __required__=False,
         __examples__=[
             Reporter(path_output_folder=os.getcwd())])
-                
     reference_data = Field(
         """
         A pandas.DataFrame containing reference data to compare with the
@@ -65,10 +64,11 @@ class BrainCircuitAnalysis(
         """,
         __default_value__=pandas.DataFrame())
 
-    def _get_measurement_method(self, adapter):
+    def _get_measurement_method(self, adapter=None):
         """
         Makes sense for analysis of a single phenomenon.
         """
+        adapter = self._resolve_adapter(adapter)
         measurement_name =\
             self.AdapterInterface.__measurement__
         try:
@@ -81,11 +81,12 @@ class BrainCircuitAnalysis(
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            sample_size=None,
-            *args, **kwargs):
+            sample_size=None):
         """
         Get a statistical measurement.
         """
+        assert not sample_size or isinstance(sample_size, int),\
+            "Expected int, received {}".format(type(sample_size))
         adapter = self._resolve_adapter(adapter)
         return pandas\
             .DataFrame(
@@ -153,56 +154,64 @@ class BrainCircuitAnalysis(
         return list(self.measurement_parameters.values.columns.values)
 
     def get_figures(self,
-            circuit_model=None,
             measurement=None,
-            *args, **kwargs):
+            caption=None):
         """
         Get a figure for the analysis of `circuit_model`.
 
         Arguments
         ----------
-        `circuit_model`: A circuit model.
         `measurement`: The data frame to make a figure for.
-
-        Either a `circuit_model` or a `measurement` must be provided.
         """
         return {
             self.phenomenon.label: self.plotter.get_figure(
                 measurement.reset_index(),
-                caption=self.adapter_method.__doc__)}
+                caption=caption)}
 
     def get_report(self,
             measurement,
-            reference_data=None,
-            *args, **kwargs):
+            method_measurement="Not available.",
+            figures=None,
+            reference_data=None):
         """
         Get a report for the given `measurement`.
         """
         return Report(
             phenomenon=self.phenomenon.label,
-            measurement=measurements,
-            figures=self.get_figures(measurement=measurement),
+            measurement=measurement,
+            figures=figures,
             introduction="{}, measured by layer\n{}.".format(
                 self.phenomenon.name,
                 self.phenomenon.description),
-            methods=self.adapter_method.__doc__,
+            methods=method_measurement,
             results="Results are presented in the figure.",
             discussion="To be provided after a review of the results")
 
-    def _resolve_adapters_and_models(self, *args):
+    def _resolve_adapter_and_model(self,  *args):
         """
-        Resolve adapter from arguments.
+        Resolve adapter and model.
         """
-        def _resolve_one(arg):
-            if isinstance(arg, tuple):
-                return arg
-            return (self.adapter, arg)
+        a = len(args)
 
-        return _resolve_one(args[0])\
-            if len(args) == 0 else\
-               [arg if isinstance(arg, tuple) else (self.adapter, arg)
-                for arg in (self.adapter, arg)]
-                
+        if a == 2:
+            return (args[1], args[0])
+
+        if a == 1:
+            try: 
+                return (self.adapter, args[0])
+            except AttributeError as error:
+                raise TypeError(
+                    """
+                    With only 1 argument, _resolve_adapter_and_model() assumes
+                    that the adapter is defined:
+                    {}
+                    """.format(error))
+        raise TypeError(
+            """
+            _resolve_adapter_and_model() takes 1 or 2 positional arguments,
+            but {} were given.
+            """.format(a))
+
     def _resolve_adapter(self, adapter=None):
         """
         Resolve which adapter to use.
@@ -221,12 +230,13 @@ class BrainCircuitAnalysis(
         measurement_alternative =\
             self.get_measurement(
                 reference,
-                adapter_alternative,
+                adapter_reference,
                 *args, **kwargs)
         measurement_reference =\
             self.get_measurement(
                 alternative,
-                adapter_reference)
+                adapter_alternative,
+                *args, **kwargs)
         report =\
             self.get_report(
                 self._with_reference_data(
@@ -254,22 +264,28 @@ class BrainCircuitAnalysis(
                 *args, **kwargs)
 
     def __call__(self,
-            circuit_model,
-            adapter=None,
             *args, **kwargs):
         """
         Make this `Analysis` masquerade as a function.
 
         """
+        adapter, circuit_model = self._resolve_adapter_and_model(*args)
         measurement =\
             self.get_measurement(
                 circuit_model,
-                adapter,
-                *args, **kwargs)
+                adapter=adapter,
+                sample_size=kwargs.get("sample_size", None))
+        measurement_method = self._get_measurement_method(adapter).__doc__
         report =\
             self.get_report(
-                self._with_reference_data(measurement),
-                *args, **kwargs)
+                self._with_reference_data(
+                    measurement),
+                method_measurement=measurement_method,
+                figures=self.get_figures(
+                    measurement=measurement,
+                    caption=measurement_method),
+                reference_data=kwargs.get("reference_data", pandas.DataFrame()))
+
         try:
             return self.reporter.post(report)
         except AttributeError:

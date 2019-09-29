@@ -95,7 +95,7 @@ class AIBase(metaclass=AIMeta):
         """
         Reset the adapter, after validating the new 'value'
         """
-        if self.AdapterInterface.is_implemented_by(value):
+        if value is None or self.AdapterInterface.is_implemented_by(value):
             self._adapter = value
         else:
             self.logger.suggest(
@@ -106,6 +106,12 @@ class AIBase(metaclass=AIMeta):
                 {} does not implement {}'s AdapterInterface.
                 """.format(value, self.__class__.__name__))
         pass
+
+    def unset_adapter(self):
+        """
+        Unset the adapter.
+        """
+        self.adapter = None
 
     @classmethod
     def accepted_models(cls):

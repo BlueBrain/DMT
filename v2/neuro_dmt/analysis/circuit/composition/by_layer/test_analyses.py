@@ -11,7 +11,7 @@ from dmt.tk.parameters import Parameters
 from ....circuit import BrainCircuitAnalysis
 from ..interfaces import CellDensityAdapterInterface
 from neuro_dmt.models.bluebrain.circuit.mock.adapter import MockCircuitAdapter
-from neuro_dmt.data import rat
+#from neuro_dmt.data import ratt
 
 
 cell_density_phenomenon =\
@@ -40,40 +40,40 @@ def get_random_dataset(index):
         .set_index(
             ["dataset"] + cell_density_analysis.measurement_parameters.variables)
 
-random_reference_datasets = pandas.concat([
-    get_random_dataset(index)
-    for index in range(3)])
-reference_datasets = pandas\
-    .concat([
-        rat.defelipe2014\
-           .summary_measurement\
-           .samples(1000)\
-           .assign(dataset="DeFelipe2014"),
-        rat.defelipe2017\
-           .summary_measurement\
-           .samples(1000)\
-           .assign(dataset="DeFelipe2017"),
-        rat.meyer2010\
-           .samples(1000)\
-           .assign(dataset="Meyer2010")])\
-    .reset_index()\
-    .set_index(["dataset", "layer"])
+# random_reference_datasets = pandas.concat([
+#     get_random_dataset(index)
+#     for index in range(3)])
+# reference_datasets = pandas\
+#     .concat([
+#         rat.defelipe2014\
+#            .summary_measurement\
+#            .samples(1000)\
+#            .assign(dataset="DeFelipe2014"),
+#         rat.defelipe2017\
+#            .summary_measurement\
+#            .samples(1000)\
+#            .assign(dataset="DeFelipe2017"),
+#         rat.meyer2010\
+#            .samples(1000)\
+#            .assign(dataset="Meyer2010")])\
+#     .reset_index()\
+#     .set_index(["dataset", "layer"])
 
 
-cell_density_validation =\
-    BrainCircuitAnalysis(
-        phenomenon=cell_density_phenomenon,
-        AdapterInterface=CellDensityAdapterInterface,
-        reference_data=reference_datasets,
-        measurement_parameters=Parameters(
-            pandas.DataFrame({"layer": range(1, 7)})),
-        plotter=Bars(
-            xvar="layer",
-            xlabel="Layer",
-            yvar=cell_density_phenomenon.label,
-            ylabel=cell_density_phenomenon.name,
-            gvar="dataset"),
-        adapter=MockCircuitAdapter())
+# cell_density_validation =\
+#     BrainCircuitAnalysis(
+#         phenomenon=cell_density_phenomenon,
+#         AdapterInterface=CellDensityAdapterInterface,
+#         reference_data=reference_datasets,
+#         measurement_parameters=Parameters(
+#             pandas.DataFrame({"layer": range(1, 7)})),
+#         plotter=Bars(
+#             xvar="layer",
+#             xlabel="Layer",
+#             yvar=cell_density_phenomenon.label,
+#             ylabel=cell_density_phenomenon.name,
+#             gvar="dataset"),
+#         adapter=MockCircuitAdapter())
 
 
 

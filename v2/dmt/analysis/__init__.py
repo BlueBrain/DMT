@@ -3,6 +3,7 @@ Base classes for analyses
 """
 
 import os
+from abc import ABC, abstractmethod
 from ..model import AIBase
 from ..tk.field import Field, WithFields
 
@@ -20,4 +21,39 @@ class Analysis(WithFields, AIBase):
         """
         super().__init__(*args, **kwargs)
 
-    
+    @abstractmethod
+    def __call__(self, *args, **kwargs):
+        """
+        Every analysis should be a callable.
+        """
+        raise NotImplementedError
+
+
+class Suite(WithFields):
+    """
+    A suite of analyses.
+    """
+
+    def __init__(self, *analyses):
+        """
+        Define an analysis suite as a list of analyses.
+        """
+        self._analyses = {
+            analysis.phenomenon.label: analysis
+            for analysis in analyses}
+
+    @property
+    def analyses(self):
+        """
+        Get analyses
+        """
+        return self._analyses
+
+    def __call__(self, circuit_model,
+            *args, **kwargs):
+        """
+        ...Call Me...
+        """
+        return {
+            phenomenon.label: analysis(circuit_model, *args, **kwargs)
+            for phenomenon, analysis in self._analyses.items()}
