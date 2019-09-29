@@ -187,7 +187,7 @@ class CirclePlot:
     """
     def __init__(self, space_between=0.0, value_callback=default_group_label,
                  color_callback=default_color_callback, min_conn_size=0,
-                 segment_thickness=0.05):
+                 segment_thickness=0.05, connection_alpha=1.0):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -203,6 +203,7 @@ class CirclePlot:
         self.segment_thickness = segment_thickness
         self.color_callback = color_callback
         self.min_conn_size = min_conn_size
+        self.connection_alpha = connection_alpha
 
     def _prepare_plot(self, df):
         """
@@ -378,9 +379,15 @@ class CirclePlot:
 
         return source_angles, dest_angles
 
-    def _conn_patch(self, source, dest, **kwargs):
+    def _conn_patch(self, source, dest, group_color):
         """generate a patch for a connection"""
-        return self.circle.curve_polygon(*source, *dest, **kwargs)
+
+        def _set_alpha(color):
+            return tuple(color[:-1]) + (self.connection_alpha, )
+
+        _group_color = {kw: _set_alpha(color)
+                        for kw, color in group_color.items()}
+        return self.circle.curve_polygon(*source, *dest, **_group_color)
 
     def _group_patch(self, angles, **kwargs):
         """generate a patch for a group"""
@@ -456,7 +463,7 @@ class CirclePlot:
         ax.set_yticklabels([])
         ax.add_collection(matplotlib.collections.PatchCollection([
             self._conn_patch(s_angles, dest_angles[from_][to],
-                             **group_colors[from_])
+                             group_colors[from_])
             for from_, conn in source_angles.items()
             for to, s_angles in conn.items()], match_original=True))
         ax.add_collection(matplotlib.collections.PatchCollection([

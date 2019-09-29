@@ -28,8 +28,8 @@ def collapse_dataframe_column(df, columnlabel,
     """
     subdf = df[[columnlabel]]
 
-    cat_column_label = (
-        _default_group_desc(subdf, ''))
+    cat_column_label = columnlabel
+        #_default_group_desc(subdf, ''))
     column_values = [value_callback(r)
                      for i, r in subdf.iterrows()]
     if isinstance(subdf[columnlabel], pd.Series):
