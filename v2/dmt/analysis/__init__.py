@@ -32,14 +32,26 @@ class Analysis(WithFields, AIBase):
 class Suite(WithFields):
     """
     A suite of analyses.
-    """
 
-    def __init__(self, *analyses):
+    An analysis suite should be used where it makes sense.
+    For example, a suite of validation analyses is appropriate for a new
+    circuit build. This suite will measure phenomena such as cell densities,
+    inhibitory cell reations, synapse densities, etc.  We might want to analysze
+    cell densities by depths instead of layers, or for each mtype. 
+    """
+    def __init__(self,
+            *analyses,
+            get_label=lambda analysis: analysis.label):
         """
         Define an analysis suite as a list of analyses.
+
+        Arguments
+        ----------------
+        analyses: A sequence of analyses to constitute this suite of analyses.
+        get_label: A call-back function to get label for an analysis.
         """
         self._analyses = {
-            analysis.phenomenon.label: analysis
+            get_label(analysis): analysis
             for analysis in analyses}
 
     @property
@@ -48,6 +60,18 @@ class Suite(WithFields):
         Get analyses
         """
         return self._analyses
+
+    def __iter__(self):
+        """
+        Iterate through the analyses.
+        """
+        return (analysis for analysis in self._analyses.values())
+
+    def __len__(self):
+        """
+        Size of this suite.
+        """
+        return len(self._analyses)
 
     def __call__(self, circuit_model,
             *args, **kwargs):

@@ -7,7 +7,7 @@ import os
 import pandas        
 from dmt.analysis import Analysis
 from dmt.model.interface import InterfaceMeta
-from dmt.tk.field import Field, lazyproperty
+from dmt.tk.field import Field, lazyfield
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
 
@@ -64,6 +64,15 @@ class BrainCircuitAnalysis(
         """,
         __default_value__=pandas.DataFrame())
 
+    @lazyfield
+    def label(self):
+        """
+        A label for this analysis.
+        """
+        return "{}_by_{}".format(
+            self.phenomenon.label,
+            '_'.join(self.names_measurement_parameters))
+
     def _get_measurement_method(self, adapter=None):
         """
         Makes sense for analysis of a single phenomenon.
@@ -98,7 +107,7 @@ class BrainCircuitAnalysis(
             .assign(
                 dataset=adapter.get_label(circuit_model))\
             .set_index(
-                ["dataset"] + self.measurement_parameters.variables)
+                ["dataset"] + self.names_measurement_parameters)
 
     def _with_reference_data(self,
             measurement,
@@ -151,7 +160,7 @@ class BrainCircuitAnalysis(
         component, you will have to override However, if you change the type of that
         component, you will have to override.
         """
-        return list(self.measurement_parameters.values.columns.values)
+        return self.measurement_parameters.variables
 
     def get_figures(self,
             measurement=None,
@@ -164,7 +173,7 @@ class BrainCircuitAnalysis(
         `measurement`: The data frame to make a figure for.
         """
         return {
-            self.phenomenon.label: self.plotter.get_figure(
+            self.label: self.plotter.get_figure(
                 measurement.reset_index(),
                 caption=caption)}
 
