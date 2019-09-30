@@ -58,3 +58,9 @@ class Parameters(WithFields):
         Names of the parameters.
         """
         return list(self.values.columns.values)
+
+    def __call__(self, *args, **kwargs):
+        """
+        Call Me
+        """
+        pass

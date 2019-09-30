@@ -71,13 +71,10 @@ defelipe2014 =\
                      cell_density=dataset["densities"]))
             for rat, dataset in __defelipe_2014_dataset["circuits"].items()]))
 
-
 __meyer2010_dataset =\
     datasets.load(
         __path_cell_density_datasets,
         "Meyer2010")
-
-
 meyer2010 =\
     Summary(_ByLayerCellDensityMeasurement)(
         label=__meyer2010_dataset["short_name"],

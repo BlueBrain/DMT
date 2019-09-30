@@ -2,8 +2,8 @@
 Plotting for DMT
 """
 import matplotlib
-#matplotlib.use("Agg")
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
@@ -23,4 +23,14 @@ def golden_figure(width:int =None, height:int =None):
     fig.set_size_inches(width, height)
     return fig, ax
 
+
+def get_data_to_plot(dataframes):
+    """
+    Concatenate dataframes into a usable form.
+    """
+    if isinstance(dataframes, dict):
+        return pd.concat([
+            dataframe.reset_index().assign(dataset=dataset)
+            for dataset, dataframe in dataframes.items()])
+    return dataframes
 

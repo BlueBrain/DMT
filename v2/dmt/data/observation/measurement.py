@@ -155,10 +155,8 @@ class SummaryMeasurement(Measurement):
 
         return pandas\
             .concat([
-                self._get_sample_parameters(
-                    index_values, size)\
-                .assign(**{
-                    self.phenomenon.label: sample(row)})
+                self._get_sample_parameters(index_values, size).assign(
+                    **{self.phenomenon.label: sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
 
@@ -201,6 +199,29 @@ def summary_statistic(
     return\
         summary[measurement_columns[0]] if len(measurement_columns) == 1\
         else summary[measurement_columns]
+
+def _check_sample_measurement(dataframe, variables):
+    """
+    Check that dataframe represents a sample measurement.
+    """
+    raise NotImplementedError
+
+def _check_summary_measurement(dataframe, variables):
+    """
+    Check that dataframe represents a summary measurement.
+    """
+    raise NotImplementedError
+
+def generate_samples(
+        measurement_summary,
+        measurement_variables,
+        nsamples=20):
+    """
+    Create a dataframe corresponding to samples generated from a summary
+    dataframe
+    """
+    pass
+
 
 def Summary(MeasurementClass):
     """

@@ -4,9 +4,10 @@ Bar plot.
 
 import pandas
 import seaborn
-from . import golden_aspect_ratio
-from .figure import Figure
 from dmt.tk.field import Field, lazyproperty, WithFields
+from . import golden_aspect_ratio, get_data_to_plot
+from .figure import Figure
+
 
 class Bars(WithFields):
     """
@@ -68,9 +69,8 @@ class Bars(WithFields):
         """
         Plot the dataframe.
         """
-        assert isinstance(data, pandas.DataFrame)
         graphic = seaborn.catplot(
-            data=data,
+            data=get_data_to_plot(data),
             x=self.xvar,
             y=self.yvar,
             kind="bar",
