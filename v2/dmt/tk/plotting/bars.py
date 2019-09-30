@@ -4,6 +4,7 @@ Bar plot.
 
 import pandas
 import seaborn
+from dmt.data.observation import SampleMeasurement
 from dmt.tk.field import Field, lazyproperty, WithFields
 from . import golden_aspect_ratio, get_data_to_plot
 from .figure import Figure
@@ -70,7 +71,7 @@ class Bars(WithFields):
         Plot the dataframe.
         """
         graphic = seaborn.catplot(
-            data=get_data_to_plot(data),
+            data=get_data_to_plot(data, measurement_type=SampleMeasurement),
             x=self.xvar,
             y=self.yvar,
             kind="bar",

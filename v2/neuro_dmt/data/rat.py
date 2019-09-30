@@ -8,13 +8,13 @@ import pandas
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.utils import datasets
 from dmt.data.observation import\
-    Measurement,\
+    SampleMeasurement,\
     Summary
 from neuro_dmt import data
 
 
-class _ByLayerCellDensityMeasurement(
-        Measurement):
+class ByLayerCellDensityMeasurement(
+        SampleMeasurement):
     """
     Measurement of cell density, by (cortical) layer.
     """
@@ -36,7 +36,7 @@ __defelipe_2017_dataset =\
         __path_cell_density_datasets,
         "DeFelipe2017")
 defelipe2017 =\
-    _ByLayerCellDensityMeasurement(
+    ByLayerCellDensityMeasurement(
         label=__defelipe_2017_dataset["short_name"],
         object_of_observation="A population of 6 Wistar rats.",
         procedure=__defelipe_2017_dataset["what"],
@@ -56,7 +56,7 @@ __defelipe_2014_dataset =\
         __path_cell_density_datasets,
         "DeFelipe2014")
 defelipe2014 =\
-    _ByLayerCellDensityMeasurement(
+    ByLayerCellDensityMeasurement(
         label=__defelipe_2014_dataset["short_name"],
         object_of_observation="A population of 6 Wistar rats.",
         procedure=__defelipe_2014_dataset["what"],
@@ -76,7 +76,7 @@ __meyer2010_dataset =\
         __path_cell_density_datasets,
         "Meyer2010")
 meyer2010 =\
-    Summary(_ByLayerCellDensityMeasurement)(
+    ByLayerCellDensityMeasurement.SummaryType()(
         label=__meyer2010_dataset["short_name"],
         object_of_observation="Rats of age P27",
         provenance="Look at the citation",

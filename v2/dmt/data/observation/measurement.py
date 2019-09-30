@@ -1,6 +1,8 @@
 import numpy
 import pandas
-from ..observation import *
+from dmt.tk.field import Field, lazyfield
+from dmt.tk.utils import get_label
+from ..observation import Observation
 
 
 class Measurement(
@@ -86,6 +88,26 @@ class Measurement(
             data=self.summary.reset_index())
 
 
+class SampleMeasurement(Measurement):
+    """
+    Measurement that contains data on several
+    samples for each combination of parameter values.
+    """
+
+    __metaclass_base__ = True
+
+    @classmethod
+    def check(cls, dataframe):
+        """
+        Check whether a dataframe is a sample measurement.
+        """
+        columns = [get_label(cls.phenomenon)] + [
+            parameter for parameter in cls.parameters.keys()]
+        return all(
+            column in dataframe.columns
+            for column in columns)
+
+
 class SummaryMeasurement(Measurement):
     """
     A statistical summary of sample measurements assumes sampling.
@@ -93,7 +115,8 @@ class SummaryMeasurement(Measurement):
 
     __metaclass_base__ = True
 
-    def check_validity(self, data_value):
+    @classmethod
+    def check_validity(cls, data_value):
         """
         Check the validity of data in data_value.
 
@@ -112,32 +135,30 @@ class SummaryMeasurement(Measurement):
         """
         assert isinstance(data_value, pandas.DataFrame)
         assert isinstance(data_value.columns, pandas.MultiIndex)
+
         column_values_1 = {
             measurement_label
             for measurement_label, _ in data_value.columns.values}
-        assert get_label(self.phenomenon) in  column_values_1
-        column_values_2 = {
-            summary_label
-            for _, summary_label in data_value.columns.values}
-        assert "mean" in column_values_2
-        assert "std" in column_values_2
+        phenomenon =\
+            get_label(cls.phenomenon)
+        assert phenomenon in  column_values_1
+        assert "mean" in data_value[phenomenon].columns.values
+        assert "std" in data_value[phenomenon].columns.values
 
-
-        try:
-            super().check_validity(data_value)
-        except MissingObservationParameter as error:
-            raise error
-        except MissingObservedVariable as error:
-            try:
-                self._check_variables(data_value, ["mean", "error"])
-            except ValueError as error:
-                raise MissingObservedVariable(*error.args)
-            finally:
-                pass
-        finally:
-            pass
+        super().check_validity(cls, data_value)
 
         return True
+
+    @classmethod
+    def check(cls, data_value):
+        """
+        Check, but not validate --- i.e. do not raise.
+        """
+        try:
+            return cls.check_validity(data_value)
+        except Exception:
+            pass
+        return False
 
     def samples(self, size=20):
         """
@@ -159,6 +180,20 @@ class SummaryMeasurement(Measurement):
                     **{self.phenomenon.label: sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
+
+    def SampleType(cls):
+        """
+        A class that provides samples for the measurement of this
+        `Measurement`'s phenomenon.
+        """
+        return type(
+            "{}SampleMeasurement".format(
+                cls.__name__\
+                   .strip("Measurement")\
+                   .strip("_measurement")),
+            (SampleMeasurement,),
+            {"phenomenon": cls.phenomenon,
+             "parameters": cls.parameters})
 
     @lazyfield
     def summary(self):
@@ -200,13 +235,13 @@ def summary_statistic(
         summary[measurement_columns[0]] if len(measurement_columns) == 1\
         else summary[measurement_columns]
 
-def _check_sample_measurement(dataframe, variables):
+def _check_sample(dataframe, variables):
     """
     Check that dataframe represents a sample measurement.
     """
     raise NotImplementedError
 
-def _check_summary_measurement(dataframe, variables):
+def _check_summary(dataframe, variables):
     """
     Check that dataframe represents a summary measurement.
     """

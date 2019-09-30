@@ -10,7 +10,6 @@ from dmt.tk.field import\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
-from dmt.tk.quantity import Quantity
 from dmt.tk.utils import get_label
 
 
@@ -273,6 +272,7 @@ class Observation(
 
 from .measurement import\
     Measurement,\
+    SampleMeasurement,\
     SummaryMeasurement,\
     Summary,\
     summary_statistic

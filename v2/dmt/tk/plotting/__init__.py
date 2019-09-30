@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
+from dmt.data.observation import measurement
 
 
 golden_aspect_ratio = 0.5 * (1. + np.sqrt(5)) 
@@ -24,13 +25,21 @@ def golden_figure(width:int =None, height:int =None):
     return fig, ax
 
 
-def get_data_to_plot(dataframes):
+def get_data_to_plot(
+        dataframes,
+        measurement_type=measurement.SampleMeasurement):
     """
     Concatenate dataframes into a usable form.
+
+    Arguments
+    -------------
+    `dataframes`: dict mapping label==>dataframe
+    `measurement_type`: a measurement type that provides a check and converter.
     """
+
     if isinstance(dataframes, dict):
         return pd.concat([
-            dataframe.reset_index().assign(dataset=dataset)
+            measurement_type.cast(dataframe).reset_index().assign(dataset=dataset)
             for dataset, dataframe in dataframes.items()])
     return dataframes
 
