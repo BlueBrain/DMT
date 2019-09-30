@@ -117,7 +117,7 @@ class BrainCircuitAnalysis(
         """
         reference_data =\
             reference_data\
-            if reference_data.empty  else\
+            if not reference_data.empty  else\
                self.reference_data
         return\
             measurement\
@@ -238,13 +238,13 @@ class BrainCircuitAnalysis(
         """
         measurement_alternative =\
             self.get_measurement(
-                reference,
-                adapter_reference,
+                alternative,
+                adapter_alternative,
                 *args, **kwargs)
         measurement_reference =\
             self.get_measurement(
-                alternative,
-                adapter_alternative,
+                reference,
+                adapter_reference,
                 *args, **kwargs)
         report =\
             self.get_report(
@@ -280,15 +280,16 @@ class BrainCircuitAnalysis(
         """
         adapter, circuit_model = self._resolve_adapter_and_model(*args)
         measurement =\
-            self.get_measurement(
-                circuit_model,
-                adapter=adapter,
-                sample_size=kwargs.get("sample_size", None))
-        measurement_method = self._get_measurement_method(adapter).__doc__
+            self._with_reference_data(
+                self.get_measurement(
+                    circuit_model,
+                    adapter=adapter,
+                    sample_size=kwargs.get("sample_size", None)))
+        measurement_method =\
+            self._get_measurement_method(adapter).__doc__
         report =\
             self.get_report(
-                self._with_reference_data(
-                    measurement),
+                measurement,
                 method_measurement=measurement_method,
                 figures=self.get_figures(
                     measurement=measurement,

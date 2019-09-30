@@ -182,7 +182,6 @@ def get_circuit_model():
             for layer in __layers])\
           .set_index(
               ["mtype", "layer"])
-
     circuit_composition =\
         CircuitComposition(
             layers=__layers,
@@ -190,7 +189,6 @@ def get_circuit_model():
             length_base=__length_base,
             mtypes=__mtypes,
             cell_density=__cell_density)
-
     circuit_connectivity =\
         SimpleUniformRandomConnectivity(
             afferent_degree_mtype={
@@ -200,9 +198,8 @@ def get_circuit_model():
                     post_mtype: 4
                     for post_mtype in __mtypes}
                 for pre_mtype in __mtypes})
-
-    circuit = MockCircuit\
-        .build(
+    circuit =\
+        MockCircuit.build(
             composition=circuit_composition,
             connectivity=circuit_connectivity)
     return BlueBrainCircuitModel(circuit=circuit)

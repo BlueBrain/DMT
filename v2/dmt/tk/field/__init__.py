@@ -16,6 +16,7 @@ from .prop import Property
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
 
+
 def set_name(
         field_or_class_attribute,
         name):
@@ -239,13 +240,13 @@ class WithFields:
 
 ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})
 
+LOGGER = Logger(client=__file__)
 
 class ClassAttributeMetaBase(type):
     """
     A meta class to construct classes that must provide class attributes
     described as Fields.
     """
-
     def __new__(mcs, name, bases, namespace):
         """
         Arguments
@@ -293,18 +294,19 @@ class ClassAttributeMetaBase(type):
                 set_name(metaclass_field, field)
                 description_field[field] = metaclass_field.description
                 value = get_value(namespace, metaclass_field)
-                        
+
                 if value is not None:
                     __check_validity(metaclass_field, value)
 
                 if metaclass_field.__required__:
                     if value is None:
-                        print("""
-                        Please provide Field '{}':
-                        {}""".format(
-                            field,
-                            metaclass_field.__doc__.replace('\n', "\n\t\t")),
-                              file=stdout)
+                        print(
+                            """
+                            Please provide Field '{}':
+                            {}""".format(
+                                field,
+                                metaclass_field.__doc__.replace('\n', "\n\t\t")),
+                            file=stdout)
                         raise ValueError(
                             """Cannot create '{}' instance without required Field '{}'.
                             Please provide a value as a keyword argument in your 

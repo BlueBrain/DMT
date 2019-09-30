@@ -90,7 +90,7 @@ class Bars(WithFields):
         Plot the dataframe
         """
         return self\
-            .figure(
+            .get_figure(
                 dataframe,
                 *args, **kwargs)
 

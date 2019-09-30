@@ -34,12 +34,22 @@ class CircuitAnalysisTest(WithFields):
         This class assumes that a reporter was not set for this analysis.
         """)
 
-    def test_get_measurement(self, *args):
+    def test_get_measurement(self, *args, **kwargs):
         """
         Measurement returned by an analysis should be a pandas data-frame.
         """
-        measurement = self.analysis.get_measurement(*args)
+        measurement =\
+            self.analysis._with_reference_data(
+                self.analysis.get_measurement(*args))
+        datasets =\
+            measurement.reset_index().dataset.unique()
         assert isinstance(measurement, pd.DataFrame)
+        expected_datasets = kwargs.get("expected_datasets", [])
+        for dataset in expected_datasets:
+            assert dataset in datasets,\
+                "Expected dataset {} not in {}".format(
+                    dataset,
+                    datasets)
         return measurement
 
     def test_get_report(self, *args):
@@ -59,15 +69,23 @@ class CircuitAnalysisTest(WithFields):
         report = self.analysis(*args)
         assert isinstance(report, Report)
 
-    def test_post_report(self, *args):
+    def test_post_report(self, *args, **kwargs):
         """
         The reporter should place the report in a folder.
         """
         phenomenon = get_label(self.analysis.phenomenon)
-        report = self.analysis(*args)
-        path_report = Path(Reporter().post(report))
-        assert path_report\
-            == Path.cwd().joinpath(get_label(phenomenon))
+        report = self.analysis(*args, **kwargs)
+        output_path =\
+            Path.cwd().joinpath(
+                kwargs.get("output_folder", ""))
+        reporter =\
+            Reporter(path_output_folder=output_path)
+        path_report =\
+            Path(reporter.post(report))
+        assert path_report == output_path.joinpath(get_label(phenomenon)),\
+            "{} != {}".format(
+                path_report,
+                output_pat.joinpath(get_label(phenomenon)))
         assert path_report.is_dir()
         assert any(p.is_file() for p in path_report.glob("report*")),\
             "Did not find a report file."
