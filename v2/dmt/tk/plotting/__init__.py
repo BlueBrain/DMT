@@ -27,7 +27,7 @@ def golden_figure(width:int =None, height:int =None):
 
 def get_data_to_plot(
         dataframes,
-        measurement_type=measurement.SampleMeasurement):
+        measurement_type):
     """
     Concatenate dataframes into a usable form.
 

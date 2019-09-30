@@ -107,6 +107,18 @@ class SampleMeasurement(Measurement):
             column in dataframe.columns
             for column in columns)
 
+    @classmethod
+    def cast(cls, dataframe, nsamples=20):
+        """
+        Cast a dataframe into a dataframe representing a SampleMeasurement.
+        """
+        if cls.check(dataframe):
+            return dataframe
+        SummaryType = cls.SummaryType()
+        if SummaryType.check(dataframe):
+            return SummaryType(data=dataframe).samples(size=nsamples)
+        raise TypeError("Unknown dataframe type.")
+
 
 class SummaryMeasurement(Measurement):
     """
@@ -160,6 +172,18 @@ class SummaryMeasurement(Measurement):
             pass
         return False
 
+    @classmethod
+    def cast(cls, dataframe):
+        """
+        Cast a dataframe into a dataframe representing a SampleMeasurement.
+        """
+        if cls.check(dataframe):
+            return dataframe
+        SampleType = cls.SampleType()
+        if SampleType.check(dataframe):
+            return SampleType(data=dataframe).summary_measurement.data
+        raise TypeError("Unknown dataframe type.")
+
     def samples(self, size=20):
         """
         Generate `<size>` samples for each combination of parameters in this
@@ -171,7 +195,7 @@ class SummaryMeasurement(Measurement):
                     row[self.phenomenon.label]["mean"],
                     row[self.phenomenon.label]["std"])
                 return m if m > 0 else __one()
-            
+
             return numpy.array([__one() for _ in range(size)])
 
         return pandas\
