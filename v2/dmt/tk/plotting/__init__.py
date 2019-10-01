@@ -24,22 +24,3 @@ def golden_figure(width:int =None, height:int =None):
     fig.set_size_inches(width, height)
     return fig, ax
 
-
-def get_data_to_plot(
-        dataframes,
-        measurement_type):
-    """
-    Concatenate dataframes into a usable form.
-
-    Arguments
-    -------------
-    `dataframes`: dict mapping label==>dataframe
-    `measurement_type`: a measurement type that provides a check and converter.
-    """
-
-    if isinstance(dataframes, dict):
-        return pd.concat([
-            measurement_type.cast(dataframe).reset_index().assign(dataset=dataset)
-            for dataset, dataframe in dataframes.items()])
-    return dataframes
-
