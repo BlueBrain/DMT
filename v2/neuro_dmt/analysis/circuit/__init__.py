@@ -102,12 +102,16 @@ class BrainCircuitAnalysis(
         assert not sample_size or isinstance(sample_size, int),\
             "Expected int, received {}".format(type(sample_size))
         adapter = self._resolve_adapter(adapter)
+        parameters =\
+            self.measurement_parameters.for_sampling(
+                adapter, circuit_model, size=sample_size )
+        index = self.measurement_parameters.index(parameters)
         return pandas\
             .DataFrame(
                 [self._get_measurement_method(adapter)(circuit_model, **p)
-                 for p in self.measurement_parameters.for_sampling(sample_size)],
+                 for p in parameters],
                 columns=[self.phenomenon.label],
-                index=self.measurement_parameters.index(sample_size))\
+                index=index)\
             .reset_index()\
             .assign(
                 dataset=adapter.get_label(circuit_model))\
@@ -149,12 +153,14 @@ class BrainCircuitAnalysis(
         """
         What are the names of the parameters that the measurements are made with?
 
-        The implementation below uses the implementation of
-        `self.measurement_parameters`. However, if you change the type of that
-        component, you will have to override However, if you change the type of that
-        component, you will have to override.
+        If measurement parameters cannot provide the variables (a.k.a parameter
+        labels or tags), an empty list is returned.
         """
-        return self.measurement_parameters.variables
+        try:
+            return self.measurement_parameters.variables
+        except TypeError:
+            return []
+        return None
 
     def get_figures(self,
             data,

@@ -136,21 +136,6 @@ def test_mock_circuit_validation():
         DeFelipe2017=rat.defelipe2017.summary_measurement.samples(1000),
         DeFelipe2014=rat.defelipe2014.summary_measurement.samples(1000),
         meyer2010=rat.meyer2010.samples(1000))
-    # reference_datasets =\
-    #     pd.concat([
-    #         rat.defelipe2017\
-    #            .summary_measurement\
-    #            .samples(1000)\
-    #            .assign(dataset="DeFelipe2017"),
-    #         rat.defelipe2014\
-    #            .summary_measurement\
-    #            .samples(1000)\
-    #            .assign(dataset="DeFelipe2014"),
-    #         rat.meyer2010\
-    #            .samples(1000)\
-    #            .assign(dataset="Meyer2010")])\
-    #       .reset_index()\
-    #       .set_index(["dataset", "layer"])
     cell_density_analysis =\
         BrainCircuitAnalysis(
             phenomenon=cell_density_phenomenon,
@@ -188,6 +173,46 @@ def test_mock_circuit_validation():
             mock_circuit_model,
             mock_adapter,
             output_folder="validations")
+
+def test_mock_circuit_analysis_with_callable_measurement_parameters():
+    """
+    Circuit analysis can be initialized with measurement parameters a callable.
+    """
+    cell_density_phenomenon =\
+        Phenomenon(
+            "Cell Density",
+            "Count of cells in a unit volume.",
+            group="composition")
+    #mock_circuit_model = mock.get_circuit_model()
+    mock_circuit_model = None
+    mock_adapter = mock.get_circuit_adapter()
+    cell_density_analysis =\
+        BrainCircuitAnalysis(
+            phenomenon=cell_density_phenomenon,
+            AdapterInterface=CellDensityAdapterInterface,
+            measurement_parameters=Parameters(
+                lambda adapter, model: pd.DataFrame({"layer": range(1, 7)}),
+                labels=("layer", )),
+            plotter=Bars(
+                xvar="layer",
+                xlabel="Layer",
+                yvar=cell_density_phenomenon.label,
+                ylabel=cell_density_phenomenon.name,
+                gvar="dataset"),
+            adapter=mock_adapter)
+    analysis_test =\
+        CircuitAnalysisTest(analysis=cell_density_analysis)
+    analysis_test\
+        .test_get_measurement(
+            mock_circuit_model)
+    analysis_test\
+        .test_call_analysis(
+            mock_circuit_model)
+    analysis_test\
+        .test_post_report(
+            mock_circuit_model,
+            output_folder="analyses")
+
 
 
 # def test_mock_circuit_validation_with_adapter():
