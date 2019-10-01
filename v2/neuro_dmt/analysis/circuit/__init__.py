@@ -105,9 +105,11 @@ class BrainCircuitAnalysis(
         return pandas\
             .DataFrame(
                 [self._get_measurement_method(adapter)(circuit_model, **p)
-                 for p in self.measurement_parameters.for_sampling(sample_size)],
+                 for p in self.measurement_parameters.for_sampling(
+                         adapter, circuit_model, size=sample_size )],
                 columns=[self.phenomenon.label],
-                index=self.measurement_parameters.index(sample_size))\
+                index=self.measurement_parameters.index(
+                    adapter, circuit_model, sample_size=sample_size))\
             .reset_index()\
             .assign(
                 dataset=adapter.get_label(circuit_model))\
