@@ -204,7 +204,9 @@ class SummaryMeasurement(Measurement):
             for measurement_label, _ in data_value.columns.values}
         phenomenon =\
             get_label(cls.phenomenon)
-        assert phenomenon in  column_values_1
+        assert phenomenon in  column_values_1,\
+            "Required column {} not found in {}".format(
+                phenomenon, column_values_1)
         assert "mean" in data_value[phenomenon].columns.values
         assert "std" in data_value[phenomenon].columns.values
 
@@ -219,7 +221,7 @@ class SummaryMeasurement(Measurement):
         """
         try:
             return cls.check_validity(data_value)
-        except Exception:
+        except AssertionError:
             pass
         return False
 
@@ -346,9 +348,10 @@ class SummaryMeasurement(Measurement):
         """
         def sample(row):
             def __one():
+                phenomenon = get_label(self.phenomenon)
                 m = numpy.random.normal(
-                    row[self.phenomenon.label]["mean"],
-                    row[self.phenomenon.label]["std"])
+                    row[phenomenon]["mean"],
+                    row[phenomenon]["std"])
                 return m if m > 0 else __one()
 
             return numpy.array([__one() for _ in range(size)])
@@ -356,7 +359,7 @@ class SummaryMeasurement(Measurement):
         return pandas\
             .concat([
                 self._get_sample_parameters(index_values, size).assign(
-                    **{self.phenomenon.label: sample(row)})
+                    **{get_label(self.phenomenon): sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
 
@@ -374,7 +377,6 @@ class SummaryMeasurement(Measurement):
             {"phenomenon": cls.phenomenon,
              "parameters": cls.parameters})
 
-    @lazyfield
     def summary(self):
         """
         A statistical summary of the data in this measurement.
