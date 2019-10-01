@@ -48,7 +48,31 @@ class Measurement(
         return pandas.DataFrame(
             sample_size * [dict(zip(self.parameters_list, parameters_values))])
 
-    @lazyfield
+    @staticmethod
+    def load(dataframe):
+        """
+        Load a dataframe either as a `SampleMeasurement`
+        or a `SummaryMeasurement`.
+        """
+        try:
+            return SampleMeasurement.load(dataframe)
+        except TypeError as sample_load_error:
+            return SummaryMeasurement.load(dataframe)
+        except TypeError as summary_load_error:
+            raise TypeError(
+                "Unable to load dataframe: {}\n{}.".format(
+                    sample_load_error,
+                    summary_load_error))
+
+
+class SampleMeasurement(Measurement):
+    """
+    Measurement that contains data on several
+    samples for each combination of parameter values.
+    """
+
+    __metaclass_base__ = True
+
     def summary(self):
         """
         A statistical summary of the data in this measurement.
@@ -86,32 +110,7 @@ class Measurement(
             provenance=self.provenance,
             citation=self.citation,
             uri=self.uri,
-            data=self.summary.reset_index())
-
-    @staticmethod
-    def load(dataframe):
-        """
-        Load a dataframe either as a `SampleMeasurement`
-        or a `SummaryMeasurement`.
-        """
-        try:
-            return SampleMeasurement.load(dataframe)
-        except TypeError as sample_load_error:
-            return SummaryMeasurement.load(dataframe)
-        except TypeError as summary_load_error:
-            raise TypeError(
-                "Unable to load dataframe: {}\n{}.".format(
-                    sample_load_error,
-                    summary_load_error))
-
-
-class SampleMeasurement(Measurement):
-    """
-    Measurement that contains data on several
-    samples for each combination of parameter values.
-    """
-
-    __metaclass_base__ = True
+            data=self.summary().reset_index())
 
     @classmethod
     def check(cls, dataframe):
@@ -123,8 +122,8 @@ class SampleMeasurement(Measurement):
         return all(
             column in dataframe.columns
             for column in columns)
-    @staticmethod
 
+    @staticmethod
     def _read(dataframe):
         """
         Check dataframe to load as a `Measurement`.
@@ -164,6 +163,12 @@ class SampleMeasurement(Measurement):
         return SampleMeasurementType(
             data=dataframe.reset_index(),
             label="ignore")
+
+    def samples(self, number=20):
+        """
+        Get a dataframe containing samples for this measurement.
+        """
+        return self.summary_measurement.samples(number)
 
 
 class SummaryMeasurement(Measurement):
@@ -327,6 +332,13 @@ class SummaryMeasurement(Measurement):
         return SummaryMeasurementType(
             data=dataframe.reset_index(),
             label="ignore")
+
+    def summary(self):
+        """
+        A `pandas.DataFrame` representing a summary measurement.
+        """
+        return self.data
+
     def samples(self, size=20):
         """
         Generate `<size>` samples for each combination of parameters in this
@@ -414,15 +426,27 @@ def _check_summary(dataframe, variables):
     """
     raise NotImplementedError
 
-def generate_samples(
-        measurement_summary,
-        measurement_variables,
-        nsamples=20):
+def get_samples(dataframe, number=20):
     """
-    Create a dataframe corresponding to samples generated from a summary
-    dataframe
+    Create a dataframe corresponding to samples generated from a 
+    dataframe.
+
+    Arguments
+    --------------
+    dataframe: Either a dataframe containing samples, or a summary.
     """
-    pass
+    return Measurement.load(dataframe).samples(number)
+
+def get_summary(dataframe):
+    """
+    Create a dataframe corresponding to a statistical summary measurement.
+
+    Arguments
+    --------------
+    dataframe: Either a dataframe containing samples, or a summary.
+    """
+    return Measurement.load(dataframe).summary()
+
 
 
 def Summary(MeasurementClass):
