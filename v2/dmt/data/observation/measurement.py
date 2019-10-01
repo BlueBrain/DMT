@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import numpy
 import pandas
 from dmt.tk.field import Field, lazyfield
@@ -118,6 +119,28 @@ class SampleMeasurement(Measurement):
         if SummaryType.check(dataframe):
             return SummaryType(data=dataframe).samples(size=nsamples)
         raise TypeError("Unknown dataframe type.")
+
+    @staticmethod
+    def load(dataframe):
+        """
+        Load a dataframe.
+        The dataframe is expected to be valid.
+        """
+        assert len(dataframe.columns) == 1
+
+        phenomenon = dataframe.columns[0]
+        parameters = OrderedDict([
+            (parameter, parameter) for parameter in dataframe.index.names])
+        SampleMeasurementType = type(
+            "{}By{}Samples".format(
+                phenomenon,
+                ''.join(format(p.capitalize() for p in parameters))),
+            (SampleMeasurement, ),
+            {"phenomenon": phenomenon,
+             "parameters": parameters})
+        return SampleMeasurementType(
+            data=dataframe.reset_index(),
+            label="ignore")
 
 
 class SummaryMeasurement(Measurement):
