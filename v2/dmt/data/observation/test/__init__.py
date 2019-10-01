@@ -59,6 +59,14 @@ def test_sampling():
     assert samples.shape[0] == 600, "samples shape is {}".format(samples.shape)
     assert len(samples.columns) == 1
 
+    samples =\
+        measurement.get_samples(
+            rat.defelipe2017.data[["layer", "cell_density"]].set_index("layer"))
+    assert isinstance(samples, pd.DataFrame)
+    assert samples.shape[0] == rat.defelipe2017.data.shape[0],\
+        "samples shape is {}".format(samples.shape)
+    assert len(samples.columns) == 1
+
     by_layer_samples =\
         pd.DataFrame(dict(
             layer=10 * list(range(1,7)),
@@ -66,8 +74,8 @@ def test_sampling():
           .set_index("layer")
     samples = measurement.get_samples(by_layer_samples, 100)
     assert isinstance(samples, pd.DataFrame)
-    assert samples.shape[0] == 600, "samples shape is {}".format(samples.shape)
-    assert len(samples.columns) == 1
+    assert samples.shape[0] == 60, "samples shape is {}".format(samples.shape)
+    assert len(samples.columns) == 1, "samples columns {}".format(samples.columns)
 
     summary = measurement.get_summary(by_layer_samples)
     assert isinstance(summary, pd.DataFrame)

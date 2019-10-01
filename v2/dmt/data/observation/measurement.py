@@ -57,12 +57,13 @@ class Measurement(
         try:
             return SampleMeasurement.load(dataframe)
         except TypeError as sample_load_error:
-            return SummaryMeasurement.load(dataframe)
-        except TypeError as summary_load_error:
-            raise TypeError(
-                "Unable to load dataframe: {}\n{}.".format(
-                    sample_load_error,
-                    summary_load_error))
+            try:
+                return SummaryMeasurement.load(dataframe)
+            except TypeError as summary_load_error:
+                raise TypeError(
+                    "Unable to load dataframe: {}\n{}.".format(
+                        sample_load_error,
+                        summary_load_error))
 
 
 class SampleMeasurement(Measurement):
@@ -141,7 +142,7 @@ class SampleMeasurement(Measurement):
                 """
                 To load as a `SampleMeasurement` a dataframe should have
                 properly named index. Received dataframe index: {}
-                """.formnat(index))
+                """.format(index))
         return (
             columns[0],
             OrderedDict([(parameter, parameter) for parameter in index]))
@@ -437,7 +438,10 @@ def get_samples(dataframe, number=20):
     --------------
     dataframe: Either a dataframe containing samples, or a summary.
     """
-    return Measurement.load(dataframe).samples(number)
+    measurement = Measurement.load(dataframe)
+    return dataframe\
+        if isinstance(measurement, SampleMeasurement) else\
+           measurement.samples(number)
 
 def get_summary(dataframe):
     """
@@ -447,7 +451,10 @@ def get_summary(dataframe):
     --------------
     dataframe: Either a dataframe containing samples, or a summary.
     """
-    return Measurement.load(dataframe).summary()
+    measurement = Measurement.load(dataframe)
+    return dataframe\
+        if isinstance(measurement, SummaryMeasurement) else\
+           measurement.summary()
 
 
 
