@@ -88,6 +88,22 @@ class Measurement(
             uri=self.uri,
             data=self.summary.reset_index())
 
+    @staticmethod
+    def load(dataframe):
+        """
+        Load a dataframe either as a `SampleMeasurement`
+        or a `SummaryMeasurement`.
+        """
+        try:
+            return SampleMeasurement.load(dataframe)
+        except TypeError as sample_load_error:
+            return SummaryMeasurement.load(dataframe)
+        except TypeError as summary_load_error:
+            raise TypeError(
+                "Unable to load dataframe: {}\n{}.".format(
+                    sample_load_error,
+                    summary_load_error))
+
 
 class SampleMeasurement(Measurement):
     """
@@ -107,30 +123,37 @@ class SampleMeasurement(Measurement):
         return all(
             column in dataframe.columns
             for column in columns)
+    @staticmethod
 
-    @classmethod
-    def cast(cls, dataframe, nsamples=20):
+    def _read(dataframe):
         """
-        Cast a dataframe into a dataframe representing a SampleMeasurement.
+        Check dataframe to load as a `Measurement`.
         """
-        if cls.check(dataframe):
-            return dataframe
-        SummaryType = cls.SummaryType()
-        if SummaryType.check(dataframe):
-            return SummaryType(data=dataframe).samples(size=nsamples)
-        raise TypeError("Unknown dataframe type.")
-
+        columns = dataframe.columns
+        if len(columns) != 1:
+            raise TypeError(
+                """
+                To load as a `SampleMeasurement` a dataframe should have only
+                one column. Received dataframe columns: {}
+                """.format(columns))
+        index = dataframe.index.names
+        if len(index) and None in index:
+            raise TypeError(
+                """
+                To load as a `SampleMeasurement` a dataframe should have
+                properly named index. Received dataframe index: {}
+                """.formnat(index))
+        return (
+            columns[0],
+            OrderedDict([(parameter, parameter) for parameter in index]))
+ 
     @staticmethod
     def load(dataframe):
         """
         Load a dataframe.
         The dataframe is expected to be valid.
         """
-        assert len(dataframe.columns) == 1
-
-        phenomenon = dataframe.columns[0]
-        parameters = OrderedDict([
-            (parameter, parameter) for parameter in dataframe.index.names])
+        phenomenon, parameters = SampleMeasurement._read(dataframe)
         SampleMeasurementType = type(
             "{}By{}Samples".format(
                 phenomenon,
@@ -195,18 +218,115 @@ class SummaryMeasurement(Measurement):
             pass
         return False
 
-    @classmethod
-    def cast(cls, dataframe):
+    def _read(dataframe):
         """
-        Cast a dataframe into a dataframe representing a SampleMeasurement.
+        Check dataframe to load as a `Measurement`.
         """
-        if cls.check(dataframe):
-            return dataframe
-        SampleType = cls.SampleType()
-        if SampleType.check(dataframe):
-            return SampleType(data=dataframe).summary_measurement.data
-        raise TypeError("Unknown dataframe type.")
+        columns = dataframe.columns.values
+        if len(columns) != 2:
+            raise typeerror(
+                """
+                to load as a `summarymeasurement` a dataframe should have a
+                multi-indexed two level column. received dataframe columns: {}
+                """.format(columns))
+        if not all(isinstance(c, tuple) for c in columns):
+            raise typeerror(
+                """
+                to load as a `summarymeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples.
+                received dataframe columns: {}
+                """.format(columns))
+        try:
+            phenomenon, statistic = columns[0]
+        except ValueError:
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples.
+                Received dataframe columns: {}
+                """.format(columns))
+        try:
+            phenomenon_2, statistic_2 = columns[1]
+        except ValueError:
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples.
+                Received dataframe columns: {}
+                """.format(columns))
 
+        if phenomenon_2 != phenomenon:
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples, with
+                the same phenomenon names as the first element.
+                Received dataframe columns: {}
+                """.format(columns))
+
+        if "mean" not in (statistic, statistic_2):
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples.
+                One of the second levels should be "mean"
+                Received dataframe columns: {}
+                """.format(columns))
+        if "std" not in (statistic, statistic_2):
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                multi-indexed two level column containing two-tuples.
+                One of the second levels should be "std"
+                Received dataframe columns: {}
+                """.format(columns))
+
+        index = dataframe.index.names
+        if len(index) and None in index:
+            raise TypeError(
+                """
+                To load as a `SampleMeasurement` a dataframe should have
+                properly named index. Received dataframe index: {}
+                """.formnat(index))
+        return (
+            columns[0][0],
+            OrderedDict([(parameter, parameter) for parameter in index]))
+
+    @staticmethod
+    def load(dataframe):
+        """
+        Load a dataframe as a `SummaryMeasurement`.
+        """
+        if not isinstance(dataframe.columns, pandas.MultiIndex):
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have a
+                two-level columns. Received dataframe columns: {}
+                """.format(dataframe.columns))
+        phenomenon, parameters = SummaryMeasurement._read(dataframe)
+        dataframe_phenomenon = dataframe[phenomenon]
+        if "mean" not in dataframe_phenomenon.columns:
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have
+                "mean" as a column at the second level.
+                """)
+        if "std" not in dataframe_phenomenon.columns:
+            raise TypeError(
+                """
+                To load as a `SummaryMeasurement` a dataframe should have
+                "std" as a column at the second level.
+                """)
+        SummaryMeasurementType = type(
+            "{}By{}Summary".format(
+                phenomenon,
+                ''.join(format(p.capitalize() for p in parameters))),
+            (SummaryMeasurement, ),
+            {"phenomenon": phenomenon,
+             "parameters": parameters})
+        return SummaryMeasurementType(
+            data=dataframe.reset_index(),
+            label="ignore")
     def samples(self, size=20):
         """
         Generate `<size>` samples for each combination of parameters in this
@@ -264,7 +384,7 @@ def summary_statistic(
     """
     aggregators = ["size", "mean", "std"]
     if measurement_sample.shape[0] == 0:
-        return pd.DataFrame([], columns=aggregators)
+        return pandas.DataFrame([], columns=aggregators)
     if not parameter_columns:
         return\
             measurement_sample\
