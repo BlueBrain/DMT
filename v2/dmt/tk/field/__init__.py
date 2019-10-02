@@ -110,7 +110,7 @@ class WithFields:
             if field in kwargs:
                 return kwargs[field]
 
-            return getattr(class_field, "__default_value__", None)
+            return getattr(class_field, "__default_value__")
 
         for field in self.get_fields():
             class_field =\

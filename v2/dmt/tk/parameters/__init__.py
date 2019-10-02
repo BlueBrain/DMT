@@ -2,6 +2,7 @@
 Utility classes to handle measurement parameters.
 """
 
+from types import GeneratorType
 import pandas
 from dmt.tk.field import Field, lazyproperty, WithFields
 from dmt.tk.utils import Nothing
@@ -42,7 +43,7 @@ class Parameters(WithFields):
         if callable(values):
             pass
         elif isinstance(values, pandas.DataFrame):
-            kwargs["labels"] = values.columns.values
+            kwargs["labels"] = list(values.columns.values)
         else:
             raise ValueError(
                 "Provided values should be a callable or a dataframe.")
@@ -53,37 +54,75 @@ class Parameters(WithFields):
     def for_model(self, *args):
         """
         Parameters for a model.
+
+        With an adapter, model in `*args`, this creates a new instance of
+        `Parameters` initialized with a pandas DataFrame.
         """
         if not callable(self.values):
             raise TypeError("Parameters defined with a dataframe.")
-        return Parameters(self.values(*args))
+        return Parameters(pandas.DataFrame(self.values(*args)))
 
     def _resolve_values(self, *args):
-        return self.values(*args) if callable(self.values) else self.values
+        """
+        Return a dataframe for values.
+        """
+        if callable(self.values):
+            values = self.values(*args)
+            return list(values) if isinstance(values, GeneratorType) else values
+        return self.values
+
+    def _set_labels(self, values):
+        """
+        Set labels affirming to `values`, but only if they are not already set,
+        and if the dataframe generated from them does not have any null values.
+        """
+        if not self.labels:
+            dataframe = pandas.DataFrame(values)
+            if not dataframe.isnull().values.any():
+                self.labels = dataframe.columns.values
+        return self.labels
 
     def for_sampling(self, *args, size=None):
         """
         Repeat each row of `self.values` 'size' number of times.
         """
+        size = size if size else self.sample_size
         values = self._resolve_values(*args)
-        self.labels = values.columns.values
-        return (
-            parameter_row
-            for _, parameter_row in values.iterrows()
-            for _ in range(size if size else self.sample_size) )
+        self._set_labels(values)
 
-    def index(self, *args, sample_size=None):
+        try:
+            parameter_rows = [row for _, row in values.iterrows()]
+        except AttributeError:
+            parameter_rows = values
+
+        return list(
+            dict(parameter_row)
+            for parameter_row in parameter_rows
+            for _ in range(size))
+            
+    def index(self, parameter_values):
         """
         A `pandas.Index` / `pandas.MultiIndex` for the parameter values.
+
+        Arguments
+        -------------
+        `parameter_values`: A list of mappings (label --> value)
         """
-        values = self._resolve_values(*args)
-        return pandas\
-            .DataFrame(
-                [parameters_row.to_dict()
-                 for parameters_row in self.for_sampling(*args, size=sample_size)])\
-            .set_index(
-                list(values.columns.values))\
-            .index
+        dataframe = pandas.DataFrame(parameter_values)
+        return dataframe.set_index(list(dataframe.columns.values)).index
+
+    # def index(self, *args, sample_size=None):
+    #     """
+    #     A `pandas.Index` / `pandas.MultiIndex` for the parameter values.
+    #     """
+    #     values = self._resolve_values(*args)
+    #     return pandas\
+    #         .DataFrame(
+    #             [parameters_row.to_dict()
+    #              for parameters_row in self.for_sampling(*args, size=sample_size)])\
+    #         .set_index(
+    #             list(values.columns.values))\
+    #         .index
 
     @lazyproperty
     def variables(self):
