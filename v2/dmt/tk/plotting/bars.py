@@ -55,13 +55,6 @@ class Bars(WithFields):
         """,
         __default_value__=golden_aspect_ratio)
 
-    def __plotting_parameters(self,
-            **kwargs):
-        """
-        Extract plotting parameters from keyword arguments.
-        """
-        pass
-
     @staticmethod
     def _as_single_dataframe(data):
         """
