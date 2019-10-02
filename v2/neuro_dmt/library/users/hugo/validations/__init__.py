@@ -1,11 +1,12 @@
 import pandas as pd
 import warnings
-from enum import Enum
 from dmt.analysis import Analysis
 from abc import abstractmethod, ABC
+from collections import OrderedDict
+from dmt.tk.enum import DATA_KEYS, SAMPLES
+from dmt.tk.data import multilevel_dataframe
 from neuro_dmt.library.users.hugo.utils import\
-    DATA_KEYS, ensure_mean_and_std
-
+    ensure_mean_and_std
 
 class VERDICT:
     """enum for verdict results"""
@@ -166,7 +167,7 @@ class SimpleValidation(Analysis, ABC):
         for label, measurement in measurements:
             results.append(ensure_mean_and_std(measurement))
             labels.append(label)
-
+        print("plotting")
         plot = self.plot(labels, results)
         stats = self.get_stats(*measurements)
         report.plot = plot
@@ -219,9 +220,9 @@ class SimpleValidation(Analysis, ABC):
                     self.get_measurement(model, parameters))
 
             model_measurements = (
-                label, pd.DataFrame(measurements_parameters).assign(
-                    samples=sampleslist))
-            models_measurements.append(model_measurements)
+                multilevel_dataframe(measurements_parameters))
+            model_measurements[SAMPLES] = sampleslist
+            models_measurements.append((label, model_measurements))
 
         return self._get_report(models_measurements)
 
