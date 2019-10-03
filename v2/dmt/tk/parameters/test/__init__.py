@@ -20,7 +20,7 @@ def test_parameters_from_dataframe():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120
     assert isinstance(index, pd.Index)
 
@@ -45,7 +45,7 @@ def test_parameters_from_callable_returning_dataframe():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
         
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120
     assert isinstance(index, pd.Index)
 
@@ -71,7 +71,7 @@ def test_parameters_from_callable_returning_iterator():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120
     assert isinstance(index, pd.Index)
 
@@ -91,7 +91,7 @@ def test_parameters_from_callable_with_labels():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120
     assert isinstance(index, pd.Index)
 
@@ -117,7 +117,7 @@ def test_parameters_from_callable_returning_dataframe_for_sampling():
         assert len(row) == 1
         assert "layer" in row.keys()
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120, sampling_params
     assert isinstance(index, pd.Index)
 
@@ -147,7 +147,7 @@ def test_parameters_from_callable_returning_iterator_for_sampling():
 
     assert parameters.variables == ["layer"]
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 120, len(index)
     assert isinstance(index, pd.Index)
 
@@ -156,7 +156,6 @@ def test_parameters_from_callable_returning_iterator_for_sampling():
     assert all(
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
-
 
 def test_parametere_from_callable_returning_iterator_containing_unaligned_dicts():
     """
@@ -178,7 +177,7 @@ def test_parametere_from_callable_returning_iterator_containing_unaligned_dicts(
         parameters.variables
     assert len(sampling_params) == 80
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 80
     assert isinstance(index, pd.Index)
 
@@ -190,7 +189,7 @@ def test_parametere_from_callable_returning_iterator_containing_unaligned_dicts(
     sampling_params = parameters.for_sampling(size=20)
     assert len(sampling_params) == 80
 
-    index = parameters.index(sampling_params)
+    index = parameters.get_index(sampling_params)
     assert len(index) == 80
     assert isinstance(index, pd.Index)
 

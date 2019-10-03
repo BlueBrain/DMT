@@ -101,15 +101,22 @@ class BrainCircuitAnalysis(
         """
         assert not sample_size or isinstance(sample_size, int),\
             "Expected int, received {}".format(type(sample_size))
-        adapter = self._resolve_adapter(adapter)
+        adapter =\
+            self._resolve_adapter(adapter)
         parameters =\
-            self.measurement_parameters.for_sampling(
-                adapter, circuit_model, size=sample_size )
-        index = self.measurement_parameters.index(parameters)
+            self.measurement_parameters\
+                .for_sampling(
+                    adapter,
+                    circuit_model,
+                    size=sample_size )
+        index =\
+            self.measurement_parameters\
+                .get_index(parameters)
+        get_measurement =\
+            self._get_measurement_method(adapter)
         return pandas\
             .DataFrame(
-                [self._get_measurement_method(adapter)(circuit_model, **p)
-                 for p in parameters],
+                [get_measurement(circuit_model, **p) for p in parameters],
                 columns=[self.phenomenon.label],
                 index=index)\
             .reset_index()\
