@@ -110,3 +110,9 @@ def test_sampling():
         "summary columns {}".format(summary.columns)
     assert ("cell_density", "std") in summary.columns,\
         "summary columns {}".format(summary.columns)
+
+
+    concatenated_summary =\
+        measurement.concat_as_summaries({
+            "one": by_layer_samples,
+            "two": by_layer_summary})

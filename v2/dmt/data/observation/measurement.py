@@ -1,3 +1,4 @@
+from collections.abc import Mapping, Iterable
 from collections import OrderedDict
 import numpy
 import pandas
@@ -456,10 +457,43 @@ def get_summary(dataframe):
         if isinstance(measurement, SummaryMeasurement) else\
            measurement.summary()
 
-
-
 def Summary(MeasurementClass):
     """
     SummaryMeasurement subclass from measurement class.
     """
     return MeasurementClass.SummaryType()
+
+def concat(data, loader=lambda dataframe: dataframe):
+    """
+    Concat dataframes passed in iterable data.
+    Each dataframe in data must be case as the required type.
+
+    Arguments
+    ---------------
+    `as_type`: SampleMeasurement or SummaryMeasurement
+    """
+    if isinstance(data, Mapping):
+        return pandas.concat([
+            loader(dataframe)\
+            .reset_index()\
+            .assign(dataset=dataset)\
+            .set_index(dataframe.index.names + ["dataset"])
+            for dataset, dataframe in data.items()])
+    if isinstance(data, Iterable) and not isinstance(data, str):
+        return pandas.concat([
+            loader(dataframe) for dataframe in data])
+    return loader(data)
+
+def concat_as_samples(data):
+    """
+    Concat as sample measurements.
+    """
+    return concat(data, loader=get_samples)
+
+def concat_as_summaries(data):
+    """
+    Concat as summary dataframes.
+    """
+    return concat(data, loader=get_summary)
+
+
