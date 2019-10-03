@@ -24,3 +24,20 @@ def golden_figure(width:int =None, height:int =None):
     fig.set_size_inches(width, height)
     return fig, ax
 
+
+def get_dataframe(data):
+    """
+    Data may be passed to `Plotter`s as a dict mapping dataset label to
+    a dataframe. The `Plotter` needs to convert this data into a
+    single dataframe.
+
+    Arguments
+    ------------
+    `data`: pandas.DataFrame or a mapping dataset -> pandas.DataFrame
+    """
+    return\
+        pd.concat([
+            dataframe.assign(dataset=dataset)
+            for dataset, dataframe in data.items()])\
+          .reset_index()
+
