@@ -1,8 +1,12 @@
+"""
+Test collections.data 
+"""
 import pytest as pyt
 import pandas as pd
 from pandas import testing as pdt
 from collections import OrderedDict
-from dmt.tk.collections.data import multilevel_dataframe
+from collections.abc import Hashable
+from ..data import multilevel_dataframe, make_hashable
 
 
 def test_plain_dict():
@@ -235,3 +239,78 @@ def test_preserves_order():
 
     frame = multilevel_dataframe(testdict)
     pdt.assert_frame_equal(expdf, frame)
+
+
+def test_make_hashable():
+    """
+    `make_hashable` should make an element or an iterable of elements hashable
+    """
+    assert make_hashable(1) == 1
+    assert make_hashable([1, "a", 2, "b"]) == (1, "a", 2, "b")
+    
+    assert make_hashable([[1,2], 1, "a", ("a", 1), ["a", "b"]]) ==\
+        ((1,2), 1, "a", ("a", 1), ("a", "b"))
+
+
+    assert make_hashable([[1,2]]) == ((1, 2),)
+    assert make_hashable([[[1,2]]]) == (((1,2),),)
+
+    generator = ([x, 2*x] for x in range(10))
+    generator_copy = ([x, 2*x] for x in range(10))
+    for x, y in zip(generator, make_hashable(generator_copy)):
+        assert tuple(x) == y
+        assert x == list(y)
+
+    mapping = {x: x*x for x in range(10)}
+    hashable_mapping = make_hashable(mapping)
+    for x, y in mapping.items():
+        assert x in hashable_mapping
+        assert hashable_mapping[x] == y
+
+    mapping_mapping = {x: {y: x + y for y in range(x)} for x in range(10)}
+    hashable_mapping_mapping = make_hashable(mapping_mapping)
+    for x, y in mapping_mapping.items():
+        assert x in hashable_mapping_mapping
+        hashable_y = hashable_mapping_mapping[x]
+        for u, v in y.items():
+            assert u in hashable_y
+            assert hashable_y[u] == v
+
+    mapping_mapping_mapping ={ 
+        x: { 
+            y: { 
+                z: x + y + z 
+                for z in range(y)} 
+            for y in range(x)} 
+        for x in range(10)} 
+    hashable_mapping_mapping_mapping =\
+        make_hashable(mapping_mapping_mapping)
+    for x, x_d in mapping_mapping_mapping.items():
+        assert x in hashable_mapping_mapping_mapping
+        hx_d = hashable_mapping_mapping_mapping[x]
+        for y, y_d in x_d.items():
+            assert y in hx_d
+            hy_d = hx_d[y]
+            for z, u in y_d.items():
+                assert z in hy_d
+                assert u == hy_d[z]
+
+    parameter_list = [
+        {
+            "pre": {"layer": 1, "mtype": "L1_BC", "sclass": "INT"},
+            "post": {"layer": 5, "mtype": "L5_BC", "sclass": "INT"}
+        },
+        {
+            "pre": {"layer": 2, "mtype": "L23_PC", "sclass": "EXC"},
+            "post": {"layer": 3, "mtype": "L23_PC", "sclass": "EXC"}
+        },
+        {
+            "pre": {"layer": 5, "mtype": "L5_UPC", "sclass": "EXC"},
+            "post": {"layer": 6, "mtype": "L6_UPC", "sclass": "EXC"}
+        }]
+    dataframe = pd.DataFrame(parameter_list)
+    assert dataframe.shape == (3, 2)
+    dataframe_hashable = dataframe.apply(make_hashable, axis=0)
+    assert dataframe_hashable.shape == (3, 2)
+    assert all(isinstance(value, Hashable) for value in dataframe_hashable.pre)
+    assert all(isinstance(value, Hashable) for value in dataframe_hashable.post)

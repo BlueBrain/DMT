@@ -1,6 +1,8 @@
+import six
+from collections import OrderedDict
+from collections.abc import Hashable, Mapping, Iterable, Generator
+from frozendict import FrozenOrderedDict
 import pandas as pd
-from collections import Mapping, Iterable, OrderedDict
-
 
 def multilevel_dataframe(data_dict_s):
     """
@@ -89,3 +91,48 @@ def multilevel_dataframe(data_dict_s):
     if all(len(sc) == 0 for sc in subcolumns):
         return base_df
     return multilevel_dataframe(newdfdict)
+
+
+def make_hashable(values):
+    """
+    Make the elements of iterable `values` hashable.
+    Or if `values` is a singleton, make it hashable.
+    """
+    def _hashable_one(value):
+        """..."""
+        if isinstance(value, Hashable):
+            return value
+        try:
+            return FrozenOrderedDict(value)
+        except TypeError as frozen_ordered_dict_error:
+            try:
+                return tuple(value)
+            except TypeError as tuple_error:
+                pass
+        raise TypeError(
+            """
+            {} object is neither hashable, mapping, or iterable:
+            Error when tried to create FrozenOrderedDict: {}
+            Error when tried to create a tuple: {}
+            """\
+            .format(
+                value,
+                frozen_ordered_dict_error,
+                tuple_error))
+
+    if not isinstance(values, Iterable):
+        return _hashable_one(values)
+    if isinstance(values, six.string_types):
+        return _hashable_one(values)
+    if isinstance(values, Mapping):
+        return\
+            FrozenOrderedDict(
+                (make_hashable(key), make_hashable(value))
+                for key, value in values.items())
+
+    generator = (make_hashable(value) for value in values)
+    if isinstance(values, Generator):
+        return generator
+    if isinstance(values, pd.Series):
+        return pd.Series(generator)
+    return tuple(generator)

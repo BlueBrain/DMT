@@ -6,6 +6,7 @@ from types import GeneratorType
 import pandas
 from dmt.tk.field import Field, lazyproperty, WithFields
 from dmt.tk.utils import Nothing
+from dmt.tk.collections.data import make_hashable
 
 class Parameters(WithFields):
     """
@@ -100,15 +101,17 @@ class Parameters(WithFields):
             for parameter_row in parameter_rows
             for _ in range(size))
             
-    def index(self, parameter_values):
+    def get_index(self, parameter_values):
         """
-        A `pandas.Index` / `pandas.MultiIndex` for the parameter values.
+        Get a `pandas.Index` / `pandas.MultiIndex` for the parameter values.
 
         Arguments
         -------------
         `parameter_values`: A list of mappings (label --> value)
         """
-        dataframe = pandas.DataFrame(parameter_values)
+        dataframe =\
+            pandas.DataFrame(parameter_values)\
+                  .apply(make_hashable, axis=0)
         return dataframe.set_index(list(dataframe.columns.values)).index
 
     # def index(self, *args, sample_size=None):
