@@ -484,11 +484,11 @@ def concat(data, loader=lambda dataframe: dataframe):
             loader(dataframe) for dataframe in data])
     return loader(data)
 
-def concat_as_samples(data):
+def concat_as_samples(data, nsamples=20):
     """
     Concat as sample measurements.
     """
-    return concat(data, loader=get_samples)
+    return concat(data, loader=lambda d: get_samples(d, number=nsamples))
 
 def concat_as_summaries(data):
     """
