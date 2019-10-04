@@ -83,7 +83,8 @@ class Bars(WithFields):
         Plot the dataframe.
         """
         graphic = seaborn.catplot(
-            data=self._as_single_dataframe(data),
+            #data=self._as_single_dataframe(data),
+            data=measurement.concat_as_samples(data),
             x=self.xvar,
             y=self.yvar,
             kind="bar",
