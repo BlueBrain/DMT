@@ -4,7 +4,7 @@ Test data manipulation done by `Plotters`.
 
 import pandas as pd
 import numpy as np
-from .. import get_dataframe
+from dmt.data.observation import measurement
 
 
 def test_get_dataframe():
@@ -23,7 +23,7 @@ by_layer_summary_2 =\
         index=pd.Index(range(1,7), name="layer"))
  
 samples =\
-    get_dataframe({
+    measurement.concat_as_samples({
         "one": by_layer_summary_1,
         "two": by_layer_summary_2})
 

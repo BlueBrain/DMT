@@ -2,6 +2,7 @@
 Plot heat maps.
 """
 import pandas
+import matplotlib.pyplot as plt
 import seaborn
 from . import golden_aspect_ratio
 from .figure import Figure
@@ -23,20 +24,6 @@ class HeatMap(WithFields):
         """,
         __default_value__=1.)
 
-    def __hplot(self, data, label):
-        """
-        Make a heat map.
-        """
-        df_matrix, _, __ = pivot_table(df, PRESYNAPTIC, POSTSYNAPTIC, MEAN,
-                                  value_callback=custom_label_callback)
-        height = self.height_figure
-        width = self.aspect_ratio_figure * height
-        fig, ax = plt.subplots(figsize=(width, height))
-        seaborn.heatmap(
-            df_matrix,
-            cbar=True, cmap='rainbow', xticklabels=True, yticklabels=True)
-        return fig
-
     def get_figure(self,
             data,
             *args,
@@ -44,10 +31,27 @@ class HeatMap(WithFields):
             **kwargs):
         """
         Plot the figure.
+
+        Arguments
+        --------------
+        `data`: A single pandas dataframe with an index of length 2, and only
+        1 column (only the zeroth column will be plotted.)
         """
-        graphic = self.
+        matrix = pandas\
+            .pivot_table(
+                data,
+                values=data.columns[0],
+                index=data.index.names[0],
+                columns=data.index.names[1])
+        graphic = seaborn\
+            .heatmap(
+                matrix,
+                cbar=True,
+                cmap="rainbow",
+                xticklabels=True,
+                yticklabels=True)
+        plt.yticks(rotation=0)
+        plt.xticks(rotation=90)
         return Figure(
-            graphic.set(
-                xlabel=self.xlabel if self.xlabel else self.xvar,
-                ylabel=self.ylabel if self.ylabel else self.yvar),
+            graphic,
             caption=caption)
