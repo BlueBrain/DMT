@@ -38,7 +38,7 @@ class ClassAttribute:
         self.__number_retrieval__ = 0
         self.__required__ = __required__
         self.__validation__ = __validation__
-        self.__default_value__ = __default_value__
+        self._default_value = __default_value__
 
     @property
     def description(self):
@@ -50,6 +50,13 @@ class ClassAttribute:
         Where was this `Field` defined.
         """
         self.__defined_in__ = cls.__name__
+
+    @property
+    def default_value(self):
+        """
+        Get default value.
+        """
+        return copy.deepcopy(self._default_value)
 
     def assert_validity(self, value):
         """Is 'value' valid value of this Field?"""
