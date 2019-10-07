@@ -49,10 +49,10 @@ def test_parameters_from_callable_returning_dataframe():
     assert len(index) == 120
     assert isinstance(index, pd.Index)
 
-def test_parameters_from_callable_returning_iterator():
+def test_parameters_from_callable_returning_iterable():
     """
     `class Parameters` should work with a callable
-    that returns an iterator of mappings of parameter labels to values.
+    that returns an iterable of mappings of parameter labels to values.
     """
 
     parameters = Parameters(
@@ -127,7 +127,7 @@ def test_parameters_from_callable_returning_dataframe_for_sampling():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
 
-def test_parameters_from_callable_returning_iterator_for_sampling():
+def test_parameters_from_callable_returning_iterable_for_sampling():
     """
     Calling parameters.for_sampling should set `Parameters` instance's labels.
     """
@@ -157,10 +157,10 @@ def test_parameters_from_callable_returning_iterator_for_sampling():
         count == 20
         for count in pd.DataFrame(sampling_params)["layer"].value_counts())
 
-def test_parametere_from_callable_returning_iterator_containing_unaligned_dicts():
+def test_parametere_from_callable_returning_iterable_containing_unaligned_dicts():
     """
     `class Parameters` should work with a callable
-    that returns an iterator of mappings of parameter labels to values.
+    that returns an iterable of mappings of parameter labels to values.
     """
     parameters = Parameters(
         lambda adapter, model: [
