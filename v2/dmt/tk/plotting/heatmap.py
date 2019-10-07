@@ -25,7 +25,7 @@ class HeatMap(WithFields):
         __default_value__=1.)
 
     def get_figure(self,
-            data,
+            dataframe,
             *args,
             caption="Caption not provided",
             **kwargs):
@@ -34,15 +34,15 @@ class HeatMap(WithFields):
 
         Arguments
         --------------
-        `data`: A single pandas dataframe with an index of length 2, and only
+        `dataframe`: A single pandas dataframe with an index of length 2, and only
         1 column (only the zeroth column will be plotted.)
         """
         matrix = pandas\
             .pivot_table(
-                data,
-                values=data.columns[0],
-                index=data.index.names[0],
-                columns=data.index.names[1])
+                dataframe,
+                values=dataframe.columns[0],
+                index=dataframe.index.names[0],
+                columns=dataframe.index.names[1])
         graphic = seaborn\
             .heatmap(
                 matrix,

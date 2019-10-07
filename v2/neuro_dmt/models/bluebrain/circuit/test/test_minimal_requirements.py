@@ -96,7 +96,6 @@ def test_mock_circuit_analysis_without_adapter():
             mock_adapter,
             output_folder="analyses")
 
-
 def test_analysis_suite_for_mocks():
     """
     Analysis suite should work as expected, examplified with mock circuit
@@ -114,7 +113,6 @@ def test_analysis_suite_for_mocks():
         analysis_test.test_get_measurement(circuit_model)
         analysis_test.test_call_analysis(circuit_model)
         analysis_test.test_post_report(circuit_model)
-
 
 def test_mock_circuit_validation():
     """
