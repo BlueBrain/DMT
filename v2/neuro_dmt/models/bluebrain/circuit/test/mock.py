@@ -4,8 +4,8 @@ Use mocks to test.
 import pandas as pd
 from bluepy.v2.enums import Synapse
 from dmt.tk.journal import Logger
-from ..mock import MockCircuit, MockCircuitAdapter
-from ..model import BlueBrainCircuitModel
+from ..mock import MockCircuitAdapter, MockCircuit
+from neuro_dmt.models.bluebrain.circuit.model import BlueBrainCircuitModel
 from ..mock import CircuitComposition, SimpleUniformRandomConnectivity
 
 __log = Logger(client = "test develop mock circuit")

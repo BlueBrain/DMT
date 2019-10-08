@@ -57,7 +57,6 @@ def test_mock_circuit_analysis_without_adapter():
             group="composition")
     assert cell_density_phenomenon.label == "cell_density",\
         "{} not good label".format(cell_density_phenomenon.label)
-    #mock_circuit_model = mock.get_circuit_model()
     mock_circuit_model = None
     mock_adapter = mock.get_circuit_adapter()
     cell_density_analysis =\
@@ -77,7 +76,6 @@ def test_mock_circuit_analysis_without_adapter():
     analysis_test.test_call_analysis(mock_circuit_model, mock_adapter)
     analysis_test.test_post_report(mock_circuit_model, mock_adapter)
 
-
 def test_analysis_suite_for_mocks():
     """
     Analysis suite should work as expected, examplified with mock circuit
@@ -87,15 +85,14 @@ def test_analysis_suite_for_mocks():
         None
     #    mock.get_circuit_model()
     mock_analysis_suite =\
-        CircuitAnalysisTest.suite_mock(circuit_model)
-    for phenomenon, analysis in mock_analysis_suite.analyses.items():
+        CircuitAnalysisTest.suite(mock.get_circuit_adapter(None))
+    for _, analysis in mock_analysis_suite.analyses.items():
         assert not isinstance(analysis, str)
         assert analysis.adapter
         analysis_test = CircuitAnalysisTest(analysis=analysis)
         analysis_test.test_get_measurement(circuit_model)
         analysis_test.test_call_analysis(circuit_model)
         analysis_test.test_post_report(circuit_model)
-
 
 def test_mock_circuit_validation():
     """
