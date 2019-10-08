@@ -34,16 +34,35 @@ class Parameters(WithFields):
 
     def __init__(self,
             values,
+            with_labels=True,
             *args, **kwargs):
         """
         Arguments
         --------------
         `values`: Either a dataframe, or a callable on (adapter, model)
-        `labels`: The names of the parameters
+        `with_labels`: Either the names of the parameters, or a boolean 
+        indicating whether this instance of `Parameters` should have labels.
+
+        Note
+        ---------------
+        Parameter labels may not be well defined for instances that are
+        initialized from callables. The callables are allowed to return an 
+        iterable mapping of parameter label to its value --- the labels allowed
+        to change from one mapping in the iterable to the next. Thus the set
+        of parameter labels covering all the mappings can be become arbitrary.
+        In  such cases, the user is advised to set `with_labels` to `False`.
         """
         if callable(values):
             pass
-        elif isinstance(values, pandas.DataFrame):
+        elif isinstance(values, pandas.DataFrame) and with_labels:
+            if kwargs.get("labels", tuple()):
+                raise TypeError(
+                    """
+                    'labels' provided for initializing `Parameters` from a
+                    pandas.DataFrame.
+                    When initialized from a pandas.DataFrame, parameters will 
+                    be initialized from the dataframe's columns.
+                    """)
             kwargs["labels"] = list(values.columns.values)
         else:
             raise ValueError(
@@ -51,6 +70,7 @@ class Parameters(WithFields):
         kwargs["values"] = values
         super().__init__(
             *args, **kwargs)
+        self._with_labels = with_labels
 
     def for_model(self, *args):
         """
@@ -77,10 +97,12 @@ class Parameters(WithFields):
         Set labels affirming to `values`, but only if they are not already set,
         and if the dataframe generated from them does not have any null values.
         """
+        if not self._with_labels:
+            return None
         if not self.labels:
             dataframe = pandas.DataFrame(values)
             if not dataframe.isnull().values.any():
-                self.labels = dataframe.columns.values
+                self.labels = list(dataframe.columns.values)
         return self.labels
 
     def for_sampling(self, *args, size=None):
@@ -113,19 +135,6 @@ class Parameters(WithFields):
             pandas.DataFrame(parameter_values)\
                   .apply(make_hashable, axis=0)
         return dataframe.set_index(list(dataframe.columns.values)).index
-
-    # def index(self, *args, sample_size=None):
-    #     """
-    #     A `pandas.Index` / `pandas.MultiIndex` for the parameter values.
-    #     """
-    #     values = self._resolve_values(*args)
-    #     return pandas\
-    #         .DataFrame(
-    #             [parameters_row.to_dict()
-    #              for parameters_row in self.for_sampling(*args, size=sample_size)])\
-    #         .set_index(
-    #             list(values.columns.values))\
-    #         .index
 
     @lazyproperty
     def variables(self):

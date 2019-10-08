@@ -5,7 +5,7 @@ Test develop plotting.
 import pandas as pd
 import numpy as np
 from ..bars import Bars
-from .. import get_dataframe
+
 
 by_layer_summary_1 =\
     pd.DataFrame(
@@ -19,7 +19,7 @@ by_layer_summary_2 =\
         index=pd.Index(range(1,7), name="layer"))
  
 samples =\
-    get_dataframe({
+    Bars._get_plotting_data({
         "one": by_layer_summary_1,
         "two": by_layer_summary_2})
 assert isinstance(samples, pd.DataFrame)
