@@ -343,25 +343,28 @@ class SummaryMeasurement(Measurement):
         """
         return self.data
 
-    def samples(self, size=20):
+    def samples(self, size=20, _filter=lambda x: x):
         """
         Generate `<size>` samples for each combination of parameters in this
         `SummaryMeasurement`.
         """
-        def sample(row):
+        def _sample(row):
+            """
+            Create a sample from one row of the summary dataframe
+            """
             def __one():
                 phenomenon = get_label(self.phenomenon)
-                m = numpy.random.normal(
-                    row[phenomenon]["mean"],
-                    row[phenomenon]["std"])
-                return m if m > 0 else __one()
+                return _filter(
+                    numpy.random.normal(
+                        row[phenomenon]["mean"],
+                        row[phenomenon]["std"]))
 
             return numpy.array([__one() for _ in range(size)])
 
         return pandas\
             .concat([
                 self._get_sample_parameters(index_values, size).assign(
-                    **{get_label(self.phenomenon): sample(row)})
+                    **{get_label(self.phenomenon): _sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
 

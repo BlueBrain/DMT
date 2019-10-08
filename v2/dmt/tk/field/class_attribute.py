@@ -3,6 +3,7 @@ Class attribute with description
 """
 
 import sys
+import copy
 import collections
 from .field import Field
 
