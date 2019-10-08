@@ -119,10 +119,7 @@ class BrainCircuitAnalysis(
             reference_data\
             if not reference_data.empty  else\
                self.reference_data
-        return\
-            measurement\
-            if reference_data.empty else\
-               pandas.concat([measurement, reference_data])
+        return pandas.concat([measurement, reference_data])
 
     def _append_reference_data(self,
                 measurement):
@@ -226,51 +223,6 @@ class BrainCircuitAnalysis(
         Resolve which adapter to use.
         """
         return adapter if adapter else self.adapter
-
-    def comparison(self,
-            alternative,
-            reference,
-            adapter_alternative=None,
-            adapter_reference=None,
-            *args, **kwargs):
-        """
-        Compare an alternative model to a reference model.
-        """
-        measurement_alternative =\
-            self.get_measurement(
-                alternative,
-                adapter_alternative,
-                *args, **kwargs)
-        measurement_reference =\
-            self.get_measurement(
-                reference,
-                adapter_reference,
-                *args, **kwargs)
-        report =\
-            self.get_report(
-                self._with_reference_data(
-                    measurement_alternative,
-                    measurement_reference),
-                *args, **kwargs)
-        try:
-            return self.reporter.post(report)
-        except AttributeError:
-            return report
-
-    def validation(self,
-            circuit_model,
-            adapter=None,
-            *args, **kwargs):
-        """
-        Validation of a model against reference data.
-        """
-        assert not self.reference_data.empty,\
-            "Validation needs reference data."
-        return\
-            self.__call__(
-                circuit_model,
-                adapter,
-                *args, **kwargs)
 
     def __call__(self,
             *args, **kwargs):
