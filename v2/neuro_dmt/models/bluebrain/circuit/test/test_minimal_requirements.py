@@ -148,7 +148,8 @@ def test_mock_circuit_validation():
                 xlabel="Layer",
                 yvar=cell_density_phenomenon.label,
                 ylabel=cell_density_phenomenon.name,
-                gvar="dataset"),
+                gvar="dataset",
+                title="Cell Density Validation"),
             adapter=mock_adapter)
     assert hasattr(cell_density_analysis, "reference_data")
     assert cell_density_analysis._has_reference_data
