@@ -151,28 +151,3 @@ class AIBase(metaclass=AIMeta):
 
 from .interface import Interface
 from .adapter import Adapter
-
-class AdaptedModel(WithFields):
-    """
-    A model adapted by an adapter.
-    """
-    adapter = Field(
-        """
-        The adapter.
-        """)
-    model = Field(
-        """
-        The model to be adapted.
-        """)
-
-    def __getattr__(self, name_attribute):
-        """
-        Pass on the attribute to the adapter.
-        """
-        adapter_method = getattr(self.adapter, name_attribute)
-
-        def adapted_method(*args, **kwargs):
-            """..."""
-            return adapter_method(self.model, *args, **kwargs)
-
-        return adapter_method
