@@ -11,7 +11,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 
 from sys import stdout
 from abc import ABC
-from .field import Field
+from .field import Field, LambdaField
 from .prop import Property
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
