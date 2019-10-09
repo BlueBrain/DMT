@@ -2,6 +2,7 @@
 Bar plot.
 """
 
+import pandas
 import seaborn
 from . import golden_aspect_ratio
 from .figure import Figure
@@ -67,17 +68,19 @@ class Bars(WithFields):
         """
         Plot the dataframe.
         """
+        assert isinstance(data, pandas.DataFrame)
+        graphic = seaborn.catplot(
+            data=data,
+            x=self.xvar,
+            y=self.yvar,
+            kind="bar",
+            hue=self.gvar if self.gvar else None,
+            height=self.height_figure,
+            aspect=self.aspect_ratio_figure)
         return Figure(
-            seaborn.catplot(
-                data=data,
-                x=self.xvar,
-                y=self.yvar,
-                kind="bar",
-                hue=self.gvar if self.gvar else None,
-                height=self.height_figure,
-                aspect=self.aspect_ratio_figure).set(
-                    xlabel=self.xlabel if self.xlabel else self.xvar,
-                    ylabel=self.ylabel if self.ylabel else self.yvar),
+            graphic.set(
+                xlabel=self.xlabel if self.xlabel else self.xvar,
+                ylabel=self.ylabel if self.ylabel else self.yvar),
             caption=caption)
 
     def plot(self,
@@ -87,7 +90,7 @@ class Bars(WithFields):
         Plot the dataframe
         """
         return self\
-            .figure(
+            .get_figure(
                 dataframe,
                 *args, **kwargs)
 

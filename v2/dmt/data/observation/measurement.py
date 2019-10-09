@@ -13,7 +13,7 @@ class Measurement(
     """
     __metaclass_base__ = True
 
-    @lazyproperty
+    @lazyfield
     def parameters_list(self):
         """
         List of parameter labels.
@@ -45,7 +45,7 @@ class Measurement(
         return pandas.DataFrame(
             sample_size * [dict(zip(self.parameters_list, parameters_values))])
 
-    @lazyproperty
+    @lazyfield
     def summary(self):
         """
         A statistical summary of the data in this measurement.
@@ -55,17 +55,27 @@ class Measurement(
             .groupby(self.parameters_list)\
             .agg(["size", "mean", "std"])
 
-    @lazyproperty
+    @classmethod
+    def SummaryType(cls):
+        """
+        A class that summarizes measurement of this Measurement's phenomenon.
+        """
+        return type(
+            "{}SummaryMeasurement".format(
+                cls.__name__\
+                   .strip("Measurement")\
+                   .strip("_measurement")),
+            (SummaryMeasurement,),
+            {"phenomenon": cls.phenomenon,
+             "parameters": cls.parameters})
+
+    @lazyfield
     def summary_measurement(self):
         """
         This `Measurement`, but with summary statistics, instead of all
         the samples.
         """
-        type_summary_measurement = type(
-            "{}SummaryMeasurement".format(self.__class__.__name__),
-            (SummaryMeasurement,),
-            {"phenomenon": self.phenomenon,
-             "parameters": self.parameters})
+        type_summary_measurement = self.SummaryType()
         return type_summary_measurement(
             object_of_observation=self.object_of_observation,
             procedure=self.procedure,
@@ -152,7 +162,7 @@ class SummaryMeasurement(Measurement):
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
 
-    @lazyproperty
+    @lazyfield
     def summary(self):
         """
         A statistical summary of the data in this measurement.
@@ -191,3 +201,9 @@ def summary_statistic(
     return\
         summary[measurement_columns[0]] if len(measurement_columns) == 1\
         else summary[measurement_columns]
+
+def Summary(MeasurementClass):
+    """
+    SummaryMeasurement subclass from measurement class.
+    """
+    return MeasurementClass.SummaryType()

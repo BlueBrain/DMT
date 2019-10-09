@@ -11,6 +11,7 @@ from .interface import\
     get_implementations
 from .adapter import\
     get_models_adapted
+from ..tk.field import Field, WithFields
 from ..tk.journal import Logger
 
 
@@ -83,7 +84,7 @@ class AIBase(metaclass=AIMeta):
         Another name for model_adapter.
         """
         if self._adapter is None:
-            raise Exception(
+            raise AttributeError(
                 """
                 Adapter not set for {}.
                 """.format(self.__class__.__name__))
@@ -94,7 +95,7 @@ class AIBase(metaclass=AIMeta):
         """
         Reset the adapter, after validating the new 'value'
         """
-        if self.AdapterInterface.is_implemented_by(value):
+        if value is None or self.AdapterInterface.is_implemented_by(value):
             self._adapter = value
         else:
             self.logger.suggest(
@@ -105,6 +106,12 @@ class AIBase(metaclass=AIMeta):
                 {} does not implement {}'s AdapterInterface.
                 """.format(value, self.__class__.__name__))
         pass
+
+    def unset_adapter(self):
+        """
+        Unset the adapter.
+        """
+        self.adapter = None
 
     @classmethod
     def accepted_models(cls):

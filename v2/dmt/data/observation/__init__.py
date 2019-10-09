@@ -6,7 +6,7 @@ from collections import OrderedDict
 import pandas as pd
 from dmt.tk.field import\
     Field,\
-    lazyproperty,\
+    lazyfield,\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
@@ -150,7 +150,7 @@ class Observation(
             data=data,
             **kwargs)
 
-    @lazyproperty
+    @lazyfield
     def properties_observed(self):
         """
         Properties observed.
@@ -274,5 +274,6 @@ class Observation(
 from .measurement import\
     Measurement,\
     SummaryMeasurement,\
+    Summary,\
     summary_statistic
 

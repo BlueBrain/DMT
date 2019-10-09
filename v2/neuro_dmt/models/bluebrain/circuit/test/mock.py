@@ -4,8 +4,8 @@ Use mocks to test.
 import pandas as pd
 from bluepy.v2.enums import Synapse
 from dmt.tk.journal import Logger
-from ..mock import MockCircuit, MockCircuitAdapter
-from ..model import BlueBrainCircuitModel
+from ..mock import MockCircuitAdapter, MockCircuit
+from neuro_dmt.models.bluebrain.circuit.model import BlueBrainCircuitModel
 from ..mock import CircuitComposition, SimpleUniformRandomConnectivity
 
 __log = Logger(client = "test develop mock circuit")
@@ -182,7 +182,6 @@ def get_circuit_model():
             for layer in __layers])\
           .set_index(
               ["mtype", "layer"])
-
     circuit_composition =\
         CircuitComposition(
             layers=__layers,
@@ -190,7 +189,6 @@ def get_circuit_model():
             length_base=__length_base,
             mtypes=__mtypes,
             cell_density=__cell_density)
-
     circuit_connectivity =\
         SimpleUniformRandomConnectivity(
             afferent_degree_mtype={
@@ -200,9 +198,8 @@ def get_circuit_model():
                     post_mtype: 4
                     for post_mtype in __mtypes}
                 for pre_mtype in __mtypes})
-
-    circuit = MockCircuit\
-        .build(
+    circuit =\
+        MockCircuit.build(
             composition=circuit_composition,
             connectivity=circuit_connectivity)
     return BlueBrainCircuitModel(circuit=circuit)
