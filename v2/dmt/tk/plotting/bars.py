@@ -131,9 +131,10 @@ class Bars(WithFields):
                 *args, **kwargs)
 
     def __call__(self,
-            dataframe):
+            dataframe,
+            *args, **kwargs):
         """
         Make this class a callable,
         so that it can masquerade as a function!
         """
-        return self.plot(dataframe)
+        return self.plot(dataframe, *args, **kwargs)

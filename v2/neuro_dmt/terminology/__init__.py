@@ -1,6 +1,7 @@
 """
 Neuroscience terminology used.
 """
+from bluepy.v2.enums import Cell, Synapse
 from dmt.tk.terminology import *
 from dmt.tk.utils.singleton import Singleton
 
@@ -59,18 +60,40 @@ class cell(Singleton):
         The value of this parameter should describe,
         the presynaptic cell group of a pathway.
         """)
+    afferent = Term(
+        "AFF",
+        """
+        Use this term to refer to cells whose outputs enter a synapse.
+        """)
+    efferent = Term(
+        "EFF",
+        """
+        Use this term to refer to cells that receive their input from a
+        synapse --- a.k.a post-synaptic neuron
+        """)
 
 
 class synapse(Singleton):
     """
     A collection of terms used in neuroscience.
     """
+    post_gid = Synapse.POST_GID
+    pre_gid = Synapse.PRE_GID
     afferent = Term(
-        "afferent",
+        "AFF",
         "An afferent synapse, or connection, enters a cell.")
     efferent = Term(
-        "efferent",
+        "EFF",
         "An efferent synapse, or connection exits a cell.")
 
-
+class direction(Singleton):
+    """
+    Direction of transmission across a synapse (for-example).
+    """
+    forward = Term(
+        "FORWARD",
+        "From pre-synaptic neuron to post-synaptic neuron.")
+    reverse = Term(
+        "REVERSE",
+        "From post-synaptic neuron to pre-synaptic neuron.")
 

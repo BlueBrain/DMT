@@ -3,433 +3,460 @@ Make a circle plot.
 """
 """
 Plot heat maps.
+
 """
-import np as np
+from collections import OrderedDict
+import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-import seaborn
-from bluepy.v2.circuit import Circuit
-from bluepy.v2.enums import Cell, Synapse
+from matplotlib import pyplot as plt 
 from . import golden_aspect_ratio
 from dmt.tk.plotting.utils import pivot_table
-from dmt.tk.field import Field, lazyproperty, WithFields
-from . import get_dataframe
+from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
+from .shapes import PolarPoint, Polygon, Path, Circle, Arc
 from .figure import Figure
 
 
-class GraphicCircle(WithFields):
+class FlowGeom(Polygon):
+    """
+    A `FlowGeom` is a geometric representation of a flow from
+    a begin node to end node.
+    """
+    angular_thickness = Field(
+        """
+        Thickness of the flow, measured in radians
+        """,
+        __default_value__=0.05)
+    network_geom = Field(
+        """
+        An object that will produce sides of the polygon to be
+        drawn for this `FlowGeom`.
+        """)
+    begin_node_geom = Field(
+        """
+        The node geometry where this flow begins.
+        """)
+    end_node_geom = Field(
+        """
+        The node geometry where this flow ends.
+        """)
+
+    @lazyfield
+    def sides(self):
+        """
+        Sides of this flow.
+        """
+        return self.network_geom.get_sides(self)
+
+
+class NodeGeom(Polygon):
+    """
+    Geometry to represent nodes.
+    Nodes will be placed on the circumference of a circle.
+    """
+    network_geom = Field(
+        """
+        The network geometry that controls this `NodeGeom`.
+        """)
+    position = Field(
+        """
+        Position of this node --- type should be determined by
+        the network geometry object.
+        """)
+    thickness = Field(
+        """
+        Thickness of this node --- type should be the same as position.
+        """)
+
+    @lazyfield
+    def sides(self):
+        """
+        Sides to determine where this node geometry should be placed.
+        """
+        return self.network_geom.get_sides(self)
+
+
+class NetworkGeom(Circle):
     """
     The circle that will be plotted
     """
-
-    center = Field(
+    spacing_nodes = Field(
         """
-        Center of the circle.
+        A fraction indicating how much blank space to leave between
+        nodes.
         """,
-        __default_value__=np.array([0., 0.]))
-    radius = Field(
+        __default_value__=0.25)
+    
+
+
+    def _get_thickness_node(self, node):
+        """..."""
+        return PolarPoint(0.1, node.angular_size)
+
+    def spawn_nodes(self, data):
         """
-        Radius of the circle.
-        """,
-        __default_value__=1.)
-    rotation = Field(
+        Create the nodes.
         """
-        Some kind of rotation, that I do not understand.
-        """,
-        __default_value__=0.)
+        node_weights = self.get_node_weights(data)
+        assert np.isclose(node_weights.sum(), 1.),\
+            "Not normalized: {}".format(node_weights)
+        number_nodes =\
+            node_weights.shape[0]
+        spacing =\
+            self.spacing_nodes * 2. * np.pi / number_nodes
+        node_sizes =\
+            node_weights.apply(
+                lambda w: (1. - self.spacing_nodes) * 2. * np.pi * w)
+        node_positions = pd.Series(
+            np.cumsum([
+                node_size + spacing
+                for node_size, spacing in zip(
+                        node_sizes, number_nodes * [spacing])]),
+            index=node_weights.index)
+        nodes = pd.DataFrame(dict(
+            weight=node_weights,
+            angular_size=node_sizes,
+            angular_position=node_positions))
+        self.node_geoms = OrderedDict([
+            (label, self.get_child_geom(label, node))
+            for label, node in nodes.iterrows()])
+        self.children.extend(self.node_geoms.values())
+        return self.node_geoms
 
-    def at(self, angle):
-        return self.center + np.array([
-            np.sin(angle + self.rotation) * self.radius,
-            np.cos(angle + self.rotation) * self.radius])
+    def spawn_flows(self, link_weights):
+        """..."""
+        self.flow_geoms = OrderedDict([
+            ((begin, end), self.get_child_geom(begin, end, link))
+            for (begin, end), link in link_weights.iterrows()])
+        self.children.extend(self.flow_geoms)
+        return self.flow_geoms
 
-    def segment_points(self, _from=0., to=2*np.pi, N=100):
-        return np.array([
-            self.at(angle)
-            for angle in np.linspace(_from, to, N)])
-
-    def _arc_circle(self, angle_1, angle_2):
-        angle_mean = (angle_1 + angle_2) / 2.
-        #mn_ngl = (angle1 + angle2) / 2
-        angle_off = angle_mean - np.minimum(angle_1, angle_2)
-        #off_ngl = mn_ngl - np.minimum(angle1, angle2)
+    def arc_flow(self, angle_begin, angle_end, label="", radius=None):
+        """..."""
+        if radius is None:
+            radius = self.radius
+        angle_mean = (angle_begin + angle_end) / 2.
+        angle_min = np.minimum(angle_begin, angle_end)
+        angle_off = angle_mean - angle_min
         angle_center = np.pi - 2 * angle_off
-        #ctr_ngl = np.pi - 2 * off_ngl
-        angle_rotation = np.pi / 2 - np.minimum(angle_1, angle_2)
-        #rot_ngl = np.pi / 2 - np.minimum(angle1, angle2)
-        length = self.radius / np.cos(angle_off)
-        #L = self.r / np.cos(off_ngl)
-        radius_arc = self.radius * np.tan(angle_off);
-        #Lp = self.r * np.tan(off_ngl)
+        angle_rotation = np.pi / 2 - angle_min
+        length = radius / np.cos(angle_off)
+        radius_arc = radius * np.tan(angle_off);
         center_arc = self.center + np.array([
             length * np.sin(angle_mean + self.rotation),
             length * np.cos(angle_mean + self.rotation)])
-        #c = np.array([np.sin(mn_ngl + self.rot) * L,
-        #                 np.cos(mn_ngl + self.rot) * L]) + self.c
-        arc_circle =\
-            GraphicCircle(
+ 
+        if not label:
+            label = "Flow {}==>{}".format(angle_begin, angle_end)
+        if angle_begin < angle_end:
+            return Arc(
+                label=label,
                 center=center_arc,
                 radius=radius_arc,
-                rotation=self.rotation - angle_rotation)\
-                if angle_1 < angle_2 else\
-                   GraphicCircle(
-                       center=center_arc,
-                       radius=radius_arc,
-                       rotation=self.rotation - angle_rotation - angle_center)
-        arc_angle =\
-            - angle_center if angle_1 < angle_2 else angle_center
+                rotation=self.rotation - angle_rotation,
+                angle_begin=0.,
+                angle_end=-angle_center)
+        return Arc(
+            label=label,
+            center=center_arc,
+            radius=radius_arc,
+            rotation=self.rotation - angle_rotation - angle_center,
+            angle_begin=0.,
+            angle_end=angle_center)
 
-        return arc_circle, arc_angle
-        # if angle1 < angle2:
-        #     return Circle(c, Lp, rotation=self.rot-rot_ngl), -ctr_ngl
-        # return Circle(c, Lp, rotation=self.rot-rot_ngl-ctr_ngl), ctr_ngl
+    def _get_flow_geom(self,
+            begin_node_label,
+            end_node_label,
+            flow_data):
+        """..."""
+        return FlowGeom(
+            label="{}==>{}".format(begin_node_label, end_node_label),
+            angular_thickness=flow_data.weight,
+            begin_node_geom=self.children[begin_node_label],
+            end_node_geom=self.children[end_node_label],
+            network_geom=self)
 
-    def arc_points(self, angle_one, angle_two, N=100):
-        arc_circle, arc_angle = self._arc_circle(angle_one, angle_two)
-        return arc_circle.segment_points(0, arc_angle, N=N)
+    def _get_node_geom(self,
+            label, node_data):
+        """..."""
+        return NodeGeom(
+            label=label,
+            position=PolarPoint(self.radius, node_data.angular_position),
+            thickness=PolarPoint(0.1, node_data.angular_size),
+            network_geom=self)
 
-    def draw(self, N=100, *args, **kwargs):
-        pts = self.segment_points(N=N)
-        plt.plot(pts[:, 0], pts[:, 1], *args, **kwargs)
-
-
-class Synaptome(GraphicCircle):
-
-    blowup = Field(
+    def get_child_geom(self, *args):
         """
-        Some sort of factor, to be understood
-        """,
-        __default_value__=1.5)
-    buf_main = Field(
+        Get a geometry corresponding to  geom_data.
         """
-        buffer_main?
-        """,
-        __default_value__=0.3)
-    lbl_min_sz = Field(
-        """
-        Min size for the labels?
-        """,
-        __default_value__=0.02)
-    arr_min_size = Field(
-        """
-        Min size of an array?
-        """,
-       __default_value__=0.02)
-    fontsize = Field(
-        """
-        Fontsize
-        """,
-        __default_value=[8, 25])
-    col_dict = Field(
-        """
-        A dict of colors?
-        """,
-        __default_value__=dict([
-            (_m, np.random.rand(3) * 0.6)
-            for _m in self.data_exc.keys() + self.data_inh.keys()]))
-
-    def __init__(self, aff, eff, mtype=None, c=np.array([0.0, 0.0]), r=1.0,
-                 blowup=1.5, buf_main=0.3, transparency_coeff=(0.0, 1.0),
-                 col_dict=None, lbl_min_sz=0.02, arr_min_sz=0.02, fontsize=[8, 25], **kwargs):
-        super(Synaptome, self).__init__(c, r, **kwargs)
-        self.blowup = blowup
-        self.buf_main = buf_main
-        self.lbl_min_sz = lbl_min_sz
-        self.arr_min_sz = arr_min_sz
-        self.fontsize = fontsize
-        self.eff_aff = ('EFF', 'AFF')
-        if mtype is not None:
-            self.eff_aff = (mtype, mtype)
-        self.alpha_fun =\
-            lambda s: np.maximum(
-                np.minimum(
-                    transparency_coeff[0] + np.abs(np.diff(s)) * transparency_coeff[1],
-                    1.0),
-                0.05)
-        self.prepare_data(aff, eff)
-        self.prepare_area(sc_mtype=mtype)
-        self.link_starts = {}; self.link_ends = {}
-        self.prepare_link_starts([self.vals_eff_inh, self.vals_eff_exc],
-                                 self.sum_eff, [self.data_inh.keys(), self.data_exc.keys()],
-                                 self.space_eff, 'EFF', self.link_starts)
-        self.prepare_link_starts([self.vals_aff_exc, self.vals_aff_inh],
-                                 self.sum_aff, [self.data_exc.keys(), self.data_inh.keys()],
-                                 self.space_aff, 'AFF', self.link_starts, shortcut=(mtype, self.link_ends, 'EFF'))
-        self.prepare_link_ends(self.data_exc, self.sum_exc, self.space_exc, self.link_ends, sc_mtype=mtype)
-        self.prepare_link_ends(self.data_inh, self.sum_inh, self.space_inh, self.link_ends, sc_mtype=mtype)
-        if col_dict is None:
-            self.col_dict = dict([(_m, np.random.rand(3) * 0.6) for _m in self.data_exc.keys() + self.data_inh.keys()])
-        else:
-            self.col_dict = col_dict
-
-    def __extract_data__(self, aff, eff, match):
-        extract = OrderedDict([(_a[0], np.array([_a[2], 0.0])) for _a in aff if _a[1] == match])
-        for _a in eff:
-            if _a[1] == match:
-                extract.setdefault(_a[0], np.array([0.0, 0.0]))[1] = _a[2]
-        return extract
-
-    def prepare_data(self, aff, eff):
-        self.data_exc = self.__extract_data__(aff, eff, 'EXC')
-        self.data_inh = self.__extract_data__(aff, eff, 'INH')
-        self.vals_eff_inh = [v[1] for v in self.data_inh.values()]
-        self.vals_eff_exc = [v[1] for v in self.data_exc.values()]
-        self.vals_aff_inh = [v[0] for v in self.data_inh.values()]
-        self.vals_aff_exc = [v[0] for v in self.data_exc.values()]
-
-    def prepare_area(self, sc_mtype=None):
-        self.sum_aff =\
-            np.sum(self.vals_aff_inh) + np.sum(self.vals_aff_exc)
-        self.sum_eff =\
-            np.sum(self.vals_eff_inh) + np.sum(self.vals_eff_exc)
-        self.sum_exc =\
-            np.sum(self.vals_eff_exc) + np.sum(self.vals_aff_exc)
-        self.sum_inh =\
-            np.sum(self.vals_eff_inh) + np.sum(self.vals_aff_inh)
-        self.sum_exc -=\
-            np.sum(self.data_exc.get(sc_mtype, (0, 0)))
-        self.sum_inh -=\
-            np.sum(self.data_inh.get(sc_mtype, (0, 0)))
-        base_space =\
-            2 * np.pi - 4 * self.buf_main
-        space_eff =\
-            base_space * (self.blowup * self.sum_eff) / (self.blowup * (self.sum_eff + self.sum_aff) + self.sum_exc + self.sum_inh)
-        self.space_eff =\
-            (-space_eff / 2.0, space_eff / 2.0)
-        space_exc =\
-            base_space * (self.sum_exc) / (self.blowup * (self.sum_eff + self.sum_aff) + self.sum_exc + self.sum_inh)
-        self.space_exc =\
-            (self.space_eff[1] + self.buf_main + space_exc, self.space_eff[1] + self.buf_main)
-        space_aff =\
-            base_space * (self.blowup * self.sum_aff) / (self.blowup * (self.sum_eff + self.sum_aff) + self.sum_exc + self.sum_inh)
-        self.space_aff =\
-            (self.space_exc[0] + self.buf_main, self.space_exc[0] + self.buf_main + space_aff)
-        space_inh =\
-            base_space * (self.sum_inh) / (self.blowup * (self.sum_eff + self.sum_aff) + self.sum_exc + self.sum_inh)
-        self.space_inh =\
-            (self.space_aff[1] + self.buf_main + space_inh, self.space_aff[1] + self.buf_main)
-
-    def prepare_link_starts(self, vals, nrmlz, lbls, space, prefix, mp, shortcut=None):
-        sc_mtype = None
-        if shortcut is not None:
-            sc_mtype, mp_alt, prefix_alt = shortcut
-        delta = space[1] - space[0]
-        s = space[0]
-        for _vals, _lbls in zip(vals, lbls):
-            for _v, _l in zip(_vals, _lbls):
-                if _l == sc_mtype:
-                    mp_alt[prefix_alt + _l] = (s + _v * delta / nrmlz, s)
-                else:
-                    mp[prefix + _l] = (s, s + _v * delta / nrmlz)
-                s += _v * delta / nrmlz
-        return mp
-
-    def prepare_link_ends(self, data, nrmlz, space, mp, sc_mtype=None):
-        delta = space[1] - space[0]
-        s = space[0]
-        for kk in data.keys():
-            if kk != sc_mtype:
-                mp['AFF' + kk] = (s, s + data[kk][0] * delta / nrmlz)
-                s = mp['AFF' + kk][1]
-                mp['EFF' + kk] = (s, s + data[kk][1] * delta / nrmlz)
-                s = mp['EFF' + kk][1]
-        return mp
-
-    def link_pts(self, lnk_name):
-        s = self.link_starts[lnk_name]
-        e = self.link_ends[lnk_name]
-        side1 = self.arc_points(s[1], e[1], N=50)
-        side2 = self.arc_points(e[0], s[0], N=50)
-        strt = self.segment_points(s[0], s[1], N=10)
-        nd = self.segment_points(e[1], e[0], N=10)
-        if np.abs(np.diff(s)) >= self.arr_min_sz:
-            if lnk_name.startswith('EFF'):
-                return [np.vstack([strt, side1, nd, side2]),
-                        self.arrow_pts(side1, side2, s, e)]
-            return [np.vstack([strt, side1, nd, side2]),
-                    self.arrow_pts(side1[-1::-1], side2[-1::-1], e, s)]
-        return [np.vstack([strt, side1, nd, side2])]
-
-    def arrow_pts(self, side1, side2, s, e):
-        md_s1 = 0.4 * s[0] + 0.6 * s[1]; md_s2 = 0.6 * s[0] + 0.4 * s[1]
-        md_e1 = 0.45 * e[0] + 0.55 * e[1]; md_e2 = 0.55 * e[0] + 0.45 * e[1]
-        md_e = 0.5 * e[0] + 0.5 * e[1]
-        pt_e = np.array([self.at(md_e)])
-        arc1 = self.arc_points(md_s1, md_e1, N=50)[:45]
-        arc2 = self.arc_points(md_e2, md_s2, N=50)[5:]
-        crn_1 = 0.65 * side1[int(len(side1) * 0.9), :] + 0.35 * side2[int(len(side2) * 0.1), :] 
-        crn_2 = 0.35 * side1[int(len(side1) * 0.9), :] + 0.65 * side2[int(len(side2) * 0.1), :]
-        return np.vstack([arc1, crn_1, pt_e, crn_2, arc2])
-
-    def link_collection(self):
-        from matplotlib.collections import PolyCollection
-        ln_nms = [k for k, v in self.link_starts.items() if np.diff(v) != 0]
-        verts = []; cols = []
-        for _name in ln_nms:
-            verts.extend(self.link_pts(_name))
-            _a = self.alpha_fun(self.link_ends[_name])
-            cols.append(np.hstack([self.col_dict[_name[3:]], _a]))
-            while len(verts) > len(cols):
-                cols.append(cols[-1] * np.array([0.8, 0.8, 0.8, 1.0]))
-        return PolyCollection(verts, facecolors=cols, edgecolors='grey', linewidth=0.1)
-
-    def label_loc(self, mname):
-        tpl = self.link_ends['AFF' + mname] + self.link_ends['EFF' + mname]
-        ngl = 0.5 * (np.max(tpl) + np.min(tpl))
-        pos = Circle(self.c, self.r * 1.04, rotation=self.rot).at(ngl)
-        rot_angle = 90 - 180 * (self.rot + ngl) / np.pi
-        return pos, rot_angle
-
-    def label_collection(self):
-        coll = []
-
-        def mk_kwargs(ngl, **kwargs):
-            kwargs['horizontalalignment'] = 'left'
-            kwargs['verticalalignment'] = 'center'
-            if ngl > 90:
-                ngl -= 180
-                kwargs['horizontalalignment'] = 'right'
-            elif ngl < -90:
-                ngl += 180
-                kwargs['horizontalalignment'] = 'right'
-            kwargs['rotation'] = ngl
-            return kwargs
-        for mname in list(self.data_exc.keys()) + list(self.data_inh.keys()):
-            sz = -np.diff(self.link_ends.get('AFF' + mname, (0, 100))) \
-            - np.diff(self.link_ends['EFF' + mname])
-            if sz < self.lbl_min_sz:
-                continue
-            pos, ngl = self.label_loc(mname)
-            coll.append(((pos[0], pos[1], mname), mk_kwargs(ngl, fontsize=self.fontsize[0])))
-        for tpname, data in zip(self.eff_aff, [self.space_eff, self.space_aff]):
-            ngl = np.mean(data)
-            pos = self.at(ngl)
-            coll.append(((pos[0], pos[1], tpname), mk_kwargs(90 - 180 * (self.rot + ngl) / np.pi,
-                                                             fontsize=self.fontsize[1])))
-        return coll
-
-    def draw(self, ax=None):
-        from matplotlib import pyplot as plt
-        if ax is None:
-            ax = plt.gca()
-        ax.add_collection(self.link_collection())
-        for a, kw in self.label_collection():
-            ax.text(*a, **kw)
-        ax.set_xlim([-1.1 * self.r, 1.1 * self.r])
-        ax.set_ylim([-1.1 * self.r, 1.2 * self.r])
-        plt.axis('off')
-
-
-layer_cols = {'1': np.array([0.3, 0.3, 0]),
-              '2': np.array([0.0, 0.3, 0.3]),
-              '3': np.array([0.15, 0.3, 0.15]),
-              '4': np.array([0.3, 0.0, 0.3]),
-              '5': np.array([0.0, 0.6, 0.0]),
-              '6': np.array([0.1, 0.1, 0.4])}
-default = np.array([0.2, 0.2, 0.2])
-add_ei = {'EXC': np.array([0.5, 0.0, 0.0]),
-          'INH': np.array([0.0, 0.0, 0.5])}
-
-
-def make_col_dict(mtypes):
-    return dict([(_m[0], np.minimum(layer_cols.setdefault(_m[0][1], default)
-                                       + add_ei[_m[1]] +
-                                       np.random.rand(3) * 0.25, 1.0))
-                 for _m in mtypes])
-
-def _mtypes_names(circuit):
-    """
-    Mtypes sorted by their name.
-    """
-    mtype_names =\
-        circuit.cells\
-               .get(
-                   properties=[
-                       Cell.MTYPE,
-                       Cell.SYNAPSE_CLASS])\
-               .drop_duplicates()\
-               .values
-    return mtype_names[np.argsort([_m[0] for _m in mtype_names])]
-
-def _sample_gids(circuit, mtype, size):
-    """
-    Sample gids
-    """
-    gids =\
-        circuit.cells.ids(
-            group={Cell.MTYPE: mtype})
-    return\
-        np.random.choice(gids, size, replace=False)\
-        if len(gids) > sample else gids
-
-def make_synaptome(circuit_config, mtype, sample=100, **kwargs):
-    import progressbar
-    from builtins import sum as bsum
-    circuit = Circuit(circuit_config)
-    mtypes =\
-        circuit.cells.get(
-            properties=Cell.MTYPE)
-    mtype_names =\
-        self._mtypes_names(circuit)
-    gids = _sample_gids(circuit, mtype, sample)
-    connectome = circuit.connectome
-
-    def __reader__(func, pbar_lbl, rd_props):
-        pbar =\
-            progressbar.ProgressBar(
-                widgets=[progressbar.widgets.FormatLabel(pbar_lbl),
-                         progressbar.widgets.Bar()])
-        data = []
-        for _g in pbar(gids):
+        try:
+            return self._get_node_geom(*args) 
+        except (AttributeError, TypeError) as error_node:
             try:
-                data.append(
-                    mtypes[
-                        func(_g, properties=rd_props).values
-                    ].value_counts())
-            except Exception as an_exc:
-                print(str(_g) + '::' + str(an_exc))
-        return bsum(data)
-
-    data_efferent =\
-        __reader__(
-            connectome.efferent_synapses, 'EFF ', Synapse.POST_GID)
-    data_afferent =\
-        __reader__(
-            connectome.afferent_synapses, 'AFF ', Synapse.PRE_GID)
-    efferent =[
-        (m[0], m[1], data_efferent[m[0]]) for m in mtype_names]
-    afferent =[
-        (m[0], m[1], data_afferent[m[0]]) for m in mtype_names]
-    if 'col_dict' not in kwargs:
-        kwargs['col_dict'] = make_col_dict(mtype_names)
-    if 'rotation' not in kwargs:
-        kwargs["rotation"] = -0.5 * np.mean(s.space_aff)
-    return\
-        Synaptome(
-            afferent,
-            efferent,
-            transparency_coeff=(0.0, 3.0),
-            mtype=mtype,
-            **kwargs)
+                return self._get_flow_geom(*args)
+            except (AttributeError, TypeError) as error_flow:
+                raise TypeError(
+                    """
+                    Cannot resolve geometry data:
+                    \t{}.
+                    {}
+                    {}
+                    """.format(
+                        args,
+                        error_node,
+                        error_flow))
 
 
-if __name__ == "__main__":
-    import sys
-    import os
-    from matplotlib import pyplot as plt
-    if os.path.exists(sys.argv[2]) and os.path.isdir(sys.argv[2]):
-        import bluepy.v2
-        circ = bluepy.v2.Circuit(sys.argv[1])
-        for m in circ.cells.mtypes:
-            print(m)
-            ax = plt.figure(figsize=(8.0, 6.5)).add_axes([0.2, 0.1, 0.6, 0.8])
-            make_synaptome(sys.argv[1], m).draw(ax=ax)
-            #ax.set_title(m, fontsize=25)
-            plt.gcf().savefig(os.path.join(sys.argv[2], 'SYNAPTOME' + m + '.pdf'))
-            plt.gcf().savefig(os.path.join(sys.argv[2], 'SYNAPTOME' + m + '.png'))
-            plt.close(plt.gcf())
-    else:
-        ax = plt.figure(figsize=(8.0, 6.5)).add_axes([0.2, 0.1, 0.6, 0.8])
-        make_synaptome(sys.argv[1], sys.argv[2]).draw(ax=ax)
-        #ax.set_title(sys.argv[2], fontsize=25)
-        plt.show()
+    def _get_sides_flow(self, flow):
+        """
+        Sides of a flow.
+        """
+        theta =\
+          flow.angular_thickness / 2.
+        arc_begin =(
+            flow.begin_node_geom.position.angular - theta,
+            flow.begin_node_geom.position.angular + theta)
+        arc_end =(
+            flow.end_node_geom.position.angular - theta,
+            flow.end_node_geom.position.angular + theta)
+        begin_base =\
+            Path(label="{}_begin".format(flow.label),
+                 vertices=self.arc(*arc_begin).points())
+        side_forward =\
+            Path(label="{}_side_forward".format(flow.label),
+                 vertices=self.arc_flow(arc_begin[1], arc_end[0]).points())
+        end_base =\
+            Path(label="{}_end".format(flow.label),
+                 vertices=self.arc(*arc_end).points())
+        side_backward =\
+            Path(label="{}_side_backward".format(flow.label),
+                 vertices=self.arc_flow(arc_end[1], arc_begin[0]).points())
+        return [
+            begin_base,
+            side_forward,
+            end_base,
+            side_backward]
+
+    def _get_sides_node(self, node):
+        """
+        Sides of a node.
+        """
+        radius =(
+            node.position.radial - node.thickness.radial/2.,
+            node.position.radial + node.thickness.radial/2.)
+        angle =(
+            node.position.angular - node.thickness.angular/2.,
+            node.position.angular + node.thickness.angular/2.)
+
+        radial_out =\
+            Path(label="{}_radial_out".format(node.label),
+                 vertices=[
+                     self.point_at(PolarPoint(radius[0], angle[0])),
+                     self.point_at(PolarPoint(radius[1], angle[0]))])
+        arc_anti_clockwise =\
+            Path(label="{}_arc_anti_clockwise".format(node.label),
+                 vertices=self.arc(*angle, radius=radius[1]).points())
+        radial_in =\
+            Path(label="{}_radial_in".format(node.label),
+                 vertices=[
+                     self.point_at(PolarPoint(radius[1], angle[1])),
+                     self.point_at(PolarPoint(radius[0], angle[1]))])
+        arc_clockwise =\
+            Path(label="{}_arc_clockwise".format(node.label),
+                 vertices=self.arc(angle[1], angle[0], radius=radius[0]).points())
+        return [
+            radial_out,
+            arc_anti_clockwise,
+            radial_in,
+            arc_clockwise]
+
+    def get_sides(self, sub_geom):
+        """
+        Get sides for a polygonish geometry controlled by this geometry.
+        """
+        try:
+            return self._get_sides_flow(sub_geom)
+        except (AttributeError, TypeError) as error_flow:
+            try:
+                return self._get_sides_node(sub_geom)
+            except (AttributeError, TypeError) as error_node:
+                raise TypeError(
+                    """
+                    Unknown sub-geometry type:
+                    \t{}.
+                    {}
+                    {}
+                    """.format(
+                        type(sub_geom),
+                        error_flow,
+                        error_node))
+
+    def get_node_weights(self, data):
+        raise NotImplementedError
+
+    def draw(self, data):
+        """
+        Draw the data.
+        """
+        self.spawn_nodes(data)
+
+
+class NetworkFlows(WithFields):
+    """
+    Illustrate the strength of links in a network as flows.
+    """
+    title = Field(
+        """
+        Title to be displayed.
+        If not provided, phenomenon for the data will be used.
+        """,
+        __default_value__="")
+    node_variable = Field(
+        """
+        Name of the variable (i.e. column name) for the nodes.
+        """,
+        __examples__=["mtype"])
+    pre_variable = LambdaField(
+        """
+        Variable (i.e. column name) providing values of the pre-nodes.
+        """,
+        lambda self: "pre_{}".format(self.node_variable))
+    post_variable = LambdaField(
+        """
+        Variable (i.e. column name) providing values of the post-nodes.
+        """,
+        lambda self: "post_{}".format(self.node_variable))
+    node_type = Field(
+        """
+        Type of node values.
+        """,
+        __default_value__=str)
+    phenomenon = Field(
+        """
+        Variable (i.e. column name) providing the phenomenon whose value will
+        be plotted as flows.
+        """)
+
+    @property
+    def dataframe(self):
+        """..."""
+        try:
+            return self._dataframe
+        except AttributeError:
+            self._dataframe = None
+        return self._dataframe
+
+    @dataframe.setter
+    def dataframe(self, dataframe):
+        """Interpret dataframe as a geometric data."""
+        dataframe = dataframe.reset_index()
+        try:
+            weight = dataframe[self.phenomenon]["mean"].values
+        except KeyError:
+            weight = dataframe[self.phenomenon].values
+
+        self._dataframe =\
+            pd.DataFrame({
+                "begin_node": dataframe[self.pre_variable].values,
+                "end_node": dataframe[self.post_variable].values,
+                "weight": weight})
+
+    @lazyfield
+    def network_geom(self):
+        """
+        Geometry to hold the graphic.
+        """
+        return NetworkGeom(label=self.title)
+
+    def _norm_efferent(self,
+            dataframe,
+            aggregator="sum"):
+        """
+        Efferent value is the exiting value.
+        """
+        efferent_values =\
+            dataframe.groupby(self.pre_variable)\
+                     .agg(aggregator)
+        efferent_values.index.name = self.node_variable
+        return efferent_values
+
+    def _norm_afferent(self,
+            dataframe,
+            aggregator="sum"):
+        """
+        Afferent value is the entering value.
+        """
+        afferent_values =\
+            dataframe.groupby(self.post_variable)\
+                     .agg(aggregator)
+        afferent_values.index.name = self.node_variable
+        return afferent_values
+
+    @lazyfield
+    def node_weights(self):
+        """..."""
+        assert self.dataframe is not None
+        weights =\
+            self.dataframe\
+                .groupby(self.pre_variable)\
+                [[self.phenomenon]]\
+                .agg("sum")
+        weights.index.name = "label"
+        weights.name = "weight"
+        return weights / np.sum(weights)
+
+    @lazyfield
+    def link_weights(self):
+        """..."""
+        try:
+            weight = self.dataframe[self.phenomenon]["mean"].values
+        except KeyError:
+            weight = self.dataframe[self.phenomenon].values
+
+        begin_nodes = self.dataframe[self.pre_variable].values
+        end_nodes = self.dataframe[self.post_variable].values
+        return\
+            pd.DataFrame(dict(
+                begin_node=begin_nodes,
+                end_node=end_nodes,
+                weight=weight/self.node_weights[begin_nodes].values))\
+              .set_index(["begin_node", "end_node"])
+
+    def get_figure(self,
+            dataframe,
+            *args,
+            caption="Caption not provided",
+            **kwargs):
+        """
+        Plot the data.
+
+        Arguments
+        -----------
+        dataframe :: <pre_variable, post_variable, phenomenon>
+        """
+        self.dataframe = dataframe
+        
+        network_geom = NetworkGeom.draw(self.dataframe)
+        assert self.pre_variable in self.dataframe.columns,\
+            "{} not in {}".format(
+                self.pre_variable,
+                self.dataframe.columns)
+        assert self.post_variable in self.dataframe.columns,\
+            "{} not in {}".format(
+                self.post_variable,
+                self.dataframe.columns)
+        pre_nodes = set(
+            self.dataframe[
+                self.pre_variable
+            ].astype(self.node_type))
+        post_nodes = set(
+            self.dataframe[
+                self.post_variable
+            ].astype(self.node_type))
+        all_nodes =\
+            pre_nodes.union(post_nodes)
+
+        self.network_geom.spawn_nodes(self.node_weights)
+        self.network_geom.spawn_flows(self.link_weights)
+
+
+
