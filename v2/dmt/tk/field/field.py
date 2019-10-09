@@ -29,18 +29,18 @@ class Field:
         self.__examples__  = __examples__
         self.__defined_in__ = "Unknown"
 
-    def __get_instance_attribute_name(self, instance):
+    def _get_instance_attribute_name(self, instance):
         """
         The attribute name that an instance of a class with
         this Field instance will store its value with.
         """
-        self.__check_name()
+        self._check_name()
         type_prefix =\
             self.__type__.__name__ if not isinstance(self.__type__, tuple)\
             else '_'.join(t.__name__ for t in self.__type__)
         return "${}_{}".format(type_prefix, self.__attr_name__)
 
-    def __check_name(self):
+    def _check_name(self):
         """
         Has this Field instance been given a name?
         The intended use of Field is through the associated
@@ -119,7 +119,7 @@ class Field:
         Set the value of this Field in an class instance.
         """
         self.assert_validity(value)
-        setattr(instance, self.__get_instance_attribute_name(instance), value)
+        setattr(instance, self._get_instance_attribute_name(instance), value)
 
     def __get__(self, instance, owner):
         """
@@ -129,9 +129,42 @@ class Field:
         if instance:
             return getattr(
                 instance,
-                self.__get_instance_attribute_name(instance))
+                self._get_instance_attribute_name(instance))
         #assuming owner is the class in which this Field was defined...
         return self
 
 
+class _from_self:
+    """
+    Create a field instance from an instance WithFields.
+    """
+    def __init__(self, function):
+        if isinstance(function, _from_self):
+            self.initializer = function.initializer
+        self.initializer = function
+        
+    def __call__(self, instance, owner=None, *args, **kwargs):
+        return self.initializer(instance, *args, **kwargs)
 
+class LambdaField(Field):
+    """
+    A lazy field that must be provided a lambda over self as its value.
+    """
+    def __init__(self, __doc__, value):
+        super().__init__(__doc__, __default_value__=value)
+        
+    def __set__(self, instance, value):
+        if callable(value):
+            super().__set__(instance, _from_self(value))
+        else:
+            super().__set__(instance, value)
+        
+    def __get__(self, instance, owner):
+        if not instance:
+            return self
+        instance_attr = super().__get__(instance, owner)
+        try:
+            return instance_attr(instance, owner)
+        except TypeError:
+            return instance_attr
+  
