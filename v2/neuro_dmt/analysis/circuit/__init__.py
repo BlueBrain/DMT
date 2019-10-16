@@ -62,7 +62,12 @@ class BrainCircuitAnalysis(
         Each dataset in the dataframe must be annotated with index level
         'dataset', in addition to levels that make sense for the measurements.
         """,
-        __default_value__=pandas.DataFrame())
+        __default_value__={})
+
+    @property
+    def _has_reference_data(self):
+        """..."""
+        return len(self.reference_data) > 0
 
     @lazyfield
     def label(self):
@@ -108,30 +113,22 @@ class BrainCircuitAnalysis(
                 dataset=adapter.get_label(circuit_model))\
             .set_index(
                 ["dataset"] + self.names_measurement_parameters)
-
+    
     def _with_reference_data(self,
             measurement,
-            reference_data=pandas.DataFrame()):
+            reference_data={}):
         """
         Append reference datasets.
         """
         reference_data =\
             reference_data\
-            if not reference_data.empty  else\
+            if len(reference_data)  else\
                self.reference_data
-        return pandas.concat([measurement, reference_data])
-
-    def _append_reference_data(self,
-                measurement):
-        """
-        """
-        if self.reference_data.empty:
-            return measurement
-        return pandas.concat([
-            measurement\
-            .reset_index()\
-            .assign(
-                dataset=self.adapter.get_label())])
+        measurement_dict = {
+            dataset: measurement.xs(dataset, level="dataset")
+            for dataset in measurement.reset_index().dataset.unique()}
+        measurement_dict.update(reference_data)
+        return measurement_dict
 
     @property
     def number_measurement_parameters(self):
@@ -160,19 +157,17 @@ class BrainCircuitAnalysis(
         return self.measurement_parameters.variables
 
     def get_figures(self,
-            measurement=None,
+            data,
             caption=None):
         """
         Get a figure for the analysis of `circuit_model`.
 
         Arguments
         ----------
-        `measurement`: The data frame to make a figure for.
+        `figure_data`: The data frame to make a figure for.
         """
         return {
-            self.label: self.plotter.get_figure(
-                measurement.reset_index(),
-                caption=caption)}
+            self.label: self.plotter.get_figure(data, caption=caption)}
 
     def get_report(self,
             measurement,
@@ -224,6 +219,51 @@ class BrainCircuitAnalysis(
         """
         return adapter if adapter else self.adapter
 
+    def comparison(self,
+            alternative,
+            reference,
+            adapter_alternative=None,
+            adapter_reference=None,
+            *args, **kwargs):
+        """
+        Compare an alternative model to a reference model.
+        """
+        measurement_alternative =\
+            self.get_measurement(
+                alternative,
+                adapter_alternative,
+                *args, **kwargs)
+        measurement_reference =\
+            self.get_measurement(
+                reference,
+                adapter_reference,
+                *args, **kwargs)
+        report =\
+            self.get_report(
+                self._with_reference_data(
+                    measurement_alternative,
+                    measurement_reference),
+                *args, **kwargs)
+        try:
+            return self.reporter.post(report)
+        except AttributeError:
+            return report
+
+    def validation(self,
+            circuit_model,
+            adapter=None,
+            *args, **kwargs):
+        """
+        Validation of a model against reference data.
+        """
+        assert not self.reference_data.empty,\
+            "Validation needs reference data."
+        return\
+            self.__call__(
+                circuit_model,
+                adapter,
+                *args, **kwargs)
+
     def __call__(self,
             *args, **kwargs):
         """
@@ -232,11 +272,10 @@ class BrainCircuitAnalysis(
         """
         adapter, circuit_model = self._resolve_adapter_and_model(*args)
         measurement =\
-            self._with_reference_data(
-                self.get_measurement(
-                    circuit_model,
-                    adapter=adapter,
-                    sample_size=kwargs.get("sample_size", None)))
+            self.get_measurement(
+                circuit_model,
+                adapter=adapter,
+                sample_size=kwargs.get("sample_size", None))
         measurement_method =\
             self._get_measurement_method(adapter).__doc__
         report =\
@@ -244,7 +283,7 @@ class BrainCircuitAnalysis(
                 measurement,
                 method_measurement=measurement_method,
                 figures=self.get_figures(
-                    measurement=measurement,
+                    data=self._with_reference_data(measurement),
                     caption=measurement_method),
                 reference_data=kwargs.get("reference_data", pandas.DataFrame()))
 

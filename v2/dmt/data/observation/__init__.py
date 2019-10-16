@@ -10,7 +10,6 @@ from dmt.tk.field import\
     ClassAttribute,\
     WithFields,\
     ClassAttributeMetaBase
-from dmt.tk.quantity import Quantity
 from dmt.tk.utils import get_label
 
 
@@ -150,6 +149,19 @@ class Observation(
             data=data,
             **kwargs)
 
+    def with_data(self, data):
+        """
+        Replace data...
+        """
+        return self.__class__(
+            object_of_observation=self.object_of_observation,
+            procedure=self.procedure,
+            label=self.label,
+            provenance=self.provenance,
+            citation=self.citation,
+            uri=self.uri,
+            data=data)
+
     @lazyfield
     def properties_observed(self):
         """
@@ -273,6 +285,7 @@ class Observation(
 
 from .measurement import\
     Measurement,\
+    SampleMeasurement,\
     SummaryMeasurement,\
     Summary,\
     summary_statistic
