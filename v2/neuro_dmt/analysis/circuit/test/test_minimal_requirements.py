@@ -41,10 +41,18 @@ def test_mock_circuit_analysis_with_adapter():
                 ylabel=cell_density_phenomenon.name,
                 gvar="dataset"),
             adapter=mock_adapter)
-    analysis_test = CircuitAnalysisTest(analysis=cell_density_analysis)
-    analysis_test.test_get_measurement(mock_circuit_model)
-    analysis_test.test_call_analysis(mock_circuit_model)
-    analysis_test.test_post_report(mock_circuit_model)
+    analysis_test =\
+        CircuitAnalysisTest(analysis=cell_density_analysis)
+    analysis_test\
+        .test_get_measurement(
+            mock_circuit_model)
+    analysis_test\
+        .test_call_analysis(
+            mock_circuit_model)
+    analysis_test\
+        .test_post_report(
+            mock_circuit_model,
+            output_folder="analyses")
 
 def test_mock_circuit_analysis_without_adapter():
     """
@@ -71,10 +79,21 @@ def test_mock_circuit_analysis_without_adapter():
                 yvar=cell_density_phenomenon.label,
                 ylabel=cell_density_phenomenon.name,
                 gvar="dataset"))
-    analysis_test = CircuitAnalysisTest(analysis=cell_density_analysis)
-    analysis_test.test_get_measurement(mock_circuit_model, mock_adapter)
-    analysis_test.test_call_analysis(mock_circuit_model, mock_adapter)
-    analysis_test.test_post_report(mock_circuit_model, mock_adapter)
+    analysis_test =\
+        CircuitAnalysisTest(analysis=cell_density_analysis)
+    analysis_test\
+        .test_get_measurement(
+            mock_circuit_model,
+            mock_adapter)
+    analysis_test\
+        .test_call_analysis(
+            mock_circuit_model,
+            mock_adapter)
+    analysis_test\
+        .test_post_report(
+            mock_circuit_model,
+            mock_adapter,
+            output_folder="analyses")
 
 def test_analysis_suite_for_mocks():
     """
@@ -107,24 +126,12 @@ def test_mock_circuit_validation():
         "{} not good label".format(cell_density_phenomenon.label)
     mock_circuit_model =\
         None
-#        mock.get_circuit_model()
     mock_adapter =\
         mock.get_circuit_adapter(mock_circuit_model)
-    reference_datasets =\
-        pd.concat([
-            rat.defelipe2017\
-               .summary_measurement\
-               .samples(1000)\
-               .assign(dataset="DeFelipe2017"),
-            rat.defelipe2014\
-               .summary_measurement\
-               .samples(1000)\
-               .assign(dataset="DeFelipe2014"),
-            rat.meyer2010\
-               .samples(1000)\
-               .assign(dataset="Meyer2010")])\
-          .reset_index()\
-          .set_index(["dataset", "layer"])
+    reference_datasets = dict(
+        DeFelipe2017=rat.defelipe2017.summary_measurement.samples(1000),
+        DeFelipe2014=rat.defelipe2014.summary_measurement.samples(1000),
+        meyer2010=rat.meyer2010.samples(1000))
     cell_density_analysis =\
         BrainCircuitAnalysis(
             phenomenon=cell_density_phenomenon,
@@ -140,13 +147,9 @@ def test_mock_circuit_validation():
                 gvar="dataset"),
             adapter=mock_adapter)
     assert hasattr(cell_density_analysis, "reference_data")
-    assert not cell_density_analysis.reference_data.empty
-    datasets =\
-        cell_density_analysis\
-        .reference_data\
-        .reset_index()\
-        .dataset\
-        .unique()
+    assert cell_density_analysis._has_reference_data
+    datasets = list(
+        cell_density_analysis.reference_data.keys())
     assert "DeFelipe2017" in datasets, "In {}".format(datasets)
     analysis_test =\
         CircuitAnalysisTest(analysis=cell_density_analysis)
@@ -158,7 +161,9 @@ def test_mock_circuit_validation():
                 "mock_circuit",
                 "DeFelipe2017"])
     analysis_test\
-        .test_call_analysis(mock_circuit_model, mock_adapter)
+        .test_call_analysis(
+            mock_circuit_model,
+            mock_adapter)
     analysis_test\
         .test_post_report(
             mock_circuit_model,

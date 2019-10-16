@@ -2,6 +2,7 @@
 Field with description
 """
 import sys
+import copy
 import collections
 
 class Field:
@@ -24,7 +25,7 @@ class Field:
         self.__validation__ = __validation__
         self.__required__ = __required__
         self.__attr_name__ = None
-        self.__default_value__ = __default_value__
+        self._default_value = __default_value__
         self.__examples__  = __examples__
         self.__defined_in__ = "Unknown"
 
@@ -75,6 +76,12 @@ class Field:
                     value))
         return True
 
+    @property
+    def default_value(self):
+        """
+        Get default value.
+        """
+        return copy.deepcopy(self._default_value)
 
     @property
     def description(self):

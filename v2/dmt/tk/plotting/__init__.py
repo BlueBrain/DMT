@@ -2,11 +2,12 @@
 Plotting for DMT
 """
 import matplotlib
-#matplotlib.use("Agg")
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 from matplotlib.font_manager import FontProperties
+from dmt.data.observation import measurement
 
 
 golden_aspect_ratio = 0.5 * (1. + np.sqrt(5)) 
@@ -22,5 +23,4 @@ def golden_figure(width:int =None, height:int =None):
     fig, ax = plt.subplots()
     fig.set_size_inches(width, height)
     return fig, ax
-
 
