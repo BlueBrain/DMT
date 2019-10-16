@@ -13,7 +13,7 @@ from .figure import Figure
 
 class Crosses(WithFields):
     """
-    Specifies a plotting method, and all its required attributes.
+    A plot that compares measurements of a phenomena across two datasets.
     """
     title = Field(
         """
@@ -23,18 +23,18 @@ class Crosses(WithFields):
         __default_value__="")
     xvar = Field(
         """
-        Column in the data-frame to be plotted along the x-axis.
+        Name of the dataset whose values will be plotted along the x-axis.
         """)
     yvar = Field(
         """
-        Column in the data-frame to be plotted along the y-axis.
+        Name of the dataset whose values will be plotted along the y-axis.
         """)
     gvar = Field(
         """
-        Column in the data-frame that will be plotted as different colored
-        bars (at the same value of `yvar`).
-        A default of empty string will be interpreted as not set, and hence
-        no column in the data-frame to use as a grouping variable.
+        Column name that provides values of the measurement parameter used for
+        each row of the dataframe that will be plotted.
+        For example, consider PSP amplitude measurements made for several
+        mtype -> mtype pathways. In this case `gvar` will be `pathway`.
         """)
     xlabel = Field(
         """
@@ -60,20 +60,6 @@ class Crosses(WithFields):
         Height of the figure.
         """,
         __default_value__ = 8.)
-    aspect_ratio_figure = Field(
-        """
-        Aspect ratio width / height for the figure.
-        """,
-        __default_value__=golden_aspect_ratio)
-    confidence_interval = Field(
-        """
-        float or “sd” or None, optional
-        Size of confidence intervals to draw around estimated values.
-        If “sd”, skip bootstrapping and draw the standard deviation of the
-        observations. If None, no bootstrapping will be performed,
-        and error bars will not be drawn.
-        """,
-        __default_value__="sd")
 
     @lazyfield
     def xerr(self):
@@ -149,7 +135,11 @@ class Crosses(WithFields):
             caption="Caption not provided",
             **kwargs):
         """
-        Plot the dataframe.
+        Plot the data.
+
+        Arguments
+        -----------
+        data : A dict mapping dataset to dataframe.
         """
         dataframe_long = measurement.concat_as_summaries(data)
         dataframe_wide = self._get_plotting_data(dataframe_long)
@@ -187,10 +177,14 @@ class Crosses(WithFields):
             caption=caption)
 
     def plot(self,
-            dataframe,
+            data,
             *args, **kwargs):
         """
-        Plot the dataframe
+        Plot the data
+
+        Arguments
+        -----------
+        data : A dict mapping dataset to dataframe.
         """
         return self\
             .get_figure(
@@ -198,9 +192,13 @@ class Crosses(WithFields):
                 *args, **kwargs)
 
     def __call__(self,
-            dataframe):
+            data):
         """
         Make this class a callable,
         so that it can masquerade as a function!
+
+        Arguments
+        -----------
+        data : A dict mapping dataset to dataframe.
         """
-        return self.plot(dataframe)
+        return self.plot(data)
