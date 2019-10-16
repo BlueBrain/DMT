@@ -11,7 +11,10 @@ class circuit(Singleton):
     """
     region = Term(
         "region",
-        "A region / area in the brain.")
+        """
+        1. Either a region / area in the brain represented by a string,
+        2. or a two-tuple of 3D numpy arrays or list providing corners of a box.
+        """)
     layer = Term(
         "layer",
         "A structure in certain brain areas, such as the cortex")

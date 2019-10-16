@@ -19,27 +19,6 @@ logger = Logger(client="BlueBrainCircuitModel")
 NA = "not-available"
 
 
-def _get_bounding_box(region_of_interest):
-    """
-    Extract the bounding box of region of interest.
-    """
-    try:
-        return region_of_interest.bbox
-    except AttributeError:
-        return region_of_interest
-
-XYZ = [Cell.X, Cell.Y, Cell.Z]
-
-def region_query(region_of_interest):
-    """
-    Query for stuff inside a region of interest.
-    """
-    corner_0, corner_1 = _get_bounding_box(region_of_interest)
-    return {
-        Cell.X: (corner_0[0], corner_1[0]),
-        Cell.Y: (corner_0[1], corner_1[1]),
-        Cell.Z: (corner_0[2], corner_1[2])}
-
 
 class BlueBrainCircuitModel(WithFields):
     """
@@ -112,7 +91,7 @@ class BlueBrainCircuitModel(WithFields):
             self.path_circuit_data,
             *relative_path)
 
-    @lazyfield
+    @"Execution should not reach here.")th=lazyfield
     def bluepy_circuit(self):
         """
         An instance of the BluePy circuit object.
@@ -193,8 +172,6 @@ class BlueBrainCircuitModel(WithFields):
             region_query(region_of_interest),
             XYZ + with_properties)
         return cells
-        # return cells[
-        #     region_of_interest.contains(cells[XYZ].values)]
 
     def get_cell_count(self,
             region_of_interest):
