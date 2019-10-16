@@ -1,3 +1,4 @@
+from collections.abc import Mapping, Iterable
 from collections import OrderedDict
 import numpy
 import pandas
@@ -342,25 +343,28 @@ class SummaryMeasurement(Measurement):
         """
         return self.data
 
-    def samples(self, size=20):
+    def samples(self, size=20, _filter=lambda x: x):
         """
         Generate `<size>` samples for each combination of parameters in this
         `SummaryMeasurement`.
         """
-        def sample(row):
+        def _sample(row):
+            """
+            Create a sample from one row of the summary dataframe
+            """
             def __one():
                 phenomenon = get_label(self.phenomenon)
-                m = numpy.random.normal(
-                    row[phenomenon]["mean"],
-                    row[phenomenon]["std"])
-                return m if m > 0 else __one()
+                return _filter(
+                    numpy.random.normal(
+                        row[phenomenon]["mean"],
+                        row[phenomenon]["std"]))
 
             return numpy.array([__one() for _ in range(size)])
 
         return pandas\
             .concat([
                 self._get_sample_parameters(index_values, size).assign(
-                    **{get_label(self.phenomenon): sample(row)})
+                    **{get_label(self.phenomenon): _sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
 
@@ -456,10 +460,43 @@ def get_summary(dataframe):
         if isinstance(measurement, SummaryMeasurement) else\
            measurement.summary()
 
-
-
 def Summary(MeasurementClass):
     """
     SummaryMeasurement subclass from measurement class.
     """
     return MeasurementClass.SummaryType()
+
+def concat(data, loader=lambda dataframe: dataframe):
+    """
+    Concat dataframes passed in iterable data.
+    Each dataframe in data must be case as the required type.
+
+    Arguments
+    ---------------
+    `as_type`: SampleMeasurement or SummaryMeasurement
+    """
+    if isinstance(data, Mapping):
+        return pandas.concat([
+            loader(dataframe)\
+            .reset_index()\
+            .assign(dataset=dataset)\
+            .set_index(dataframe.index.names + ["dataset"])
+            for dataset, dataframe in data.items()])
+    if isinstance(data, Iterable) and not isinstance(data, str):
+        return pandas.concat([
+            loader(dataframe) for dataframe in data])
+    return loader(data)
+
+def concat_as_samples(data, nsamples=20):
+    """
+    Concat as sample measurements.
+    """
+    return concat(data, loader=lambda d: get_samples(d, number=nsamples))
+
+def concat_as_summaries(data):
+    """
+    Concat as summary dataframes.
+    """
+    return concat(data, loader=get_summary)
+
+

@@ -28,7 +28,6 @@ def set_name(
         "__attr_name__",
         name)
 
-
 def get_value(
         key_values,
         field_or_class_attribute):
@@ -38,7 +37,7 @@ def get_value(
     return\
         key_values.get(
             field_or_class_attribute.__attr_name__,
-            field_or_class_attribute.__default_value__)
+            field_or_class_attribute.default_value)
 
 
 class WithFields:
@@ -110,7 +109,7 @@ class WithFields:
             if field in kwargs:
                 return kwargs[field]
 
-            return getattr(class_field, "__default_value__")
+            return class_field.default_value
 
         for field in self.get_fields():
             class_field =\

@@ -129,7 +129,6 @@ def test_mock_circuit_validation():
         "{} not good label".format(cell_density_phenomenon.label)
     mock_circuit_model =\
         None
-#        mock.get_circuit_model()
     mock_adapter =\
         mock.get_circuit_adapter(mock_circuit_model)
     reference_datasets = dict(
