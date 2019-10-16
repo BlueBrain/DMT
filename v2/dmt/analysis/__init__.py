@@ -79,5 +79,5 @@ class Suite(WithFields):
         ...Call Me...
         """
         return {
-            phenomenon.label: analysis(circuit_model, *args, **kwargs)
-            for phenomenon, analysis in self._analyses.items()}
+            label: analysis(circuit_model, *args, **kwargs)
+            for label, analysis in self._analyses.items()}
