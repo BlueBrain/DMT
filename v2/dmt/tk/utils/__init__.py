@@ -21,3 +21,26 @@ def get_label(something):
             except TypeError:
                 pass
     return str(something)
+
+
+class NothingType:
+    """
+    Another kind of None.
+    This should be a singleton.
+    """
+    def __nonzero__(self):
+        """
+        Used to evaluate bool values in Python 2
+        Nothing is not true.
+        """
+        return False
+
+    def __bool__(self):
+        """
+        Used to evaluate bool values in Python 2
+        Nothing is not true.
+        """
+        return False
+
+
+Nothing = NothingType()
