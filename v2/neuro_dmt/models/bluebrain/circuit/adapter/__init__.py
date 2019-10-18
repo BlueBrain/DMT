@@ -95,8 +95,7 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def random_position(self,
             circuit_model,
-            region=None,
-            layer=None):
+            **spatial_parameters):
         """
         Get a generator for random positions for given spatial parameters.
         """
@@ -104,14 +103,10 @@ class BlueBrainCircuitAdapter(WithFields):
             self.random_position_generator[circuit_model] = {}
 
         query_hash =\
-            self._query_hash(
-                region=region,
-                layer=layer)
+            self._query_hash(**spatial_parameters)
         if query_hash not in self.random_position_generator[circuit_model]:
             self.random_position_generator[circuit_model][query_hash] =\
-                circuit_model.random_positions(
-                    region=region,
-                    layer=layer)
+                circuit_model.random_positions(**spatial_parameters)
 
         return self.random_position_generator[circuit_model][query_hash]
 
@@ -133,7 +128,7 @@ class BlueBrainCircuitAdapter(WithFields):
     def get_label(self,
             circuit_model):
         """..."""
-        return self._resolve(circuit_model).name
+        return self._resolve(circuit_model).label
 
     def _get_cell_density_overall(self,
             circuit_model,
@@ -154,6 +149,8 @@ class BlueBrainCircuitAdapter(WithFields):
         count_voxels = circuit_model.atlas.count_voxels(**query_spatial)
         return count_cells/(count_voxels*1.e-9*circuit_model.atlas.voxel_volume)
 
+
+    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
             mtype=None,
@@ -162,29 +159,34 @@ class BlueBrainCircuitAdapter(WithFields):
             layer=None,
             depth=None,
             height=None,
+            mesocolumn=None,
+            hypercolumn=None,
+            synapse_class=None,
+            postsynaptic=None,
+            presynaptic=None,
             method=terminology.measurement_method.random_sampling):
         """
         Get cell type density for either the `circuit_model` passes as a
         parameter or `self.circuit_model`.
         """
         circuit_model = self._resolve(circuit_model)
-
-        if method != terminology.measurement_method.random_sampling:
-            return self._get_cell_density_overall(
-                circuit_model,
+        query = terminology.cell.filter(
+            **terminology.circuit.filter(
+                mtype=mtype,
+                etype=etype,
                 region=region,
                 layer=layer,
                 depth=depth,
-                height=height,
-                mtype=mtype,
-                etype=etype)
-
+                height=height))
+        if method != terminology.measurement_method.random_sampling:
+            return self._get_cell_density_overall(
+                circuit_model,
+                **query)
         region_of_interest = next(
             self.random_region_of_interest(
                 circuit_model,
-                region=region,
-                layer=layer))
+                **query))
         number_cells = circuit_model\
             .get_cell_count(
-                region_of_interest)
+                region=region_of_interest)
         return number_cells / (1.e-9 * region_of_interest.volume)

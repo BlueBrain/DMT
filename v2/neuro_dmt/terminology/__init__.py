@@ -5,7 +5,31 @@ from dmt.tk.terminology import *
 from dmt.tk.utils.singleton import Singleton
 
 
-class circuit(Singleton):
+class TermCollection(Singleton):
+    """
+    A collection of terms.
+    """
+    @classmethod
+    def make_query(cls, **kwargs):
+        """
+        Make a query from key-word arguments.
+        """
+        return {
+            label: kwargs[label]
+            for label in cls.terms
+            if label in kwargs}
+
+    @classmethod
+    def filter(cls, **query):
+        """
+        Filter all the query entries that have value `None`.
+        """
+        return {
+            label: value
+            for label, value in query.items()
+            if label in cls.terms and value is not None}
+
+class circuit(TermCollection):
     """
     A collection of terms used in neuroscience.
     """
@@ -35,9 +59,15 @@ class circuit(Singleton):
         """
         Used at BBP, probably the same as a meso-column.
         """)
+    terms =(
+        region,
+        layer,
+        depth,
+        mesocolumn,
+        hypercolumn)
 
 
-class cell(Singleton):
+class cell(TermCollection):
     """
     A collection of terms used in neuroscience.
     """
@@ -62,9 +92,15 @@ class cell(Singleton):
         The value of this parameter should describe,
         the presynaptic cell group of a pathway.
         """)
+    terms =(
+        mtype,
+        etype,
+        synapse_class,
+        postsynaptic,
+        presynaptic)
 
 
-class synapse(Singleton):
+class synapse(TermCollection):
     """
     A collection of terms used in neuroscience.
     """
@@ -74,9 +110,11 @@ class synapse(Singleton):
     efferent = Term(
         "efferent",
         "An efferent synapse, or connection exits a cell.")
+    terms =(
+        afferent,
+        efferent)
 
-
-class measurement_method(Singleton):
+class measurement_method(TermCollection):
     """
     Tags for measurement methods
     """
@@ -91,3 +129,7 @@ class measurement_method(Singleton):
         """
         Measure a phenomenon by iterating exhaustively
         over the measurement parameters""")
+
+    terms =(
+        random_sampling,
+        exhaustive)

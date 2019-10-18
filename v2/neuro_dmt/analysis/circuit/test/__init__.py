@@ -83,19 +83,18 @@ class CircuitAnalysisTest(WithFields):
         """
         Measurement returned by an analysis should be a pandas data-frame.
         """
-        measurement =\
+        datasets =\
             self.analysis._with_reference_data(
                 self.analysis.get_measurement(*args))
-        datasets =\
-            measurement.reset_index().dataset.unique()
-        assert isinstance(measurement, pd.DataFrame)
+        for dataset in datasets.values():
+            assert isinstance(dataset, pd.DataFrame)
         expected_datasets = kwargs.get("expected_datasets", [])
-        for dataset in expected_datasets:
-            assert dataset in datasets,\
+        for label in expected_datasets:
+            assert label in datasets,\
                 "Expected dataset {} not in {}".format(
-                    dataset,
+                    label,
                     datasets)
-        return measurement
+        return datasets
 
     def test_get_report(self, *args):
         """

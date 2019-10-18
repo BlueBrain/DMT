@@ -91,12 +91,13 @@ class BlueBrainCircuitModel(WithFields):
         An instance of the BluePy circuit object.
         """
         try:
-            return BluePyCircuit(
+            circuit = BluePyCircuit(
                 self.get_path(self.circuit_config))
         except FileNotFoundError:
-            return BluePyCircuit(
+            circuit = BluePyCircuit(
                 self.get_path(self.circuit_config_base))
-        raise Exception("Execution should not reach here.")
+        assert isinstance(circuit, BluePyCircuit)
+        return circuit
 
     @lazyfield
     def atlas(self):
@@ -112,7 +113,9 @@ class BlueBrainCircuitModel(WithFields):
         Cells for the circuit.
         """
         try:
-            return self.bluepy_circuit.cells
+            bp = self.bluepy_circuit
+            assert isinstance(bp, BluePyCircuit), bp
+            return bp.cells
         except BluePyError as error:
             logger.warn(
                 logger.get_source_info(),
@@ -126,7 +129,9 @@ class BlueBrainCircuitModel(WithFields):
         Connectome for the circuit.
         """
         try:
-            return self.bluepy_circuit.connectome
+            bp = self.bluepy_circuit
+            assert isinstance(bp, BluePyCircuit), bp
+            return bp.connectome
         except BluePyError as error:
             logger.warn(
                 logger.get_source_info(),
@@ -134,7 +139,7 @@ class BlueBrainCircuitModel(WithFields):
                 "BluePy complained: \n\t {}".format(error))
         return None
 
-    @terminology.use(terminology.circuit.region)
+    @terminology.use(*terminology.circuit.terms)
     def _resolve_query_region(self, **query):
         """
         Resolve region in query.
@@ -143,31 +148,25 @@ class BlueBrainCircuitModel(WithFields):
         ------------
         query : a dict providing parameters for a circuit query.
         """
-        if ("region" not in query
-            or isinstance(str, query[terminology.circuit.region])):
+        if (terminology.circuit.region not in query
+            or isinstance(query[terminology.circuit.region], str)):
             return query
+
         for axis in XYZ:
             assert axis not in query, list(query.keys())
+
+        region = query[terminology.circuit.region]
+        assert region, query
         corner_0, corner_1 =\
-            _get_bounding_box(
-                query.pop(terminology.circuit.region))
+            _get_bounding_box(region)
         query.update({
             Cell.X: (corner_0[0], corner_1[0]),
             Cell.Y: (corner_0[1], corner_1[1]),
             Cell.Z: (corner_0[2], corner_1[2])})
         return query
 
-    @terminology.use(
-        terminology.circuit.region,
-        terminology.circuit.layer,
-        terminology.circuit.depth,
-        terminology.circuit.height,
-        terminology.cell.mtype,
-        terminology.cell.etype,
-        terminology.cell.synapse_class)
-    def get_cells(self,
-            properties=[],
-            **query):
+    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    def get_cells(self, properties=[], **query):
         """
         Get cells in a region, with requested properties.
 
@@ -177,8 +176,15 @@ class BlueBrainCircuitModel(WithFields):
         query : sequence of keyword arguments providing query parameters.
         """
         return self.cells.get(
-            group=self._resolve_query_region(query),
+            group=self._resolve_query_region(**query),
             properties=properties)
+
+    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    def get_cell_count(self, **query):
+        """..."""
+        return self.get_cells(**query).shape[0]
+
+
 
     @terminology.use(
         terminology.circuit.region,
