@@ -76,4 +76,18 @@ class synapse(Singleton):
         "An efferent synapse, or connection exits a cell.")
 
 
-
+class measurement_method(Singleton):
+    """
+    Tags for measurement methods
+    """
+    random_sampling = Term(
+        "random_sampling",
+        """
+        Measure a phenomenon by randomly sampling
+        measurement parameters.
+        """)
+    exhaustive = Term(
+        "exhaustive",
+        """
+        Measure a phenomenon by iterating exhaustively
+        over the measurement parameters""")

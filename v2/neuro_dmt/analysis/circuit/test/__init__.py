@@ -60,11 +60,13 @@ def test_adapter_resolution():
     for a, m in 10 * [(adapter, model)]:
         assert analysis._resolve_adapter_and_model(model) == (a, m)
 
-def path_project(number):
+def path_gpfs_project(number, *args):
     """
     Path to the project, given its number
     """
-    return Path("/gpfs/bbp.cscs.ch/project/").joinpath("proj{}".format(number))
+    return Path("/gpfs/bbp.cscs.ch/project/")\
+        .joinpath("proj{}".format(number))\
+        .joinpath(*args)
 
 
 class CircuitAnalysisTest(WithFields):

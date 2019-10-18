@@ -135,7 +135,7 @@ class BlueBrainCircuitModel(WithFields):
         return None
 
     @terminology.use(terminology.circuit.region)
-    def _resolve_query_region(self, query):
+    def _resolve_query_region(self, **query):
         """
         Resolve region in query.
 
@@ -151,10 +151,10 @@ class BlueBrainCircuitModel(WithFields):
         corner_0, corner_1 =\
             _get_bounding_box(
                 query.pop(terminology.circuit.region))
-        query.update{
+        query.update({
             Cell.X: (corner_0[0], corner_1[0]),
             Cell.Y: (corner_0[1], corner_1[1]),
-            Cell.Z: (corner_0[2], corner_1[2])}
+            Cell.Z: (corner_0[2], corner_1[2])})
         return query
 
     @terminology.use(
@@ -180,7 +180,6 @@ class BlueBrainCircuitModel(WithFields):
             group=self._resolve_query_region(query),
             properties=properties)
 
-
     @terminology.use(
         terminology.circuit.region,
         terminology.circuit.layer,
@@ -191,14 +190,14 @@ class BlueBrainCircuitModel(WithFields):
         terminology.cell.synapse_class)
     def random_positions(self,
             as_array=False,
-            **query_parameters)
-    """
-    Generate random positions (as np.array([x, y, z])) in a region defined
-    by spatial parameters in the query.
-    """
-    cells = self.get_cells(properties=XYZ, **query_parameters)
-
-    while cells.shape[0] > 0:
-        position = cells.sample(n=1).iloc[0]
-        yield position.values if as_array else position
-
+            **query_parameters):
+        """
+        Generate random positions (as np.array([x, y, z])) in a region defined
+        by spatial parameters in the query.
+        """
+        cells = self.get_cells(properties=XYZ, **query_parameters)
+        
+        while cells.shape[0] > 0:
+            position = cells.sample(n=1).iloc[0]
+            yield position.values if as_array else position
+            
