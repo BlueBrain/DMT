@@ -12,7 +12,7 @@ from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
 from ..model import BlueBrainCircuitModel
-from .import\
+from . import\
     BlueBrainCircuitAnalysisTest,\
     get_path_circuit
 
@@ -29,12 +29,16 @@ def test_cell_denisty_analysis():
         "Cell Density",
         "Count of cells in a unit volume.",
         group="Composition")
+    layers = ["L{}".format(layer) for layer in range(1, 7)]
+    regions = ["S1HL", "S1FL", "S1Sh", "S1Tr"]
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
             AdapterInterface=CellDensityAdapterInterface,
             measurement_parameters=Parameters(
-                pd.DataFrame({"layer": range(1, 7)})),
+                pd.DataFrame({
+                    "layer": [layer for layer in layers for _ in regions],
+                    "region": [region for layer in layers for _ in regions]})),
             plotter=Bars(
                 xvar="layer",
                 xlabel="Layer",

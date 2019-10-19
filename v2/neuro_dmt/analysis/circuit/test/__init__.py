@@ -8,7 +8,7 @@ from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.plotting.bars import Bars
 from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Report, Reporter
-from neuro_dmt.models.bluebrain.circuit.test import mock
+from neuro_dmt.models.bluebrain.circuit import mock
 from dmt.analysis import Suite as AnalysisSuite
 from dmt.tk.parameters import Parameters
 from dmt.tk.plotting.bars import Bars
@@ -28,8 +28,8 @@ def test_adapter_resolution():
             "Cell Density",
             "Count of cells in a unit volume.",
             group="composition")
-    model = mock.get_circuit_model()
-    adapter = mock.get_circuit_adapter(model)
+    model = mock.cortical.get_circuit_model()
+    adapter = mock.cortical.get_circuit_adapter(model)
     analysis =\
         BrainCircuitAnalysis(
             phenomenon=cell_density_phenomenon,

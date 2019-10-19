@@ -208,8 +208,6 @@ class BlueBrainCircuitModel(WithFields):
 
         return cell_query
 
-
-
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cells(self, properties=None, **query):
         """
@@ -220,9 +218,11 @@ class BlueBrainCircuitModel(WithFields):
         properties : single cell property or  list of cell properties to fetch.
         query : sequence of keyword arguments providing query parameters.
         """
+        cell_query = self._get_cell_query(
+            **self._resolve_query_region(**query))
         return\
             self.cells.get(
-                group=self._resolve_query_region(**query),
+                group=cell_query,
                 properties=properties)
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))

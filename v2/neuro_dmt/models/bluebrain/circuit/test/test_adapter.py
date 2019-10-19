@@ -14,7 +14,7 @@ from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.composition.interfaces\
     import CellDensityAdapterInterface
 from neuro_dmt.terminology import measurement_method
-from .import get_path_circuit
+from neuro_dmt.models.bluebrain.circuit.test import get_path_circuit
 
 cell_density_phenomenon =\
     Phenomenon(
@@ -30,30 +30,46 @@ def test_cell_density():
     """
     circuit_model = BlueBrainCircuitModel(
         path_circuit_data=get_path_circuit("S1RatSSCxDisseminationBio2"))
-    layers = range(1, 7)
+    regions_layers =[
+        (region, layer)
+        for region in ["S1HL", "S1FL", "S1Sh", "S1Tr"]
+        for layer in range(1, 7)]
     sample_size = 20
 
     cell_density_samples = pandas\
         .DataFrame(dict(
             layer =[
                 layer
-                for layer in layers for _ in range(sample_size)],
+                for _, layer in regions_layers
+                for _ in range(sample_size)],
+            region =[
+                region
+                for region, _ in regions_layers
+                for _ in range(sample_size)],
             cell_density =[
-                adapter.get_cell_density(circuit_model, layer=layer)
-                for layer in layers for _ in range(sample_size)]))\
-        .set_index("layer")
+                adapter.get_cell_density(
+                    circuit_model,
+                    layer=layer,
+                    region=region)
+                for region, layer in regions_layers
+                for _ in range(sample_size)]))\
+        .set_index(["region", "layer"])
 
     cell_density_overall = pandas\
         .DataFrame(dict(
             layer =[
                 layer
-                for layer in layers],
+                for _, layer in regions_layers],
+            region =[
+                region
+                for region, _ in regions_layers],
             cell_density =[
                 adapter.get_cell_density(
                     circuit_model,
+                    region=region,
                     layer=layer,
                     method=measurement_method.exhaustive)
-                for layer in layers]))\
+                for region, layer in regions_layers]))\
         .set_index("layer")
 
     return cell_density_samples, cell_density_overall
