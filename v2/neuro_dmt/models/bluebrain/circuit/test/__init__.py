@@ -57,7 +57,7 @@ def get_path_circuit(label):
     return availabel_circuits[label]
 
 
-class BlueBrainCircuitAnalysisTest(CircuitAnalysisTest):
+class BlueBrainCircuitAnalysisTest(WithFields):
     """
     Test `BlueBrainCircuitModel` and `BlueBrainCircuitAdapter` with circuits.
     """
@@ -68,6 +68,41 @@ class BlueBrainCircuitAnalysisTest(CircuitAnalysisTest):
         """,
         __default_value__=BlueBrainCircuitAdapter())
 
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize Me.
+        """
+        self._circuit_analysis_test = CircuitAnalysisTest(*args, **kwargs)
+        super().__init__(*args, **kwargs)
+
+
+    def __getattribute__(self, name_attr):
+        """
+        Delegate `test_` methods.
+        """
+        try:
+            return object.__getattribute__(self, name_attr)
+        except AttributeError as error:
+            if name_attr.split('_')[0] != "test":
+                raise error
+
+        if not hasattr(self._circuit_analysis_test, name_attr):
+            raise AttributeError(
+                "'{}' object has no attribute {}"\
+                .format(__class__.__name__, name_attr))
+
+        def _wrapped(circuit_model, *args, **kwargs):
+            """..."""
+            return getattr(
+                self._circuit_analysis_test,
+                name_attr
+            )(
+                circuit_model, self.adapter, *args, **kwargs)
+
+        return _wrapped
+
+                    
+
     def test_circuit_model(self, circuit_label,  *args, **kwargs):
         """
         `BlueBrainCircuitModel` should be able to load circuit data.
@@ -77,10 +112,3 @@ class BlueBrainCircuitAnalysisTest(CircuitAnalysisTest):
         path = circuit_model.get_path("jinga")
         dir = os.path.dirname(path)
         assert dir == get_path_circuit(circuit_label).as_posix()
-
-    def test_adapter_methods(self, circuit_model, *args, **kwargs):
-        """
-        Test the methods defined in `BlueBrainCircuitAdapter`.
-        """
-        self.test_get_measurement(circuit_model, self.adapter)
-

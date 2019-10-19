@@ -27,7 +27,7 @@ class TermCollection(Singleton):
         return {
             label: value
             for label, value in query.items()
-            if label in cls.terms and value is not None}
+            if label not in cls.terms or value is not None}
 
 class circuit(TermCollection):
     """
@@ -63,6 +63,7 @@ class circuit(TermCollection):
         region,
         layer,
         depth,
+        height,
         mesocolumn,
         hypercolumn)
 

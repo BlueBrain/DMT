@@ -477,10 +477,10 @@ def concat(data, loader=lambda dataframe: dataframe):
     """
     if isinstance(data, Mapping):
         return pandas.concat([
-            loader(dataframe)\
-            .reset_index()\
-            .assign(dataset=dataset)\
-            .set_index(dataframe.index.names + ["dataset"])
+            loader(dataframe)
+              .reset_index()\
+              .assign(dataset=dataset)\
+              .set_index(dataframe.index.names + ["dataset"])
             for dataset, dataframe in data.items()])
     if isinstance(data, Iterable) and not isinstance(data, str):
         return pandas.concat([

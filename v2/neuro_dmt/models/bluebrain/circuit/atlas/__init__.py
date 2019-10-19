@@ -66,6 +66,13 @@ class BlueBrainCircuitAtlas(WithFields):
         """
         return self.atlas.load_data(self.dataset_brain_regions)
 
+    @lazyfield
+    def volume_voxel(self):
+        """
+        Volume of a single voxel, in um^3.
+        """
+        return self.voxel_data.voxel_volume
+
     layers = Field(
         """
         Values of the layers in the brain region represented by the atlas. We
@@ -122,6 +129,12 @@ class BlueBrainCircuitAtlas(WithFields):
             .logical_and(
                 region_layer_mask,
                 principal_axis_mask)
+
+    def get_voxel_count(self,
+                region=None,
+                layer=None):
+        """..."""
+        return numpy.sum(self.get_mask(region=region, layer=layer))
 
     def random_positions(self,
             **spatial_parameters):

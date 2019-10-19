@@ -39,7 +39,7 @@ class BlueBrainCircuitAdapter(WithFields):
         Dimensions of the bounding box to sample spatial regions inside
         the circuit.
         """,
-        __default_value__=100. * numpy.ones(3))
+        __default_value__=50. * numpy.ones(3))
     random_position_generator = Field(
         """
         A (nested) dict mapping circuit, and a spatial query to their
@@ -131,7 +131,7 @@ class BlueBrainCircuitAdapter(WithFields):
         return self._resolve(circuit_model).label
 
     def _get_cell_density_overall(self,
-            circuit_model,
+            circuit_model=None,
             **query_parameters):
         """
         Get cell density over the entire relevant volume.
@@ -143,12 +143,10 @@ class BlueBrainCircuitAdapter(WithFields):
             key: query_parameters[key]
             for key in ["region", "layer", "depth", "height"]
             if key in query_parameters}
-        count_cells = circuit_model.cells.get(
-            self.circuit_model.query_cells(**query_parameters)
-        ).shape[0]
-        count_voxels = circuit_model.atlas.count_voxels(**query_spatial)
-        return count_cells/(count_voxels*1.e-9*circuit_model.atlas.voxel_volume)
-
+        circuit_model = self._resolve(circuit_model)
+        count_cells = circuit_model.get_cell_count(**query_spatial)
+        count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
+        return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,

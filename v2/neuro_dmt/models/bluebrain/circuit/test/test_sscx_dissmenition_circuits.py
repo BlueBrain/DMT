@@ -2,10 +2,12 @@
 Test using SSCx dissemination circuits.
 """
 
+import numpy as np
 import pandas as pd
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.parameters import Parameters
 from dmt.tk.plotting.bars import Bars 
+from dmt.data.observation import measurement
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
@@ -41,6 +43,16 @@ def test_cell_denisty_analysis():
                 gvar="dataset")))
 
     analysis_test.test_circuit_model(circuit_label)
-    analysis_test.test_adapter_methods(circuit_model_bio_one)
-        
+    cell_density_measurement =\
+        analysis_test.test_get_measurement(circuit_model_bio_one)
+    assert len(cell_density_measurement) == 1
+    dataset, dataframe = [(k, v) for k, v in cell_density_measurement.items()][0]
+    assert dataset == circuit_model_bio_one.label
+    summary = measurement.concat_as_summaries(cell_density_measurement)
+    assert summary.shape[0] == 6
 
+    layer_means = [
+        row.cell_density["mean"]
+        for _, row in summary.iterrows()]
+
+    assert np.all([m > 0. for m in layer_means]), summary

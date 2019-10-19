@@ -139,6 +139,20 @@ class BlueBrainCircuitModel(WithFields):
                 "BluePy complained: \n\t {}".format(error))
         return None
 
+    def _atlas_value(self,
+            key, value):
+        """
+        Value of query parameter as understood by the atlas.
+        """
+        if value is None:
+            return None
+        if key == terminology.circuit.region:
+            return self.atlas.used_value(region=value)
+        if key == terminology.circuit.layer:
+            return self.atlas.used_value(layer=value)
+        raise RuntimeError(
+            "Unknown / NotYetImplemented query parameter {}".format(key))
+
     @terminology.use(*terminology.circuit.terms)
     def _resolve_query_region(self, **query):
         """
@@ -155,7 +169,7 @@ class BlueBrainCircuitModel(WithFields):
         for axis in XYZ:
             assert axis not in query, list(query.keys())
 
-        region = query[terminology.circuit.region]
+        region = query.pop(terminology.circuit.region)
         assert region, query
         corner_0, corner_1 =\
             _get_bounding_box(region)
@@ -165,8 +179,39 @@ class BlueBrainCircuitModel(WithFields):
             Cell.Z: (corner_0[2], corner_1[2])})
         return query
 
+    def _get_cell_query(self, **query):
+        """
+        Convert `query` that will be accepted by `BluePyCircuit`.
+        """
+        def _get_query_layer(layers):
+            """
+            Arguments
+            -------------
+            layers : list or a singleton
+            """
+            if isinstance(layers, list):
+                return [_get_query_layer(layer) for layer in layers]
+
+            layer = layers
+            if isinstance(layer, (int, np.int)):
+                return layer
+            if layer.startswith('L') and layer[1] in "123456":
+                return int(layer[1])
+            return layer
+
+        cell_query = terminology.circuit.filter(
+            **terminology.cell.filter(**query))
+
+        if terminology.circuit.layer in cell_query:
+            cell_query[terminology.circuit.layer] =\
+                _get_query_layer(cell_query[terminology.circuit.layer])
+
+        return cell_query
+
+
+
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
-    def get_cells(self, properties=[], **query):
+    def get_cells(self, properties=None, **query):
         """
         Get cells in a region, with requested properties.
 
@@ -175,16 +220,15 @@ class BlueBrainCircuitModel(WithFields):
         properties : single cell property or  list of cell properties to fetch.
         query : sequence of keyword arguments providing query parameters.
         """
-        return self.cells.get(
-            group=self._resolve_query_region(**query),
-            properties=properties)
+        return\
+            self.cells.get(
+                group=self._resolve_query_region(**query),
+                properties=properties)
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_count(self, **query):
         """..."""
         return self.get_cells(**query).shape[0]
-
-
 
     @terminology.use(
         terminology.circuit.region,
