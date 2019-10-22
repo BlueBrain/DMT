@@ -162,7 +162,7 @@ class BlueBrainCircuitAdapter(WithFields):
             synapse_class=None,
             postsynaptic=None,
             presynaptic=None,
-            method=terminology.measurement_method.random_sampling):
+            measurement_method=terminology.measurement_method.random_sampling):
         """
         Get cell type density for either the `circuit_model` passes as a
         parameter or `self.circuit_model`.
@@ -176,7 +176,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 layer=layer,
                 depth=depth,
                 height=height))
-        if method != terminology.measurement_method.random_sampling:
+        if measurement_method != terminology.measurement_method.random_sampling:
             return self._get_cell_density_overall(
                 circuit_model,
                 **query)

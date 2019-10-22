@@ -114,7 +114,7 @@ class Cuboid(ROI):
         """
         Volumne of this cuboid
         """
-        return np.abs(np.product(self.p1 - self.p0))
+        return np.abs(np.prod(self.p1 - self.p0))
 
     @property
     def bbox(self):

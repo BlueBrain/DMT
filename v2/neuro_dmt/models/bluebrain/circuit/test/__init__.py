@@ -75,7 +75,6 @@ class BlueBrainCircuitAnalysisTest(WithFields):
         self._circuit_analysis_test = CircuitAnalysisTest(*args, **kwargs)
         super().__init__(*args, **kwargs)
 
-
     def __getattribute__(self, name_attr):
         """
         Delegate `test_` methods.
@@ -101,8 +100,6 @@ class BlueBrainCircuitAnalysisTest(WithFields):
 
         return _wrapped
 
-                    
-
     def test_circuit_model(self, circuit_label,  *args, **kwargs):
         """
         `BlueBrainCircuitModel` should be able to load circuit data.
@@ -112,3 +109,18 @@ class BlueBrainCircuitAnalysisTest(WithFields):
         path = circuit_model.get_path("jinga")
         dir = os.path.dirname(path)
         assert dir == get_path_circuit(circuit_label).as_posix()
+
+    def test_adapter_method(self,
+            circuit_label,
+            adapter_method,
+            measurement_parameters,
+            **kwargs):
+        """
+        Test adapter methods.
+        """
+        circuit_model = BlueBrainCircuitModel(
+            path_circuit_data=get_path_circuit(circuit_label))
+        measurement = np.array([
+            adapter_method(circuit_model, **parameters, **kwargs)
+            for _, parameters in measurement_parameters.iterrows()])
+        return measurement
