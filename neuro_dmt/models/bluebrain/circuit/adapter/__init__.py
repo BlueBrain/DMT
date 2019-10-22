@@ -308,7 +308,7 @@ class BlueBrainModelAdapter(
         return\
             self.spatial_measurement(
                 circuit_model=circuit_model,
-                method=composition.ExcitatorySynapseDensity(
+                method=composition_measurements.ExcitatorySynapseDensity(
                     circuit_model.bluepy_circuit),
                 parameters=spatial_parameters,
                 *args, **kwargs)

@@ -157,8 +157,9 @@ class SSCxAtlasSpecialization(
         if "brain_region" not in kwargs:
             kwargs["brain_region"]=\
                 brain_regions.sscx
+        if "region_label" not in kwargs:
+            kwargs["region_label"] = Cell.HYPERCOLUMN
         super().__init__(
-            region_label=Cell.HYPERCOLUMN,
             *args, **kwargs)
 
     def get_atlas_ids(self,

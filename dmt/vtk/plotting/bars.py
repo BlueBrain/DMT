@@ -21,6 +21,7 @@ class BarPlot(Plot):
             with_customization={}):
         """Make the bar plot.
         """
+        print(with_customization)
         dataframe=\
             self.get_plotting_dataframe()
         figure=\

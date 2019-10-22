@@ -1,5 +1,6 @@
 """Parameters to measure phenomena as a function of space."""
 
+import numpy as np
 from dmt.vtk.utils.descriptor\
     import Field
 from dmt.vtk.measurement.parameter.spatial\

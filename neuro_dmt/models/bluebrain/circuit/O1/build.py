@@ -91,9 +91,10 @@ class O1CircuitGeometry(
             circuit,
             *args, **kwargs):
         self.__midplane = None
+        if "region_label" not in kwargs:
+            kwargs["region_label"] = Cell.HYPERCOLUMN
         super().__init__(
             circuit,
-            region_label="hypercolumn",
             *args, **kwargs)
 
     @property
