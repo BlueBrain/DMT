@@ -56,7 +56,8 @@ def run_analysis(
         circuit_release_date,
         sample_size=20,
         Plotter=LinePlot,
-        file_format="png"):
+        file_format="png",
+        *args, **kwargs):
     """..."""
     sscx_circuit_model=\
         get_sscx_fake_atlas_circuit_model(
@@ -91,7 +92,8 @@ def run_analysis(
             synapse_density_by_depth.data)
     synapse_density_plotter=\
         Plotter(
-            synapse_density_by_depth
+            synapse_density_by_depth,
+            drawstyle="steps-mid"
         ).plotting(
             "synapse_density"
         ).versus(
@@ -122,6 +124,11 @@ def run_analysis(
             "mc2_Column",
             as_fractions=True)
 
+    if Plotter == BarPlot:
+        N = synapse_density_by_depth.data.shape[0]
+        layer_pos["upper_mean"] = N * layer_pos.upper_mean.values
+        layer_pos["lower_mean"] = N * layer_pos.lower_mean.values
+
     layer_begin_end=[
         tuple(layer_pos[
             ["upper_mean", "lower_mean"]
@@ -130,17 +137,17 @@ def run_analysis(
     bottom = layer_begin_end[-1][1]
     layer_names=\
         ["I", "II", "III", "IV", "V", "VI"]
+    layer_mids= [(b + e) / 2. for b, e in layer_begin_end]
 
-    if Plotter == LinePlot:
-        layer_mids= [(b + e) / 2. for b, e in layer_begin_end]
-        for (layer_begin, layer_end) in layer_begin_end:
-            plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
-            plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
-        plt.xticks(layer_mids, layer_names, fontsize=20)
+    for (layer_begin, _) in layer_begin_end:
+        plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
+    plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
+    plt.xticks(layer_mids, layer_names, fontsize=20)
 
     synapse_density_plotter.save(
         syn_plot_figure,
-        file_name="synapse_density_by_depth.{}".format(file_format))
+        file_name="synapse_density_by_depth.{}".format(file_format),
+        file_format=file_format)
 
     exc_syn_data_by_depth=\
         sscx_adapter.get_excitatory_synapse_density(
@@ -157,7 +164,8 @@ def run_analysis(
             exc_syn_data_by_depth.data)
     exc_syn_density_plotter=\
         Plotter(
-            exc_syn_data_by_depth
+            exc_syn_data_by_depth,
+            drawstyle="steps-mid"
         ).plotting(
             "synapse_density"
         ).versus(
@@ -174,15 +182,15 @@ def run_analysis(
         exc_syn_density_plotter.plot(
             {"xticks_rotation": 90})
     
-    if Plotter == LinePlot:
-        for (layer_begin, layer_end) in layer_begin_end:
-            plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
-            plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
-        plt.xticks(layer_mids, layer_names, fontsize=20)
+    for (layer_begin, layer_end) in layer_begin_end:
+        plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
+    plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
+    plt.xticks(layer_mids, layer_names, fontsize=20)
 
     exc_syn_density_plotter.save(
         exc_syn_plot_figure,
-        file_name="excitatory_synapse_density_by_depth.{}".format(file_format))
+        file_name="excitatory_synapse_density_by_depth.{}".format(file_format),
+        file_format=file_format)
 
     inh_syn_data_by_depth=\
         sscx_adapter.get_inhibitory_synapse_density(
@@ -199,7 +207,8 @@ def run_analysis(
             inh_syn_data_by_depth.data)
     inh_syn_density_plotter=\
         Plotter(
-            inh_syn_data_by_depth
+            inh_syn_data_by_depth,
+            drawstyle="steps-mid"
         ).plotting(
             "synapse_density"
         ).versus(
@@ -216,12 +225,12 @@ def run_analysis(
         inh_syn_density_plotter.plot(
             {"xticks_rotation": 90})
     
-    if Plotter == LinePlot:
-        for (layer_begin, layer_end) in layer_begin_end:
-            plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
-            plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
-        plt.xticks(layer_mids, layer_names, fontsize=20)
+    for (layer_begin, layer_end) in layer_begin_end:
+        plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
+    plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
+    plt.xticks(layer_mids, layer_names, fontsize=20)
 
     inh_syn_density_plotter.save(
         inh_syn_plot_figure,
-        file_name="inhibitory_synapse_density_by_depth.{}".format(file_format))
+        file_name="inhibitory_synapse_density_by_depth.{}".format(file_format),
+        file_format=file_format)

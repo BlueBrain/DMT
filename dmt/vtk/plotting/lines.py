@@ -12,13 +12,17 @@ from dmt.vtk.plotting import golden_figure, Plot
 class LinePlot(Plot):
     """Class to help plot lines."""
 
+
     def __init__(self,
-            *args, **kwargs):
+            *args,
+            drawstyle = "default",
+             **kwargs):
         """Initialize bar plot specific attributes."""
         self.line_point_types=\
             kwargs.get(
                 'line_point_types',
                 ['-o', '--o', '-s', '--s'])
+        self._drawstyle = drawstyle
         super().__init__(
             *args, **kwargs)
 
@@ -91,6 +95,7 @@ class LinePlot(Plot):
                     x_values,
                     y_values,
                     yerr=yerr_values,
+                    drawstyle=self._drawstyle,
                     fmt=self._colors[0] + self.line_point_types[0])
             x_ticks_rotation=\
                 0

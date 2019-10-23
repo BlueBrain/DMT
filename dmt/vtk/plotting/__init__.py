@@ -314,7 +314,8 @@ class Plot(ABC):
     def save(self,
         figure,
         output_dir_path=None,
-        file_name="report.png"):
+        file_name="report.png",
+        file_format="png"):
         """..."""
         output_dir_path=\
             output_dir_path if output_dir_path\
@@ -330,7 +331,7 @@ class Plot(ABC):
                 file_name if file_name is not None\
                 else "report_plot")
         fname=\
-            "{}.png".format(fname_base)
+            "{}.{}".format(fname_base, file_format)
         output_file_path=\
             os.path.join(
                 output_dir_path,
