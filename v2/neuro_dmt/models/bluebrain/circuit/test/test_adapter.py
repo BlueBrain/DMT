@@ -31,7 +31,7 @@ def test_cell_density():
     """
     Adapter should be able get cell densities from the model.
     """
-    circuit_label = "S1RatSSCxDisseminationBio2"
+    circuit_label = "S1RatSSCxDisseminationBio0L1AllINH"
     phenomenon = Phenomenon(
         "Cell Density",
         "Count of cells in a unit volume.",

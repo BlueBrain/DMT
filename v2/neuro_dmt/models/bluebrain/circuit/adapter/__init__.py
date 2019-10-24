@@ -2,7 +2,8 @@
 Adapters for circuits from the Blue Brain Project.
 """
 
-import numpy
+import numpy as np
+from dmt.tk.journal import Logger 
 from dmt.model.interface import implements
 from dmt.model.adapter import adapts
 from dmt.tk.field import Field, WithFields 
@@ -39,13 +40,18 @@ class BlueBrainCircuitAdapter(WithFields):
         Dimensions of the bounding box to sample spatial regions inside
         the circuit.
         """,
-        __default_value__=50. * numpy.ones(3))
+        __default_value__=50. * np.ones(3))
     random_position_generator = Field(
         """
         A (nested) dict mapping circuit, and a spatial query to their
         random position generator. 
         """,
         __default_value__={})
+    logger = Field(
+        """
+        A logger to be used to log the activity of this code.
+        """,
+        __default_value__=Logger(client="BlueBrainCircuitAdapter"))
 
     @classmethod
     def for_circuit_model(cls, circuit_model, **kwargs):
@@ -180,10 +186,19 @@ class BlueBrainCircuitAdapter(WithFields):
             return self._get_cell_density_overall(
                 circuit_model,
                 **query)
-        region_of_interest = next(
-            self.random_region_of_interest(
-                circuit_model,
-                **query))
+        try:
+            region_of_interest = next(
+                self.random_region_of_interest(
+                    circuit_model,
+                    **query))
+        except StopIteration:
+            self.logger.warn(
+                self.logger.get_source_info(),
+                """
+                No more random regions of interest for query:
+                \t{}""".format(query))
+            return np.nan
+
         number_cells = circuit_model\
             .get_cell_count(
                 region=region_of_interest)

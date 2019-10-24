@@ -42,18 +42,34 @@ def get_path_circuit(label):
             64, "dissemination", "circuits",
             "S1", "juvenile", "L23_MC_BTC_shifted_down",
             "Bio_0", "20190902"),
+        "S1RatSSCxDisseminationBio0L1AllINH": path_gpfs_project(
+            64, "dissemination", "circuits",
+            "S1", "juvenile", "L23_MC_BTC_shifted_down_L1_ALL_INH",
+            "Bio_0", "20191022"),
         "S1RatSSCxDisseminationBio1": path_gpfs_project(
             64, "dissemination", "circuits",
             "S1", "juvenile", "L23_MC_BTC_shifted_down",
             "Bio_1", "20190903"),
+        "S1RatSSCxDisseminationBio1L1AllINH": path_gpfs_project(
+            64, "dissemination", "circuits",
+            "S1", "juvenile", "L23_MC_BTC_shifted_down_L1_ALL_INH",
+            "Bio_1", "20191023"),
         "S1RatSSCxDisseminationBio2": path_gpfs_project(
             64, "dissemination", "circuits",
             "S1", "juvenile", "L23_MC_BTC_shifted_down",
             "Bio_2", "20190925"),
+        "S1RatSSCxDisseminationBio2L1AllINH": path_gpfs_project(
+            64, "dissemination", "circuits",
+            "S1", "juvenile", "L23_MC_BTC_shifted_down_L1_ALL_INH",
+            "Bio_2", "20191023"),
         "S1RatSSCxDisseminationBioM": path_gpfs_project(
             64, "dissemination", "circuits",
             "S1", "juvenile", "L23_MC_BTC_shifted_down",
-            "Bio_M", "20190925")}
+            "Bio_M", "20190925"),
+        "S1RatSSCxDisseminationBioML1AllINH": path_gpfs_project(
+            64, "dissemination", "circuits",
+            "S1", "juvenile", "L23_MC_BTC_shifted_down_L1_ALL_INH",
+            "Bio_M", "20191023")}
     return availabel_circuits[label]
 
 
