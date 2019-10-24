@@ -125,6 +125,7 @@ def _match_kwargs(**term_dict):
         assert len(signature.parameters) == 1 and signature_has_varkwargs,\
             "_match_kwargs applies only to methods that accept only var-kwargs"
 
+        @functools.wraps(method)	
         def wrapped_method(**kwargs):
             """
             The decorated method.
@@ -236,6 +237,7 @@ def where(**term_dict):
             raise TypeError(
                 "terminology.where does not support var-args or var-kwargs")
 
+        @functools.wraps(method)	
         def wrapped_method(*args, **kwargs):
             """
             The decorated method.

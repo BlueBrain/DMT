@@ -3,6 +3,7 @@ Test `BlueBrainCircuitModel`, `BlueBrainAdapter`, and `BrainCircuitAnalysis`
 with some "real-world" test-cases.
 """
 import os
+import functools
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -106,12 +107,13 @@ class BlueBrainCircuitAnalysisTest(WithFields):
                 "'{}' object has no attribute {}"\
                 .format(__class__.__name__, name_attr))
 
+        circuit_analysis_method = getattr(
+                self._circuit_analysis_test,
+                name_attr)
+        @functools.wraps(circuit_analysis_method)	
         def _wrapped(circuit_model, *args, **kwargs):
             """..."""
-            return getattr(
-                self._circuit_analysis_test,
-                name_attr
-            )(
+            return circuit_analysis_method(
                 circuit_model, self.adapter, *args, **kwargs)
 
         return _wrapped
