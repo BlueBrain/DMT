@@ -5,6 +5,7 @@ Bar plot.
 import pandas
 import seaborn
 from dmt.data.observation import measurement
+from dmt.data.observation.measurement import get_samples
 from dmt.tk.field import Field, lazyproperty, WithFields
 from .import golden_aspect_ratio
 from .figure import Figure
@@ -67,11 +68,11 @@ class Bars(WithFields):
         """
         Get data as a single dataframe that can be plotted.
         """
-        return\
-            pandas.concat([
-                measurement.get_samples(dataframe).assign(dataset=dataset)
-                for dataset, dataframe in data.items()]
-            ).reset_index()
+        return pandas\
+            .concat([
+                get_samples(dataframe).reset_index().assign(dataset=dataset)
+                for dataset, dataframe in data.items()])\
+            .reset_index()
 
     def get_figure(self,
             data,

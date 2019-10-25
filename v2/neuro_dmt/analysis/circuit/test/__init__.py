@@ -85,7 +85,7 @@ class CircuitAnalysisTest(WithFields):
         """
         datasets =\
             self.analysis._with_reference_data(
-                self.analysis.get_measurement(*args))
+                self.analysis.get_measurement(*args, **kwargs))
         for dataset in datasets.values():
             assert isinstance(dataset, pd.DataFrame)
         expected_datasets = kwargs.get("expected_datasets", [])

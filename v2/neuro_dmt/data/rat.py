@@ -35,6 +35,8 @@ __defelipe_2017_dataset =\
     datasets.load(
         __path_cell_density_datasets,
         "DeFelipe2017")
+
+layers = ["L{}".format(l) for l in range(1,7)]
 defelipe2017 =\
     ByLayerCellDensityMeasurement(
         label=__defelipe_2017_dataset["short_name"],
@@ -46,7 +48,7 @@ defelipe2017 =\
         data=pandas.concat([
             pandas.DataFrame(
                 dict(sample=rat,
-                     layer=range(1,7),
+                     layer=layers,
                      thickness=dataset["thicknesses"],
                      cell_density=dataset["densities"]))
             for rat, dataset in __defelipe_2017_dataset["circuits"].items()]))
@@ -66,7 +68,7 @@ defelipe2014 =\
         data=pandas.concat([
             pandas.DataFrame(
                 dict(sample=rat,
-                     layer=range(1,7),
+                     layer=layers,
                      thickness=dataset["thicknesses"],
                      cell_density=dataset["densities"]))
             for rat, dataset in __defelipe_2014_dataset["circuits"].items()]))
@@ -91,5 +93,5 @@ meyer2010 =\
                 ("cell_density", "mean"),
                 ("cell_density", "std")])
         ).assign(
-            layer=[1,2,3,4,5,6]))
+            layer=layers))
 

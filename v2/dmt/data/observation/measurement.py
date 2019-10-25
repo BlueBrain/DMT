@@ -1,5 +1,6 @@
 from collections.abc import Mapping, Iterable
 from collections import OrderedDict
+import itertools
 import numpy
 import pandas
 from dmt.tk.field import Field, lazyfield
@@ -466,22 +467,34 @@ def Summary(MeasurementClass):
     """
     return MeasurementClass.SummaryType()
 
-def concat(data, loader=lambda dataframe: dataframe):
+def concat(data, loader=lambda dataframe: dataframe, label_dataset="dataset"):
     """
     Concat dataframes passed in iterable data.
     Each dataframe in data must be case as the required type.
 
     Arguments
     ---------------
-    `as_type`: SampleMeasurement or SummaryMeasurement
+    data :: A Mapping name_dataset -> dataframe
+    The dataframes may have an indexThe dataframes may have an index
+
+    Returns
+    ---------------
+    A single dataframe --- with a default index (integers...)
+    If all the dataframes in `data` have the same index names,
+    the returned dataframe will have the 
     """
+    indices_names = {
+        tuple(dataframe.index.names)
+        for _, dataframe in data.items()}
     if isinstance(data, Mapping):
-        return pandas.concat([
-            loader(dataframe)
-              .reset_index()\
-              .assign(dataset=dataset)\
-              .set_index(dataframe.index.names + ["dataset"])
+        combined_dataframe = pandas.concat([
+            loader(dataframe).reset_index().assign(**{label_dataset: dataset})
             for dataset, dataframe in data.items()])
+        return\
+            combined_dataframe.set_index(
+                ["dataset",] + list(indices_names.pop()))\
+            if len(indices_names) == 1 else\
+               combined_dataframe
     if isinstance(data, Iterable) and not isinstance(data, str):
         return pandas.concat([
             loader(dataframe) for dataframe in data])
