@@ -11,6 +11,7 @@ from dmt.data.observation import measurement
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
+from neuro_dmt.data import rat
 from ..model import BlueBrainCircuitModel
 from . import\
     BlueBrainCircuitAnalysisTest,\
@@ -29,12 +30,19 @@ def test_cell_denisty_analysis():
         "Cell Density",
         "Count of cells in a unit volume.",
         group="Composition")
-    layers = ["L{}".format(layer) for layer in range(1, 7)]
-    regions = ["S1HL", "S1FL", "S1Sh", "S1Tr"]
+    layers =[
+        "L{}".format(layer) for layer in range(1, 7)]
+    regions =[
+        "S1HL", "S1FL", "S1Sh", "S1Tr"]
+    reference_datasets = dict(
+        DeFelipe2017=rat.defelipe2017.summary_measurement.samples(1000),
+        DeFelipe2014=rat.defelipe2014.summary_measurement.samples(1000),
+        meyer2010=rat.meyer2010.samples(1000))
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
             AdapterInterface=CellDensityAdapterInterface,
+            reference_datasets=reference_datasets,
             measurement_parameters=Parameters(
                 pd.DataFrame({
                     "layer": [layer for layer in layers for _ in regions],
@@ -57,9 +65,6 @@ def test_cell_denisty_analysis():
     assert summary.shape[0] == len(layers) * len(regions), summary.shape
 
     layer_means = summary.cell_density["mean"]
-    # layer_means = [
-    #     row.cell_density["mean"]
-    #     for _, row in summary.iterrows()]
 
     assert np.all([m > 0. for m in layer_means]), summary
 
