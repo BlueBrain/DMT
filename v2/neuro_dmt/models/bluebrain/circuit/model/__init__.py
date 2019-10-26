@@ -13,6 +13,7 @@ from bluepy.v2.enums import Cell
 from dmt.tk import collections
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal import Logger
+from dmt.tk.collections import take
 from neuro_dmt import terminology
 from .atlas import BlueBrainCircuitAtlas
 
@@ -108,7 +109,7 @@ class BlueBrainCircuitModel(WithFields):
             path=self.bluepy_circuit.atlas.dirpath)
 
     @lazyfield
-    def cells(self):
+    def cell_collection(self):
         """
         Cells for the circuit.
         """
@@ -122,6 +123,13 @@ class BlueBrainCircuitModel(WithFields):
                 "Circuit does not have cells.",
                 "BluePy complained:\n\t {}".format(error))
         return None
+
+    @lazyfield
+    def cells(self):
+        """
+        Pandas data-frame with cells in rows.
+        """
+        return self.cell_collection.get()
 
     @lazyfield
     def connectome(self):
@@ -138,6 +146,20 @@ class BlueBrainCircuitModel(WithFields):
                 "Circuit does not have a connectome.",
                 "BluePy complained: \n\t {}".format(error))
         return None
+
+    @lazyfield
+    def mtypes(self):
+        """
+        All the mtypes used in this circuit.
+        """
+        return self.cells.mtype.unique()
+
+    @lazyfield
+    def etypes(self):
+        """
+        All the etypes in this circuit.
+        """
+        return self.cells.etype.unique()
 
     def _atlas_value(self,
             key, value):
@@ -221,7 +243,7 @@ class BlueBrainCircuitModel(WithFields):
         cell_query = self._get_cell_query(
             **self._resolve_query_region(**query))
         return\
-            self.cells.get(
+            self.cell_collection.get(
                 group=cell_query,
                 properties=properties)
 
@@ -229,6 +251,23 @@ class BlueBrainCircuitModel(WithFields):
     def get_cell_count(self, **query):
         """..."""
         return self.get_cells(**query).shape[0]
+
+    @terminology.use(
+        terminology.circuit.region,
+        terminology.circuit.layer,
+        terminology.circuit.depth,
+        terminology.circuit.height,
+        terminology.cell.mtype,
+        terminology.cell.etype,
+        terminology.cell.synapse_class)
+    def random_cells(self,
+            **cell_type):
+        """
+        Generate random cells of a given type.
+        """
+        cells = self.get_cells(**cell_type)
+        while cells.shape[0] > 0:
+            yield cells.sample(n=1).iloc[0]
 
     @terminology.use(
         terminology.circuit.region,
@@ -246,8 +285,113 @@ class BlueBrainCircuitModel(WithFields):
         by spatial parameters in the query.
         """
         cells = self.get_cells(properties=XYZ, **query_parameters)
-        
+
         while cells.shape[0] > 0:
             position = cells.sample(n=1).iloc[0]
             yield position.values if as_array else position
-            
+
+    def are_connected(self, pre_neuron, post_neuron):
+        """
+        Is pre neuron connected to post neuron.
+        """
+        return pre_neuron in self.connectome.afferent_gids(post_neuron)
+
+    def get_afferent_ids(self, neuron):
+        """..."""
+        return self.connectome.get_afferent_ids(neuron)
+
+    def random_pathway_pairs(self,
+            pre_cell_type={},
+            post_cell_type={}):
+        """
+        Generate random pairs of neurons in a given pathway.
+        """
+        pre_neurons =\
+            self.cell_collection\
+                .ids(group=self._get_cell_query(**pre_cell_type))
+        post_neurons =\
+            self.cell_collection\
+                .ids(group=self._get_cell_query(**post_cell_type))
+        while len(pre_neurons) > 0:
+            pre_neuron = np.random.sample(pre_neurons)
+            while len(post_neurons) > 0:
+                post_neuron = np.random.sample(post_neurons)
+                yield (pre_neuron, post_neuron)
+
+    def _compute_connection_probability(self,
+            cell_type_specifiers):
+        """..."""
+        assert cell_type_specifiers == ("mtype", ),\
+            """
+            Unknown or not yet implemented cell type specifier:
+            \t{}
+            """.format(cell_type_specifiers)
+        def _get_connection_probability(
+                pre_cell_type,
+                post_cell_type):
+            """..."""
+            pre_cells = take(
+                self.cell_sample_size,
+                self.random_cells(**pre_cell_type))
+            post_cells = take(
+                self.cell_sample_size,
+                self.random_cells(**post_cell_type))
+            number_connections =\
+                np.sum([
+                    np.in1d(
+                        pre_cells,
+                        self.connectome.get_afferent_ids(post_cell))
+                    for post_cell in post_cells])
+            return number_connections / (self.cell_sample_size ^ 2)
+
+        pre_cell_specifiers =(
+            ("pre", specifier)
+            for specifier in cell_type_specifiers)
+        post_cell_specifiers =(
+            ("post", specifier)
+            for specifier in cell_type_specifiers)
+
+        pre_cells ={
+            "pre_{}".format(key): value
+            for key, value in pre_cell_type.items()}
+        post_cells = {
+            "post_{}".format(key): value
+            for key, value in post_cell_type.items()}
+
+        cell_types =\
+            self.get_cell_types(cell_type_specifiers)
+        pre_cell_types =\
+            cell_types.rename(**{
+                column: "pre_{}".format(column)
+                for column in cell_types.columns})
+        post_cell_types  =\
+            cell_types.rename(**{
+                column: "post_{}".format(column)
+                for column in cell_types.column})
+        return pd\
+            .concat([
+                pre_cell_types,
+                post_cell_types,
+                pd.DataFrame({
+                    "connection_probability": [
+                        _get_connection_probability(
+                            pre_cell_type,
+                            post_cell_types)
+                        for _, pre_cell_type in pre_cell_types.iterrows()
+                        for _, post_cell_type in post_cell_types.iterrows()]})])\
+            .set_index(
+                list(pre_cell_mtypes.columns.values)\
+                + list(post_cell_mtypes.columns.values))
+
+
+    @lazyfield
+    def connection_probability_cache(self):
+        """..."""
+        return {}
+
+    def connection_probability(self,
+            cell_type_specifiers):
+        """..."""
+        if cell_type_specifiers not in self.connection_probability_cache:
+            self.connection_probability_cache[cell_type_specifiers] =\
+                self._compute_connection_probability(cell_type_specifiers)
