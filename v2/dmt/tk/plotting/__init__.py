@@ -24,3 +24,6 @@ def golden_figure(width:int =None, height:int =None):
     fig.set_size_inches(width, height)
     return fig, ax
 
+from .bars import Bars
+from .crosses import Crosses
+from .heatmap import HeatMap

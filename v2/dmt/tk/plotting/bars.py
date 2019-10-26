@@ -6,7 +6,7 @@ import pandas
 import seaborn
 from dmt.data.observation import measurement
 from dmt.data.observation.measurement import get_samples
-from dmt.tk.field import Field, lazyproperty, WithFields
+from dmt.tk.field import Field, LambdaField, lazyproperty, WithFields
 from .import golden_aspect_ratio
 from .figure import Figure
 
@@ -31,20 +31,20 @@ class Bars(WithFields):
         no column in the data-frame to use as a grouping variable.
         """,
         __default_value__="")
-    xlabel=Field(
+    xlabel = LambdaField(
         """
         The label to be displayed along the y-axis.
         Default value of an empty string will cause `xvar` to be displayed
         as `xlabel`.
         """,
-        __default_value__="")
-    ylabel=Field(
+        lambda self: self.xvar)
+    ylabel = LambdaField(
         """
         The label to be displayed along the y-axis.
         Default value of an empty string will cause `yvar` to be displayed
         as `ylabel`.
         """,
-        __default_value__="")
+        lambda self: self.yvar)
     height_figure = Field(
         """
         Height of the figure.
@@ -63,17 +63,6 @@ class Bars(WithFields):
         """
         pass
 
-    @staticmethod
-    def _as_single_dataframe(data):
-        """
-        Get data as a single dataframe that can be plotted.
-        """
-        return pandas\
-            .concat([
-                get_samples(dataframe).reset_index().assign(dataset=dataset)
-                for dataset, dataframe in data.items()])\
-            .reset_index()
-
     def get_figure(self,
             data,
             *args,
@@ -82,19 +71,20 @@ class Bars(WithFields):
         """
         Plot the dataframe.
         """
-        graphic = seaborn.catplot(
-            #data=self._as_single_dataframe(data),
-            data=measurement.concat_as_samples(data),
-            x=self.xvar,
-            y=self.yvar,
-            kind="bar",
-            hue=self.gvar if self.gvar else None,
-            height=self.height_figure,
-            aspect=self.aspect_ratio_figure)
+        graphic = seaborn\
+            .catplot(
+                data=measurement.concat_as_samples(data).reset_index(),
+                x=self.xvar,
+                y=self.yvar,
+                kind="bar",
+                hue=self.gvar if self.gvar else None,
+                height=self.height_figure,
+                aspect=self.aspect_ratio_figure)\
+            .set(
+                self.xlabel,
+                self.ylabel)
         return Figure(
-            graphic.set(
-                xlabel=self.xlabel if self.xlabel else self.xvar,
-                ylabel=self.ylabel if self.ylabel else self.yvar),
+            graphic,
             caption=caption)
 
     def plot(self,

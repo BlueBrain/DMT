@@ -62,6 +62,12 @@ class BlueBrainCircuitModel(WithFields):
         """,
         __default_value__="CircuitConfig_base")
 
+    cell_sample_size = Field(
+        """
+        Number of cells to sample for measurements.
+        """,
+        __default_value__=20)
+
     def __init__(self, circuit=None, *args, **kwargs):
         """
         Initialize with a circuit.
@@ -318,71 +324,81 @@ class BlueBrainCircuitModel(WithFields):
                 post_neuron = np.random.sample(post_neurons)
                 yield (pre_neuron, post_neuron)
 
-    def _compute_connection_probability(self,
-            cell_type_specifiers):
-        """..."""
-        assert cell_type_specifiers == ("mtype", ),\
+    def get_cell_types(self, cell_type_specifiers):
+        """
+        Get cells of the specified type.
+
+        Argument
+        --------------
+        cell_type_specifiers ::  A tuple of strings each of which
+        is a property of cell.
+
+        Results
+        ---------------
+        A Pandas DataFrame containing all cell types corresponding to
+        the specification in `cell_type_specifiers.`
+        For example, if the only specifier is `mtype` then this method
+        will return a Pandas Series or a single column DataFrame containing
+        all values of `mtype` in the circuit.
+        """
+        if cell_type_specifiers != ("mtype",):
+            raise NotImplementedError(
             """
-            Unknown or not yet implemented cell type specifier:
-            \t{}
-            """.format(cell_type_specifiers)
-        def _get_connection_probability(
-                pre_cell_type,
-                post_cell_type):
-            """..."""
-            pre_cells = take(
-                self.cell_sample_size,
-                self.random_cells(**pre_cell_type))
-            post_cells = take(
-                self.cell_sample_size,
-                self.random_cells(**post_cell_type))
-            number_connections =\
-                np.sum([
-                    np.in1d(
-                        pre_cells,
-                        self.connectome.get_afferent_ids(post_cell))
-                    for post_cell in post_cells])
-            return number_connections / (self.cell_sample_size ^ 2)
+            Current implementation is an example.
+            Generalize it...
+            """)
 
-        pre_cell_specifiers =(
-            ("pre", specifier)
-            for specifier in cell_type_specifiers)
-        post_cell_specifiers =(
-            ("post", specifier)
-            for specifier in cell_type_specifiers)
+        return self.mtypes
+            
+    def get_connection_probability(self,
+            pre_cell_type,
+            post_cell_type):
+        """..."""
+        pre_cells = take(
+            self.cell_sample_size,
+            self.random_cells(**pre_cell_type))
+        post_cells = take(
+            self.cell_sample_size,
+            self.random_cells(**post_cell_type))
+        number_connections =\
+            np.sum([
+                np.in1d(
+                    pre_cells,
+                    self.connectome.get_afferent_ids(post_cell))
+                for post_cell in post_cells])
+        return number_connections / (self.cell_sample_size ^ 2)
+    
+    def get_pathway_property(self,
+            cell_type_specifiers,
+            property_defining_computation):
+        """
+        Compute a pathway property.
 
-        pre_cells ={
-            "pre_{}".format(key): value
-            for key, value in pre_cell_type.items()}
-        post_cells = {
-            "post_{}".format(key): value
-            for key, value in post_cell_type.items()}
-
+        Arguments
+        ---------------
+        cell_type_specifiers : A tuple of cell properties that define the
+        pathway. For example `('mtype', )`
+        property_defining_computation : A method to compute the property for a
+        single (pre, post) pair...
+        """
         cell_types =\
             self.get_cell_types(cell_type_specifiers)
-        pre_cell_types =\
-            cell_types.rename(**{
-                column: "pre_{}".format(column)
-                for column in cell_types.columns})
-        post_cell_types  =\
-            cell_types.rename(**{
-                column: "post_{}".format(column)
-                for column in cell_types.column})
+        cell_types_at = lambda pos: cell_types.rename(**{
+            column: "{}_{}".format(pos, column)
+            for column in cell_types.columns})
+        pre_types = cell_types_at("pre")
+        post_types = cell_types_at("post")
         return pd\
-            .concat([
-                pre_cell_types,
-                post_cell_types,
-                pd.DataFrame({
-                    "connection_probability": [
-                        _get_connection_probability(
-                            pre_cell_type,
-                            post_cell_types)
-                        for _, pre_cell_type in pre_cell_types.iterrows()
-                        for _, post_cell_type in post_cell_types.iterrows()]})])\
+            .concat(
+                [pre_types,
+                 post_types,
+                 pd.Series(
+                     property_defining_computation(pre_type, post_type)
+                     for _, pre_type in pre_types.iterrows()
+                     for _, post_type in post_types.iterrows())],
+                axis=1)\
             .set_index(
-                list(pre_cell_mtypes.columns.values)\
-                + list(post_cell_mtypes.columns.values))
-
+                list(pre_types.columns.values) + list(post_types.columns.values))
 
     @lazyfield
     def connection_probability_cache(self):
@@ -392,6 +408,11 @@ class BlueBrainCircuitModel(WithFields):
     def connection_probability(self,
             cell_type_specifiers):
         """..."""
-        if cell_type_specifiers not in self.connection_probability_cache:
-            self.connection_probability_cache[cell_type_specifiers] =\
-                self._compute_connection_probability(cell_type_specifiers)
+        if cell_type_specifiers\
+           not in self.connection_probability_cache:
+            self.connection_probability_cache[
+                cell_type_specifiers] =\
+                    self.get_pathway_property(
+                        cell_type_specifiers,
+                        self.get_connection_probability)
+        return self.connection_probability_cache[cell_type_specifiers]

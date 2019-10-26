@@ -3,6 +3,7 @@ Adapters for circuits from the Blue Brain Project.
 """
 
 import numpy as np
+import pandas as pd
 from dmt.tk.journal import Logger 
 from dmt.model.interface import implements
 from dmt.model.adapter import adapts
@@ -99,7 +100,7 @@ class BlueBrainCircuitAdapter(WithFields):
              if value is not None),
             key=lambda xy: xy[0])))
 
-    def random_position(self,
+    def random_positions(self,
             circuit_model,
             **spatial_parameters):
         """
@@ -127,9 +128,26 @@ class BlueBrainCircuitAdapter(WithFields):
             Cuboid(
                 position - self.bounding_box_size / 2.,
                 position + self.bounding_box_size / 2.)
-            for position in self.random_position(
+            for position in self.random_positions(
                     circuit_model,
                     **spatial_parameters))
+
+    def random_pathway_pairs(self,
+            circuit_model,
+            **pathway_parameters):
+        """
+        Random pairs of neurons in a pathway.
+        """
+        if circuit_model not in self.random_pairs_generator:
+            self.random_pairs_generator[circuit_model] = {}
+
+        query_hash =\
+            self._query_hash(**pathway_parameters)
+        if query_hash not in self.random_pathway_pairs_generator[circuit_model]:
+            self.random_pathway_pairs[circuit_model][query_hash] =\
+                circuit_model.random_pathway_pairs(**pathway_parameters)
+
+        return self.random_pathway_pairs_generator[circuit_model][query_hash]
 
     def get_label(self,
             circuit_model):
@@ -203,3 +221,21 @@ class BlueBrainCircuitAdapter(WithFields):
             .get_cell_count(
                 region=region_of_interest)
         return number_cells / (1.e-9 * region_of_interest.volume)
+
+    def get_mtypes(self,
+            circuit_model=None):
+        """
+        All the mtypes...
+        """
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.mtypes
+
+    def get_connection_probability(self,
+            circuit_model,
+            pre_mtype,
+            post_mtype,
+            sample_size=20):
+        """..."""
+        return\
+            circuit_model.connection_probability(("mtype",))\
+                         .loc[(pre_mtype, post_mtype)]

@@ -467,7 +467,10 @@ def Summary(MeasurementClass):
     """
     return MeasurementClass.SummaryType()
 
-def concat(data, loader=lambda dataframe: dataframe, label_dataset="dataset"):
+def concat(
+        data,
+        loader=lambda dataframe: dataframe,
+        label_dataset="dataset"):
     """
     Concat dataframes passed in iterable data.
     Each dataframe in data must be case as the required type.
@@ -492,7 +495,7 @@ def concat(data, loader=lambda dataframe: dataframe, label_dataset="dataset"):
             for dataset, dataframe in data.items()])
         return\
             combined_dataframe.set_index(
-                ["dataset",] + list(indices_names.pop()))\
+                [label_dataset,] + list(indices_names.pop()))\
             if len(indices_names) == 1 else\
                combined_dataframe
     if isinstance(data, Iterable) and not isinstance(data, str):
