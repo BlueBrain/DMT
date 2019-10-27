@@ -3,6 +3,7 @@ A class that represents circuit models developed at the Blue Brain Project.
 """
 
 import os
+from copy import deepcopy
 import yaml
 import numpy as np
 import pandas as pd
@@ -15,7 +16,7 @@ from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
-from .atlas import BlueBrainCircuitAtlas
+from ..atlas import BlueBrainCircuitAtlas
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -341,15 +342,30 @@ class BlueBrainCircuitModel(WithFields):
         will return a Pandas Series or a single column DataFrame containing
         all values of `mtype` in the circuit.
         """
-        if cell_type_specifiers != ("mtype",):
-            raise NotImplementedError(
-            """
-            Current implementation is an example.
-            Generalize it...
-            """)
+        cell_properties_values ={
+            cell_property: getattr(
+                self, "{}s".format(cell_property))
+                for cell_property in cell_type_specifiers}
 
-        return self.mtypes
-            
+        def _get_tuple_values(params):
+            """..."""
+            if not params:
+                return [[]]
+            head_tuples =[
+                [(params[0], value)]
+                 for value in cell_properties_values[params[0]]]
+            tail_tuples =\
+                _get_tuple_values(params[1:])
+            return [
+                h+t for h in head_tuples
+                for t in tail_tuples]
+
+        return pd.DataFrame([
+            dict(row)
+            for row in _get_tuple_values(
+                    cell_type_specifiers)])
+
+
     def get_connection_probability(self,
             pre_cell_type,
             post_cell_type):
@@ -367,6 +383,25 @@ class BlueBrainCircuitModel(WithFields):
                     self.connectome.get_afferent_ids(post_cell))
                 for post_cell in post_cells])
         return number_connections / (self.cell_sample_size ^ 2)
+
+    def get_pathways(self, cell_type_specifier):
+        """
+        Pathways in the circuit associated with a cell type specifier.
+        """
+        cell_types = self.get_cell_types(cell_type_specifier)
+        assert isinstance(cell_types, pd.DataFrame)
+        number_types = cell_types.shape[0]
+        cell_types_at = lambda pos: cell_types.rename(
+            columns={
+                name: "{}_{}".format(pos, name)
+                for name in cell_types.columns})
+
+        return pd.DataFrame(
+            [pre_cell_type.append(post_cell_type)
+             for _, pre_cell_type in cell_types_at("pre").iterrows()
+             for _, post_cell_type in cell_types_at("post").iterrows()],
+            index=range(number_types * number_types))
+
     
     def get_pathway_property(self,
             cell_type_specifiers,

@@ -2,6 +2,7 @@
 Adapters for circuits from the Blue Brain Project.
 """
 
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger 
@@ -11,6 +12,8 @@ from dmt.tk.field import Field, WithFields
 from dmt.tk.collections import take
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
+from neuro_dmt.analysis.circuit.connectome.interfaces import\
+    ConnectomeAdapterInterface
 from neuro_dmt.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
@@ -18,6 +21,7 @@ from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 
 
 @implements(CellDensityAdapterInterface)
+@implements(ConnectomeAdapterInterface)
 @adapts(BlueBrainCircuitModel)
 class BlueBrainCircuitAdapter(WithFields):
     """
@@ -54,12 +58,13 @@ class BlueBrainCircuitAdapter(WithFields):
         """,
         __default_value__=Logger(client="BlueBrainCircuitAdapter"))
 
-    @classmethod
-    def for_circuit_model(cls, circuit_model, **kwargs):
+    def for_circuit_model(self, circuit_model, **kwargs):
         """
         Instance of this BlueBrainModelAdapter prepared for a circuit model.
         """
-        pass
+        other = deepcopy(self)
+        other.circuit_model = circuit_model
+        return other
 
     def _resolve(self, circuit_model):
         """
@@ -230,12 +235,36 @@ class BlueBrainCircuitAdapter(WithFields):
         circuit_model = self._resolve(circuit_model)
         return circuit_model.mtypes
 
+    def get_pathways(self,
+            circuit_model=None,
+            cell_type_specifier=("mtype", )):
+        """
+        Arguments
+        ---------------
+        cell_type_specifier : An object that specifies cell groups.
+        Examples:
+        1. A tuple of strings representing cell properties. When each tuple is
+        coupled with a value, the resulting key-value pairs specify a
+        group of neurons in the circuit.
+        """
+        circuit_model = self._resolve(circuit_model)
+        cell_types =\
+            circuit_model.get_cell_types(cell_type_specifier)
+        cell_types_at =\
+            lambda pos: cell_types.rename(**{
+                column: "{}_{}".format(pos, column)
+                for column in cell_types.columns})
+        pre_types = cell_types_at("pre")
+        post_types = cell_types_at("post")
+        return pd.concat([pre_types, post_types], axis=1)
+
     def get_connection_probability(self,
-            circuit_model,
-            pre_mtype,
-            post_mtype,
+            circuit_model=None,
+            pre_mtype=None,
+            post_mtype=None,
             sample_size=20):
         """..."""
+        circuit_model = self._resolve(circuit_model)
         return\
             circuit_model.connection_probability(("mtype",))\
                          .loc[(pre_mtype, post_mtype)]
