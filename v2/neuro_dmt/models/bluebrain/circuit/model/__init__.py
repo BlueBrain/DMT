@@ -182,7 +182,7 @@ class BlueBrainCircuitModel(WithFields):
         raise RuntimeError(
             "Unknown / NotYetImplemented query parameter {}".format(key))
 
-    @terminology.use(*terminology.circuit.terms)
+    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def _resolve_query_region(self, **query):
         """
         Resolve region in query.
@@ -365,44 +365,90 @@ class BlueBrainCircuitModel(WithFields):
             for row in _get_tuple_values(
                     cell_type_specifiers)])
 
-
     def get_connection_probability(self,
             pre_cell_type,
             post_cell_type):
         """..."""
-        pre_cells = take(
-            self.cell_sample_size,
-            self.random_cells(**pre_cell_type))
-        post_cells = take(
-            self.cell_sample_size,
-            self.random_cells(**post_cell_type))
-        number_connections =\
-            np.sum([
-                np.in1d(
-                    pre_cells,
-                    self.connectome.get_afferent_ids(post_cell))
-                for post_cell in post_cells])
-        return number_connections / (self.cell_sample_size ^ 2)
+        logger.info(
+            logger.get_source_info(),
+            """
+            Get connection probability from cell type,
+            \t{}
+            to cell type
+            \t{}
+            """.format(
+                pre_cell_type,
+                post_cell_type))
+        cell_type_specifier = tuple(pre_cell_type.index)
+        assert tuple(post_cell_type.index) == cell_type_specifier
 
-    def get_pathways(self, cell_type_specifier):
+        if cell_type_specifier not in self.connection_probability_cache:
+            self.connection_probability_cache[cell_type_specifier] = {}
+        conn_prob_cache =\
+            self.connection_probability_cache[cell_type_specifier]
+        pre_values = tuple(pre_cell_type.values)
+        post_values = tuple(post_cell_type.values)
+        if pre_values not in conn_prob_cache:
+            conn_prob_cache[pre_values] = {}
+        if post_values not in conn_prob_cache[pre_values]:
+            pre_cells = pd.DataFrame(list(take(
+                self.cell_sample_size,
+                self.random_cells(**pre_cell_type))))
+            post_cells = pd.DataFrame(list(take(
+                self.cell_sample_size,
+                self.random_cells(**post_cell_type))))
+            number_connections =\
+                np.sum([
+                    np.in1d(
+                        pre_cells.index.values,
+                        self.connectome.afferent_gids(post_cell))
+                    for post_cell in post_cells.index.values])
+            conn_prob_cache[pre_values][post_values] =\
+                number_connections / (self.cell_sample_size ^ 2)
+
+        return conn_prob_cache[pre_values][post_values]
+
+
+        # pre_cells = pd.DataFrame(list(take(
+        #     self.cell_sample_size,
+        #     self.random_cells(**pre_cell_type))))
+        # post_cells = pd.DataFrame(list(take(
+        #     self.cell_sample_size,
+        #     self.random_cells(**post_cell_type))))
+        # number_connections =\
+        #     np.sum([
+        #         np.in1d(
+        #             pre_cells.index.values,
+        #             self.connectome.afferent_gids(post_cell))
+        #         for post_cell in post_cells.index.values])
+        # return number_connections / (self.cell_sample_size ^ 2)
+
+    def get_pathways(self, cell_type_specifier, multi_indexed = True):
         """
         Pathways in the circuit associated with a cell type specifier.
         """
         cell_types = self.get_cell_types(cell_type_specifier)
         assert isinstance(cell_types, pd.DataFrame)
         number_types = cell_types.shape[0]
-        cell_types_at = lambda pos: cell_types.rename(
-            columns={
-                name: "{}_{}".format(pos, name)
-                for name in cell_types.columns})
+
+        def _cell_types_at(pos):
+            """..."""
+            if not multi_indexed:
+                return cell_types.rename(
+                    columns={
+                        name: "{}_{}".format(pos, name)
+                        for name in cell_types.columans})
+            return pd.DataFrame(
+                cell_types.values,
+                columns=pd.MultiIndex.from_tuples(
+                    [(pos, value) for value in cell_types.columns]))
 
         return pd.DataFrame(
             [pre_cell_type.append(post_cell_type)
-             for _, pre_cell_type in cell_types_at("pre").iterrows()
-             for _, post_cell_type in cell_types_at("post").iterrows()],
+             for _, pre_cell_type in _cell_types_at("pre").iterrows()
+             for _, post_cell_type in _cell_types_at("post").iterrows()],
             index=range(number_types * number_types))
 
-    
     def get_pathway_property(self,
             cell_type_specifiers,
             property_defining_computation):
@@ -416,24 +462,17 @@ class BlueBrainCircuitModel(WithFields):
         property_defining_computation : A method to compute the property for a
         single (pre, post) pair...
         """
-        cell_types =\
-            self.get_cell_types(cell_type_specifiers)
-        cell_types_at = lambda pos: cell_types.rename(**{
-            column: "{}_{}".format(pos, column)
-            for column in cell_types.columns})
-        pre_types = cell_types_at("pre")
-        post_types = cell_types_at("post")
+        pathways =\
+            self.get_pathways(
+                cell_type_specifiers, multi_indexed=True)
         return pd\
             .concat(
-                [pre_types,
-                 post_types,
+                [pathways,
                  pd.Series(
-                     property_defining_computation(pre_type, post_type)
-                     for _, pre_type in pre_types.iterrows()
-                     for _, post_type in post_types.iterrows())],
+                     property_defining_computation(pathway.pre, pathway.post)
+                     for _, pathway in pathways.iterrows())],
                 axis=1)\
-            .set_index(
-                list(pre_types.columns.values) + list(post_types.columns.values))
+            .set_index(pathways.columns)
 
     @lazyfield
     def connection_probability_cache(self):

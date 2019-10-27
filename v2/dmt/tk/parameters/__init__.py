@@ -119,7 +119,8 @@ class Parameters(WithFields):
             parameter_rows = values
 
         return list(
-            dict(parameter_row)
+            parameter_row
+            #dict(parameter_row)
             for parameter_row in parameter_rows
             for _ in range(size))
             

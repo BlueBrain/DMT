@@ -136,7 +136,7 @@ def test_connection_probability_analysis():
     `BrainCircuitAnalysis` for connection probability should work with
     `BlueBrainCircuitModel` and `BlueBrainCircuitaAapter`
     """
-    phenomenon = {henomenon(
+    phenomenon = Phenomenon(
         "Connection Probability",
         """
         Probability that two neurons in a pathway are connected.

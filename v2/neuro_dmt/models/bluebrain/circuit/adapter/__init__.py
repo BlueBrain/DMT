@@ -248,15 +248,7 @@ class BlueBrainCircuitAdapter(WithFields):
         group of neurons in the circuit.
         """
         circuit_model = self._resolve(circuit_model)
-        cell_types =\
-            circuit_model.get_cell_types(cell_type_specifier)
-        cell_types_at =\
-            lambda pos: cell_types.rename(**{
-                column: "{}_{}".format(pos, column)
-                for column in cell_types.columns})
-        pre_types = cell_types_at("pre")
-        post_types = cell_types_at("post")
-        return pd.concat([pre_types, post_types], axis=1)
+        return circuit_model.get_pathways(cell_type_specifier)
 
     def get_connection_probability(self,
             circuit_model=None,

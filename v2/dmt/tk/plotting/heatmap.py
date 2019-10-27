@@ -70,7 +70,7 @@ class HeatMap(WithFields):
             """
             Cannot decide which one to plot among more than one dataset:
             \t{}
-            """.format(list()data.keys()))
+            """.format(list(data.keys()))
         dataframe =\
             data if isinstance(data, pandas.DataFrame)\
             else list(data.values())[0]
