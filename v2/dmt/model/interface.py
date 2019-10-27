@@ -61,9 +61,14 @@ class InterfaceMeta(type):
                     and attribute[:2] == "__"\
                     and attribute[-2:] == "__"
 
-          cls.__requiredmethods__ =[
+          methods_cls ={
                attr_name for attr_name in attrs.keys()
-               if not __has_dunders(attr_name)]
+               if not __has_dunders(attr_name)}
+          cls.__requiredmethods__ =\
+               methods_cls.union({
+                    method for base in bases
+                    for method in getattr(base, "__requiredmethods__", set())
+                    if base != Interface})
           cls.__interfacemethods__ =\
                cls.__requiredmethods__
           suggestion =\
