@@ -17,6 +17,7 @@ from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
+from .pathway import pathway_property
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -249,10 +250,10 @@ class BlueBrainCircuitModel(WithFields):
         """
         cell_query = self._get_cell_query(
             **self._resolve_query_region(**query))
-        return\
-            self.cell_collection.get(
-                group=cell_query,
-                properties=properties)
+        cells = self.cell_collection.get(
+            group=cell_query,
+            properties=properties)
+        return cells.assign(gid=cells.index.values)
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_count(self, **query):
@@ -291,8 +292,10 @@ class BlueBrainCircuitModel(WithFields):
         Generate random positions (as np.array([x, y, z])) in a region defined
         by spatial parameters in the query.
         """
-        cells = self.get_cells(properties=XYZ, **query_parameters)
-
+        cells = self\
+            .get_cells(
+                properties=XYZ,
+                **query_parameters)
         while cells.shape[0] > 0:
             position = cells.sample(n=1).iloc[0]
             yield position.values if as_array else position
@@ -362,66 +365,7 @@ class BlueBrainCircuitModel(WithFields):
 
         return pd.DataFrame([
             dict(row)
-            for row in _get_tuple_values(
-                    cell_type_specifiers)])
-
-    def get_connection_probability(self,
-            pre_cell_type,
-            post_cell_type):
-        """..."""
-        logger.info(
-            logger.get_source_info(),
-            """
-            Get connection probability from cell type,
-            \t{}
-            to cell type
-            \t{}
-            """.format(
-                pre_cell_type,
-                post_cell_type))
-        cell_type_specifier = tuple(pre_cell_type.index)
-        assert tuple(post_cell_type.index) == cell_type_specifier
-
-        if cell_type_specifier not in self.connection_probability_cache:
-            self.connection_probability_cache[cell_type_specifier] = {}
-        conn_prob_cache =\
-            self.connection_probability_cache[cell_type_specifier]
-        pre_values = tuple(pre_cell_type.values)
-        post_values = tuple(post_cell_type.values)
-        if pre_values not in conn_prob_cache:
-            conn_prob_cache[pre_values] = {}
-        if post_values not in conn_prob_cache[pre_values]:
-            pre_cells = pd.DataFrame(list(take(
-                self.cell_sample_size,
-                self.random_cells(**pre_cell_type))))
-            post_cells = pd.DataFrame(list(take(
-                self.cell_sample_size,
-                self.random_cells(**post_cell_type))))
-            number_connections =\
-                np.sum([
-                    np.in1d(
-                        pre_cells.index.values,
-                        self.connectome.afferent_gids(post_cell))
-                    for post_cell in post_cells.index.values])
-            conn_prob_cache[pre_values][post_values] =\
-                number_connections / (self.cell_sample_size ^ 2)
-
-        return conn_prob_cache[pre_values][post_values]
-
-
-        # pre_cells = pd.DataFrame(list(take(
-        #     self.cell_sample_size,
-        #     self.random_cells(**pre_cell_type))))
-        # post_cells = pd.DataFrame(list(take(
-        #     self.cell_sample_size,
-        #     self.random_cells(**post_cell_type))))
-        # number_connections =\
-        #     np.sum([
-        #         np.in1d(
-        #             pre_cells.index.values,
-        #             self.connectome.afferent_gids(post_cell))
-        #         for post_cell in post_cells.index.values])
-        # return number_connections / (self.cell_sample_size ^ 2)
+            for row in _get_tuple_values(cell_type_specifiers)])
 
     def get_pathways(self, cell_type_specifier, multi_indexed = True):
         """
@@ -437,7 +381,7 @@ class BlueBrainCircuitModel(WithFields):
                 return cell_types.rename(
                     columns={
                         name: "{}_{}".format(pos, name)
-                        for name in cell_types.columans})
+                        for name in cell_types.columns})
             return pd.DataFrame(
                 cell_types.values,
                 columns=pd.MultiIndex.from_tuples(
@@ -474,19 +418,37 @@ class BlueBrainCircuitModel(WithFields):
                 axis=1)\
             .set_index(pathways.columns)
 
-    @lazyfield
-    def connection_probability_cache(self):
-        """..."""
-        return {}
+    @pathway_property
+    def connection_probability(self, pathway):
+        """
+        Connection probability across the pre and post neurons of a pathway.
 
-    def connection_probability(self,
-            cell_type_specifiers):
-        """..."""
-        if cell_type_specifiers\
-           not in self.connection_probability_cache:
-            self.connection_probability_cache[
-                cell_type_specifiers] =\
-                    self.get_pathway_property(
-                        cell_type_specifiers,
-                        self.get_connection_probability)
-        return self.connection_probability_cache[cell_type_specifiers]
+        Arguments
+        ------------
+        `pathway`: pandas.Series with index <pre, post>
+        """
+        logger.info(
+            logger.get_source_info(),
+            """
+            Get connection probability for pathway,
+            \t{}
+            -->
+            \t{}
+            """.format(
+                dict(pathway.pre),
+                dict(pathway.post)))
+
+        pre_cells = pd.DataFrame(list(take(
+            self.cell_sample_size,
+            self.random_cells(**pathway.pre))))
+        post_cells = pd.DataFrame(list(take(
+            self.cell_sample_size,
+            self.random_cells(**pathway.post))))
+        number_connections =\
+            np.sum([
+                np.in1d(
+                    pre_cells.gid.values,
+                    self.connectome.afferent_gids(post_cell.gid))
+                for _, post_cell in post_cells.iterrows()])
+        return number_connections / (self.cell_sample_size ^ 2)
+

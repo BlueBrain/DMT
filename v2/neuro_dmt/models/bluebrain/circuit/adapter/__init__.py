@@ -18,6 +18,7 @@ from neuro_dmt.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
+from ..model import CellType
 
 
 @implements(CellDensityAdapterInterface)
@@ -252,11 +253,21 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_connection_probability(self,
             circuit_model=None,
-            pre_mtype=None,
-            post_mtype=None,
+            pre_synaptic_cell_type=None,
+            post_synaptic_cell_type=None,
             sample_size=20):
-        """..."""
-        circuit_model = self._resolve(circuit_model)
+        """
+        Arguments
+        -----------
+        `pre_synaptic_cell_type` : pandas.Series specifying the
+        type of the cells on the pre-synaptic side.
+        `post_synaptic_cell_type`: pandas.Series specifying the
+        type of the cells on the post-synaptic side.
+        """
+        circuit_model =\
+            self._resolve(circuit_model)
+        cell_type_specifier =\
+            CellType.specifier(pre_synaptic_cell_type)
         return\
             circuit_model.connection_probability(("mtype",))\
                          .loc[(pre_mtype, post_mtype)]
