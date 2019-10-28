@@ -17,7 +17,7 @@ from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
-from .pathway import pathway_property
+from .pathway import CellType, pathway_property
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -367,56 +367,21 @@ class BlueBrainCircuitModel(WithFields):
             dict(row)
             for row in _get_tuple_values(cell_type_specifiers)])
 
-    def get_pathways(self, cell_type_specifier, multi_indexed = True):
+    def pathways(self, cell_type_specifier):
         """
-        Pathways in the circuit associated with a cell type specifier.
-        """
-        cell_types = self.get_cell_types(cell_type_specifier)
-        assert isinstance(cell_types, pd.DataFrame)
-        number_types = cell_types.shape[0]
-
-        def _cell_types_at(pos):
-            """..."""
-            if not multi_indexed:
-                return cell_types.rename(
-                    columns={
-                        name: "{}_{}".format(pos, name)
-                        for name in cell_types.columns})
-            return pd.DataFrame(
-                cell_types.values,
-                columns=pd.MultiIndex.from_tuples(
-                    [(pos, value) for value in cell_types.columns]))
-
-        return pd.DataFrame(
-            [pre_cell_type.append(post_cell_type)
-             for _, pre_cell_type in _cell_types_at("pre").iterrows()
-             for _, post_cell_type in _cell_types_at("post").iterrows()],
-            index=range(number_types * number_types))
-
-    def get_pathway_property(self,
-            cell_type_specifiers,
-            property_defining_computation):
-        """
-        Compute a pathway property.
+        Pathways in this circuit with pre and post neuron groups
+        specified.
 
         Arguments
-        ---------------
-        cell_type_specifiers : A tuple of cell properties that define the
-        pathway. For example `('mtype', )`
-        property_defining_computation : A method to compute the property for a
-        single (pre, post) pair...
+        ------------
+        `cell_type_specifier`: a tuple of cell properties whose
+        values specify a cell.
         """
-        pathways =\
-            self.get_pathways(
-                cell_type_specifiers, multi_indexed=True)
-        return pd\
-            .concat(
-                [pathways,
-                 pd.Series(
-                     property_defining_computation(pathway.pre, pathway.post)
-                     for _, pathway in pathways.iterrows())],
-                axis=1)\
-            .set_index(pathways.columns)
+        cell_types = self.get_cell_types(cell_type_specifier)
+        return pd.DataFrame(
+            [CellType.pathway(pre_cell_type, post_cell_type)
+             for _, pre_cell_type in cell_types.iterrows()
+             for _, post_cell_type in cell_types.iterrows()])
 
     @pathway_property
     def connection_probability(self, pathway):

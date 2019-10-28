@@ -38,6 +38,6 @@ pathways_example = pd.DataFrame(
      for _, post_cell_type in post_cell_types.iterrows()],
     index=range(number_pre_types * number_post_types))
 
-pathways_circuit = circuit_model.get_pathways(("mtype", ))
+pathways_circuit = circuit_model.pathways(("mtype", ))
 
 
