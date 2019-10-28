@@ -17,7 +17,7 @@ from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
-from .pathway import CellType, pathway_property
+from .pathway import CellType, PathwayProperty, pathway_property
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -367,6 +367,7 @@ class BlueBrainCircuitModel(WithFields):
             dict(row)
             for row in _get_tuple_values(cell_type_specifiers)])
 
+    @CellType.memoized
     def pathways(self, cell_type_specifier):
         """
         Pathways in this circuit with pre and post neuron groups
@@ -383,8 +384,8 @@ class BlueBrainCircuitModel(WithFields):
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
-    @pathway_property
-    def connection_probability(self, pathway):
+    @PathwayProperty.memoized
+    def get_connection_probability(self, pathway):
         """
         Connection probability across the pre and post neurons of a pathway.
 
@@ -416,4 +417,9 @@ class BlueBrainCircuitModel(WithFields):
                     self.connectome.afferent_gids(post_cell.gid))
                 for _, post_cell in post_cells.iterrows()])
         return number_connections / (self.cell_sample_size ^ 2)
+
+    # @lazyfield
+    # def connection_probability_0(self):
+    #     """..."""
+    #     return PathwayProperty(self.get_connection_probability)
 
