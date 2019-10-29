@@ -6,6 +6,7 @@ from collections import OrderedDict
 import functools
 import numpy as np
 import pandas as pd
+from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from .cell_type import CellType
 
 
@@ -50,16 +51,37 @@ class Pathways(pd.Series):
         raise NotImplementedError
 
 
-class PathwayProperty:
+class PathwayProperty(WithFields):
     """
     A pathway property.
     Acting like a mapping.
     """
-    def __init__(self, instance, get_one_pathway):
-        self._method = get_one_pathway
-        self._property_name = self.get_storage_name(get_one_pathway)
-        self._instance = instance
-        self._cache = {}
+    label = LambdaField(
+        """
+        A label to go with the pathway property.
+        """,
+        lambda self: self.get_storage_name(self.definition))
+    definition = Field(
+        """
+        Defining computation of the pathway property.
+        """)
+    circuit_model = Field(
+        """
+        The circuit model in whose body this `PathwayProperty` has been
+        defined. This field is required only when the pathway property's
+        computation is not a bound method of the circuit model instance,
+        in which case the data associated with the circuit model needs to be
+        known to compute the pathway property, and hence this `PathwayProperty`
+        instance will need access to the circuit model.
+        """,
+        __required__=False)
+
+    @lazyfield
+    def cache(self):
+        """
+        A dict that will hold the cached results.
+        """,
+        return {}
 
 
     @staticmethod
@@ -80,30 +102,37 @@ class PathwayProperty:
     def _get_cache(self, pathway):
         """..."""
         cell_type_specifier = CellType.specifier(pathway.pre)
-        if cell_type_specifier not in self._cache:
-            self._cache[cell_type_specifier] = {}
+        if cell_type_specifier not in self.cache:
+            self.cache[cell_type_specifier] = {}
         pre_cell_type = self._pre_cell_type(pathway)
-        if pre_cell_type not in self._cache[cell_type_specifier]:
-            self._cache[cell_type_specifier][pre_cell_type] = {}
+        if pre_cell_type not in self.cache[cell_type_specifier]:
+            self.cache[cell_type_specifier][pre_cell_type] = {}
 
-        return self._cache[cell_type_specifier][pre_cell_type]
+        return self.cache[cell_type_specifier][pre_cell_type]
 
     def _get(self, pathway):
         """
         Don't use the cache.
         """
-        value =\
-            self._method(self._instance, pathway)\
-            if self._instance\
-               else self._method(pathway)
-        if isinstance(value, (float, np.float)):
-            return pd.Series({self._property_name: value})
+        try:
+            value = self.definition(self.circuit_model, pathway)
+        except AttributeError:
+            value = self.definition(pathway)
         if isinstance(value, pd.Series):
             return value
+        if isinstance(value, (float, np.float)):
+            return pd.Series({self.label: value})
+        if isinstance(value, tuple):
+            assert len(value) == len(self.label),\
+                """
+                value: {}
+                label: {}
+                """.format(value, self.label)
+            return pd.Series(dict(zip(self.label, value)))
         if isinstance(value, np.array):
             return pd.Series({
-                (self._property_name, index): element
-                for i, element in enumerate(value)})
+                (self.label, index): element
+                for index, element in enumerate(value)})
         raise TypeError(
             """
             Pathway property values for a given pathway should evaluate to:
@@ -150,7 +179,7 @@ class PathwayProperty:
             if pathways is not None:
                 raise type_error
             pathways =\
-                self._instance.pathways(cell_type_specifier)
+                self.circuit_model.pathways(cell_type_specifier)
         else:
             if pathways is None:
                 raise type_error
@@ -163,7 +192,7 @@ class PathwayProperty:
             .concat(
                 [pathways, result],
                 axis=1)\
-            .set_index(self.index_names(cell_type_specifier))
+            .set_index(list(pathways.columns))
 
     def __call__(self, pathway, resample=False):
         """..."""

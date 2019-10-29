@@ -84,8 +84,8 @@ class BlueBrainCircuitModel(WithFields):
 
         self.connection_probability =\
             PathwayProperty(
-                instance=self,
-                get_one_pathway=self.__class__.get_connection_probability)
+                label="connection_probability",
+                definition=self.get_connection_probability)
 
         super().__init__(*args, **kwargs)
 

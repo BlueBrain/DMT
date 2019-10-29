@@ -120,9 +120,23 @@ class BrainCircuitAnalysis(
                     size=sample_size)
         get_measurement =\
             self._get_measurement_method(adapter)
+
+        def _flattened_index(row):
+            """
+            Flatten a series' index
+            """
+            if not isinstance(row, pd.Series):
+                return row
+            if not isinstance(row.index, pandas.MultiIndex):
+                return row
+            return pd.Series(
+                row.values,
+                index=pandas.Index(['_'.join(v) for v in row.index.values]),
+                name=row.name)
+
         measured_values = pandas\
             .DataFrame(
-                [get_measurement(circuit_model, **p, **kwargs)
+                [get_measurement(circuit_model, **_flattend_row(p), **kwargs)
                  for p in parameter_values],
                 columns=[self.phenomenon.label])
         return pandas\
