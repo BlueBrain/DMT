@@ -55,41 +55,55 @@ class PathwayProperty:
     A pathway property.
     Acting like a mapping.
     """
-    def __init__(self, instance, instance_method):
-        self._method = instance_method
-        self._property_name = self.get_storage_name(instance_method)
+    def __init__(self, instance, get_one_pathway):
+        self._method = get_one_pathway
+        self._property_name = self.get_storage_name(get_one_pathway)
         self._instance = instance
         self._cache = {}
 
-    def _get_cache(self, cell_type_specifier):
+
+    @staticmethod
+    def as_tuple(pathway):
         """..."""
+        return (tuple(pathway.pre.values), tuple(pathway.post.values))
+
+    @staticmethod
+    def _pre_cell_type(pathway):
+        """..."""
+        return tuple(pathway.pre.values)
+
+    @staticmethod
+    def _post_cell_type(pathway):
+        """..."""
+        return tuple(pathway.post.values)
+
+    def _get_cache(self, pathway):
+        """..."""
+        cell_type_specifier = CellType.specifier(pathway.pre)
         if cell_type_specifier not in self._cache:
             self._cache[cell_type_specifier] = {}
+        pre_cell_type = self._pre_cell_type(pathway)
+        if pre_cell_type not in self._cache[cell_type_specifier]:
+            self._cache[cell_type_specifier][pre_cell_type] = {}
 
-        return self._cache[cell_type_specifier]
+        return self._cache[cell_type_specifier][pre_cell_type]
 
-    def _cached(self, pathway):
-        """..."""
-        cell_type_specifier_cache =\
-            self._get_cache(
-                CellType.specifier(pathway.pre))
-        pre_cell_type = tuple(pathway.pre.values)
-        if pre_cell_type not in cell_type_specifier_cache:
-            cell_type_specifier_cache[pre_cell_type] = {}
-        post_cell_type = tuple(pathway.post.values)
-        if post_cell_type not in cell_type_specifier_cache[pre_cell_type]:
-            cell_type_specifier_cache[pre_cell_type][post_cell_type] =\
-                self._method(self._instance, pathway)
-                    
-        result = cell_type_specifier_cache[pre_cell_type][post_cell_type]
-        if isinstance(result, (float, np.float)):
-            return pd.Series({self._property_name: result})
-        if isinstance(result, pd.Series):
-            return result
-        if isinstance(result, np.array):
+    def _get(self, pathway):
+        """
+        Don't use the cache.
+        """
+        value =\
+            self._method(self._instance, pathway)\
+            if self._instance\
+               else self._method(pathway)
+        if isinstance(value, (float, np.float)):
+            return pd.Series({self._property_name: value})
+        if isinstance(value, pd.Series):
+            return value
+        if isinstance(value, np.array):
             return pd.Series({
                 (self._property_name, index): element
-                for i, element in enumerate(result)})
+                for i, element in enumerate(value)})
         raise TypeError(
             """
             Pathway property values for a given pathway should evaluate to:
@@ -97,8 +111,17 @@ class PathwayProperty:
             \t2. a pandas.Series
             \t3. a numpy.array
             got {}
-            """.format(result))
+            """.format(value))
 
+    def _cached(self, pathway, resample=False):
+        """..."""
+        cache = self._get_cache(pathway)
+        post_cell_type = self._post_cell_type(pathway)
+        if post_cell_type not in cache or resample:
+            cache[post_cell_type] = self._get(pathway)
+
+        return  cache[post_cell_type]
+                    
     @staticmethod
     def index_names(cell_type_specifier):
         """..."""
@@ -109,7 +132,8 @@ class PathwayProperty:
         
     def dataframe(self,
             cell_type_specifier=None,
-            pathways=None):
+            pathways=None,
+            resample=False):
         """
         Arguments
         ------------
@@ -131,54 +155,56 @@ class PathwayProperty:
             if pathways is None:
                 raise type_error
 
-        result = pathways.apply(self._cached, axis=1)
+        result = pathways.apply(
+            lambda pathway: self._cached(pathway, resample),
+            axis=1)
 
         return pd\
             .concat(
                 [pathways, result],
                 axis=1)\
-            .set_index(list(pathways.columns))
+            .set_index(self.index_names(cell_type_specifier))
 
-    def __call__(self, pathway):
+    def __call__(self, pathway, resample=False):
         """..."""
-        return self._cached(pathway)
+        return self._cached(pathway, resample)
 
     @staticmethod
-    def validate(instance_method):
+    def validate(get_one_pathway):
         """
         Instance methods that compute pathway properties must start with `get_`
         """
-        assert len(instance_method.__name__) > 4
-        assert instance_method.__name__[0:3] == "get",\
-            instance_method.__name__
+        assert len(get_one_pathway.__name__) > 4
+        assert get_one_pathway.__name__[0:3] == "get",\
+            get_one_pathway.__name__
         return True
 
     @staticmethod
-    def get_storage_name(instance_method):
+    def get_storage_name(get_one_pathway):
         """
         Name of the property to attach to an instance...
         """
-        PathwayProperty.validate(instance_method)
-        return instance_method.__name__[4:]
+        PathwayProperty.validate(get_one_pathway)
+        return get_one_pathway.__name__[4:]
 
     @staticmethod
-    def memoized(instance_method):
+    def memoized(get_one_pathway):
         """
-        Decorate an `instance_method` as a PathwayProperty.
+        Decorate an instance method as a PathwayProperty.
         
         Arguments
         -------------
-        `instance_method`: Method of an class instance.
+        `get_one_pathway`: Method of an class instance.
         """
-        storage_name = PathwayProperty.get_storage_name(instance_method)
+        storage_name = PathwayProperty.get_storage_name(get_one_pathway)
 
-        @functools.wraps(instance_method)
+        @functools.wraps(get_one_pathway)
         def effective(instance, pathway):
             """..."""
             if not hasattr(instance, storage_name):
                 setattr(
                     instance, storage_name,
-                    PathwayProperty(instance, instance_method))
+                    PathwayProperty(instance, get_one_pathway))
             return getattr(instance, storage_name)(pathway)
 
         return effective

@@ -82,6 +82,11 @@ class BlueBrainCircuitModel(WithFields):
         if circuit is not None:
             self._bluepy_circuit = circuit
 
+        self.connection_probability =\
+            PathwayProperty(
+                instance=self,
+                get_one_pathway=self.__class__.get_connection_probability)
+
         super().__init__(*args, **kwargs)
 
     def get_path(self, *relative_path):
@@ -389,7 +394,7 @@ class BlueBrainCircuitModel(WithFields):
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
-    @PathwayProperty.memoized
+    #@PathwayProperty.memoized
     def get_connection_probability(self, pathway):
         """
         Connection probability across the pre and post neurons of a pathway.
@@ -431,7 +436,7 @@ class BlueBrainCircuitModel(WithFields):
             number_connections / (self.cell_sample_size ^ 2)
         return connection_probability
 
-    @PathwayProperty.memoized
+    #@PathwayProperty.memoized
     def get_connection_probability_by_distance(self, pathway):
         """
         Connection probability across the pre and post neurons of a pathway.
