@@ -129,7 +129,7 @@ class CircuitAnalysisTest(WithFields):
         assert path_report == output_path.joinpath(get_label(phenomenon)),\
             "{} != {}".format(
                 path_report,
-                output_pat.joinpath(get_label(phenomenon)))
+                output_path.joinpath(get_label(phenomenon)))
         assert path_report.is_dir()
         assert any(p.is_file() for p in path_report.glob("report*")),\
             "Did not find a report file."

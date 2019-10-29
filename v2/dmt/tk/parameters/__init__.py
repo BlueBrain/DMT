@@ -124,6 +124,20 @@ class Parameters(WithFields):
             for parameter_row in parameter_rows
             for _ in range(size))
             
+    def as_dataframe(self, parameter_values):
+        """
+        Arguments
+        --------
+        `parameter_values` : A pandas.DataFrame or a list of parameter rows,
+        each of which is a mapping (or a pandas Series)...
+        """
+        if isinstance(parameter_values, pandas.DataFrame):
+            return parameter_values
+        assert isinstance(parameter_values, list)
+        return pandas\
+            .DataFrame(parameter_values)\
+            .apply(make_hashable, axis=0)
+
     def get_index(self, parameter_values):
         """
         Get a `pandas.Index` / `pandas.MultiIndex` for the parameter values.
@@ -132,10 +146,9 @@ class Parameters(WithFields):
         -------------
         `parameter_values`: A list of mappings (label --> value)
         """
-        dataframe =\
-            pandas.DataFrame(parameter_values)\
-                  .apply(make_hashable, axis=0)
+        dataframe = self.as_dataframe(parameter_values)
         return dataframe.set_index(list(dataframe.columns.values)).index
+
 
     @lazyproperty
     def variables(self):
