@@ -10,6 +10,7 @@ from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
+from neuro_dmt import terminology
 
 class BrainCircuitAnalysis(
         Analysis):
@@ -95,7 +96,8 @@ class BrainCircuitAnalysis(
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            sample_size=None):
+            sample_size=None,
+            *args, **kwargs):
         """
         Get a statistical measurement.
         """
@@ -108,12 +110,13 @@ class BrainCircuitAnalysis(
                 .for_sampling(
                     adapter,
                     circuit_model,
-                    size=sample_size )
+                    size=sample_size)
         get_measurement =\
             self._get_measurement_method(adapter)
         measured_values = pandas\
             .DataFrame(
-                [get_measurement(circuit_model, **p) for p in parameter_values],
+                [get_measurement(circuit_model, **p, **kwargs)
+                 for p in parameter_values],
                 columns=[self.phenomenon.label])
         return pandas\
             .concat(
@@ -288,7 +291,9 @@ class BrainCircuitAnalysis(
             self.get_measurement(
                 circuit_model,
                 adapter=adapter,
-                sample_size=kwargs.get("sample_size", None))
+                sampling_procedure=kwargs.get(
+                    "sampling_procedure",
+                    terminology.measurement_method.random_sampling))
         measurement_method =\
             self._get_measurement_method(adapter).__doc__
         report =\

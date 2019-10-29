@@ -18,7 +18,7 @@ from neuro_dmt.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
-from ..model import CellType
+from ..model.cell_type import CellType
 
 
 @implements(CellDensityAdapterInterface)
@@ -178,35 +178,19 @@ class BlueBrainCircuitAdapter(WithFields):
         count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
         return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
 
-    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
-            mtype=None,
-            etype=None,
-            region=None,
-            layer=None,
-            depth=None,
-            height=None,
-            mesocolumn=None,
-            hypercolumn=None,
-            synapse_class=None,
-            postsynaptic=None,
-            presynaptic=None,
-            measurement_method=terminology.measurement_method.random_sampling):
+            sampling_procedure=terminology.measurement_method.random_sampling,
+            **kwargs):
         """
         Get cell type density for either the `circuit_model` passes as a
         parameter or `self.circuit_model`.
         """
         circuit_model = self._resolve(circuit_model)
         query = terminology.cell.filter(
-            **terminology.circuit.filter(
-                mtype=mtype,
-                etype=etype,
-                region=region,
-                layer=layer,
-                depth=depth,
-                height=height))
-        if measurement_method != terminology.measurement_method.random_sampling:
+            **terminology.circuit.filter(**kwargs))
+        if sampling_procedure != terminology.measurement_method.random_sampling:
             return self._get_cell_density_overall(
                 circuit_model,
                 **query)
@@ -215,11 +199,11 @@ class BlueBrainCircuitAdapter(WithFields):
                 self.random_region_of_interest(
                     circuit_model,
                     **query))
-        except StopIteration:
+        except stopiteration:
             self.logger.warn(
                 self.logger.get_source_info(),
                 """
-                No more random regions of interest for query:
+                no more random regions of interest for query:
                 \t{}""".format(query))
             return np.nan
 
@@ -255,7 +239,7 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model=None,
             pre_synaptic_cell_type=None,
             post_synaptic_cell_type=None,
-            sample_size=20):
+            **kwargs):
         """
         Arguments
         -----------
@@ -266,8 +250,11 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         circuit_model =\
             self._resolve(circuit_model)
-        cell_type_specifier =\
-            CellType.specifier(pre_synaptic_cell_type)
         return\
-            circuit_model.connection_probability(("mtype",))\
-                         .loc[(pre_mtype, post_mtype)]
+            circuit_model\
+            .connection_probability(
+                CellType.specifier(pre_synaptic_cell_type))\
+            .loc[
+                CellType.pathway(
+                    pre_synaptic_cell_type,
+                    post_synaptic_cell_type)]
