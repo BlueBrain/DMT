@@ -81,8 +81,8 @@ class Bars(WithFields):
                 height=self.height_figure,
                 aspect=self.aspect_ratio_figure)\
             .set(
-                self.xlabel,
-                self.ylabel)
+                xlabel=self.xlabel,
+                ylabel=self.ylabel)
         return Figure(
             graphic,
             caption=caption)

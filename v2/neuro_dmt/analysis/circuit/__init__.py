@@ -86,12 +86,19 @@ class BrainCircuitAnalysis(
         adapter = self._resolve_adapter(adapter)
         measurement_name =\
             self.AdapterInterface.__measurement__
+        assert len(measurement_name) > 4
+        assert measurement_name[0] != '_'
+        measurement_name = "get_{}".format(measurement_name)
         try:
             return getattr(adapter, measurement_name)
-        except AttributeError:
-            return getattr(adapter, "get_{}".format(measurement_name))
-        raise AttributeError(
-            "No adapter attribute to measure {}".format(measurement_name))
+        except AttributeError as error:
+            raise AttributeError(
+                """
+                No adapter attribute to measure {}:
+                \t{}
+                """.format(
+                    measurement_name,
+                    error))
 
     def get_measurement(self,
             circuit_model,

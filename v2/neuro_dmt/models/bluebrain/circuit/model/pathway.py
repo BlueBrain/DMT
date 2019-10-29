@@ -6,76 +6,8 @@ from collections import OrderedDict
 import functools
 import numpy as np
 import pandas as pd
+from .cell_type import CellType
 
-
-class CellType:
-    """
-    How do we specify the type of a cell.
-    """
-    def __init__(self, value):
-        """
-        Arguments
-        --------------
-        `value`: a Mapping like an OrderedDict, or a pandas.Series
-        """
-        self._specifier = CellType.specifier(value)
-        self._value = value
-
-    @staticmethod
-    def specifier(cell_type):
-        """
-        Get specifiers for a given cell type.
-
-        Arguments
-        --------------
-        `cell_type`: a Mapping like an OrderedDict, or a pandas.Series
-        """
-        if isinstance(cell_type, OrderedDict):
-            return tuple(cell_type.keys())
-        if isinstance(cell_type, pd.Series):
-            return tuple(cell_type.index.values)
-        raise TypeError(
-            """
-            Can extract cell type specifiers from an `OrderedDict`
-            or a `pandas.Series`, received a {}
-            """.format(type(cell_type)))
-
-    @staticmethod
-    def pathway(
-            pre_synaptic_cell_type,
-            post_synaptic_cell_type):
-        """
-        A `Pathway` like object from a specified cell type on the
-        pre-synaptic side and a specified cell type on  the 
-        post-synaptic side.
-        """
-        def _at(pos, cell_type):
-            return pd.Series(
-                cell_type.values,
-                index=pd.MultiIndex.from_tuples([
-                    (pos, value)
-                    for value in cell_type.index.values]))
-        return\
-            _at("pre", pre_synaptic_cell_type).append(
-                _at("post", post_synaptic_cell_type))
-
-    @staticmethod
-    def memoized(instance_method):
-        """
-        Memoize the results of a method that takes
-        cell type specifiers as arguments.
-        """
-        instance_method._cache = {}
-
-        @functools.wraps(instance_method)
-        def effective(instance, cell_type_specifier):
-            """..."""
-            if cell_type_specifier not in instance_method._cache:
-                instance_method._cache[cell_type_specifier] =\
-                    instance_method(instance, cell_type_specifier)
-            return instance_method._cache[cell_type_specifier]
-
-        return effective
 
 class Pathway:
     """
@@ -125,6 +57,7 @@ class PathwayProperty:
     """
     def __init__(self, instance, instance_method):
         self._method = instance_method
+        self._property_name = self.get_storage_name(instance_method)
         self._instance = instance
         self._cache = {}
 
@@ -148,7 +81,23 @@ class PathwayProperty:
             cell_type_specifier_cache[pre_cell_type][post_cell_type] =\
                 self._method(self._instance, pathway)
                     
-        return cell_type_specifier_cache[pre_cell_type][post_cell_type]
+        result = cell_type_specifier_cache[pre_cell_type][post_cell_type]
+        if isinstance(result, (float, np.float)):
+            return pd.Series({self._property_name: result})
+        if isinstance(result, pd.Series):
+            return result
+        if isinstance(result, np.array):
+            return pd.Series({
+                (self._property_name, index): element
+                for i, element in enumerate(result)})
+        raise TypeError(
+            """
+            Pathway property values for a given pathway should evaluate to:
+            \t1. a float
+            \t2. a pandas.Series
+            \t3. a numpy.array
+            got {}
+            """.format(result))
 
     @staticmethod
     def index_names(cell_type_specifier):
@@ -158,19 +107,59 @@ class PathwayProperty:
             for cell_property in cell_type_specifier]
         return at("pre") + at("post")
         
-    def dataframe(self, cell_type_specifier):
-        """..."""
-        pathways = self._instance.pathways(cell_type_specifier)
-        result = pathways.apply(
-            lambda pathway: self._cached(pathway),
-            axis=1)
-        return result\
-            if not isinstance(result, pd.Series) else\
-               pd.DataFrame(result.rename(self._method.__name__))
+    def dataframe(self,
+            cell_type_specifier=None,
+            pathways=None):
+        """
+        Arguments
+        ------------
+        `cell_type_specifier`: tuple of cell properties
+        `pathways` : pandas.DataFrame of pathways.
+        """
+        type_error = TypeError(
+            """
+            {} method {} accepts only one of two arguments:
+            \t 1. cell_type_specifier: a tuple of strings
+            \t 2. pathways: pandas.DataFrame
+            """)
+        if cell_type_specifier:
+            if pathways is not None:
+                raise type_error
+            pathways =\
+                self._instance.pathways(cell_type_specifier)
+        else:
+            if pathways is None:
+                raise type_error
+
+        result = pathways.apply(self._cached, axis=1)
+
+        return pd\
+            .concat(
+                [pathways, result],
+                axis=1)\
+            .set_index(list(pathways.columns))
 
     def __call__(self, pathway):
         """..."""
         return self._cached(pathway)
+
+    @staticmethod
+    def validate(instance_method):
+        """
+        Instance methods that compute pathway properties must start with `get_`
+        """
+        assert len(instance_method.__name__) > 4
+        assert instance_method.__name__[0:3] == "get",\
+            instance_method.__name__
+        return True
+
+    @staticmethod
+    def get_storage_name(instance_method):
+        """
+        Name of the property to attach to an instance...
+        """
+        PathwayProperty.validate(instance_method)
+        return instance_method.__name__[4:]
 
     @staticmethod
     def memoized(instance_method):
@@ -181,21 +170,17 @@ class PathwayProperty:
         -------------
         `instance_method`: Method of an class instance.
         """
-        assert len(instance_method.__name__) > 4
-        assert instance_method.__name__[0:3] == "get",\
-            instance_method.__name__
-        storage_name =\
-            instance_method.__name__[4:]
-        
+        storage_name = PathwayProperty.get_storage_name(instance_method)
+
         @functools.wraps(instance_method)
         def effective(instance, pathway):
+            """..."""
             if not hasattr(instance, storage_name):
                 setattr(
-                    instance,
-                    storage_name,
+                    instance, storage_name,
                     PathwayProperty(instance, instance_method))
             return getattr(instance, storage_name)(pathway)
-            
+
         return effective
 
 

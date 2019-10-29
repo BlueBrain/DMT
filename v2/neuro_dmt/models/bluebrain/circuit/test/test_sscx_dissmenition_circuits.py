@@ -131,54 +131,54 @@ def test_cell_denisty_validation():
             circuit_model_bio_one,
             output_folder="validation")
 
-def test_connection_probability_analysis():
-    """
-    `BrainCircuitAnalysis` for connection probability should work with
-    `BlueBrainCircuitModel` and `BlueBrainCircuitaAapter`
-    """
-    phenomenon = Phenomenon(
-        "Connection Probability",
-        """
-        Probability that two neurons in a pathway are connected.
-        mostly we will use `mtype`-->`mtype` pathways. but we could define
-        connection probability of `synapse_class`-->`synapse_class` pathways
-        as well.
-        """,
-        group="Connectome")
-    analysis_test = BlueBrainCircuitAnalysisTest(
-        analysis=BrainCircuitAnalysis(
-            phenomenon=Phenomenon,
-            AdapterInterface=ConnectionProbabilityAdapterInterface,
-            measurement_parameters=Parameters(
-                lambda model, adapter: adapter.get_mtypes(model)),
-            plotter=HeatMap(
-                xvar="pre_mtype",
-                xlabel="pre-mtype",
-                yvar="post_mtype",
-                ylabel="post-mtype",
-                vvar=("connection_probability", "mean")))))
-    analysis_test\
-        .test_circuit_model(circuit_label)
-    connection_probability_measurement =\
-        analysis_test.test_get_measurement(
-            circuit_model_bio_one)
-    assert len(connection_probability_measurement) == 1
-    dataset, dataframe =[
-        (k, v) for k, v in connection_probability_measurement.items()][0]
-    assert dataset = circuit_model_bio_one.label
-    summary =\
-        measurement.concat_as_summaries(
-            connection_probability_measurement)
-    mtypes =\
-        analysis_test.adapter\
-                     .get_mtypes(
-                         circuit_model_bio_one)
-    assert summary.shape[0] == len(mtypes) * len(mtypes), summary.shape
+# def test_connection_probability_analysis():
+#     """
+#     `BrainCircuitAnalysis` for connection probability should work with
+#     `BlueBrainCircuitModel` and `BlueBrainCircuitaAapter`
+#     """
+#     phenomenon = Phenomenon(
+#         "Connection Probability",
+#         """
+#         Probability that two neurons in a pathway are connected.
+#         mostly we will use `mtype`-->`mtype` pathways. but we could define
+#         connection probability of `synapse_class`-->`synapse_class` pathways
+#         as well.
+#         """,
+#         group="Connectome")
+#     analysis_test = BlueBrainCircuitAnalysisTest(
+#         analysis=BrainCircuitAnalysis(
+#             phenomenon=Phenomenon,
+#             AdapterInterface=ConnectionProbabilityAdapterInterface,
+#             measurement_parameters=Parameters(
+#                 lambda model, adapter: adapter.get_mtypes(model)),
+#             plotter=HeatMap(
+#                 xvar="pre_mtype",
+#                 xlabel="pre-mtype",
+#                 yvar="post_mtype",
+#                 ylabel="post-mtype",
+#                 vvar=("connection_probability", "mean"))))
+#     analysis_test\
+#         .test_circuit_model(circuit_label)
+#     connection_probability_measurement =\
+#         analysis_test.test_get_measurement(
+#             circuit_model_bio_one)
+#     assert len(connection_probability_measurement) == 1
+#     dataset, dataframe =[
+#         (k, v) for k, v in connection_probability_measurement.items()][0]
+#     assert dataset = circuit_model_bio_one.label
+#     summary =\
+#         measurement.concat_as_summaries(
+#             connection_probability_measurement)
+#     mtypes =\
+#         analysis_test.adapter\
+#                      .get_mtypes(
+#                          circuit_model_bio_one)
+#     assert summary.shape[0] == len(mtypes) * len(mtypes), summary.shape
 
-    analysis_test\
-        .test_call_analysis(
-            circuit_model_bio_one)
-    analysis_test\
-        .test_post_report(
-            circuit_model_bio_one,
-            output_folder="analysis")
+#     analysis_test\
+#         .test_call_analysis(
+#             circuit_model_bio_one)
+#     analysis_test\
+#         .test_post_report(
+#             circuit_model_bio_one,
+#             output_folder="analysis")

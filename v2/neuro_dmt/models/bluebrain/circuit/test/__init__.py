@@ -117,7 +117,7 @@ class BlueBrainCircuitAnalysisTest(WithFields):
                 circuit_model, self.adapter, *args, **kwargs)
 
         return _wrapped
-
+    
     def test_circuit_model(self, circuit_label,  *args, **kwargs):
         """
         `BlueBrainCircuitModel` should be able to load circuit data.

@@ -17,7 +17,8 @@ from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
-from .pathway import CellType, PathwayProperty, pathway_property
+from .cell_type import CellType
+from .pathway import PathwayProperty, pathway_property
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -239,7 +240,7 @@ class BlueBrainCircuitModel(WithFields):
         return cell_query
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
-    def get_cells(self, properties=None, **query):
+    def get_cells(self, properties=None, with_gid_column=True, **query):
         """
         Get cells in a region, with requested properties.
 
@@ -247,13 +248,16 @@ class BlueBrainCircuitModel(WithFields):
         --------------
         properties : single cell property or  list of cell properties to fetch.
         query : sequence of keyword arguments providing query parameters.
+        with_gid_column : if True add a column for cell gids.
         """
         cell_query = self._get_cell_query(
             **self._resolve_query_region(**query))
         cells = self.cell_collection.get(
             group=cell_query,
             properties=properties)
-        return cells.assign(gid=cells.index.values)
+        return cells.assign(gid=cells.index.values)\
+            if with_gid_column\
+               else cells
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_count(self, **query):
@@ -295,6 +299,7 @@ class BlueBrainCircuitModel(WithFields):
         cells = self\
             .get_cells(
                 properties=XYZ,
+                with_gid_column=False,
                 **query_parameters)
         while cells.shape[0] > 0:
             position = cells.sample(n=1).iloc[0]
@@ -407,19 +412,67 @@ class BlueBrainCircuitModel(WithFields):
         pre_cells = pd.DataFrame(list(take(
             self.cell_sample_size,
             self.random_cells(**pathway.pre))))
+        if pre_cells.empty:
+            return np.nan
+
         post_cells = pd.DataFrame(list(take(
             self.cell_sample_size,
             self.random_cells(**pathway.post))))
+        if post_cells.empty:
+            return np.nan
+
         number_connections =\
             np.sum([
                 np.in1d(
                     pre_cells.gid.values,
                     self.connectome.afferent_gids(post_cell.gid))
                 for _, post_cell in post_cells.iterrows()])
-        return number_connections / (self.cell_sample_size ^ 2)
+        connection_probability =\
+            number_connections / (self.cell_sample_size ^ 2)
+        return connection_probability
 
-    # @lazyfield
-    # def connection_probability_0(self):
-    #     """..."""
-    #     return PathwayProperty(self.get_connection_probability)
+    @PathwayProperty.memoized
+    def get_connection_probability_by_distance(self, pathway):
+        """
+        Connection probability across the pre and post neurons of a pathway.
 
+        Arguments
+        ------------
+        `pathway`: pandas.Series with index <pre, post>
+        """
+        logger.info(
+            logger.get_source_info(),
+            """
+            Get connection probability for pathway,
+            \t{}
+            -->
+            \t{}
+            """.format(
+                dict(pathway.pre),
+                dict(pathway.post)))
+
+        pre_cells = pd.DataFrame(list(take(
+            self.cell_sample_size,
+            self.random_cells(**pathway.pre))))
+        if pre_cells.empty:
+            return np.nan
+
+        post_cells = pd.DataFrame(list(take(
+            self.cell_sample_size,
+            self.random_cells(**pathway.post))))
+        if post_cells.empty:
+            return np.nan
+
+        number_connections =\
+            np.sum([
+                np.in1d(
+                    pre_cells.gid.values,
+                    self.connectome.afferent_gids(post_cell.gid))
+                for _, post_cell in post_cells.iterrows()])
+        connection_probability =\
+            number_connections / (self.cell_sample_size ^ 2)
+        soma_distance =\
+            np.nan
+        return pd.Series({
+            "soma_distance": soma_distance,
+            "connection_probability": connection_probability})
