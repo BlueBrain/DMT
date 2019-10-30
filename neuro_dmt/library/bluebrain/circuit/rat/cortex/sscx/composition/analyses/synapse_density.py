@@ -90,6 +90,7 @@ def run_analysis(
     synapse_density_by_depth.data =\
         index_with_two_decimal_point_depth(
             synapse_density_by_depth.data)
+    synapse_density_by_depth.data.reset_index().to_csv("synapse_density.csv")
     synapse_density_plotter=\
         Plotter(
             synapse_density_by_depth,
@@ -105,7 +106,7 @@ def run_analysis(
             output_dir_path=os.path.join(
                 os.getcwd(),
                 "test_sscx_analysis"))
-    syn_plot_figure=\
+    syn_plot_figure, _=\
         synapse_density_plotter.plot(
             {"xticks_rotation": 90})
 
@@ -162,6 +163,8 @@ def run_analysis(
     exc_syn_data_by_depth.data =\
         index_with_two_decimal_point_depth(
             exc_syn_data_by_depth.data)
+    exc_syn_data_by_depth.data.reset_index().to_csv(
+        "excitatory_synapse_density.csv")
     exc_syn_density_plotter=\
         Plotter(
             exc_syn_data_by_depth,
@@ -178,20 +181,6 @@ def run_analysis(
                 os.getcwd(),
                 "test_sscx_analysis"))
 
-    exc_syn_plot_figure=\
-        exc_syn_density_plotter.plot(
-            {"xticks_rotation": 90})
-    
-    for (layer_begin, layer_end) in layer_begin_end:
-        plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
-    plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
-    plt.xticks(layer_mids, layer_names, fontsize=20)
-
-    exc_syn_density_plotter.save(
-        exc_syn_plot_figure,
-        file_name="excitatory_synapse_density_by_depth.{}".format(file_format),
-        file_format=file_format)
-
     inh_syn_data_by_depth=\
         sscx_adapter.get_inhibitory_synapse_density(
             sscx_circuit_model,
@@ -205,6 +194,8 @@ def run_analysis(
     inh_syn_data_by_depth.data =\
         index_with_two_decimal_point_depth(
             inh_syn_data_by_depth.data)
+    inh_syn_data_by_depth.data.reset_index().to_csv(
+        "inhibitory_synapse_density.csv")
     inh_syn_density_plotter=\
         Plotter(
             inh_syn_data_by_depth,
@@ -221,7 +212,30 @@ def run_analysis(
                 os.getcwd(),
                 "test_sscx_analysis"))
 
-    inh_syn_plot_figure=\
+    exc_syn_plot_figure, axes=\
+        exc_syn_density_plotter.plot(
+            {"xticks_rotation": 90})
+    
+    for (layer_begin, layer_end) in layer_begin_end:
+        plt.plot((layer_begin, layer_begin), (ymin, ymax), "k-", linewidth=4)
+    plt.plot((bottom, bottom), (ymin, ymax), "k-", linewidth=4)
+    plt.xticks(layer_mids, layer_names, fontsize=20)
+
+    inh_plotting_data =\
+        inh_syn_density_plotter.get_plotting_dataframe()
+
+    axes.errorbar(
+        inh_plotting_data.index.values,
+        inh_plotting_data["mean"].values,
+        yerr=inh_plotting_data["std"].values,
+        drawstyle="steps-mid")
+    exc_syn_density_plotter.save(
+        exc_syn_plot_figure,
+        file_name="excitatory_synapse_density_by_depth.{}".format(file_format),
+        file_format=file_format)
+
+
+    inh_syn_plot_figure, _=\
         inh_syn_density_plotter.plot(
             {"xticks_rotation": 90})
     

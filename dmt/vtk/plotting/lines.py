@@ -164,4 +164,5 @@ class LinePlot(Plot):
         plt.legend(
             prop=fontP,
             loc=self._legend_loc)
-        return figure
+        #return figure
+        return figure, axes #what is the difference between axes and figure?
