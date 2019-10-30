@@ -41,7 +41,9 @@ def test_connection_probability():
             phenomenon=phenomenon,
             AdapterInterface=ConnectionProbabilityInterface,
             measurement_parameters=Parameters(
-                lambda adapter, model: adapter.get_pathways(model).sample(n=20)),
+                lambda adapter, model: adapter.get_pathways(
+                    model, ("mtype",)
+                ).sample(n=5)),
             plotter=HeatMap(
                 xvar="pre_mtype",
                 xlabel="pre-mtype",

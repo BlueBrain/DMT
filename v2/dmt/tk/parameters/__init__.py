@@ -159,7 +159,7 @@ class Parameters(WithFields):
                     if key[0] == level_value}
                     
             return {
-                level_value : nested(_extract_level_zero(level_value))
+                level_value : Parameters.nested(_extract_level_zero(level_value))
                 for level_value in zero_level_values}
 
         assert isinstance(row, pandas.Series)
@@ -169,7 +169,7 @@ class Parameters(WithFields):
 
         zero_level_values = row.index.get_level_values(level=0)
         return {
-            level_value: nested(row.loc[level_value])
+            level_value: Parameters.nested(row.loc[level_value])
             for level_value in zero_level_values}
 
     def for_sampling(self, *args, size=None):

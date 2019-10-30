@@ -233,12 +233,12 @@ class BlueBrainCircuitAdapter(WithFields):
         group of neurons in the circuit.
         """
         circuit_model = self._resolve(circuit_model)
-        return circuit_model.get_pathways(cell_type_specifier)
+        return circuit_model.pathways(cell_type_specifier)
 
     def get_connection_probability(self,
             circuit_model=None,
-            pre_synaptic_cell_type=None,
-            post_synaptic_cell_type=None,
+            pre_synaptic={},
+            post_synaptic={},
             **kwargs):
         """
         Arguments
@@ -253,8 +253,7 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             circuit_model\
             .connection_probability(
-                CellType.specifier(pre_synaptic_cell_type))\
-            .loc[
                 CellType.pathway(
-                    pre_synaptic_cell_type,
-                    post_synaptic_cell_type)]
+                    pd.Series(pre_synaptic),
+                    pd.Series(post_synaptic)),
+                **kwargs)
