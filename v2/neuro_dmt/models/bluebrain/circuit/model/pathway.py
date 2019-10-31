@@ -6,9 +6,12 @@ from collections import OrderedDict
 import functools
 import numpy as np
 import pandas as pd
+from dmt.tk.journal import Logger
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from .cell_type import CellType
 
+
+logger = Logger(client=__file__)
 
 class Pathway:
     """
@@ -87,21 +90,23 @@ class PathwayProperty(WithFields):
     @staticmethod
     def as_tuple(pathway):
         """..."""
-        return (tuple(pathway.pre.values), tuple(pathway.post.values))
+        return (
+            tuple(pathway.pre_synaptic.values),
+            tuple(pathway.post_synaptic.values))
 
     @staticmethod
     def _pre_cell_type(pathway):
         """..."""
-        return tuple(pathway.pre.values)
+        return tuple(pathway.pre_synaptic.values)
 
     @staticmethod
     def _post_cell_type(pathway):
         """..."""
-        return tuple(pathway.post.values)
+        return tuple(pathway.post_synaptic.values)
 
     def _get_cache(self, pathway):
         """..."""
-        cell_type_specifier = CellType.specifier(pathway.pre)
+        cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
         if cell_type_specifier not in self.cache:
             self.cache[cell_type_specifier] = {}
         pre_cell_type = self._pre_cell_type(pathway)
@@ -110,14 +115,19 @@ class PathwayProperty(WithFields):
 
         return self.cache[cell_type_specifier][pre_cell_type]
 
-    def _get(self, pathway):
+    def _get(self, pathway, **kwargs):
         """
         Don't use the cache.
         """
+        logger.info(
+            logger.get_source_info(),
+            """
+            Call definition with kwargs:  {}
+            """.format(kwargs))
         try:
-            value = self.definition(self.circuit_model, pathway)
+            value = self.definition(self.circuit_model, pathway, **kwargs)
         except AttributeError:
-            value = self.definition(pathway)
+            value = self.definition(pathway, **kwargs)
         if isinstance(value, pd.Series):
             return value
         if isinstance(value, (float, np.float)):
@@ -142,12 +152,12 @@ class PathwayProperty(WithFields):
             got {}
             """.format(value))
 
-    def _cached(self, pathway, resample=False):
+    def _cached(self, pathway, resample=False, **kwargs):
         """..."""
         cache = self._get_cache(pathway)
         post_cell_type = self._post_cell_type(pathway)
         if post_cell_type not in cache or resample:
-            cache[post_cell_type] = self._get(pathway)
+            cache[post_cell_type] = self._get(pathway, **kwargs)
 
         return  cache[post_cell_type]
                     
@@ -194,9 +204,9 @@ class PathwayProperty(WithFields):
                 axis=1)\
             .set_index(list(pathways.columns))
 
-    def __call__(self, pathway, resample=False):
+    def __call__(self, pathway, **kwargs):
         """..."""
-        return self._cached(pathway, resample)
+        return self._cached(pathway, **kwargs)
 
     @staticmethod
     def validate(get_one_pathway):
@@ -345,19 +355,19 @@ def pathway_property(instance_method):
         instance_cache =\
             getattr(instance, instance_cache_attribute)
         cell_type_specifier =\
-            CellType.specifier(pathway.pre)
+            CellType.specifier(pathway.pre_synaptic)
         assert\
-            CellType.specifier(pathway.post) == cell_type_specifier,\
+            CellType.specifier(pathway.post_synaptic) == cell_type_specifier,\
             """
             Post cell type:
             {}.
             """.format(
                 ".\n".join(
                     "{}: {}".join(key, value)
-                    for key, value in pathway.post.items()))
+                    for key, value in pathway.post_synaptic.items()))
 
-        pre_cell_type = tuple(pathway.pre.values)
-        post_cell_type = tuple(pathway.post.values)
+        pre_cell_type = tuple(pathway.pre_synaptic.values)
+        post_cell_type = tuple(pathway.post_synaptic.values)
 
         if cell_type_specifier not in instance_cache:
             instance_cache[cell_type_specifier] = {}

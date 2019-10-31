@@ -395,7 +395,7 @@ class BlueBrainCircuitModel(WithFields):
              for _, post_cell_type in cell_types.iterrows()])
 
     #@PathwayProperty.memoized
-    def get_connection_probability(self, pathway):
+    def get_connection_probability(self, pathway, sample_size=None):
         """
         Connection probability across the pre and post neurons of a pathway.
 
@@ -409,20 +409,25 @@ class BlueBrainCircuitModel(WithFields):
             Get connection probability for pathway,
             \t{}
             -->
-            \t{}
+            \t{}.
+            Number connections to sample: {}
             """.format(
-                dict(pathway.pre),
-                dict(pathway.post)))
+                dict(pathway.pre_synaptic),
+                dict(pathway.post_synaptic),
+                sample_size))
 
+        sample_size = self.cell_sample_size\
+            if sample_size is None else\
+               sample_size
         pre_cells = pd.DataFrame(list(take(
-            self.cell_sample_size,
-            self.random_cells(**pathway.pre))))
+            sample_size,
+            self.random_cells(**pathway.pre_synaptic))))
         if pre_cells.empty:
             return np.nan
 
         post_cells = pd.DataFrame(list(take(
-            self.cell_sample_size,
-            self.random_cells(**pathway.post))))
+            sample_size,
+            self.random_cells(**pathway.post_synaptic))))
         if post_cells.empty:
             return np.nan
 
@@ -433,7 +438,7 @@ class BlueBrainCircuitModel(WithFields):
                     self.connectome.afferent_gids(post_cell.gid))
                 for _, post_cell in post_cells.iterrows()])
         connection_probability =\
-            number_connections / (self.cell_sample_size ^ 2)
+            number_connections / (sample_size ^ 2)
         return connection_probability
 
     #@PathwayProperty.memoized
@@ -453,18 +458,18 @@ class BlueBrainCircuitModel(WithFields):
             -->
             \t{}
             """.format(
-                dict(pathway.pre),
-                dict(pathway.post)))
+                dict(pathway.pre_synaptic),
+                dict(pathway.post_synaptic)))
 
         pre_cells = pd.DataFrame(list(take(
             self.cell_sample_size,
-            self.random_cells(**pathway.pre))))
+            self.random_cells(**pathway.pre_synaptic))))
         if pre_cells.empty:
             return np.nan
 
         post_cells = pd.DataFrame(list(take(
             self.cell_sample_size,
-            self.random_cells(**pathway.post))))
+            self.random_cells(**pathway.post_synaptic))))
         if post_cells.empty:
             return np.nan
 

@@ -53,8 +53,8 @@ class CellType:
                     (pos, value)
                     for value in cell_type.index.values]))
         return\
-            _at("pre", pre_synaptic_cell_type).append(
-                _at("post", post_synaptic_cell_type))
+            _at("pre_synaptic", pre_synaptic_cell_type).append(
+                _at("post_synaptic", post_synaptic_cell_type))
 
     @staticmethod
     def memoized(instance_method):
