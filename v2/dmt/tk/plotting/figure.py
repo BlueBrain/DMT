@@ -44,5 +44,9 @@ class Figure(WithFields):
         try:
             return self.graphic.savefig(path, dpi=dpi)
         except AttributeError:
-            raise TypeError(
-                "Figure type {} not supported".format(figure.__class__))
+            try:
+                return self.graphic.figure.savefig(path, dpi=dpi)
+            except AttributeError:
+                raise TypeError(
+                    "Figure type {} not supported".format(
+                        self.graphic.__class__))

@@ -3,11 +3,12 @@ Utility classes to handle measurement parameters.
 """
 
 from types import GeneratorType
-from collections import Mapping
+from collections.abc import Mapping
 import pandas
 from dmt.tk.field import Field, lazyproperty, WithFields
 from dmt.tk.utils import Nothing
 from dmt.tk.collections.data import make_hashable
+from . import index_tree
 
 class Parameters(WithFields):
     """
@@ -106,72 +107,6 @@ class Parameters(WithFields):
                 self.labels = list(dataframe.columns.values)
         return self.labels
 
-    @staticmethod
-    def nested(row):
-        """
-        Convert a row containing parameter labels and values to a nested dict.
-        A row may be a `pandas.Series` with a multi-level index,
-        which when converted to a dict will have tuples as keys.
-        """
-        type_error = TypeError(
-            """
-            Parameters label (keys) should either be
-            \t1. strings, or
-            \t2. non-empty same length tuples of strings. 
-            """)
-        def _validate(key):
-            
-            if not isinstance(key, tuple) and not isinstance(key, str):
-                raise type_error
-            if isinstance(key, tuple)\
-               and not len(key) > 0\
-               and not all(isinstance(k, str) for k in key):
-                raise type_error
-
-            return True
-        def _get_key_length(key):
-            _validate(key)
-            return len(key) if isinstance(key, tuple) else None
-
-        if isinstance(row, dict):#assuming well formed:
-            if not len(row):
-                return row
-            assert all(_validate(key) for key in row.keys())
-            key_lengths = {
-                _get_key_length(key)
-                for key in row.keys()}
-            if len(key_lengths) != 1:
-                raise type_error
-            length = key_lengths.pop()
-            if length is None:
-                return row
-            if length == 1:
-                return {
-                    key[0]: value
-                    for key, value in row.items()}
-            zero_level_values = {
-                key[0] for key in row.keys()}
-
-            def _extract_level_zero(level_value):
-                return {
-                    key[1:] : value
-                    for key, value in row.items()
-                    if key[0] == level_value}
-                    
-            return {
-                level_value : Parameters.nested(_extract_level_zero(level_value))
-                for level_value in zero_level_values}
-
-        assert isinstance(row, pandas.Series)
-
-        if not isinstance(row.index, pandas.MultiIndex):
-            return row.to_dict()
-
-        zero_level_values = row.index.get_level_values(level=0)
-        return {
-            level_value: Parameters.nested(row.loc[level_value])
-            for level_value in zero_level_values}
-
     def for_sampling(self, *args, size=None):
         """
         Repeat each row of `self.values` 'size' number of times.
@@ -186,22 +121,67 @@ class Parameters(WithFields):
             parameter_rows = values
 
         return list(
-            self.nested(parameter_row)
+            index_tree.as_nested_dict(parameter_row)
             for parameter_row in parameter_rows
             for _ in range(size))
 
-    def as_dataframe(self, parameter_values):
+    @staticmethod
+    def with_flattened_columns(parameter_values):
+        """
+
+        """
+        return pandas\
+            .DataFrame(
+                dataframe.values,
+                columns=pandas.Index([dataframe.columns.values]))
+        
+    @staticmethod
+    def join(
+            parameter_values,
+            measurement_values,
+            additional_index_columns=[]):
+        """
+        Join measurement values to parameter values.
+
+        Arguments
+        -----------
+        1. parameter_values : a list of parameter values, that will go into
+        the dataframe index.
+
+        2. measurement_values : a pandas.DataFrame containing measurements for
+        each of the parameter values.
+
+        3. additional_columns : a dict containing columns in `measurement_values`
+        that should also go into the index.
+        """
+        assert measurement_values.shape[0] == len(parameter_values)
+
+        parameters_dataframe =\
+            Parameters.as_dataframe(parameter_values)
+        return pandas\
+            .concat(
+                [parameters_dataframe, measurement_values],
+                axis=1)\
+            .set_index(
+                additional_index_columns
+                + list(parameters_dataframe.columns.values))
+
+    @staticmethod
+    def as_dataframe(parameter_values):
         """
         Arguments
         --------
         `parameter_values` : A pandas.DataFrame or a list of parameter rows,
         each of which is a mapping (or a pandas Series)...
         """
-        if isinstance(parameter_values, pandas.DataFrame):
-            return parameter_values
-        assert isinstance(parameter_values, list)
+        if not isinstance(parameter_values, (list, pandas.DataFrame)):
+            raise TypeError(
+                """
+                Only a list or a pandas.DataFrame accepted as parameter values.
+                """)
         return pandas\
-            .DataFrame(parameter_values)\
+            .DataFrame(
+                [index_tree.as_unnested_dict(d) for d in parameter_values])\
             .apply(make_hashable, axis=0)
 
     def get_index(self, parameter_values):

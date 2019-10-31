@@ -146,10 +146,16 @@ class CircuitAnalysisTest(WithFields):
         assert path_measurement.is_file(),\
             "Analysis did not save a measurement {}.".format(name_measurement)
         measurement = pd.read_csv(path_measurement, header=0)
+        flat = lambda p: p if isinstance(p, str) else '_'.join(p)
         for p in self.analysis.names_measurement_parameters:
-            assert p in measurement.columns,\
-                "Saved measurement did not have a column for parameter {}"\
-                .format(p)
+            assert flat(p) in measurement.columns,\
+                """
+                Saved measurement did not have a column for parameter {}:
+                columns: {}
+                """\
+                .format(
+                    flat(p),
+                    measurement.columns.values)
         assert phenomenon in measurement.columns,\
             "Saved measurement did not have a column for the phenomenon"
 

@@ -4,6 +4,7 @@ Tools for reporting analysis results.
 
 from abc import ABC, abstractmethod
 import os
+import pandas as pd
 from dmt.tk.field import Field, lazyproperty, WithFields
 from dmt.tk.plotting.figure import Figure
 
@@ -141,10 +142,17 @@ class Reporter(WithFields):
                     "({}). {}".format(label, figure.caption)
                     for label, figure in report.figures.items()))
 
+        def _flattened_columns(dataframe):
+            return pd.DataFrame(
+                dataframe.values,
+                columns=pd.Index([
+                    '_'.join(t) if isinstance(t, tuple) else t
+                    for t in dataframe.columns.values]))
         try:
-            report.measurement.reset_index().to_csv(
+            _flattened_columns(report.measurement.reset_index()).to_csv(
                 os.path.join(
-                    output_folder, "{}.csv".format(report.phenomenon)))
+                    output_folder,
+                    "{}.csv".format(report.phenomenon)))
         except AttributeError:
             pass
 

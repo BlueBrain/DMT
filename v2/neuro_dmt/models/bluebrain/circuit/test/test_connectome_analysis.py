@@ -36,6 +36,7 @@ def test_connection_probability():
         but also by soma-distance from a given location.
         """,
         group="Connectome")
+    number_pathways = 5
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
@@ -43,11 +44,11 @@ def test_connection_probability():
             measurement_parameters=Parameters(
                 lambda adapter, model: adapter.get_pathways(
                     model, ("mtype",)
-                ).sample(n=5)),
+                ).sample(n=number_pathways)),
             plotter=HeatMap(
-                xvar="pre_mtype",
+                xvar=("pre_synaptic", "mtype"),
                 xlabel="pre-mtype",
-                yvar="post_mtype",
+                yvar=("post_synaptic", "mtype"),
                 ylabel="post-mtype",
                 vvar=("connection_probability", "mean"))))
 
@@ -61,16 +62,11 @@ def test_connection_probability():
     summary =\
         measurement.concat_as_summaries(
             connection_probability_measurement)
-    mtypes =\
-        analysis_test.adapter\
-                     .get_mtypes(circuit_model_bio_one)
-    assert summary.shape[0] == len(mtypes) * len(mtypes),\
+    assert summary.shape[0] == number_pathways,\
         summary.shape
-
     analysis_test\
         .test_call_analysis(
             circuit_model_bio_one)
-
     analysis_test\
         .test_post_report(
             circuit_model_bio_one,

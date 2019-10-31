@@ -8,6 +8,7 @@ from . import golden_aspect_ratio
 from .figure import Figure
 from dmt.tk.plotting.utils import pivot_table
 from dmt.tk.field import Field, LambdaField, lazyproperty, WithFields
+from dmt.data.observation import measurement
 
 class HeatMap(WithFields):
     """
@@ -52,6 +53,56 @@ class HeatMap(WithFields):
         Aspect ratio width / height for the figure.
         """,
         __default_value__=1.)
+    fill_missing_value = Field(
+        """
+        Some values in the heatmap matrix (which should be a square matrix)
+        may be missing. This field provides the default value to impute
+        the missing.
+        """,
+        __default_value__=0.)
+    get_dataframe = LambdaField(
+        """
+        Call back to get a dataframe from the measurement.
+        """,
+        lambda self: self._get_dataframe_default)
+
+    @staticmethod
+    def _flattened(variable):
+        """
+        Flatten a possibly tuple variable.
+        """
+        if isinstance(variable, str):
+            return variable
+        if isinstance(variable, tuple):
+            return '_'.join(variable)
+        raise TypeError(
+            """
+            HeatMap dataframe variables should be:
+            1. either a string
+            2. or a tuple of strings
+            Not: {}
+            """.format(variable))
+
+    @staticmethod
+    def _get_dataframe_default(data):
+        """..."""
+        assert isinstance(data, pandas.DataFrame) or len(data) == 1,\
+            """
+            Cannot decide which one to plot among more than one dataset:
+            \t{}
+            """.format(list(data.keys()))
+        dataframe = measurement\
+            .get_summary(
+                data if isinstance(data, pandas.DataFrame)\
+                else list(data.values())[0])\
+            .reset_index()
+        if not isinstance(dataframe.columns, pandas.MultiIndex):
+            return dataframe
+        return pandas\
+            .DataFrame(
+                dataframe.values,
+                columns=pandas.Index([
+                    HeatMap._flattened(t) for t in dataframe.columns.values]))
 
     def get_figure(self,
             data,
@@ -66,20 +117,13 @@ class HeatMap(WithFields):
         `data`: A single pandas dataframe with an index of length 2, and only
         1 column (only the zeroth column will be plotted.)
         """
-        assert isinstance(data, pandas.DataFrame) or len(data) == 1,\
-            """
-            Cannot decide which one to plot among more than one dataset:
-            \t{}
-            """.format(list(data.keys()))
-        dataframe =\
-            data if isinstance(data, pandas.DataFrame)\
-            else list(data.values())[0]
         matrix = pandas\
-            .pivot_table(
-                data,
-                values=self.vvar,
-                index=self.xvar,
-                columns=self.yvar)
+            .pivot(
+                self.get_dataframe(data),
+                values=self._flattened(self.vvar),
+                index=self._flattened(self.xvar),
+                columns=self._flattened(self.yvar))\
+            .fillna(self.fill_missing_value)
         graphic = seaborn\
             .heatmap(
                 matrix,

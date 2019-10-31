@@ -75,9 +75,19 @@ class BrainCircuitAnalysis(
         """
         A label for this analysis.
         """
+        def _as_label(parameter_label):
+            if isinstance(parameter_label, str):
+                return parameter_label
+            if isinstance(parameter_label, tuple):
+                return '_'.join(parameter_label)
+            raise TypeError(
+                "Parameter labels should be either string or tuple of strings.")
+
         return "{}_by_{}".format(
             self.phenomenon.label,
-            '_'.join(self.names_measurement_parameters))
+            '_'.join(
+                _as_label(parameter_label) 
+                for parameter_label in self.names_measurement_parameters))
 
     def _get_measurement_method(self, adapter=None):
         """
@@ -124,16 +134,22 @@ class BrainCircuitAnalysis(
             .DataFrame(
                 [get_measurement(circuit_model, **p, **kwargs)
                  for p in parameter_values],
-                columns=[self.phenomenon.label])
-        return pandas\
-            .concat(
-                [self.measurement_parameters.as_dataframe(parameter_values),
-                 measured_values],
-                axis=1)\
-            .assign(
-                dataset=adapter.get_label(circuit_model))\
-            .set_index(
-                ["dataset"] + self.names_measurement_parameters)
+                columns=[self.phenomenon.label])\
+            .assign(dataset=adapter.get_label(circuit_model))
+        return self.measurement_parameters\
+                   .join(
+                       parameter_values,
+                       measured_values,
+                       additional_index_columns=["dataset"])
+        # return pandas\
+        #     .concat(
+        #         [self.measurement_parameters.as_dataframe(parameter_values),
+        #          measured_values],
+        #         axis=1)\
+        #     .assign(
+        #         dataset=adapter.get_label(circuit_model))\
+        #     .set_index(
+        #         ["dataset"] + self.names_measurement_parameters)
 
     def _with_reference_data(self,
             measurement,

@@ -378,7 +378,9 @@ class BlueBrainCircuitModel(WithFields):
             for row in _get_tuple_values(cell_type_specifiers)])
 
     @CellType.memoized
-    def pathways(self, cell_type_specifier):
+    def pathways(self,
+            cell_type_specifier=None,
+            cell_types=None):
         """
         Pathways in this circuit with pre and post neuron groups
         specified.
@@ -387,15 +389,29 @@ class BlueBrainCircuitModel(WithFields):
         ------------
         `cell_type_specifier`: a tuple of cell properties whose
         values specify a cell.
+
+        `cell_types`: a list of dicts specifying cell groups
         """
-        cell_types = self.get_cell_types(cell_type_specifier)
+        if cell_type_specifier is not None:
+            if cell_types is not None:
+                raise TypeError(
+                    """
+                    Either `cell_type_specifier` or `cell_types` expected
+                    as argument, not both.
+                    """)
+            cell_types = self.get_cell_types(cell_type_specifier)
+        elif cell_types is None:
+            raise TypeError(
+                """
+                One of either `cell_type_specifier` or `cell_types` expected.
+                """)
         return pd.DataFrame(
             [CellType.pathway(pre_cell_type, post_cell_type)
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
     #@PathwayProperty.memoized
-    def get_connection_probability(self, pathway, sample_size=None):
+    def get_connection_probability(self, pathway, sample_size=None, **kwargs):
         """
         Connection probability across the pre and post neurons of a pathway.
 
