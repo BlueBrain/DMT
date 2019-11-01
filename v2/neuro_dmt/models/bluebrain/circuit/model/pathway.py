@@ -59,7 +59,7 @@ class PathwayProperty(WithFields):
     A pathway property.
     Acting like a mapping.
     """
-    label = LambdaField(
+    phenomenon = LambdaField(
         """
         A label to go with the pathway property.
         """,
@@ -78,14 +78,22 @@ class PathwayProperty(WithFields):
         instance will need access to the circuit model.
         """,
         __required__=False)
+    family_variables = Field(
+        """
+        A tuple (that may be empty), that provides the family defining variables
+        for the measurements. For example, if the pathway property must be
+        evaluated as a function of soma-distance, this variable must be provided
+        as a family variable. The family will then consist of all possible
+        pathway definitions.
+        """,
+        __default_value__=tuple())
 
     @lazyfield
-    def cache(self):
+    def store(self):
         """
         A dict that will hold the cached results.
         """,
         return {}
-
 
     @staticmethod
     def as_tuple(pathway):
@@ -104,16 +112,19 @@ class PathwayProperty(WithFields):
         """..."""
         return tuple(pathway.post_synaptic.values)
 
-    def _get_cache(self, pathway):
+    def _get_store(self, pathway):
         """..."""
-        cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
-        if cell_type_specifier not in self.cache:
-            self.cache[cell_type_specifier] = {}
         pre_cell_type = self._pre_cell_type(pathway)
-        if pre_cell_type not in self.cache[cell_type_specifier]:
-            self.cache[cell_type_specifier][pre_cell_type] = {}
+        if pre_cell_type not in self.store:
+            self.store[pre_cell_type] = {}
 
-        return self.cache[cell_type_specifier][pre_cell_type]
+        if not self.family_variables:
+            return self.store[pre_cell_type]
+
+        post_cell_type = self._post_cell_type(pathway)
+        if post_cell_type not in self.store[pre_cell_type]:
+            self.store[pre_cell_type][post_cell_type] = {}
+        return self.cache[pre_cell_type][post_cell_type]
 
     def _get(self, pathway, **kwargs):
         """
@@ -152,14 +163,29 @@ class PathwayProperty(WithFields):
             got {}
             """.format(value))
 
-    def _cached(self, pathway, resample=False, **kwargs):
+    def _stored(self, pathway, resample=False, **kwargs):
         """..."""
-        cache = self._get_cache(pathway)
-        post_cell_type = self._post_cell_type(pathway)
-        if post_cell_type not in cache or resample:
-            cache[post_cell_type] = self._get(pathway, **kwargs)
+        store = self._get_store(pathway)
+        if not self.family_variables:
+            post_cell_type = self._post_cell_type(pathway)
+            if post_cell_type not in store:
+                store[post_cell_type] =\
+                    self._get(
+                        pathway,
+                        **kwargs)
+            return store[post_cell_type]
 
-        return  cache[post_cell_type]
+        family_values = tuple(
+            kwargs.pop(variable)
+            for variable in self.family_variables}
+        if family_values not in store or resample:
+            store[family_values] =\
+                self._get(
+                    pathway,
+                    **dict(zip(self.family_variables, family_values)),
+                    **kwargs)
+
+        return store[family_values]
                     
     @staticmethod
     def index_names(cell_type_specifier):
@@ -249,80 +275,77 @@ class PathwayProperty(WithFields):
         return effective
 
 
-# class PathwayProperty0:
-#     """
-#     A pathway property.
-#     Acting like a mapping.
-#     """
 
-#     def __init__(self, instance_method):
-#         """
-#         Initialize with a method.
-#         """
-#         self._method = instance_method
-#         self._instance_cache_attribute =\
-#             "_cache_{}".format(self._method.__name__)
+class PathwayPropertyFamily(WithFields):
+    """
+    A family of pathway properties measures the same phenomenon,
+    with each member of the family identified by its measurement parameters.
+    """
+    phenomenon = LambdaField(
+        """
+        The phenomenon whose measurement values are managed by this
+        `PathwayPropertyFamily` instance and all it's
+        `PathwayProperty` instances held by it.
+        """,
+        lambda self: PathwayProperty.get_storage_name(self.definition))
+    definition = Field(
+        """
+        Defining computation of the pathway property.
+        """)
+    family_variables = Field(
+        """
+        A tuple (that may be empty), that provides the family defining variables
+        for the measurements. For example, if the pathway property must be
+        evaluated as a function of soma-distance, this variable must be provided
+        as a family variable. The family will then consist of all possible
+        pathway definitions.
+        """,
+        __default_value__=tuple())
 
-#     def _get_cache(self, instance, cell_type_specifier):
-#         """..."""
-#         if not hasattr(instance, self._instance_cache_attribute):
-#             setattr(
-#                 instance,
-#                 self._instance_cache_attribute,
-#                 {})
-#         cache = getattr(instance, self._instance_cache_attribute)
-#         if cell_type_specifier not in cache:
-#             cache[cell_type_specifier] = {}
+    @lazyfield
+    def store(self):
+        """
+        A dict to hold the cached results
+        """
+        return P{}
 
-#         return cache[cell_type_specifier]
+    def _stored(self, pathway):
+        """
+        Get stored, or a new -- storing before returning.
+        """
+        cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
+        if not CellType.specifier(pathway.post_synaptic) != cell_type_specifier:
+            raise TypeError(
+                """
+                PathwayPropertyFamily expects symmetric pathways.
+                """)
+        try:
+            return self.store[cell_type_specifier]
+        except KeyError:
+            self.store[cell_type_specifier]=\
+                PathwayProperty(
+                    phenomenon=self.phenomenon,
+                    definition=self.definition)
+        return self.store[cell_type_specifier]
 
-#     def _cached(self, instance, pathway):
-#         """..."""
-#         cell_type_specifier =\
-#             CellType.specifier(pathway.pre)
-#         instance_cache =\
-#             self._get_cache(instance, cell_type_specifier)
-#         pre_cell_type = tuple(pathway.pre.values)
-#         if pre_cell_type not in instance_cache:
-#             instance_cache[pre_cell_type] = {}
-#         post_cell_type = tuple(pathway.post.values)
-#         if post_cell_type not in instance_cache[pre_cell_type]:
-#             instance_cache[
-#                 pre_cell_type][
-#                     post_cell_type] =\
-#                         self._method(instance, pathway)
+    def __call__(self, pathway, **kwargs):
+        """
+        Arguments
+        ------------
+        pathway : Basically (pre, post) combination
+        kwargs :: Key word arguments containing information family variable
+        values.
+        """
+        if not all(variable in kwargs for variable in self.family_variables):
+            raise TypeError(
+                """
+                A PathwayPropertyFamily can be called only with
+                values for all of its family variables provided as
+                variable keyword arguments.
+                """)
+        handler_pathway_property = self._stored(pathway)
+        return handler_pathway_property(pathway, **kwargs)   
 
-#         return\
-#             instance_cache[
-#                 pre_cell_type][
-#                     post_cell_type]
-
-#     @staticmethod
-#     def index_names(cell_type_specifier):
-#         """..."""
-#         at = lambda pos: [
-#             (pos, cell_property)
-#             for cell_property in cell_type_specifier]
-#         return at("pre") + at("post")
-        
-#     def dataframe(self, instance, cell_type_specifier):
-#         """..."""
-#         pathways = instance.pathways(cell_type_specifier)
-#         result = pathways.apply(
-#             lambda pathway: self._cached(instance, pathway),
-#             axis=1)
-#         return result\
-#             if not isinstance(result, pd.Series) else\
-#                pd.DataFrame(result.rename(self._method.__name__))
-
-#     def __call__(self, instance, pathway):
-#         """..."""
-#         return self._cached(instance, pathway)
-
-#     @staticmethod
-#     def memoized(instance_method):
-#         """..."""
-#         return PathwayProperty(instance_method)
 
 def pathway_property(instance_method):
     """
@@ -331,6 +354,12 @@ def pathway_property(instance_method):
     Arguments
     -------------
     `instance_method`: Method of an class instance.
+
+    Note
+    --------------
+    This has been kept for documentation purpose.
+    For practical purposes, it's essence has been absorbed into
+    `class PathwayPropert`.
     """
     instance_cache_attribute =\
         "_cache_{}".format(instance_method.__name__)
