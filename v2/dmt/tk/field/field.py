@@ -146,6 +146,7 @@ class _from_self:
     def __call__(self, instance, owner=None, *args, **kwargs):
         return self.initializer(instance, *args, **kwargs)
 
+
 class LambdaField(Field):
     """
     A lazy field that must be provided a lambda over self as its value.
