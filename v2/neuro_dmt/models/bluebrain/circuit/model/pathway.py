@@ -307,26 +307,23 @@ class PathwayPropertyFamily(WithFields):
         """
         A dict to hold the cached results
         """
-        return P{}
+        return {}
 
     def _stored(self, pathway):
         """
         Get stored, or a new -- storing before returning.
         """
-        cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
-        if not CellType.specifier(pathway.post_synaptic) != cell_type_specifier:
-            raise TypeError(
-                """
-                PathwayPropertyFamily expects symmetric pathways.
-                """)
-        try:
-            return self.store[cell_type_specifier]
-        except KeyError:
-            self.store[cell_type_specifier]=\
+        pre_cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
+        post_cell_type_specifier = CellType.specifier(pathway.post_synaptic)
+        if not pre_cell_type_specifier in self.store:
+            self.store[pre_cell_type_specifier] = {}
+        if not post_cell_type_specifier in self.store[pre_cell_type_specifier]:
+            self.store[pre_cell_type_specifier][post_cell_type_specifier] =\
                 PathwayProperty(
                     phenomenon=self.phenomenon,
-                    definition=self.definition)
-        return self.store[cell_type_specifier]
+                    definition=self.definition,
+                    family_variables=self.family_variables)
+        return self.store[pre_cell_type_specifier][post_cell_type_specifier]
 
     def __call__(self, pathway, **kwargs):
         """
