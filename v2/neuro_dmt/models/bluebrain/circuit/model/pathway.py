@@ -1,6 +1,7 @@
 """
 Abstraction of a pathway and its properties.
 """
+from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from collections import OrderedDict
 import functools
@@ -53,6 +54,50 @@ class Pathways(pd.Series):
         """
         raise NotImplementedError
 
+
+class PathwayProperty(WithFields):
+    """
+    Compute and store a circuit's pathway properties.
+    """
+    circuit_model = Field(
+        """
+        The circuit model for which this `PathwayProperty` has been defined.
+        """)
+    def _resolve_cell_group(self,
+            cell_group,
+            role_synaptic):
+        """..."""
+        if isinstance(cell_group, pd.DataFrame):
+            return cell_group.rename(
+                columns=lambda variable: "{}_{}".format(variable))
+        if isinstance(cell_group, np.array):
+            return self._resolve_cell_group(
+                self.circuit_model.cells.loc[cell_group],
+                role_synaptic)
+        raise ValueError(
+            """
+            '_resolve_cell_group' not implemented for argument `cell_group`
+            value {} of type {}.
+            """.format(
+                cell_group,
+                type(cell_group)))
+
+    @abstractmethod
+    def get(self,
+            pre_synaptic_cell_group,
+            post_synaptic_cell_group):
+        """.."""
+        pre_synaptic_cells = self\
+            ._resolve_cell_group(
+                pre_synaptic_cell_group,
+                "pre_synaptic")
+        post_synaptic_cell_group = self\
+            ._resolve_cell_group(
+                post_synaptic_cell_group,
+                "post_synaptic")
+
+
+    def __call__
 
 class PathwayProperty(WithFields):
     """
@@ -275,7 +320,6 @@ class PathwayProperty(WithFields):
         return effective
 
 
-
 class PathwayPropertyFamily(WithFields):
     """
     A family of pathway properties measures the same phenomenon,
@@ -313,8 +357,8 @@ class PathwayPropertyFamily(WithFields):
         """
         Get stored, or a new -- storing before returning.
         """
-        pre_cell_type_specifier = CellType.specifier(pathway.pre_synaptic)
-        post_cell_type_specifier = CellType.specifier(pathway.post_synaptic)
+        pre_cell_type_specifier = CellType(pathway.pre_synaptic).specifier
+        post_cell_type_specifier = CellType(pathway.post_synaptic).specifier
         if not pre_cell_type_specifier in self.store:
             self.store[pre_cell_type_specifier] = {}
         if not post_cell_type_specifier in self.store[pre_cell_type_specifier]:
@@ -323,7 +367,7 @@ class PathwayPropertyFamily(WithFields):
                     phenomenon=self.phenomenon,
                     definition=self.definition,
                     family_variables=self.family_variables)
-        return self.store[pre_cell_type_specifier][post_cell_type_specifier]
+        return self.store[pre_cell_type_specifier]
 
     def __call__(self, pathway, **kwargs):
         """
@@ -381,9 +425,9 @@ def pathway_property(instance_method):
         instance_cache =\
             getattr(instance, instance_cache_attribute)
         cell_type_specifier =\
-            CellType.specifier(pathway.pre_synaptic)
+            CellType(pathway.pre_synaptic).specifier
         assert\
-            CellType.specifier(pathway.post_synaptic) == cell_type_specifier,\
+            CellType(pathway.post_synaptic).specifier == cell_type_specifier,\
             """
             Post cell type:
             {}.
