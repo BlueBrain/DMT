@@ -18,7 +18,7 @@ from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
 from .cell_type import CellType
-from .pathway import PathwayProperty, PathwayPropertyFamily
+from .pathway import ConnectionProbability
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -82,22 +82,32 @@ class BlueBrainCircuitModel(WithFields):
         if circuit is not None:
             self._bluepy_circuit = circuit
 
-        self.connection_probability =\
-            PathwayPropertyFamily(
-                phenomenon="connection_probability",
-                family_variables=tuple(),#variable but constant over the family members
-                definition=self.get_connection_probability)
-        self.connection_probability_by_distance =\
-            PathwayPropertyFamily(
-                phenomenon="connection_probability",
-                family_variables=("soma_distance",),#variable, but constant over the family members
-                definition=self.get_connection_probability_by_distance)
+
+        # self.connection_probability =\
+        #     PathwayPropertyFamily(
+        #         phenomenon="connection_probability",
+        #         family_variables=tuple(),#variable but constant over the family members
+        #         definition=self.get_connection_probability)
+        # self.connection_probability_by_distance =\
+        #     PathwayPropertyFamily(
+        #         phenomenon="connection_probability",
+        #         family_variables=("soma_distance",),#variable, but constant over the family members
+        #         definition=self.get_connection_probability_by_distance)
         # self.connection_probability =\
         #     PathwayProperty(
         #         label="connection_probability",
         #         definition=self.get_connection_probability)
 
         super().__init__(*args, **kwargs)
+
+
+    @lazyfield
+    def connection_probability(self):
+        """
+        Compute and cache pathway connection probabilities
+        """
+        return ConnectionProbability(circuit_model=self)
+
 
     def get_path(self, *relative_path):
         """
@@ -139,7 +149,6 @@ class BlueBrainCircuitModel(WithFields):
         """
         try:
             bp = self.bluepy_circuit
-            assert isinstance(bp, BluePyCircuit), bp
             return bp.cells
         except BluePyError as error:
             logger.warn(
@@ -153,7 +162,8 @@ class BlueBrainCircuitModel(WithFields):
         """
         Pandas data-frame with cells in rows.
         """
-        return self.cell_collection.get()
+        cells = self.cell_collection.get()
+        return cells.assign(gid=cells.index.values)
 
     @lazyfield
     def connectome(self):
@@ -162,7 +172,6 @@ class BlueBrainCircuitModel(WithFields):
         """
         try:
             bp = self.bluepy_circuit
-            assert isinstance(bp, BluePyCircuit), bp
             return bp.connectome
         except BluePyError as error:
             logger.warn(
