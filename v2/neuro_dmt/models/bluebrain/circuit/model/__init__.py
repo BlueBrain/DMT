@@ -457,8 +457,18 @@ class BlueBrainCircuitModel(WithFields):
             number_connections / (sample_size ^ 2)
         return connection_probability
 
+    def soma_distance(pre_cell, post_cell):
+        """
+        Soma distance between two cells.
+        """
+        XYZ = ["x", "y", "z"]
+        return np.linalg.norm(
+            pre_cell[XYZ].values - post_cell[XYZ].values)
+
     #@PathwayProperty.memoized
-    def get_connection_probability_by_distance(self, pathway):
+    def get_connection_probability_by_distance(self,
+            pathway,
+            get_distance_bin):
         """
         Connection probability across the pre and post neurons of a pathway.
 
@@ -481,13 +491,34 @@ class BlueBrainCircuitModel(WithFields):
             self.cell_sample_size,
             self.random_cells(**pathway.pre_synaptic))))
         if pre_cells.empty:
-            return np.nan
+            return None
 
         post_cells = pd.DataFrame(list(take(
             self.cell_sample_size,
             self.random_cells(**pathway.post_synaptic))))
         if post_cells.empty:
-            return np.nan
+            return None
+
+        soma_distances = pd.Series(
+            [get_distance_bin(self.soma_distance(pre_cell, post_cell))
+             for post_cell in post_cells
+             for pre_cell in pre_cells],
+            name="soma_distance")
+        are_connected = pd.Series(
+            np.concatenate(
+                [np.in1d(
+                    pre_cells.gid.values,
+                    self.connectome.afferent_gids(post_cell.gid))
+                 for _, post_cell in post_cells.iterrows()],
+                axis=0),
+            name="connected")
+
+        measurement = pd\
+            .DataFrame([soma_distances, are_connected])\
+            .groupby(["soma_distance"])\
+            .agg(["size", "mean", "std"])
+                
+
 
         number_connections =\
             np.sum([
