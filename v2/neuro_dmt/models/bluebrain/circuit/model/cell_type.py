@@ -17,56 +17,13 @@ class CellType(WithFields):
         The value may be one of the values assumed by the cell property or
         a list of such values.
         """)
-    def __init__(self, value, *args, **kwargs):
-        """..."""
-        if isinstance(value, OrderedDict):
-            super().__init__(value=value, *args, **kwargs)
-
-    def __init__(self, cell_instance=None, *args, **kwargs):
-        """
-        Arguments
-        ----------------
-        cell_instance :: Either a pandas.Series with entries for each
-        element in `self.specifier`, or an object with an attribute for each
-        element in `self.specifier`.
-        """
-        def alarm(wtf):
-            return TypeError(
-                """
-                {}.
-                To initialize a `CellType` provide the cell type specifier:
-                1. By either passing a pandas.Series representing a cell
-                instance whose properties will become the specifiers.
-                2. Or by passing 'specifier' as a keyword argument.
-                """.format(wtd))
-
-        if cell_instance is not None:
-            if "specifier" in kwargs:
-                raise alarm(
-                    """
-                    __init__ got multiple values for field 'specifier'.
-                    One value passed in as the cell instance: {},
-                    and another in variable keyword arguments: {}
-                    """.format(
-                        cell_instance,
-                        kwargs["specifier"]))
-            specifier = tuple(cell_instance.index.values)
-        else:
-            if "specifier" not in kwargs:
-                raise alarm(
-                    """
-                    __init__ missing argument to determine `specifier` from.
-                    """)
-        super().__init__(
-            specifier = specifier,
-            **kwargs)
 
     @lazyfield
     def specifier(self):
         """
         List of cell properties that determine this cell's type.
         """
-        return self.value.index.values
+        return self.get_specifier(self.value)
 
     def sample(self, circuit_model, size=20):
         """

@@ -130,20 +130,12 @@ class CellCollection(WithFields):
         by applying it to the cell collectiondef  dataframe.
         """
         property_values = self._dataframe[cell_property]
-        try:
-            value_set = set(value)
-            return property_values.apply(lambda v: v in value_set)
-        except TypeError:
-            return property_values.apply(lambda v: v == value)
-                
-        raise TypeError(
-            "Unfilterable type of value {}".format(value))
-        # return\
-        #     self._dataframe[cell_property]\
-        #         .apply(
-        #             lambda v: v == value\
-        #             if not isinstance(value, (set, list)) else\
-        #             lambda v: v in set(value))
+        return\
+            self._dataframe[cell_property]\
+                .apply(
+                    lambda v: v == value\
+                    if not isinstance(value, (set, list)) else\
+                    lambda v: v in set(value))
 
 
     def get(self, group=None, properties=None):
@@ -172,6 +164,14 @@ class CellCollection(WithFields):
             return __get_properties(self._dataframe.loc[group])
 
         assert isinstance(group, Mapping)
+        if len(group) == 0:
+            return __get_properties(self._dataframe)
+        if len(group) == 1:
+            cell_property, property_value = tuple(group.items())[0]
+            return __get_properties(
+                self._dataframe[self.get_property_filter(
+                    cell_property,
+                    property_value)])
         return __get_properties(
             self._dataframe[
                 np.logical_and([
