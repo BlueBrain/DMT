@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from collections import OrderedDict
 import functools
+from enum import Enum
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
@@ -55,26 +56,91 @@ class Pathways(pd.Series):
         raise NotImplementedError
 
 
+class SamplingMethodology(Enum):
+    """
+    How should cells be sampled for measuring pathway properties?
+    """
+    random = 1
+    exhaustive = 2
+
+
 class PathwayProperty(WithFields):
     """
     Compute and store a circuit's pathway properties.
     """
+    phenomenon = Field(
+        """
+        A label to go with the pathway property.
+        """)
     circuit_model = Field(
         """
         The circuit model for which this `PathwayProperty` has been defined.
         """)
+    max_length_cell_type_specification = Field(
+        """
+        Max length of the cell type specifier that can be stored.
+        """,
+        __default_value__=2) 
+
+    @lazyfield
+    def store(self):
+        """..."""
+        return {}
+
+    def _get_cell_types(self,
+            cell_group,
+            cell_type_specifier):
+        """
+        Get cell types.
+        """
+        if isinstance(cell_group, np.array):
+            return self._get_cell_types(
+                self.circuit_model.cells.loc[cell_group])
+
+        return set([tuple(cell_type)
+                    for cell_type in cell_group[cell_type_specifier]])
+
     def _resolve_cell_group(self,
             cell_group,
-            role_synaptic):
-        """..."""
+            cell_type_specifier,
+            role_synaptic,
+            sampling_methodology=SamplingMethodology.random,
+            number=100):
+        """
+
+        Returns
+        ---------
+        pandas.DataFrame containing cells.
+        """
+        if isinstance(cell_group, np.array):
+            gids = cell_group\
+                if sampling_methodology != SamplingMethodology.random\
+                   else np.random.choice(cell_group, number)
+            return self._resolve_cell_group(
+                self.circuit_model.cells.loc[gids],
+                role_synaptic,
+                resample=resample,
+                sampling_methodology=sampling_methodology,
+                number=number)
+        if isinstance(cell_group, pd.Series):
+            return self._resolve_cell_group(
+                cell_group.to_dict(),
+                role_synaptic,
+                resample=resample,
+                sampling_methodology=sampling_methodology,
+                number=number)
+        if isinstance(cell_group, Mapping):
+            cells = self.circuit_model.get_cells(cell_group)
+            return self._resolve_cell_group(
+                cells.sample(number)\
+                if sampling_methodology == Sampling_Methodology.random\
+                else cells)
+
         if isinstance(cell_group, pd.DataFrame):
             return cell_group.rename(
                 columns=lambda variable: "{}_{}".format(variable))
-        if isinstance(cell_group, np.array):
-            return self._resolve_cell_group(
-                self.circuit_model.cells.loc[cell_group],
-                role_synaptic)
-        raise ValueError(
+
+        raise NotImplementedError(
             """
             '_resolve_cell_group' not implemented for argument `cell_group`
             value {} of type {}.
@@ -84,309 +150,240 @@ class PathwayProperty(WithFields):
 
     @abstractmethod
     def get(self,
-            pre_synaptic_cell_group,
-            post_synaptic_cell_group):
-        """.."""
-        pre_synaptic_cells = self\
-            ._resolve_cell_group(
-                pre_synaptic_cell_group,
-                "pre_synaptic")
-        post_synaptic_cell_group = self\
-            ._resolve_cell_group(
-                post_synaptic_cell_group,
-                "post_synaptic")
-
-
-    def __call__
-
-class PathwayProperty(WithFields):
-    """
-    A pathway property.
-    Acting like a mapping.
-    """
-    phenomenon = LambdaField(
+            pre_synaptic_cells,
+            post_synaptic_cells):
         """
-        A label to go with the pathway property.
-        """,
-        lambda self: self.get_storage_name(self.definition))
-    definition = Field(
-        """
-        Defining computation of the pathway property.
-        """)
-    circuit_model = Field(
-        """
-        The circuit model in whose body this `PathwayProperty` has been
-        defined. This field is required only when the pathway property's
-        computation is not a bound method of the circuit model instance,
-        in which case the data associated with the circuit model needs to be
-        known to compute the pathway property, and hence this `PathwayProperty`
-        instance will need access to the circuit model.
-        """,
-        __required__=False)
-    family_variables = Field(
-        """
-        A tuple (that may be empty), that provides the family defining variables
-        for the measurements. For example, if the pathway property must be
-        evaluated as a function of soma-distance, this variable must be provided
-        as a family variable. The family will then consist of all possible
-        pathway definitions.
-        """,
-        __default_value__=tuple())
+        Get the pathway property value.
 
-    @lazyfield
-    def store(self):
-        """
-        A dict that will hold the cached results.
-        """,
-        return {}
-
-    @staticmethod
-    def as_tuple(pathway):
-        """..."""
-        return (
-            tuple(pathway.pre_synaptic.values),
-            tuple(pathway.post_synaptic.values))
-
-    @staticmethod
-    def _pre_cell_type(pathway):
-        """..."""
-        return tuple(pathway.pre_synaptic.values)
-
-    @staticmethod
-    def _post_cell_type(pathway):
-        """..."""
-        return tuple(pathway.post_synaptic.values)
-
-    def _get_store(self, pathway):
-        """..."""
-        pre_cell_type = self._pre_cell_type(pathway)
-        if pre_cell_type not in self.store:
-            self.store[pre_cell_type] = {}
-
-        if not self.family_variables:
-            return self.store[pre_cell_type]
-
-        post_cell_type = self._post_cell_type(pathway)
-        if post_cell_type not in self.store[pre_cell_type]:
-            self.store[pre_cell_type][post_cell_type] = {}
-        return self.cache[pre_cell_type][post_cell_type]
-
-    def _get(self, pathway, **kwargs):
-        """
-        Don't use the cache.
-        """
-        logger.info(
-            logger.get_source_info(),
-            """
-            Call definition with kwargs:  {}
-            """.format(kwargs))
-        try:
-            value = self.definition(self.circuit_model, pathway, **kwargs)
-        except AttributeError:
-            value = self.definition(pathway, **kwargs)
-        if isinstance(value, pd.Series):
-            return value
-        if isinstance(value, (float, np.float)):
-            return pd.Series({self.label: value})
-        if isinstance(value, tuple):
-            assert len(value) == len(self.label),\
-                """
-                value: {}
-                label: {}
-                """.format(value, self.label)
-            return pd.Series(dict(zip(self.label, value)))
-        if isinstance(value, np.array):
-            return pd.Series({
-                (self.label, index): element
-                for index, element in enumerate(value)})
-        raise TypeError(
-            """
-            Pathway property values for a given pathway should evaluate to:
-            \t1. a float
-            \t2. a pandas.Series
-            \t3. a numpy.array
-            got {}
-            """.format(value))
-
-    def _stored(self, pathway, resample=False, **kwargs):
-        """..."""
-        store = self._get_store(pathway)
-        if not self.family_variables:
-            post_cell_type = self._post_cell_type(pathway)
-            if post_cell_type not in store:
-                store[post_cell_type] =\
-                    self._get(
-                        pathway,
-                        **kwargs)
-            return store[post_cell_type]
-
-        family_values = tuple(
-            kwargs.pop(variable)
-            for variable in self.family_variables}
-        if family_values not in store or resample:
-            store[family_values] =\
-                self._get(
-                    pathway,
-                    **dict(zip(self.family_variables, family_values)),
-                    **kwargs)
-
-        return store[family_values]
-                    
-    @staticmethod
-    def index_names(cell_type_specifier):
-        """..."""
-        at = lambda pos: [
-            (pos, cell_property)
-            for cell_property in cell_type_specifier]
-        return at("pre") + at("post")
-        
-    def dataframe(self,
-            cell_type_specifier=None,
-            pathways=None,
-            resample=False):
-        """
-        Arguments
-        ------------
-        `cell_type_specifier`: tuple of cell properties
-        `pathways` : pandas.DataFrame of pathways.
-        """
-        type_error = TypeError(
-            """
-            {} method {} accepts only one of two arguments:
-            \t 1. cell_type_specifier: a tuple of strings
-            \t 2. pathways: pandas.DataFrame
-            """)
-        if cell_type_specifier:
-            if pathways is not None:
-                raise type_error
-            pathways =\
-                self.circuit_model.pathways(cell_type_specifier)
-        else:
-            if pathways is None:
-                raise type_error
-
-        result = pathways.apply(
-            lambda pathway: self._cached(pathway, resample),
-            axis=1)
-
-        return pd\
-            .concat(
-                [pathways, result],
-                axis=1)\
-            .set_index(list(pathways.columns))
-
-    def __call__(self, pathway, **kwargs):
-        """..."""
-        return self._cached(pathway, **kwargs)
-
-    @staticmethod
-    def validate(get_one_pathway):
-        """
-        Instance methods that compute pathway properties must start with `get_`
-        """
-        assert len(get_one_pathway.__name__) > 4
-        assert get_one_pathway.__name__[0:3] == "get",\
-            get_one_pathway.__name__
-        return True
-
-    @staticmethod
-    def get_storage_name(get_one_pathway):
-        """
-        Name of the property to attach to an instance...
-        """
-        PathwayProperty.validate(get_one_pathway)
-        return get_one_pathway.__name__[4:]
-
-    @staticmethod
-    def memoized(get_one_pathway):
-        """
-        Decorate an instance method as a PathwayProperty.
-        
         Arguments
         -------------
-        `get_one_pathway`: Method of an class instance.
+        pre_synaptic_cells : pandas.DataFrame containing cells on
+                             pre-synaptic side.
+        post_synaptic_cells : pandas.DataFrame containing cells on
+                             post-synaptic side.
         """
-        storage_name = PathwayProperty.get_storage_name(get_one_pathway)
+        raise NotImplementedError
 
-        @functools.wraps(get_one_pathway)
-        def effective(instance, pathway):
-            """..."""
-            if not hasattr(instance, storage_name):
-                setattr(
-                    instance, storage_name,
-                    PathwayProperty(instance, get_one_pathway))
-            return getattr(instance, storage_name)(pathway)
+    def _get_key_to_cache_with(self,
+            pre_synaptic_cell_specifier, pre_synaptic_cells,
+            post_synaptic_cell_specifier, spost_synaptic_cells):
+        """
+        Check if pathway property value can be cached...
+        """
+        if pre_synaptic_cell_specifier is None:
+            return None
+        if post_synaptic_cell_specifier is None:
+            return None
+        pre_synaptic_cell_types =\
+            self._get_cell_types(
+                pre_synaptic_cells,
+                pre_synaptic_cell_type_specifier)
+        if len(pre_synaptic_cell_types) != 1:
+            return None
+        post_synaptic_cell_types =\
+            self._get_cell_types(
+                post_synaptic_cells,
+                post_synaptic_cell_type_specifier)
+        if len(post_synaptic_cell_types) != 1:
+            return None
 
-        return effective
+        return (
+            pre_synaptic_cell_specifier,
+            ppre_synaptic_cell_specifier)
+
+    def _cached(self,
+            pre_synaptic_cell_specifier, pre_synaptic_cells,
+            post_synaptic_cell_specifier, post_synaptic_cells,
+            by=None,
+            resample=None,
+            sampling_methodology=None,
+            number=100):
+
+        """
+        Get pathway property value, with caching...
+
+        Arguments
+        ---------------
+        ...
+        """
+        key_cache =\
+            self._get_key_to_cache_with(
+                pre_synaptic_cell_specifier, pre_synaptic_cells,
+                post_synaptic_cell_specifier, post_synaptic_cells))
+        if key_cache:
+            if key_cache not in self.store:
+                self.store[key_cache] =\
+                    self.get_dataframe(
+                        pre_synaptic_cell_specifier,
+                        post_synaptic_cell_specifier)
+            return self.store[key_cache]
+
+        return self.get(pre_synaptic_cells, post_synaptic_cells)
+
+    def _get_cell_type_specifier(cell):
+        """
+
+        Arguments
+        --------------
+        cell : pandas.Series containing cells...
+        """
+        if not isinstance(cell, pd.Series):
+            return None
+        if  cell.shape[0] > self.max_length_cell_type_specification:
+            return None
+
+        return cell.index.values
 
 
-class PathwayPropertyFamily(WithFields):
-    """
-    A family of pathway properties measures the same phenomenon,
-    with each member of the family identified by its measurement parameters.
-    """
-    phenomenon = LambdaField(
+    def __call__(self,
+            pre_synaptic_cell_group,
+            post_synaptic_cell_group,
+            by=None,
+            given=None,
+            resample=False,
+            sampling_methodology=SamplingMethodology.random,
+            number=100):
         """
-        The phenomenon whose measurement values are managed by this
-        `PathwayPropertyFamily` instance and all it's
-        `PathwayProperty` instances held by it.
-        """,
-        lambda self: PathwayProperty.get_storage_name(self.definition))
-    definition = Field(
-        """
-        Defining computation of the pathway property.
-        """)
-    family_variables = Field(
-        """
-        A tuple (that may be empty), that provides the family defining variables
-        for the measurements. For example, if the pathway property must be
-        evaluated as a function of soma-distance, this variable must be provided
-        as a family variable. The family will then consist of all possible
-        pathway definitions.
-        """,
-        __default_value__=tuple())
+        Compute, or retrieve from the store...
 
-    @lazyfield
-    def store(self):
+        Arguments
+        -------------
+        pre_synaptic_cell_group : Group of cells on the pre-synaptic side.
+        post_synaptic_cell_group : Group of cells on the post-synaptic side.
+        by : A property of a connection ((pre_synaptic_cell, post_synaptic_cell).
+             Pathway property will be computed for given values of this variable.
+             If a list of variables, the computation will be conditioned on all
+             the variables.
+        given: A dict providing variables and their values for which the
+               the pathway property will be returned.
         """
-        A dict to hold the cached results
-        """
-        return {}
+        if by is not None:
+            raise NotImplementedError(
+                """
+                Computation of {} pathway property by {}.
+                """.format(
+                    self.phenomenon,
+                    by))
+        if given is not None:
+            raise NotImplementedError(
+                """
+                Computation of {} pathway property given {}.
+                """.format(
+                    self.phenomenon,
+                    given))
+        pre_synaptic_cell_type_specifier =\
+            self._get_cell_type_specifier(
+                pre_synaptic_cell_group)
+        pre_synaptic_cells =\
+            self._resolve_cell_group(
+                pre_synaptic_cell_group,
+                role_synaptic="pre_synaptic")
+        post_synaptic_cell_type_specifier =\
+            self._get_cell_type_specifier(
+                post_synaptic_cell_group)
+        post_synaptic_cells =\
+            self._resolve_cell_group(
+                post_synaptic_cell_group,
+                role_synaptic="post_synaptic")
 
-    def _stored(self, pathway):
-        """
-        Get stored, or a new -- storing before returning.
-        """
-        pre_cell_type_specifier = CellType(pathway.pre_synaptic).specifier
-        post_cell_type_specifier = CellType(pathway.post_synaptic).specifier
-        if not pre_cell_type_specifier in self.store:
-            self.store[pre_cell_type_specifier] = {}
-        if not post_cell_type_specifier in self.store[pre_cell_type_specifier]:
-            self.store[pre_cell_type_specifier][post_cell_type_specifier] =\
-                PathwayProperty(
-                    phenomenon=self.phenomenon,
-                    definition=self.definition,
-                    family_variables=self.family_variables)
-        return self.store[pre_cell_type_specifier]
+        return self._cached(
+            pre_synaptic_cell_type_specifier, pre_synaptic_cells,
+            post_synaptic_cell_type_specifier, post_synaptic_cells,
+            by=by,
+            resample=resample,
+            sampling_methodology=sampling_methodology,
+            number=100)
 
-    def __call__(self, pathway, **kwargs):
+
+class ConnectionProbability(PathwayProperty):
+    phenomenon = "connection_probability"
+
+    def get(self,
+            pre_synaptic_cell_specifier, pre_synaptic_cells,
+            post_synaptic_cell_specifier, post_synaptic_cells):
         """
         Arguments
         ------------
-        pathway : Basically (pre, post) combination
-        kwargs :: Key word arguments containing information family variable
-        values.
-        """
-        if not all(variable in kwargs for variable in self.family_variables):
-            raise TypeError(
-                """
-                A PathwayPropertyFamily can be called only with
-                values for all of its family variables provided as
-                variable keyword arguments.
-                """)
-        handler_pathway_property = self._stored(pathway)
-        return handler_pathway_property(pathway, **kwargs)   
+        pre_synaptic_cells : pandas.DataFrame, with `pre_synaptic` in column names
+        post_synaptic_cells : pandas.DataFrame, with 'post_synaptic' in column names
 
+        Returns
+        -----------
+        pandas.DataFrame 
+        """
+        def _get_summary_pairs(post_gid):
+            if pre_synaptic_cell_specifier is None:
+                return pd.Series({
+                    "number_pairs_total": pre_synaptic_cells.shape[0],
+                    "number_pairs_connected": np.sum(np.in1d(
+                        pre_synaptic_cells.index.values,
+                        self.circuit_model.connectome.afferent_gids(post_gid))))})
+            return pre_synaptic_cells\
+                .assign(
+                    number_pairs=np.in1d(
+                        pre_synaptic_cells.gid.values,
+                        post_gid))\
+                .groupby(
+                    pre_synaptic_cell_specifier)\
+                .agg(
+                    ["size", "sum"])\
+                .rename(
+                    columns={"size": "total", "sum": "connected"})\
+                .reset_index()\
+                .set_index(list(
+                    pre_synaptic_cell_specifier
+                    + post_synaptic_cell_specifier))
+
+        def _connection_probability(summary):
+            """
+            Compute connection probability between pairs
+            """
+            return summary.number_pairs.connected / summary.number_pairs.total
+
+        if post_synaptic_cell_specifier is None:
+            if pre_synaptic_cell_specifier is None:
+                return pd\
+                    .DataFrame(
+                        [_get_summary_pairs(post_gid)
+                         for post_gid in post_synaptic_cells.gid.values])\
+                    .apply(np.sum)\
+                    .assign(
+                        connection_probability=_connection_probability)
+            return pd\
+                .concat(
+                    [_get_summary_pairs(post_gid)
+                     for post_gid in post_synaptic_cells.gid.values],
+                    axis=0)\
+                .groupby(
+                    pre_synaptic_cell_specifier)\
+                .agg(
+                    "sum")\
+                .assign(
+                    connection_probability=_connection_probability)
+
+        if pre_synaptic_cell_specifier is None:
+            return pd\
+                .DataFrame(
+                    [_get_summary_pairs(post_gid)
+                     for post_gid in post_synaptic_cells.gid.values])\
+                .groupby(
+                    post_synaptic_cell_specifier)\
+                .agg(
+                    "sum")\
+                .assign(
+                    connection_probability=_connection_probability)
+        return pd\
+            .concat(
+                [_get_summary_pairs(post_gid)
+                 for post_gid in post_synaptic_cells.gid.values],
+                axis=0)\
+            .groupby(list(
+                pre_synaptic_cell_specifier
+                + post_synaptic_cell_specifier)\
+            .agg(
+                "sum")\
+            .assign(
+                connection_probability=_connection_probability)
 
 def pathway_property(instance_method):
     """

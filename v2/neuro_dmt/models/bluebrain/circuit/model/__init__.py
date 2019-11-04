@@ -453,7 +453,7 @@ class BlueBrainCircuitModel(WithFields):
             ).rename(
                 columns={"size": "total", "sum": "connected"}
             ).assign(**{
-                p: post_cell[p] for p labels_post_specifier}
+                p: post_cell[p] for p in labels_post_specifier}
             ).reset_index(
             ).set_index(list(
                 labels_pre_specifier + labels_post_specifier)
@@ -475,12 +475,6 @@ class BlueBrainCircuitModel(WithFields):
         ).assign(
             connection_probability=_connection_probability )
 
-    def get_connection_probability_by_distance(self,
-            pre_cell_type_specifier,
-            post_cell_type_specifier):
-        """
-        Compute connection probability by distance.
-        """
 
 
 
