@@ -18,7 +18,7 @@ from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
 from .cell_type import CellType
-from .pathway import PathwayProperty, pathway_property
+from .pathway import PathwayProperty, PathwayPropertyFamily
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -83,9 +83,19 @@ class BlueBrainCircuitModel(WithFields):
             self._bluepy_circuit = circuit
 
         self.connection_probability =\
-            PathwayProperty(
-                label="connection_probability",
+            PathwayPropertyFamily(
+                phenomenon="connection_probability",
+                family_variables=tuple(),#variable but constant over the family members
                 definition=self.get_connection_probability)
+        self.connection_probability_by_distance =\
+            PathwayPropertyFamily(
+                phenomenon="connection_probability",
+                family_variables=("soma_distance",),#variable, but constant over the family members
+                definition=self.get_connection_probability_by_distance)
+        # self.connection_probability =\
+        #     PathwayProperty(
+        #         label="connection_probability",
+        #         definition=self.get_connection_probability)
 
         super().__init__(*args, **kwargs)
 
@@ -410,126 +420,159 @@ class BlueBrainCircuitModel(WithFields):
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
-    #@PathwayProperty.memoized
-    def get_connection_probability(self, pathway, sample_size=None, **kwargs):
+    def get_connection_probability(self,
+            pre_cell_type_specifier,
+            post_cell_type_specifier):
         """
-        Connection probability across the pre and post neurons of a pathway.
-
-        Arguments
-        ------------
-        `pathway`: pandas.Series with index <pre, post>
+        Compute connection probability once for either the entire
+        circuit, or samples of afferent, or samples of  efferent,
+        or samples of both efferent and afferent cells.
         """
-        logger.info(
-            logger.get_source_info(),
-            """
-            Get connection probability for pathway,
-            \t{}
-            -->
-            \t{}.
-            Number connections to sample: {}
-            """.format(
-                dict(pathway.pre_synaptic),
-                dict(pathway.post_synaptic),
-                sample_size))
+        labels_pre_specifier =[
+        "pre_synaptic_{}".format(c)
+            for c in pre_cell_type_specifier]
+        labels_post_specifier = [
+            "post_synaptic_{}".format(c)
+            for c in post_cell_type_specifier]
 
-        sample_size = self.cell_sample_size\
-            if sample_size is None else\
-               sample_size
-        pre_cells = pd.DataFrame(list(take(
-            sample_size,
-            self.random_cells(**pathway.pre_synaptic))))
-        if pre_cells.empty:
-            return np.nan
-
-        post_cells = pd.DataFrame(list(take(
-            sample_size,
-            self.random_cells(**pathway.post_synaptic))))
-        if post_cells.empty:
-            return np.nan
-
-        number_connections =\
-            np.sum([
-                np.in1d(
-                    pre_cells.gid.values,
+        def _get_summary_connections(post_cell):
+            return self.cells[
+                list(pre_cell_specifier)
+            ].rename(
+                columns=dict(zip(
+                    pre_cell_type_specifier,
+                    labels_pre_specifier))
+            ).assign(
+                number_pairs=np.in1d(
+                    self.cells.index.values,
                     self.connectome.afferent_gids(post_cell.gid))
-                for _, post_cell in post_cells.iterrows()])
-        connection_probability =\
-            number_connections / (sample_size ^ 2)
-        return connection_probability
+            ).groupby(
+                labels_pre_specifier
+            ).agg(
+                ["size", "sum"]
+            ).rename(
+                columns={"size": "total", "sum": "connected"}
+            ).assign(**{
+                p: post_cell[p] for p labels_post_specifier}
+            ).reset_index(
+            ).set_index(list(
+                labels_pre_specifier + labels_post_specifier)
+            )
 
-    def soma_distance(pre_cell, post_cell):
-        """
-        Soma distance between two cells.
-        """
-        XYZ = ["x", "y", "z"]
-        return np.linalg.norm(
-            pre_cell[XYZ].values - post_cell[XYZ].values)
+        def _connection_probability(summary):
+            """
+            Compute connection probability between pairs
+            """
+            return summary.number_pairs.connected / summary.number_pairs.total
 
-    #@PathwayProperty.memoized
+        return pd.concat(
+            [_get_summary_connections(post_cell)
+             for _, post_cell in post_cells.iterrows()]
+        ).grouby(list(
+            labels_pre_specifier + labels_post_specifier)
+        ).agg(
+            "sum"
+        ).assign(
+            connection_probability=_connection_probability )
+
     def get_connection_probability_by_distance(self,
-            pathway,
-            get_distance_bin):
+            pre_cell_type_specifier,
+            post_cell_type_specifier):
         """
-        Connection probability across the pre and post neurons of a pathway.
-
-        Arguments
-        ------------
-        `pathway`: pandas.Series with index <pre, post>
+        Compute connection probability by distance.
         """
-        logger.info(
-            logger.get_source_info(),
-            """
-            Get connection probability for pathway,
-            \t{}
-            -->
-            \t{}
-            """.format(
-                dict(pathway.pre_synaptic),
-                dict(pathway.post_synaptic)))
-
-        pre_cells = pd.DataFrame(list(take(
-            self.cell_sample_size,
-            self.random_cells(**pathway.pre_synaptic))))
-        if pre_cells.empty:
-            return None
-
-        post_cells = pd.DataFrame(list(take(
-            self.cell_sample_size,
-            self.random_cells(**pathway.post_synaptic))))
-        if post_cells.empty:
-            return None
-
-        soma_distances = pd.Series(
-            [get_distance_bin(self.soma_distance(pre_cell, post_cell))
-             for post_cell in post_cells
-             for pre_cell in pre_cells],
-            name="soma_distance")
-        are_connected = pd.Series(
-            np.concatenate(
-                [np.in1d(
-                    pre_cells.gid.values,
-                    self.connectome.afferent_gids(post_cell.gid))
-                 for _, post_cell in post_cells.iterrows()],
-                axis=0),
-            name="connected")
-
-        measurement = pd\
-            .DataFrame([soma_distances, are_connected])\
-            .groupby(["soma_distance"])\
-            .agg(["size", "mean", "std"])
-                
 
 
-        number_connections =\
-            np.sum([
-                np.in1d(
-                    pre_cells.gid.values,
-                    self.connectome.afferent_gids(post_cell.gid))
-                for _, post_cell in post_cells.iterrows()])
-        connection_probability =\
-            number_connections / (self.cell_sample_size ^ 2)
-        soma_distance =\
-            np.nan
-        return pd.Series({
-            "soma_distance": soma_distance,
-            "connection_probability": connection_probability})
+
+    # #@PathwayProperty.memoized
+    # def get_connection_probability(self, pathway, sample_size=None, **kwargs):
+    #     """
+    #     Connection probability across the pre and post neurons of a pathway.
+
+    #     Arguments
+    #     ------------
+    #     `pathway`: pandas.Series with index <pre, post>
+    #     """
+    #     logger.info(
+    #         logger.get_source_info(),
+    #         """
+    #         Get connection probability for pathway,
+    #         \t{}
+    #         -->
+    #         \t{}.
+    #         Number connections to sample: {}
+    #         """.format(
+    #             dict(pathway.pre_synaptic),
+    #             dict(pathway.post_synaptic),
+    #             sample_size))
+
+    #     sample_size = self.cell_sample_size\
+    #         if sample_size is None else\
+    #            sample_size
+    #     pre_cells = pd.DataFrame(list(take(
+    #         sample_size,
+    #         self.random_cells(**pathway.pre_synaptic))))
+    #     if pre_cells.empty:
+    #         return np.nan
+
+    #     post_cells = pd.DataFrame(list(take(
+    #         sample_size,
+    #         self.random_cells(**pathway.post_synaptic))))
+    #     if post_cells.empty:
+    #         return np.nan
+
+    #     number_connections =\
+    #         np.sum([
+    #             np.in1d(
+    #                 pre_cells.gid.values,
+    #                 self.connectome.afferent_gids(post_cell.gid))
+    #             for _, post_cell in post_cells.iterrows()])
+    #     connection_probability =\
+    #         number_connections / (sample_size ^ 2)
+    #     return connection_probability
+
+    # #@PathwayProperty.memoized
+    # def get_connection_probability_by_distance(self, pathway):
+    #     """
+    #     Connection probability across the pre and post neurons of a pathway.
+
+    #     Arguments
+    #     ------------
+    #     `pathway`: pandas.Series with index <pre, post>
+    #     """
+    #     logger.info(
+    #         logger.get_source_info(),
+    #         """
+    #         Get connection probability for pathway,
+    #         \t{}
+    #         -->
+    #         \t{}
+    #         """.format(
+    #             dict(pathway.pre_synaptic),
+    #             dict(pathway.post_synaptic)))
+
+    #     pre_cells = pd.DataFrame(list(take(
+    #         self.cell_sample_size,
+    #         self.random_cells(**pathway.pre_synaptic))))
+    #     if pre_cells.empty:
+    #         return np.nan
+
+    #     post_cells = pd.DataFrame(list(take(
+    #         self.cell_sample_size,
+    #         self.random_cells(**pathway.post_synaptic))))
+    #     if post_cells.empty:
+    #         return np.nan
+
+    #     number_connections =\
+    #         np.sum([
+    #             np.in1d(
+    #                 pre_cells.gid.values,
+    #                 self.connectome.afferent_gids(post_cell.gid))
+    #             for _, post_cell in post_cells.iterrows()])
+    #     connection_probability =\
+    #         number_connections / (self.cell_sample_size ^ 2)
+    #     soma_distance =\
+    #         np.nan
+    #     return pd.Series({
+    #         "soma_distance": soma_distance,
+    #         "connection_probability": connection_probability})
