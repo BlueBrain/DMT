@@ -80,7 +80,7 @@ class PathwayProperty(WithFields):
         """
         Max length of the cell type specifier that can be stored.
         """,
-        __default_value__=2) 
+        __default_value__=2)
 
     @lazyfield
     def store(self):
@@ -225,12 +225,12 @@ class PathwayProperty(WithFields):
 
         def _value():
             return self.get(
-                tuple(self._at("pre_synaptic")(variable)
-                      for variable in pre_synaptic_cell_type_specifier),
+                tuple("pre_synaptic_{}".format(c) if c != "gid" else "gid"
+                      for c in pre_synaptic_cell_type_specifier),
                 pre_synaptic_cells.rename(
                     columns=self._at("pre_synaptic")),
-                tuple(self._at("post_synaptic")(variable)
-                      for variable in post_synaptic_cell_type_specifier),
+                tuple("post_synaptic_{}".format(c) if c != "gid" else "gid"
+                      for c in post_synaptic_cell_type_specifier),
                 post_synaptic_cells.rename(
                     columns=self._at("post_synaptic")))
 
@@ -298,13 +298,19 @@ class PathwayProperty(WithFields):
                 pre_synaptic_cell_group)
         pre_synaptic_cells =\
             self._resolve_cell_group(
-                pre_synaptic_cell_group)
+                pre_synaptic_cell_group,
+                sampling_methodology=sampling_methodology,
+                resample=resample,
+                number=number)
         post_synaptic_cell_type_specifier =\
             self._get_cell_type_specifier(
                 post_synaptic_cell_group)
         post_synaptic_cells =\
             self._resolve_cell_group(
-                post_synaptic_cell_group)
+                post_synaptic_cell_group,
+                sampling_methodology=sampling_methodology,
+                resample=resample,
+                number=number)
 
         return self._cached(
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
@@ -338,23 +344,24 @@ class ConnectionProbability(PathwayProperty):
                     ("number_pairs", "connected"): np.sum(np.in1d(
                         pre_synaptic_cells.gid.values,
                         self.circuit_model.connectome.afferent_gids(post_cell.gid)))})
-            return pre_synaptic_cells[list(pre_synaptic_cell_type_specifier)]\
-                .assign(
+            return pre_synaptic_cells[
+                    list(pre_synaptic_cell_type_specifier)
+                ].assign(
                     number_pairs=np.in1d(
                         pre_synaptic_cells.gid.values,
-                        post_cell.gid))\
-                .groupby(
-                    pre_synaptic_cell_type_specifier)\
-                .agg(
-                    ["size", "sum"])\
-                .rename(
-                    columns={"size": "total", "sum": "connected"})\
-                .assign(**{
+                        self.circuit_model.connectome.afferent_gids(post_cell.gid))
+                ).groupby(
+                    pre_synaptic_cell_type_specifier
+                ).agg(
+                    ["size", "sum"]
+                ).rename(
+                    columns={"size": "total", "sum": "connected"}
+                ).assign(**{
                     p: post_cell[p]
                     for p in post_synaptic_cell_type_specifier
-                    if p != "gid"})\
-                .reset_index()\
-                .set_index(list(
+                    if p != "gid"}
+                ).reset_index(
+                ).set_index(list(
                     pre_synaptic_cell_type_specifier
                     + post_synaptic_cell_type_specifier))
 
