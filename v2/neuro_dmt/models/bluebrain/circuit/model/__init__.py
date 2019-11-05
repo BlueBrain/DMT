@@ -438,19 +438,17 @@ class BlueBrainCircuitModel(WithFields):
         or samples of both efferent and afferent cells.
         """
         labels_pre_specifier =[
-        "pre_synaptic_{}".format(c)
+            "pre_synaptic_{}".format(c)
             for c in pre_cell_type_specifier]
         labels_post_specifier = [
             "post_synaptic_{}".format(c)
             for c in post_cell_type_specifier]
-
+        cells = self.cells
         def _get_summary_connections(post_cell):
-            return self.cells[
-                list(pre_cell_specifier)
+            return cells[
+                list(pre_cell_type_specifier)
             ].rename(
-                columns=dict(zip(
-                    pre_cell_type_specifier,
-                    labels_pre_specifier))
+                columns=lambda c: "pre_synaptic_{}".format(c)
             ).assign(
                 number_pairs=np.in1d(
                     self.cells.index.values,
@@ -462,7 +460,8 @@ class BlueBrainCircuitModel(WithFields):
             ).rename(
                 columns={"size": "total", "sum": "connected"}
             ).assign(**{
-                p: post_cell[p] for p in labels_post_specifier}
+                "post_synaptic_{}".format(p): post_cell[p] 
+                for p in post_cell_type_specifier}
             ).reset_index(
             ).set_index(list(
                 labels_pre_specifier + labels_post_specifier)
@@ -476,106 +475,10 @@ class BlueBrainCircuitModel(WithFields):
 
         return pd.concat(
             [_get_summary_connections(post_cell)
-             for _, post_cell in post_cells.iterrows()]
-        ).grouby(list(
+             for _, post_cell in cells.iterrows()]
+        ).groupby(list(
             labels_pre_specifier + labels_post_specifier)
         ).agg(
             "sum"
         ).assign(
             connection_probability=_connection_probability )
-
-
-
-
-    # #@PathwayProperty.memoized
-    # def get_connection_probability(self, pathway, sample_size=None, **kwargs):
-    #     """
-    #     Connection probability across the pre and post neurons of a pathway.
-
-    #     Arguments
-    #     ------------
-    #     `pathway`: pandas.Series with index <pre, post>
-    #     """
-    #     logger.info(
-    #         logger.get_source_info(),
-    #         """
-    #         Get connection probability for pathway,
-    #         \t{}
-    #         -->
-    #         \t{}.
-    #         Number connections to sample: {}
-    #         """.format(
-    #             dict(pathway.pre_synaptic),
-    #             dict(pathway.post_synaptic),
-    #             sample_size))
-
-    #     sample_size = self.cell_sample_size\
-    #         if sample_size is None else\
-    #            sample_size
-    #     pre_cells = pd.DataFrame(list(take(
-    #         sample_size,
-    #         self.random_cells(**pathway.pre_synaptic))))
-    #     if pre_cells.empty:
-    #         return np.nan
-
-    #     post_cells = pd.DataFrame(list(take(
-    #         sample_size,
-    #         self.random_cells(**pathway.post_synaptic))))
-    #     if post_cells.empty:
-    #         return np.nan
-
-    #     number_connections =\
-    #         np.sum([
-    #             np.in1d(
-    #                 pre_cells.gid.values,
-    #                 self.connectome.afferent_gids(post_cell.gid))
-    #             for _, post_cell in post_cells.iterrows()])
-    #     connection_probability =\
-    #         number_connections / (sample_size ^ 2)
-    #     return connection_probability
-
-    # #@PathwayProperty.memoized
-    # def get_connection_probability_by_distance(self, pathway):
-    #     """
-    #     Connection probability across the pre and post neurons of a pathway.
-
-    #     Arguments
-    #     ------------
-    #     `pathway`: pandas.Series with index <pre, post>
-    #     """
-    #     logger.info(
-    #         logger.get_source_info(),
-    #         """
-    #         Get connection probability for pathway,
-    #         \t{}
-    #         -->
-    #         \t{}
-    #         """.format(
-    #             dict(pathway.pre_synaptic),
-    #             dict(pathway.post_synaptic)))
-
-    #     pre_cells = pd.DataFrame(list(take(
-    #         self.cell_sample_size,
-    #         self.random_cells(**pathway.pre_synaptic))))
-    #     if pre_cells.empty:
-    #         return np.nan
-
-    #     post_cells = pd.DataFrame(list(take(
-    #         self.cell_sample_size,
-    #         self.random_cells(**pathway.post_synaptic))))
-    #     if post_cells.empty:
-    #         return np.nan
-
-    #     number_connections =\
-    #         np.sum([
-    #             np.in1d(
-    #                 pre_cells.gid.values,
-    #                 self.connectome.afferent_gids(post_cell.gid))
-    #             for _, post_cell in post_cells.iterrows()])
-    #     connection_probability =\
-    #         number_connections / (self.cell_sample_size ^ 2)
-    #     soma_distance =\
-    #         np.nan
-    #     return pd.Series({
-    #         "soma_distance": soma_distance,
-    #         "connection_probability": connection_probability})

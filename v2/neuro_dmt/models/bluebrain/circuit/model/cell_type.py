@@ -24,7 +24,13 @@ class CellType(WithFields):
         -----------
         value : Mapping or pandas.Series
         """
-        assert isinstance(value, (OrderedDict, pd.Series))
+        if not isinstance(value, (OrderedDict, pd.Series)):
+            raise TypeError(
+                """
+                `CellType` can be initialized with an instance of either
+                1. OrderedDict, or
+                2. pandas.Series.
+                """)
         super().__init__(value=pd.Series(value), *args, **kwargs)
 
     @lazyfield
