@@ -18,6 +18,15 @@ class CellType(WithFields):
         a list of such values.
         """)
 
+    def __init__(self, value, *args, **kwargs):
+        """
+        Arguments
+        -----------
+        value : Mapping or pandas.Series
+        """
+        assert isinstance(value, (OrderedDict, pd.Series))
+        super().__init__(value=pd.Series(value), *args, **kwargs)
+
     @lazyfield
     def specifier(self):
         """
