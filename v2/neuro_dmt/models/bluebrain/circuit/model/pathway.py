@@ -109,7 +109,6 @@ class PathwayProperty(WithFields):
 
     def _resolve_cell_group(self,
             cell_group,
-            cell_type=None,
             sampling_methodology=SamplingMethodology.random,
             resample=False,
             number=100):
@@ -119,9 +118,14 @@ class PathwayProperty(WithFields):
         ---------
         pandas.DataFrame containing cells.
         """
-        # if cell_group is None:
-        #     assert cell_type, cell_type
-        #     cell_group = 
+        other_args = dict(
+            sampling_methodology=sampling_methodology,
+            resample=resample,
+            number=number)
+        if cell_group is None:
+            return self._resolve_cell_group(
+                self.circuit_model.cells,
+                **other_args)
         if isinstance(cell_group, np.ndarray):
             gids = cell_group\
                 if (sampling_methodology != SamplingMethodology.random
@@ -129,23 +133,17 @@ class PathwayProperty(WithFields):
                 ) else np.random.choice(cell_group, number)
             return self._resolve_cell_group(
                 self.circuit_model.cells.loc[gids],
-                resample=resample,
-                sampling_methodology=sampling_methodology,
-                number=number)
+                **other_args)
         if isinstance(cell_group, pd.Series):
             return self._resolve_cell_group(
                 cell_group.to_dict(),
-                resample=resample,
-                sampling_methodology=sampling_methodology,
-                number=number)
+                **other_args)
         if isinstance(cell_group, Mapping):
             cells = self.circuit_model.cells if self.memoize\
                 else self.circuit_model.get_cells(**cell_group)
             return self._resolve_cell_group(
                 cells,
-                sampling_methodology=sampling_methodology,
-                resample=False,
-                number=number)
+                **other_args)
 
         if isinstance(cell_group, pd.DataFrame):
             return cell_group\
