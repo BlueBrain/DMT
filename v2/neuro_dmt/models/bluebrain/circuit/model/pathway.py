@@ -127,12 +127,8 @@ class PathwayProperty(WithFields):
                 self.circuit_model.cells,
                 **other_args)
         if isinstance(cell_group, np.ndarray):
-            gids = cell_group\
-                if (sampling_methodology != SamplingMethodology.random
-                    or len(cell_group) < number
-                ) else np.random.choice(cell_group, number)
             return self._resolve_cell_group(
-                self.circuit_model.cells.loc[gids],
+                self.circuit_model.cells.loc[cell_group],
                 **other_args)
         if isinstance(cell_group, pd.Series):
             return self._resolve_cell_group(
@@ -183,32 +179,6 @@ class PathwayProperty(WithFields):
         """
         raise NotImplementedError
 
-    def _get_key_to_cache_with(self,
-            pre_synaptic_cell_type_specifier, pre_synaptic_cells,
-            post_synaptic_cell_type_specifier, post_synaptic_cells):
-        """
-        Check if pathway property value can be cached...
-        """
-        if not pre_synaptic_cell_type_specifier:
-            return None
-        if not post_synaptic_cell_type_specifier:
-            return None
-        # pre_synaptic_cell_types =\
-        #     self._get_cell_types(
-        #         pre_synaptic_cells,
-        #         pre_synaptic_cell_type_specifier)
-        # if len(pre_synaptic_cell_types) != 1:
-        #     return None
-        # post_synaptic_cell_types =\
-        #     self._get_cell_types(
-        #         post_synaptic_cells,
-        #         post_synaptic_cell_type_specifier)
-        # if len(post_synaptic_cell_types) != 1:
-        #     return None
-
-        return (
-            pre_synaptic_cell_type_specifier,
-            post_synaptic_cell_type_specifier)
 
     def _cached(self,
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
@@ -227,9 +197,11 @@ class PathwayProperty(WithFields):
         ...
         """
         key_cache =\
-            self._get_key_to_cache_with(
-                pre_synaptic_cell_type_specifier, pre_synaptic_cells,
-                post_synaptic_cell_type_specifier, post_synaptic_cells)
+            (pre_synaptic_cell_type_specifier,
+             post_synaptic_cell_type_specifier)\
+            if (pre_synaptic_cell_type_specifier
+                and post_synaptic_cell_type_specifier)\
+               else None
 
         measurement_values = self.get(
             pre_synaptic_cells.rename(
@@ -276,7 +248,6 @@ class PathwayProperty(WithFields):
             .reset_index(drop=True)\
             .rename(columns=self.columns)\
             .agg("sum")
-                
 
     def _get_cell_type_specifier(self, cell):
         """
@@ -346,8 +317,6 @@ class PathwayProperty(WithFields):
                 """.format(
                     self.phenomenon,
                     given))
-        if pre_synaptic_cell_group is None:
-            assert groupby.pre_synaptic_cell_type
         pre_synaptic_cell_type_specifier =\
             groupby.pre_synaptic_cell_type\
             if groupby.pre_synaptic_cell_type else\
@@ -360,8 +329,6 @@ class PathwayProperty(WithFields):
                 resample=resample,
                 number=number)
                    
-        if post_synaptic_cell_group is None:
-            assert groupby.post_synaptic_cell_type
         post_synaptic_cell_type_specifier =\
             groupby.post_synaptic_cell_type\
             if groupby.post_synaptic_cell_type else\
@@ -429,101 +396,6 @@ class ConnectionProbability(PathwayProperty):
                 axis=1)
 
             
-
-
-    # def get(self,
-    #         pre_synaptic_cell_type_specifier, pre_synaptic_cells,
-    #         post_synaptic_cell_type_specifier, post_synaptic_cells):
-    #     """
-    #     Arguments
-    #     ------------
-    #     pre_synaptic_cells : pandas.DataFrame, with `pre_synaptic` in column names
-    #     post_synaptic_cells : pandas.DataFrame, with 'post_synaptic' in column names
-
-    #     Returns
-    #     -----------
-    #     pandas.DataFrame 
-    #     """
-    #     def _get_summary_pairs(post_cell):
-    #         if not pre_synaptic_cell_type_specifier:
-    #             return pd.Series({
-    #                 ("number_pairs", "total"): pre_synaptic_cells.shape[0],
-    #                 ("number_pairs", "connected"): np.sum(np.in1d(
-    #                     pre_synaptic_cells.gid.values,
-    #                     self.circuit_model.connectome.afferent_gids(post_cell.gid)))})
-    #         return pre_synaptic_cells[
-    #                 list(pre_synaptic_cell_type_specifier)
-    #             ].assign(
-    #                 number_pairs=np.in1d(
-    #                     pre_synaptic_cells.gid.values,
-    #                     self.circuit_model.connectome.afferent_gids(post_cell.gid))
-    #             ).groupby(
-    #                 pre_synaptic_cell_type_specifier
-    #             ).agg(
-    #                 ["size", "sum"]
-    #             ).rename(
-    #                 columns={"size": "total", "sum": "connected"}
-    #             ).assign(**{
-    #                 p: post_cell[p]
-    #                 for p in post_synaptic_cell_type_specifier
-    #                 if p != "gid"}
-    #             ).reset_index(
-    #             ).set_index(list(
-    #                 pre_synaptic_cell_type_specifier
-    #                 + post_synaptic_cell_type_specifier))
-
-    #     def _value(summary):
-    #         """
-    #         Compute connection probability between pairs
-    #         """
-    #         return summary.number_pairs.connected / summary.number_pairs.total
-
-    #     if not post_synaptic_cell_type_specifier:
-    #         if not pre_synaptic_cell_type_specifier:
-    #             pairs = pd\
-    #                 .DataFrame(
-    #                     [_get_summary_pairs(post_cell)
-    #                      for _, post_cell in post_synaptic_cells.iterrows()])\
-    #                 .apply(np.sum)
-    #             return pairs.append(pd.Series({
-    #                 "connection_probability": _value(pairs)}))
-    #         return pd\
-    #             .concat(
-    #                 [_get_summary_pairs(post_cell)
-    #                  for _, post_cell in post_synaptic_cells.iterrows()],
-    #                 axis=0)\
-    #             .groupby(
-    #                 pre_synaptic_cell_type_specifier)\
-    #             .agg(
-    #                 "sum")\
-    #             .reset_index()\
-    #             .assign(
-    #                 connection_probability=_value)
-
-    #     if not pre_synaptic_cell_type_specifier:
-    #         return pd\
-    #             .DataFrame(
-    #                 [_get_summary_pairs(post_cell)
-    #                  for _, post_cell in post_synaptic_cells.iterrows()])\
-    #             .groupby(
-    #                 post_synaptic_cell_type_specifier)\
-    #             .agg(
-    #                 "sum")\
-    #             .assign(
-    #                 connection_probability=_value)
-    #     return pd\
-    #         .concat(
-    #             [_get_summary_pairs(post_cell)
-    #              for _, post_cell in post_synaptic_cells.iterrows()],
-    #             axis=0)\
-    #         .groupby(list(
-    #             pre_synaptic_cell_type_specifier
-    #             + post_synaptic_cell_type_specifier))\
-    #         .agg(
-    #             "sum")\
-    #         .assign(
-    #             connection_probability=_value)
-
 def pathway_property(instance_method):
     """
     Decorate an `instance_method` as a PathwayProperty.
