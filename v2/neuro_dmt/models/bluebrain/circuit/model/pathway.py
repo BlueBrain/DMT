@@ -210,6 +210,15 @@ class PathwayProperty(WithFields):
         ---------------
         ...
         """
+        assert (
+            pre_synaptic_cell_type_specifier is None
+            or isinstance(pre_synaptic_cell_type_specifier, frozenset)
+        ), pre_synaptic_cell_type_specifier
+
+        assert (
+            post_synaptic_cell_type_specifier is None
+            or isinstance(post_synaptic_cell_type_specifier, frozenset)
+        ), post_synaptic_cell_type_specifier
         logger.study(
             logger.get_source_info(),
             """
@@ -291,11 +300,10 @@ class PathwayProperty(WithFields):
             cell_type = CellType(value=cell)
             return cell_type.specifier\
                 if len(cell_type.value) <= self.max_length_cell_type_specifier\
-                   else tuple()
+                   else None
         except TypeError:
             pass
-        return tuple()
-
+        return None
 
     def __call__(self,
             pathway=None,
@@ -412,7 +420,7 @@ class PathwayProperty(WithFields):
                 pre_synaptic_cell_group,
                 post_synaptic_cell_group))
         pre_synaptic_cell_type_specifier =\
-            groupby.pre_synaptic_cell_type_specifier\
+            frozenset(groupby.pre_synaptic_cell_type_specifier)\
             if groupby.pre_synaptic_cell_type_specifier is not None else\
                self._get_cell_type_specifier(pre_synaptic_cell_group)
         pre_synaptic_cells =\
@@ -423,7 +431,7 @@ class PathwayProperty(WithFields):
                 number=number)
                    
         post_synaptic_cell_type_specifier =\
-            groupby.post_synaptic_cell_type_specifier\
+            frozenset(groupby.post_synaptic_cell_type_specifier)\
             if groupby.post_synaptic_cell_type_specifier is not None else\
                self._get_cell_type_specifier(post_synaptic_cell_group)
         post_synaptic_cells =\
@@ -482,10 +490,9 @@ class ConnectionProbability(PathwayProperty):
             logger.ignore(
                 logger.get_source_info(),
                 """
-                Get all pairs for {} post cell {} / {} ({})
+                Get all pairs for post cell {} / {} ({})
                 """.format(
-                    post_cell.post_synaptic_mtype,
-                    post_cell.gid,
+                    post_cell,
                     post_synaptic_cells.shape[0],
                     post_cell.gid / post_synaptic_cells.shape[0]))
             pairs = pre_synaptic_cells\

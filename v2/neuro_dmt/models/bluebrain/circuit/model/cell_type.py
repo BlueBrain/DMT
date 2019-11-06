@@ -24,7 +24,25 @@ class CellType(WithFields):
         -----------
         value : Mapping or pandas.Series
         """
-        super().__init__(value=pd.Series(value), *args, **kwargs)
+        if value is None:
+            raise TypeError(
+                """
+                __init__ called with argument `value` {}
+                """.format(value))
+        try:
+            value_as_series = pd.Series(value)
+            super().__init__(value=value_as_series, *args, **kwargs)
+        except ValueError as error:
+            raise TypeError(
+                """
+                __init__called with {} instance that could not be case to a
+                pandas Series.
+                Original error:
+                \t{}
+                """.format(
+                    type(value),
+                    error))
+
 
     @lazyfield
     def specifier(self):
