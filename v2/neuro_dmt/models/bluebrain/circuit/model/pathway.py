@@ -441,7 +441,7 @@ class PathwayProperty(WithFields):
                 resample=resample,
                 number=number)
 
-        return self._cached(
+        values = self._cached(
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
             by=by,
@@ -449,6 +449,17 @@ class PathwayProperty(WithFields):
             sampling_methodology=sampling_methodology,
             number=100)
 
+        if pathway is not None and isinstance(values, pd.DataFrame):
+            try:
+                queried_values = values[self.phenomenon].xs(
+                    pathway.values,
+                    level=tuple('_'.join(k) for k in pathway.index.values))
+                assert len(queried_values) == 1
+                return queried_values.values[0]
+            except KeyError:
+                return np.nan
+
+        return values
 
 class ConnectionProbability(PathwayProperty):
     phenomenon = "connection_probability"

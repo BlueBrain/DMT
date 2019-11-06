@@ -48,14 +48,16 @@ def test_connection_probability():
         """,
         group="Connectome")
     number_pathways = 5
+    pathways = mock_circuit_model.pathways({"mtype",}).sample(n=number_pathways)
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
             AdapterInterface=ConnectionProbabilityInterface,
-            measurement_parameters=Parameters(
-                lambda adapter, model: adapter.get_pathways(
-                    model, ("mtype",)
-                ).sample(n=number_pathways)),
+            # measurement_parameters=Parameters(
+            #     lambda adapter, model: adapter.get_pathways(
+            #         model, ("mtype",)
+            #     ).sample(n=number_pathways)),
+            measurement_parameters=Parameters(pathways),
             plotter=HeatMap(
                 xvar=("pre_synaptic", "mtype"),
                 xlabel="pre-mtype",

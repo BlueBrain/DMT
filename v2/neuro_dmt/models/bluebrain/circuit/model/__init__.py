@@ -357,13 +357,13 @@ class BlueBrainCircuitModel(WithFields):
                 post_neuron = np.random.sample(post_neurons)
                 yield (pre_neuron, post_neuron)
 
-    def get_cell_types(self, cell_type_specifiers):
+    def get_cell_types(self, cell_type_specifier):
         """
         Get cells of the specified type.
 
         Argument
         --------------
-        cell_type_specifiers ::  A tuple of strings each of which
+        cell_type_specifiers ::  An iterable of strings each of which
         is a property of cell.
 
         Results
@@ -375,9 +375,9 @@ class BlueBrainCircuitModel(WithFields):
         all values of `mtype` in the circuit.
         """
         cell_properties_values ={
-            cell_property: getattr(
-                self, "{}s".format(cell_property))
-                for cell_property in cell_type_specifiers}
+            variable: getattr(
+                self, "{}s".format(variable))
+                for variable in cell_type_specifier}
 
         def _get_tuple_values(params):
             """..."""
@@ -394,7 +394,7 @@ class BlueBrainCircuitModel(WithFields):
 
         return pd.DataFrame([
             dict(row)
-            for row in _get_tuple_values(cell_type_specifiers)])
+            for row in _get_tuple_values(tuple(cell_type_specifier))])
 
     @CellType.memoized
     def pathways(self,
