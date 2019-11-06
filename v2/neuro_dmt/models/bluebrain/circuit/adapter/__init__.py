@@ -19,6 +19,7 @@ from neuro_dmt.models.bluebrain.circuit.model import\
 from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from ..model.cell_type import CellType
+from ..model.pathway import Pathway
 
 
 @implements(CellDensityAdapterInterface)
@@ -254,7 +255,10 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             circuit_model\
             .connection_probability(
-                CellType.pathway(
-                    pd.Series(pre_synaptic),
-                    pd.Series(post_synaptic)),
+                pathway=CellType.pathway(pre_synaptic, post_synaptic),
+                    # pd.Series(pre_synaptic),
+                    # pd.Series(post_synaptic)),
+                # groupby=Pathway.GroupByVariables(
+                #     pre_synaptic_cell_type=CellType(pre_synaptic).specifier,
+                #     post_synaptic_cell_type=CellType(post_synaptic).specifier),
                 **kwargs)

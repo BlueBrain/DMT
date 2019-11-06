@@ -3,6 +3,7 @@ Test using connectome properties.
 """
 import numpy as np
 import pandas as pd
+from dmt.tk.journal import Logger
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.parameters import Parameters
 from dmt.tk.plotting import Bars, HeatMap
@@ -19,6 +20,7 @@ from . import\
     BlueBrainCircuitAnalysisTest,\
     get_path_circuit
 
+logger = Logger(client="test connectome analysis.")
 circuit_label = "S1RatSSCxDisseminationBio1"
 circuit_model_bio_one = BlueBrainCircuitModel(
     path_circuit_data=get_path_circuit(circuit_label))
@@ -73,9 +75,16 @@ def test_connection_probability():
             connection_probability_measurement)
     assert summary.shape[0] == number_pathways,\
         summary.shape
+    
+    logger.info(
+        logger.get_source_info(),
+        "Test call to analysis")
     analysis_test\
         .test_call_analysis(
             mock_circuit_model)
+    logger.info(
+        logger.get_source_info(),
+        "Test post report")
     analysis_test\
         .test_post_report(
             mock_circuit_model,

@@ -57,6 +57,11 @@ class Pathways(pd.Series):
         raise NotImplementedError
 
 
+GroupByVariables = namedtuple(
+    "GroupByVariables",
+    ["pre_synaptic_cell_type_specifier",
+     "post_synaptic_cell_type_specifier"])
+
 class PathwayProperty(WithFields):
     """
     Compute and store a circuit's pathway properties.
@@ -115,6 +120,14 @@ class PathwayProperty(WithFields):
             sampling_methodology=sampling_methodology,
             resample=resample,
             number=number)
+        logger.study(
+            logger.get_source_info(),
+            """
+            resolve cell group {}
+            given that {}
+            """.format(
+                cell_group,
+                other_args))
         if cell_group is None:
             return self._resolve_cell_group(
                 self.circuit_model.cells,
@@ -128,17 +141,25 @@ class PathwayProperty(WithFields):
                 cell_group.to_dict(),
                 **other_args)
         if isinstance(cell_group, Mapping):
-            cells = self.circuit_model.cells if self.memoize\
-                else self.circuit_model.get_cells(**cell_group)
+            cells = self.circuit_model.cells[list(cell_group.keys()) + ["gid"]]\
+                if self.memoize else\
+                   self.circuit_model.get_cells(**cell_group)
             return self._resolve_cell_group(
                 cells,
                 **other_args)
 
         if isinstance(cell_group, pd.DataFrame):
-            return cell_group\
-                if (sampling_methodology==terminology.sampling_methodology.random
-                    or cell_group.shape[0] < number
+            result = cell_group\
+                if (sampling_methodology!=terminology.sampling_methodology.random
+                    or cell_group.shape[1] > number - 1
                 ) else cell_group.sample(n=number)
+            logger.study(
+                logger.get_source_info(),
+                """
+                Final result for cell group, dataframe with shape {}
+                """.format(
+                    result.shape))
+            return result
                     
         raise NotImplementedError(
             """
@@ -189,11 +210,20 @@ class PathwayProperty(WithFields):
         ---------------
         ...
         """
+        logger.study(
+            logger.get_source_info(),
+            """
+            cache result for specifiers:
+            \tpre_synaptic: {}
+            \tpost_synaptic: {}
+            """.format(
+                pre_synaptic_cell_type_specifier,
+                post_synaptic_cell_type_specifier))
         key_cache =\
             (pre_synaptic_cell_type_specifier,
              post_synaptic_cell_type_specifier)\
-            if (pre_synaptic_cell_type_specifier
-                and post_synaptic_cell_type_specifier)\
+            if (pre_synaptic_cell_type_specifier is not None
+                and post_synaptic_cell_type_specifier is not None)\
                else None
 
         measurement_values = self.get(
@@ -266,17 +296,14 @@ class PathwayProperty(WithFields):
             pass
         return tuple()
 
-    GroupByVariables = namedtuple(
-        "GroupByVariables",
-        ["pre_synaptic_cell_type",
-         "post_synaptic_cell_type"])
 
     def __call__(self,
+            pathway=None,
             pre_synaptic_cell_group=None,
             post_synaptic_cell_group=None,
             groupby=GroupByVariables(
-                pre_synaptic_cell_type=None,
-                post_synaptic_cell_type=None),
+                pre_synaptic_cell_type_specifier=None,
+                post_synaptic_cell_type_specifier=None),
             by=None,
             given=None,
             resample=False,
@@ -294,19 +321,25 @@ class PathwayProperty(WithFields):
              If a list of variables, the computation will be conditioned on all
              the variables.
         given: A dict providing variables and their values for which the
-               the pathway property will be returned.
-        """
+               the pathway property will be returned. """
         logger.study(
             logger.get_source_info(),
             """
             Call to connection probability.
-            pre_synaptic_cell_group: {}
-            post_synaptic_cell_group: {}
-            to be group by: {}
-            methodology: {}
+            pathway:
+            \t{}
+            pre_synaptic_cell_group:
+            \t{}
+            post_synaptic_cell_group:
+            \t{}
+            to be group by:
+            \t{}
+            methodology:
+            \t{}
             """.format(
-                type(pre_synaptic_cell_group),
-                type(post_synaptic_cell_group),
+                str(pathway).replace('\n', "\n\t\t"),
+                pre_synaptic_cell_group,
+                post_synaptic_cell_group,
                 groupby,
                 sampling_methodology))
         if by is not None:
@@ -323,9 +356,64 @@ class PathwayProperty(WithFields):
                 """.format(
                     self.phenomenon,
                     given))
+
+        def _type_error(what):
+            return TypeError(
+                """
+                {}.
+                __call__ may be called either without any parameters about 
+                which cell pairs to compute for, or a value for argument 
+                `pathway`, or values for arguments `pre_synaptic_cell_group`
+                and `post_synaptic_cell_group`, but not both.
+                """.format(what))
+            
+        if pathway is not None:
+            if (pre_synaptic_cell_group is not None
+                or post_synaptic_cell_group is not None):
+                raise _type_error(
+                    """
+                    __call__ called with values for both pathway and
+                    pre / post synaptic cell groups.
+                    """)
+            pre_synaptic_cell_group = pathway.pre_synaptic
+            post_synaptic_cell_group = pathway.post_synaptic
+            groupby = groupby\
+                if (groupby.pre_synaptic_cell_type_specifier is not None
+                    and groupby.post_synaptic_cell_type_specifier is not None)\
+                    else GroupByVariables(
+                            CellType(pre_synaptic_cell_group).specifier,
+                            CellType(post_synaptic_cell_group).specifier)
+
+        if (pre_synaptic_cell_group is not None
+            and post_synaptic_cell_group is None):
+            raise _type_error(
+                """
+                __call__ called with a value {} for `pre_synaptic_cell_group` 
+                in the arguments, but no value for `post_synaptic_cell_group`.
+                """.format(
+                    pre_synaptic_cell_group))
+        if (post_synaptic_cell_group is not None
+            and pre_synaptic_cell_group is None):
+            raise _type_error(
+                """
+                __call__called with a value {} for `post_synaptic_cell_group` 
+                in the arguments, but no value for `pre_synaptic_cell_group`.
+                """.format(
+                    post_synaptic_cell_group))
+
+        logger.study(
+            logger.get_source_info(),
+            """
+            After processing arguments,
+            compute pathway property for:
+            pre_synaptic_cell_group: {}
+            post_synaptic_cell_group: {}
+            """.format(
+                pre_synaptic_cell_group,
+                post_synaptic_cell_group))
         pre_synaptic_cell_type_specifier =\
-            groupby.pre_synaptic_cell_type\
-            if groupby.pre_synaptic_cell_type else\
+            groupby.pre_synaptic_cell_type_specifier\
+            if groupby.pre_synaptic_cell_type_specifier is not None else\
                self._get_cell_type_specifier(pre_synaptic_cell_group)
         pre_synaptic_cells =\
             self._resolve_cell_group(
@@ -335,8 +423,8 @@ class PathwayProperty(WithFields):
                 number=number)
                    
         post_synaptic_cell_type_specifier =\
-            groupby.post_synaptic_cell_type\
-            if groupby.post_synaptic_cell_type else\
+            groupby.post_synaptic_cell_type_specifier\
+            if groupby.post_synaptic_cell_type_specifier is not None else\
                self._get_cell_type_specifier(post_synaptic_cell_group)
         post_synaptic_cells =\
             self._resolve_cell_group(
@@ -390,7 +478,16 @@ class ConnectionProbability(PathwayProperty):
             """.format(
                 pre_synaptic_cells.shape[0],
                 post_synaptic_cells.shape[0]))
-        for _, post_cell in post_synaptic_cells.iterrows():
+        for count, post_cell in post_synaptic_cells.iterrows():
+            logger.ignore(
+                logger.get_source_info(),
+                """
+                Get all pairs for {} post cell {} / {} ({})
+                """.format(
+                    post_cell.post_synaptic_mtype,
+                    post_cell.gid,
+                    post_synaptic_cells.shape[0],
+                    post_cell.gid / post_synaptic_cells.shape[0]))
             pairs = pre_synaptic_cells\
                 .drop(
                     columns="gid"

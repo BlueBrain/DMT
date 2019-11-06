@@ -24,13 +24,6 @@ class CellType(WithFields):
         -----------
         value : Mapping or pandas.Series
         """
-        if not isinstance(value, (OrderedDict, pd.Series)):
-            raise TypeError(
-                """
-                `CellType` can be initialized with an instance of either
-                1. OrderedDict, or
-                2. pandas.Series.
-                """)
         super().__init__(value=pd.Series(value), *args, **kwargs)
 
     @lazyfield
@@ -56,9 +49,9 @@ class CellType(WithFields):
         `cell_type`: a Mapping like an OrderedDict, or a pandas.Series
         """
         if isinstance(cell_type, OrderedDict):
-            return tuple(cell_type.keys())
+            return frozenset(cell_type.keys())
         if isinstance(cell_type, pd.Series):
-            return tuple(cell_type.index.values)
+            return frozenset(cell_type.index.values)
         raise TypeError(
             """
             Can extract cell type specifiers from an `OrderedDict`
@@ -76,13 +69,14 @@ class CellType(WithFields):
         """
         def _at(pos, cell_type):
             return pd.Series(
-                cell_type.values,
+                cell_type.value.values,
                 index=pd.MultiIndex.from_tuples([
-                    (pos, value)
-                    for value in cell_type.index.values]))
+                    (pos, variable)
+                    for variable in cell_type.value.index]))
         return\
-            _at("pre_synaptic", pre_synaptic_cell_type).append(
-                _at("post_synaptic", post_synaptic_cell_type))
+            _at("pre_synaptic", CellType(pre_synaptic_cell_type)).append(
+                _at("post_synaptic", CellType(post_synaptic_cell_type)))
+
 
     @staticmethod
     def memoized(instance_method):
