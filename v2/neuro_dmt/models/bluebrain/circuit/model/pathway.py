@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
+from neuro_dmt import terminology
 from .cell_type import CellType
 
 
@@ -54,14 +55,6 @@ class Pathways(pd.Series):
         Represent `post` as a string
         """
         raise NotImplementedError
-
-
-class SamplingMethodology(Enum):
-    """
-    How should cells be sampled for measuring pathway properties?
-    """
-    random = 1
-    exhaustive = 2
 
 
 class PathwayProperty(WithFields):
@@ -109,7 +102,7 @@ class PathwayProperty(WithFields):
 
     def _resolve_cell_group(self,
             cell_group,
-            sampling_methodology=SamplingMethodology.random,
+            sampling_methodology=terminology.sampling_methodology.random,
             resample=False,
             number=100):
         """
@@ -143,7 +136,7 @@ class PathwayProperty(WithFields):
 
         if isinstance(cell_group, pd.DataFrame):
             return cell_group\
-                if (sampling_methodology != SamplingMethodology.random
+                if (sampling_methodology==terminology.sampling_methodology.random
                     or cell_group.shape[0] < number
                 ) else cell_group.sample(n=number)
                     
@@ -185,7 +178,7 @@ class PathwayProperty(WithFields):
             post_synaptic_cell_type_specifier, post_synaptic_cells,
             by=None,
             resample=False,
-            sampling_methodology=SamplingMethodology.random,
+            sampling_methodology=terminology.sampling_methodology.random,
             number=100):
 
         """
@@ -211,7 +204,7 @@ class PathwayProperty(WithFields):
 
         if key_cache:
             if (key_cache not in self.store
-                or (sampling_methodology == SamplingMethodology.random
+                or (sampling_methodology == terminology.sampling_methodology.random
                     and resample)):
                 pre_synaptic_columns =[
                     "pre_synaptic_{}".format(variable)
@@ -287,7 +280,7 @@ class PathwayProperty(WithFields):
             by=None,
             given=None,
             resample=False,
-            sampling_methodology=SamplingMethodology.random,
+            sampling_methodology=terminology.sampling_methodology.random,
             number=100):
         """
         Compute, or retrieve from the store...
@@ -303,6 +296,19 @@ class PathwayProperty(WithFields):
         given: A dict providing variables and their values for which the
                the pathway property will be returned.
         """
+        logger.study(
+            logger.get_source_info(),
+            """
+            Call to connection probability.
+            pre_synaptic_cell_group: {}
+            post_synaptic_cell_group: {}
+            to be group by: {}
+            methodology: {}
+            """.format(
+                type(pre_synaptic_cell_group),
+                type(post_synaptic_cell_group),
+                groupby,
+                sampling_methodology))
         if by is not None:
             raise NotImplementedError(
                 """
@@ -321,7 +327,6 @@ class PathwayProperty(WithFields):
             groupby.pre_synaptic_cell_type\
             if groupby.pre_synaptic_cell_type else\
                self._get_cell_type_specifier(pre_synaptic_cell_group)
-        print("pre_synaptic_cell_type_specifier", pre_synaptic_cell_type_specifier)
         pre_synaptic_cells =\
             self._resolve_cell_group(
                 pre_synaptic_cell_group,
@@ -333,7 +338,6 @@ class PathwayProperty(WithFields):
             groupby.post_synaptic_cell_type\
             if groupby.post_synaptic_cell_type else\
                self._get_cell_type_specifier(post_synaptic_cell_group)
-        print("post_synaptic_cell_type_specifier", post_synaptic_cell_type_specifier)
         post_synaptic_cells =\
             self._resolve_cell_group(
                 post_synaptic_cell_group,
@@ -377,6 +381,15 @@ class ConnectionProbability(PathwayProperty):
         A generator of data-frames that provides values for individual
         pairs `(pre_synaptic_cell, post_synaptic_cell)`.
         """
+        logger.study(
+            logger.get_source_info(),
+            """
+            Get connection probability for
+            {} pre synaptic cells
+            {} post synaptic cells
+            """.format(
+                pre_synaptic_cells.shape[0],
+                post_synaptic_cells.shape[0]))
         for _, post_cell in post_synaptic_cells.iterrows():
             pairs = pre_synaptic_cells\
                 .drop(

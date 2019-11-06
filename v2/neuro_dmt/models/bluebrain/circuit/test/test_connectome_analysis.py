@@ -10,6 +10,10 @@ from dmt.data.observation import measurement
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.connectome.interfaces import\
     ConnectionProbabilityInterface
+from ..mock.circuit import MockCircuit
+from ..mock.test.mock_circuit_light import\
+    circuit_composition,\
+    circuit_connectivity
 from ..model import BlueBrainCircuitModel
 from . import\
     BlueBrainCircuitAnalysisTest,\
@@ -18,7 +22,12 @@ from . import\
 circuit_label = "S1RatSSCxDisseminationBio1"
 circuit_model_bio_one = BlueBrainCircuitModel(
     path_circuit_data=get_path_circuit(circuit_label))
-
+mock_circuit_model =\
+    BlueBrainCircuitModel(
+        MockCircuit.build(
+            circuit_composition,
+            circuit_connectivity),
+        label="BlueBrainCircuitModelMockLight")
 
 def test_connection_probability():
     """
@@ -54,11 +63,11 @@ def test_connection_probability():
 
     analysis_test.test_circuit_model(circuit_label)
     connection_probability_measurement =\
-        analysis_test.test_get_measurement(circuit_model_bio_one)
+        analysis_test.test_get_measurement(mock_circuit_model)
     assert len(connection_probability_measurement) == 1
     dataset, dataframe = [
         (k, v) for k, v in connection_probability_measurement.items()][0]
-    assert dataset == circuit_model_bio_one.label
+    assert dataset == mock_circuit_model.label
     summary =\
         measurement.concat_as_summaries(
             connection_probability_measurement)
@@ -66,8 +75,8 @@ def test_connection_probability():
         summary.shape
     analysis_test\
         .test_call_analysis(
-            circuit_model_bio_one)
+            mock_circuit_model)
     analysis_test\
         .test_post_report(
-            circuit_model_bio_one,
+            mock_circuit_model,
             output_folder="analysis")

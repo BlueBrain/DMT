@@ -1,6 +1,7 @@
 """
 Neuroscience terminology used.
 """
+from enum import Enum
 from dmt.tk.terminology import *
 from dmt.tk.utils.singleton import Singleton
 
@@ -134,3 +135,29 @@ class measurement_method(TermCollection):
     terms =(
         random_sampling,
         exhaustive)
+
+
+class sampling_methodology(TermCollection):
+    """
+    Enum specifying how to sample a population.
+    """
+    random = Term(
+        "random",
+        """
+        Take random samples from the population.
+        The function making the measurement will also need the number
+        of individuals to collect in the sample.
+        """)
+    exhaustive = Term(
+        "exhaustive",
+        """
+        Use the entire population as the sample.
+        """)
+
+class SamplingMethodology(Enum):
+    """
+    Various ways to measure a population.
+    """
+
+    random = 1
+    exhaustive = 2

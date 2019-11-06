@@ -58,7 +58,7 @@ def test_cell_density():
             circuit_label,
             analysis_test.adapter.get_cell_density,
             measurement_parameters.values,
-            measurement_method=terminology.measurement_method.exhaustive),
+            measurement_method=terminology.sampling_methodology.exhaustive),
         name="cell_density")
     exhaustive = pd\
         .concat(
@@ -72,7 +72,7 @@ def test_cell_density():
             circuit_label,
             analysis_test.adapter.get_cell_density,
             sampling_parameters,
-            measurement_method=terminology.measurement_method.random_sampling),
+            measurement_method=terminology.sampling_methodology.random),
         name="cell_density")
     samples = pd\
         .concat(

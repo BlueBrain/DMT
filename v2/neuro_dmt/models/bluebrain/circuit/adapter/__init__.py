@@ -181,7 +181,7 @@ class BlueBrainCircuitAdapter(WithFields):
     @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
-            sampling_procedure=terminology.measurement_method.random_sampling,
+            sampling_methodology=terminology.sampling_methodology.random,
             **kwargs):
         """
         Get cell type density for either the `circuit_model` passes as a
@@ -190,7 +190,7 @@ class BlueBrainCircuitAdapter(WithFields):
         circuit_model = self._resolve(circuit_model)
         query = terminology.cell.filter(
             **terminology.circuit.filter(**kwargs))
-        if sampling_procedure != terminology.measurement_method.random_sampling:
+        if sampling_methodology != terminology.sampling_methodology.random:
             return self._get_cell_density_overall(
                 circuit_model,
                 **query)
@@ -199,7 +199,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 self.random_region_of_interest(
                     circuit_model,
                     **query))
-        except stopiteration:
+        except StopIteration:
             self.logger.warn(
                 self.logger.get_source_info(),
                 """
@@ -239,6 +239,7 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model=None,
             pre_synaptic={},
             post_synaptic={},
+            sampling_methodology=terminology.sampling_methodology.random,
             **kwargs):
         """
         Arguments

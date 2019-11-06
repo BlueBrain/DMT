@@ -314,9 +314,9 @@ class BrainCircuitAnalysis(
             self.get_measurement(
                 circuit_model,
                 adapter=adapter,
-                sampling_procedure=kwargs.get(
-                    "sampling_procedure",
-                    terminology.measurement_method.random_sampling))
+                sampling_methodology=kwargs.get(
+                    "sampling_methodology",
+                    terminology.sampling_methodology.random))
         measurement_method =\
             self._get_measurement_method(adapter).__doc__
         report =\
