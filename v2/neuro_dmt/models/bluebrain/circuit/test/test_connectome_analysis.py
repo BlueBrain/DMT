@@ -67,7 +67,7 @@ def test_connection_probability():
                 ylabel="post-mtype",
                 vvar=("connection_probability", "mean"))))
 
-    analysis_test.test_circuit_data_path(mock_circuit_model)
+    #analysis_test.test_circuit_data_path(mock_circuit_model)
     connection_probability_measurement =\
         analysis_test.test_get_measurement(mock_circuit_model, sample_size=10)
     assert len(connection_probability_measurement) == 1
