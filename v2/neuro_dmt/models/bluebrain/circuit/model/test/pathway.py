@@ -212,3 +212,35 @@ def test_get_summary_with_array_input():
     assert result.pairs_total == 10000, result
     assert result.pairs_connected < 10000, result
     assert result.connection_probability < 1., result
+
+def test_call_with_dataframes_and_groupby_():
+    """
+    `PathwayProperty.__call__` should return a float
+    when the query input is
+        pre_synaptic_cell_group : pandas.DataFrame
+        post_synaptic_cell_group: pandas.DataFrame
+        groupby : GroupVariables that are not None
+    """
+    circuit_model =\
+        TestCircuit.mock_circuit_model
+    conn_prob =\
+        circuit_model.connection_probability
+    pre_synaptic_cells =\
+        Pathway.as_pre_synaptic(
+            circuit_model.cells.sample(n=100))
+    post_synaptic_cells =\
+        Pathway.as_post_synaptic(
+            circuit_model.cells.sample(n=100))
+    result = conn_prob(
+        pre_synaptic_cell_group=pre_synaptic_cells,
+        post_synaptic_cell_group=post_synaptic_cells,
+        groupby=GroupByVariables(
+            pre_synaptic_cell_specifier=("mtype",),
+            post_synaptic_cell_specifier=("mtype",)))
+
+    assert isinstance(result, pd.DataFrame)
+    assert "pre_synaptic_mtype" in result.index.names
+    assert "post_synaptic_mtype" in result.index.names
+    assert ("pairs_total") in result.columns
+    assert ("pairs_connected") in result.columns
+    assert ("connection_probability") in result.columns
