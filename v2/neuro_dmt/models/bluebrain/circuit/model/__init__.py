@@ -50,7 +50,7 @@ class BlueBrainCircuitModel(WithFields):
         Path to the location of this circuit's data. This data is loaded as a
         BluePy circuit if a Bluepy circuit is not provided at initialization.
         """,
-        __required__=False)
+        __default_value__="not-available")
     circuit_config = Field(
         """
         Name of the file (under `.path_circuit_data`) that contains the

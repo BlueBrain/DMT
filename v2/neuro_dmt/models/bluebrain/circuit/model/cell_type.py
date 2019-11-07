@@ -113,11 +113,14 @@ class CellType(WithFields):
         instance_method._cache = {}
 
         @functools.wraps(instance_method)
-        def effective(instance, cell_type_specifier):
+        def effective(instance,
+            cell_type_specifier=None,
+            cell_types=None):
             """..."""
-            if cell_type_specifier not in instance_method._cache:
+            if (cell_type_specifier is not None
+                and cell_type_specifier not in instance_method._cache):
                 instance_method._cache[cell_type_specifier] =\
-                    instance_method(instance, cell_type_specifier)
+                    instance_method(instance, cell_type_specifier, cell_types)
             return instance_method._cache[cell_type_specifier]
 
         return effective

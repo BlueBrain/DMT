@@ -118,15 +118,13 @@ class BlueBrainCircuitAnalysisTest(WithFields):
 
         return _wrapped
     
-    def test_circuit_model(self, circuit_label,  *args, **kwargs):
-        """
-        `BlueBrainCircuitModel` should be able to load circuit data.
-        """
-        circuit_model = BlueBrainCircuitModel(
-            path_circuit_data=get_path_circuit(circuit_label))
-        path = circuit_model.get_path("jinga")
-        dir = os.path.dirname(path)
-        assert dir == get_path_circuit(circuit_label).as_posix()
+    # def test_circuit_data_path(self, circuit_model, *args, **kwargs):
+    #     """
+    #     `BlueBrainCircuitModel` should be able to load circuit data.
+    #     """
+    #     path = circuit_model.get_path("jinga")
+    #     dir = os.path.dirname(path)
+    #     assert dir == get_path_circuit(circuit_label).as_posix()
 
     def test_adapter_method(self,
             circuit_label,

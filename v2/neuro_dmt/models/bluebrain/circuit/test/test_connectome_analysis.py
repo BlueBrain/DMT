@@ -48,7 +48,9 @@ def test_connection_probability():
         """,
         group="Connectome")
     number_pathways = 5
-    pathways = mock_circuit_model.pathways({"mtype",}).sample(n=number_pathways)
+    pathways =\
+        mock_circuit_model.pathways(frozenset(("mtype",)))\
+                          .sample(n=number_pathways)
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
@@ -65,9 +67,9 @@ def test_connection_probability():
                 ylabel="post-mtype",
                 vvar=("connection_probability", "mean"))))
 
-    analysis_test.test_circuit_model(circuit_label)
+    analysis_test.test_circuit_data_path(mock_circuit_model)
     connection_probability_measurement =\
-        analysis_test.test_get_measurement(mock_circuit_model)
+        analysis_test.test_get_measurement(mock_circuit_model, sample_size=10)
     assert len(connection_probability_measurement) == 1
     dataset, dataframe = [
         (k, v) for k, v in connection_probability_measurement.items()][0]
@@ -90,4 +92,5 @@ def test_connection_probability():
     analysis_test\
         .test_post_report(
             mock_circuit_model,
+            sample_size=10,
             output_folder="analysis")
