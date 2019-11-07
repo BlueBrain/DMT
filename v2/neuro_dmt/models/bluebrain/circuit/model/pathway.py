@@ -159,12 +159,10 @@ class PathwayProperty(WithFields):
                 cell_group.to_dict(),
                 **other_args)
         if isinstance(cell_group, Mapping):
-            cells = self.circuit_model.cells[list(cell_group.keys()) + ["gid"]]\
-                if self.memoize else\
-                   self.circuit_model.get_cells(**cell_group)
-            return self._resolve_cell_group(
-                cells,
-                **other_args)
+            cell_type_specifier = list(cell_group.keys())
+            cells = self._resolve_cell_group(
+                self.circuit_model.get_cells(**cell_group))
+            return cells[cell_type_specifier + ["gid"]]
 
         if isinstance(cell_group, pd.DataFrame):
             result = cell_group\
@@ -228,13 +226,16 @@ class PathwayProperty(WithFields):
         ---------------
         ...
         """
+        max_specifier_length = self.max_length_cell_type_specifier
         assert (
-            pre_synaptic_cell_type_specifier is None
-            or isinstance(pre_synaptic_cell_type_specifier, frozenset)
+            isinstance(pre_synaptic_cell_type_specifier, frozenset)
+            and len(pre_synaptic_cell_type_specifier) > 0
+            and len(pre_synaptic_cell_type_specifier) < max_specifier_length
         ), pre_synaptic_cell_type_specifier
         assert (
-            post_synaptic_cell_type_specifier is None
-            or isinstance(post_synaptic_cell_type_specifier, frozenset)
+            isinstance(post_synaptic_cell_type_specifier, frozenset)
+            and len(post_synaptic_cell_type_specifier) > 0
+            and len(post_synaptic_cell_type_specifier) < max_specifier_length
         ), post_synaptic_cell_type_specifier
 
         logger.study(
@@ -249,10 +250,7 @@ class PathwayProperty(WithFields):
 
         key_cache =\
             (pre_synaptic_cell_type_specifier,
-             post_synaptic_cell_type_specifier)\
-             if (pre_synaptic_cell_type_specifier is not None
-                 and post_synaptic_cell_type_specifier is not None)\
-                 else None
+             post_synaptic_cell_type_specifier)
 
         measurement_pairs = self.get_pairs(
             pre_synaptic_cells.rename(
@@ -260,53 +258,40 @@ class PathwayProperty(WithFields):
             post_synaptic_cells.rename(
                 columns=self._at("post_synaptic")))
 
-        if key_cache:
-            if (key_cache not in self.store
-                or (sampling_methodology == terminology.sampling_methodology.random
-                    and resample)):
-                pre_synaptic_columns =[
-                    "pre_synaptic_{}".format(variable)
-                    for variable in pre_synaptic_cell_type_specifier]
-                post_synaptic_columns =[
-                    "post_synaptic_{}".format(variable)
-                    for variable in post_synaptic_cell_type_specifier]
-                measurement = pd\
-                    .concat([
-                        pairs[["pairs"]
-                              + pre_synaptic_columns
-                              + post_synaptic_columns]\
-                        .groupby(
-                            pre_synaptic_columns
-                            + post_synaptic_columns)\
-                        .agg(
-                            self.aggregators)\
-                        .pairs\
-                        .rename(
-                            columns=self.columns)
-                        for pairs in measurement_pairs])\
+        if (key_cache not in self.store
+            or (sampling_methodology == terminology.sampling_methodology.random
+                and resample)):
+            pre_synaptic_columns =[
+                "pre_synaptic_{}".format(variable)
+                for variable in pre_synaptic_cell_type_specifier]
+            post_synaptic_columns =[
+                "post_synaptic_{}".format(variable)
+                for variable in post_synaptic_cell_type_specifier]
+            measurement = pd\
+                .concat([
+                    pairs[["pairs"]
+                          + pre_synaptic_columns
+                          + post_synaptic_columns]\
                     .groupby(
-                            pre_synaptic_columns
-                            + post_synaptic_columns)\
-                    .agg("sum")\
-                    .assign(**{
-                        self.phenomenon: self.definition})
-                self.store[key_cache] = pd.concat(
-                    [measurement, ])
-            return self.store[key_cache]
+                        pre_synaptic_columns
+                        + post_synaptic_columns)\
+                    .agg(
+                        self.aggregators)\
+                    .pairs\
+                    .rename(
+                        columns=self.columns)
+                    for pairs in measurement_pairs])\
+                .groupby(
+                    pre_synaptic_columns
+                    + post_synaptic_columns)\
+                .agg("sum")\
+                .assign(**{
+                    self.phenomenon: self.definition})
+            self.store[key_cache] = pd.concat(
+                [measurement, ])
 
-        summary =\
-            pd.concat([
-                pairs[["pairs"]]
-                for pairs in measurement_pairs])\
-              .reset_index(drop=True)\
-              .assign(group=0)\
-              .groupby("group")\
-              .agg(self.aggregators)\
-              .rename(columns=self.columns)\
-              .iloc[0]
-        return\
-            summary.append(pd.Series({
-                self.measurement_label: self.definition(summary)}))
+        return self.store[key_cache]
+
 
     def _get_cell_type_specifier(self, cell):
         """
@@ -426,7 +411,15 @@ class PathwayProperty(WithFields):
                 `pathway`, or values for arguments `pre_synaptic_cell_group`
                 and `post_synaptic_cell_group`, but not both.
                 """.format(what))
-            
+
+        memoize = (
+            self.memoize
+            and pathway is None
+            and pre_synaptic_cell_group is None
+            and post_synaptic_cell_group is None
+            and groupby.pre_synaptic_cell_type_specifier is not None
+            and groupby.post_synaptic_cell_type_specifier is not None)
+
         if pathway is not None:
             if (pre_synaptic_cell_group is not None
                 or post_synaptic_cell_group is not None):
@@ -479,21 +472,13 @@ class PathwayProperty(WithFields):
             """.format(
                 pre_synaptic_cell_group,
                 post_synaptic_cell_group))
-        pre_synaptic_cell_type_specifier =\
-            frozenset(groupby.pre_synaptic_cell_type_specifier)\
-            if groupby.pre_synaptic_cell_type_specifier is not None else\
-               self._get_cell_type_specifier(pre_synaptic_cell_group)
+
         pre_synaptic_cells =\
             self._resolve_cell_group(
                 pre_synaptic_cell_group,
                 sampling_methodology=sampling_methodology,
                 resample=resample,
                 number=number)
-                   
-        post_synaptic_cell_type_specifier =\
-            frozenset(groupby.post_synaptic_cell_type_specifier)\
-            if groupby.post_synaptic_cell_type_specifier is not None else\
-               self._get_cell_type_specifier(post_synaptic_cell_group)
         post_synaptic_cells =\
             self._resolve_cell_group(
                 post_synaptic_cell_group,
@@ -501,14 +486,7 @@ class PathwayProperty(WithFields):
                 resample=resample,
                 number=number)
 
-        key_cache = None\
-            if (pre_synaptic_cell_type_specifier is None
-                or post_synaptic_cell_type_specifier is None
-            ) else (
-                pre_synaptic_cell_type_specifier,
-                post_synaptic_cell_type_specifier)
-
-        if not key_cache:
+        if not memoize:
             summary =\
                 pd.concat([
                     pairs[["pairs"]]
@@ -529,41 +507,22 @@ class PathwayProperty(WithFields):
                 if with_summary_statistics else\
                    self.definition(summary)
 
-        values = self._cached(
+        pre_synaptic_cell_type_specifier =\
+            frozenset(groupby.pre_synaptic_cell_type_specifier)\
+            if groupby.pre_synaptic_cell_type_specifier is not None else\
+               self._get_cell_type_specifier(pre_synaptic_cell_group)
+        post_synaptic_cell_type_specifier =\
+            frozenset(groupby.post_synaptic_cell_type_specifier)\
+            if groupby.post_synaptic_cell_type_specifier is not None else\
+               self._get_cell_type_specifier(post_synaptic_cell_group)
+
+        return self._cached(
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
             by=by,
             resample=resample,
             sampling_methodology=sampling_methodology,
             number=100)
-
-        if pathway is not None and isinstance(values, pd.DataFrame):
-            pathway_flat = CellType.pathway(
-                pre_synaptic_cell_group,
-                post_synaptic_cell_group,
-                multi_indexed=False)
-            try:
-                summary = values.loc[tuple(
-                    pathway_flat[variable] 
-                    for variable in values.index.names)]
-            except KeyError:
-                summary = self.empty_summary
-
-            return summary if with_summary_statistics\
-                else summary[self.measurement_label]
-            
-            
-
-        #     try:
-        #         queried_values = values[self.phenomenon].xs(
-        #             pathway.values,
-        #             level=tuple('_'.join(k) for k in pathway.index.values))
-        #         assert len(queried_values) == 1
-        #         return queried_values.values[0]
-        #     except KeyError:
-        #         return np.nan
-
-        return values
 
 
 class ConnectionProbability(PathwayProperty):
