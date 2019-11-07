@@ -168,7 +168,10 @@ class PathwayProperty(WithFields):
             result = cell_group\
                 if (sampling_methodology!=terminology.sampling_methodology.random
                     or cell_group.shape[1] > number - 1
-                ) else cell_group.sample(n=number)
+                ) else (
+                    cell_group.sample(n=number)\
+                    if number < cell_group.shape[0]\
+                    else cell_group)
             logger.study(
                 logger.get_source_info(),
                 """
