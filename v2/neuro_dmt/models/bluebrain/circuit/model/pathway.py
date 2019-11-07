@@ -250,11 +250,11 @@ class PathwayProperty(WithFields):
         key_cache =\
             (pre_synaptic_cell_type_specifier,
              post_synaptic_cell_type_specifier)\
-            if (pre_synaptic_cell_type_specifier is not None
-                and post_synaptic_cell_type_specifier is not None)\
-               else None
+             if (pre_synaptic_cell_type_specifier is not None
+                 and post_synaptic_cell_type_specifier is not None)\
+                 else None
 
-        measurement_values = self.get(
+        measurement_pairs = self.get_pairs(
             pre_synaptic_cells.rename(
                 columns=self._at("pre_synaptic")),
             post_synaptic_cells.rename(
@@ -272,7 +272,7 @@ class PathwayProperty(WithFields):
                     for variable in post_synaptic_cell_type_specifier]
                 measurement = pd\
                     .concat([
-                        pairs[self.measurement_variables
+                        pairs[["pairs"]
                               + pre_synaptic_columns
                               + post_synaptic_columns]\
                         .groupby(
@@ -280,22 +280,24 @@ class PathwayProperty(WithFields):
                             + post_synaptic_columns)\
                         .agg(
                             self.aggregators)\
+                        .pairs\
                         .rename(
                             columns=self.columns)
-                        for pairs in measurement_values])\
+                        for pairs in measurement_pairs])\
                     .groupby(
                             pre_synaptic_columns
                             + post_synaptic_columns)\
                     .agg("sum")\
                     .assign(**{
                         self.phenomenon: self.definition})
-                self.store[key_cache] = measurement
+                self.store[key_cache] = pd.concat(
+                    [measurement, ])
             return self.store[key_cache]
 
         summary =\
             pd.concat([
                 pairs[["pairs"]]
-                for pairs in measurement_values])\
+                for pairs in measurement_pairs])\
               .reset_index(drop=True)\
               .assign(group=0)\
               .groupby("group")\
@@ -330,6 +332,30 @@ class PathwayProperty(WithFields):
             pass
         return None
 
+
+    @property
+    def empty_summary(self):
+        """..."""
+        return\
+            pd.Series({
+                key: 0.
+                for key in self.columns.values()})\
+              .append(
+                  pd.Series({self.measurement_label: np.nan}))
+
+    def get_summary(self,
+            pre_synaptic_cell_group,
+            post_synaptic_cell_group,
+            **kwargs):
+        """
+        Get a full summary for the pathway property for all (cell, cell) pairs.
+        """
+        return self.__call__(
+            pre_synaptic_cell_group=pre_synaptic_cell_group,
+            post_synaptic_cell_group=post_synaptic_cell_group,
+            with_summary_statistics=True,
+            **kwargs)
+
     def __call__(self,
             pathway=None,
             pre_synaptic_cell_group=None,
@@ -341,7 +367,8 @@ class PathwayProperty(WithFields):
             given=None,
             resample=False,
             sampling_methodology=terminology.sampling_methodology.random,
-            number=100):
+            number=100,
+            with_summary_statistics=False):
         """
         Compute, or retrieve from the store...
 
@@ -434,6 +461,14 @@ class PathwayProperty(WithFields):
                 """.format(
                     post_synaptic_cell_group))
 
+        if pathway is None:
+            if (isinstance(pre_synaptic_cell_group, pd.Series)
+                and isinstance(post_synaptic_cell_group, pd.Series)):
+                pathway =\
+                    CellType.pathway(
+                        pre_synaptic_cell_group,
+                        post_synaptic_cell_group)
+
         logger.study(
             logger.get_source_info(),
             """
@@ -466,6 +501,34 @@ class PathwayProperty(WithFields):
                 resample=resample,
                 number=number)
 
+        key_cache = None\
+            if (pre_synaptic_cell_type_specifier is None
+                or post_synaptic_cell_type_specifier is None
+            ) else (
+                pre_synaptic_cell_type_specifier,
+                post_synaptic_cell_type_specifier)
+
+        if not key_cache:
+            summary =\
+                pd.concat([
+                    pairs[["pairs"]]
+                    for pairs in self.get_pairs(
+                            pre_synaptic_cells.rename(
+                                columns=self._at("pre_synaptic")),
+                            post_synaptic_cells.rename(
+                                columns=self._at("post_synaptic")))])\
+                  .reset_index(drop=True)\
+                  .assign(group=0)\
+                  .groupby("group")\
+                  .agg(self.aggregators)\
+                  .pairs\
+                  .rename(columns=self.columns)\
+                  .iloc[0]
+            value = self.definition(summary)
+            return summary.append(pd.Series({self.measurement_label: value}))\
+                if with_summary_statistics else\
+                   self.definition(summary)
+
         values = self._cached(
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
@@ -475,14 +538,30 @@ class PathwayProperty(WithFields):
             number=100)
 
         if pathway is not None and isinstance(values, pd.DataFrame):
+            pathway_flat = CellType.pathway(
+                pre_synaptic_cell_group,
+                post_synaptic_cell_group,
+                multi_indexed=False)
             try:
-                queried_values = values[self.phenomenon].xs(
-                    pathway.values,
-                    level=tuple('_'.join(k) for k in pathway.index.values))
-                assert len(queried_values) == 1
-                return queried_values.values[0]
+                summary = values.loc[tuple(
+                    pathway_flat[variable] 
+                    for variable in values.index.names)]
             except KeyError:
-                return np.nan
+                summary = self.empty_summary
+
+            return summary if with_summary_statistics\
+                else summary[self.measurement_label]
+            
+            
+
+        #     try:
+        #         queried_values = values[self.phenomenon].xs(
+        #             pathway.values,
+        #             level=tuple('_'.join(k) for k in pathway.index.values))
+        #         assert len(queried_values) == 1
+        #         return queried_values.values[0]
+        #     except KeyError:
+        #         return np.nan
 
         return values
 
@@ -490,14 +569,14 @@ class PathwayProperty(WithFields):
 class ConnectionProbability(PathwayProperty):
     phenomenon = "connection_probability"
     aggregators = ["size", "sum"]
-    measurement_label = ("pairs", "connection_probability")
-    columns = {"size": "total", "sum": "connected"}
+    measurement_label = "connection_probability"
+    columns = {"size": "pairs_total", "sum": "pairs_connected"}
 
     @staticmethod
     def definition(summary_measurement):
-        return summary_measurement.pairs.connected / summary_measurement.pairs.total
+        return summary_measurement.pairs_connected / summary_measurement.pairs_total
 
-    def get(self,
+    def get_pairs(self,
             pre_synaptic_cells,
             post_synaptic_cells,
             *args, **kwargs):
@@ -531,7 +610,7 @@ class ConnectionProbability(PathwayProperty):
                 """.format(
                     post_cell,
                     post_synaptic_cells.shape[0],
-                    post_cell.gid / post_synaptic_cells.shape[0]))
+                    count / post_synaptic_cells.shape[0]))
             pairs = pre_synaptic_cells\
                 .drop(
                     columns="gid"

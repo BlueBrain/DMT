@@ -79,18 +79,26 @@ class CellType(WithFields):
     @staticmethod
     def pathway(
             pre_synaptic_cell_type,
-            post_synaptic_cell_type):
+            post_synaptic_cell_type,
+            multi_indexed=True):
         """
         A `Pathway` like object from a specified cell type on the
         pre-synaptic side and a specified cell type on  the 
         post-synaptic side.
         """
         def _at(pos, cell_type):
+            if multi_indexed:
+                return pd.Series(
+                    cell_type.value.values,
+                    index=pd.MultiIndex.from_tuples([
+                        (pos, variable)
+                        for variable in cell_type.value.index]))
             return pd.Series(
                 cell_type.value.values,
-                index=pd.MultiIndex.from_tuples([
-                    (pos, variable)
-                    for variable in cell_type.value.index]))
+                index=pd.Index(
+                    "{}_{}".format(pos, variable)
+                    for variable in cell_type.value.index))
+
         return\
             _at("pre_synaptic", CellType(pre_synaptic_cell_type)).append(
                 _at("post_synaptic", CellType(post_synaptic_cell_type)))
