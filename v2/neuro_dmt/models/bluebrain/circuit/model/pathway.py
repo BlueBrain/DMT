@@ -261,36 +261,62 @@ class PathwayProperty(WithFields):
         if (key_cache not in self.store
             or (sampling_methodology == terminology.sampling_methodology.random
                 and resample)):
-            pre_synaptic_columns =[
-                "pre_synaptic_{}".format(variable)
-                for variable in pre_synaptic_cell_type_specifier]
-            post_synaptic_columns =[
-                "post_synaptic_{}".format(variable)
-                for variable in post_synaptic_cell_type_specifier]
-            measurement = pd\
-                .concat([
-                    pairs[["pairs"]
-                          + pre_synaptic_columns
-                          + post_synaptic_columns]\
-                    .groupby(
-                        pre_synaptic_columns
-                        + post_synaptic_columns)\
-                    .agg(
-                        self.aggregators)\
-                    .pairs\
-                    .rename(
-                        columns=self.columns)
-                    for pairs in measurement_pairs])\
+            self.store[key_cache] =\
+                self._grouped_summary(
+                    measurement_pairs,
+                    pre_synaptic_cell_type_specifier,
+                    post_synaptic_cell_type_specifier)
+
+        return self.store[key_cache]
+
+    def _full_summary(self,
+            measurement_pairs):
+        """..."""
+        summary =\
+            pd.concat([
+                pairs[["pairs"]]
+                for pairs in measurement_pairs])\
+              .reset_index(drop=True)\
+              .assign(group=0)\
+              .groupby("group")\
+              .agg(self.aggregators)\
+              .pairs\
+              .rename(columns=self.columns)\
+              .iloc[0]
+        value = self.definition(summary)
+        return summary.append(pd.Series({self.measurement_label: value}))
+    
+    def _grouped_summary(self,
+            measurement_pairs,
+            pre_synaptic_cell_type_specifier,
+            post_synaptic_cell_type_specifier):
+        """..."""
+        pre_synaptic_columns =[
+            "pre_synaptic_{}".format(variable)
+            for variable in pre_synaptic_cell_type_specifier]
+        post_synaptic_columns =[
+            "post_synaptic_{}".format(variable)
+            for variable in post_synaptic_cell_type_specifier]
+        return pd\
+            .concat([
+                pairs[["pairs"]
+                      + pre_synaptic_columns
+                      + post_synaptic_columns]\
                 .groupby(
                     pre_synaptic_columns
                     + post_synaptic_columns)\
-                .agg("sum")\
-                .assign(**{
-                    self.phenomenon: self.definition})
-            self.store[key_cache] = pd.concat(
-                [measurement, ])
-
-        return self.store[key_cache]
+                .agg(
+                    self.aggregators)\
+                .pairs\
+                .rename(
+                    columns=self.columns)
+                for pairs in measurement_pairs])\
+            .groupby(
+                pre_synaptic_columns
+                + post_synaptic_columns)\
+            .agg("sum")\
+            .assign(**{
+                self.phenomenon: self.definition})
 
 
     def _get_cell_type_specifier(self, cell):
@@ -430,12 +456,12 @@ class PathwayProperty(WithFields):
                     """)
             pre_synaptic_cell_group = pathway.pre_synaptic
             post_synaptic_cell_group = pathway.post_synaptic
-            groupby = groupby\
-                if (groupby.pre_synaptic_cell_type_specifier is not None
-                    and groupby.post_synaptic_cell_type_specifier is not None)\
-                    else GroupByVariables(
-                            CellType(pre_synaptic_cell_group).specifier,
-                            CellType(post_synaptic_cell_group).specifier)
+            # groupby = groupby\
+            #     if (groupby.pre_synaptic_cell_type_specifier is not None
+            #         and groupby.post_synaptic_cell_type_specifier is not None)\
+            #         else GroupByVariables(
+            #                 CellType(pre_synaptic_cell_group).specifier,
+            #                 CellType(post_synaptic_cell_group).specifier)
 
         if (pre_synaptic_cell_group is not None
             and post_synaptic_cell_group is None):
@@ -487,25 +513,23 @@ class PathwayProperty(WithFields):
                 number=number)
 
         if not memoize:
-            summary =\
-                pd.concat([
-                    pairs[["pairs"]]
-                    for pairs in self.get_pairs(
-                            pre_synaptic_cells.rename(
-                                columns=self._at("pre_synaptic")),
-                            post_synaptic_cells.rename(
-                                columns=self._at("post_synaptic")))])\
-                  .reset_index(drop=True)\
-                  .assign(group=0)\
-                  .groupby("group")\
-                  .agg(self.aggregators)\
-                  .pairs\
-                  .rename(columns=self.columns)\
-                  .iloc[0]
-            value = self.definition(summary)
-            return summary.append(pd.Series({self.measurement_label: value}))\
-                if with_summary_statistics else\
-                   self.definition(summary)
+            measurement_pairs =\
+                self.get_pairs(
+                    pre_synaptic_cells.rename(
+                        columns=self._at("pre_synaptic")),
+                    post_synaptic_cells.rename(
+                        columns=self._at("post_synaptic")))
+            if (groupby.pre_synaptic_cell_type_specifier is not None
+                and groupby.post_synaptic_cell_type_specifier is not None):
+                print("group summary")
+                return self._grouped_summary(
+                    measurement_pairs,
+                    groupby.pre_synaptic_cell_type_specifier,
+                    groupby.post_synaptic_cell_type_specifier)
+
+            summary = self._full_summary(measurement_pairs)
+            return summary if with_summary_statistics\
+                else summary[self.measurement_label]
 
         pre_synaptic_cell_type_specifier =\
             frozenset(groupby.pre_synaptic_cell_type_specifier)\

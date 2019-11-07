@@ -85,11 +85,9 @@ def test_get_summary_with_dataframes_input():
     conn_prob =\
         circuit_model.connection_probability
     pre_synaptic_cells =\
-        Pathway.as_pre_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     post_synaptic_cells =\
-        Pathway.as_post_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     result = conn_prob.get_summary(
         pre_synaptic_cells,
         post_synaptic_cells)
@@ -213,7 +211,7 @@ def test_get_summary_with_array_input():
     assert result.pairs_connected < 10000, result
     assert result.connection_probability < 1., result
 
-def test_call_with_dataframes_and_groupby_():
+def test_call_with_dataframes_and_groupby():
     """
     `PathwayProperty.__call__` should return a float
     when the query input is
@@ -226,17 +224,15 @@ def test_call_with_dataframes_and_groupby_():
     conn_prob =\
         circuit_model.connection_probability
     pre_synaptic_cells =\
-        Pathway.as_pre_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     post_synaptic_cells =\
-        Pathway.as_post_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     result = conn_prob(
         pre_synaptic_cell_group=pre_synaptic_cells,
         post_synaptic_cell_group=post_synaptic_cells,
         groupby=GroupByVariables(
-            pre_synaptic_cell_specifier=("mtype",),
-            post_synaptic_cell_specifier=("mtype",)))
+            pre_synaptic_cell_type_specifier={"mtype",},
+            post_synaptic_cell_type_specifier={"mtype",}))
 
     assert isinstance(result, pd.DataFrame)
     assert "pre_synaptic_mtype" in result.index.names
