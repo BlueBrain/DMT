@@ -21,18 +21,36 @@ class Pathway:
     Organize what we mean by a pathway.
     """
     @staticmethod
-    def _at(pos, cell_type):
+    def pre_fixed(role_synaptic):
+        def _renamed(variable):
+            return variable if variable == "gid"\
+                else "{}_{}".format(role_synaptic, variable)
+        return _renamed
+
+    @staticmethod
+    def _as(cell_group, role_synaptic):
         """
         Arguments
         ------------
         `pos`: pre/post
-        `cell_type`: pandas.Series ...
         """
-        assert pos in ("pre", "post"), pos
-        return pd.DataFrame(
-            cell_type.values,
-            columns=pd.MultIndex.from_tuples(
-                [(pos, value) for value in cell_types.columns]))
+        if isinstance(cell_group, pd.DataFrame):
+            return cell_group.rename(
+                columns=Pathway.pre_fixed(role_synaptic))
+        raise NotImplementedError(
+            """
+            for `cell_group` type
+            """.format(
+                type(cell_group)))
+
+    @staticmethod
+    def as_pre_synaptic(cell_group):
+        return Pathway._as(cell_group, "pre_synaptic")
+
+    @staticmethod
+    def as_post_synaptic(cell_group):
+        return Pathway._as(cell_group, "post_synaptic")
+
 
 
 class Pathways(pd.Series):
@@ -214,11 +232,11 @@ class PathwayProperty(WithFields):
             pre_synaptic_cell_type_specifier is None
             or isinstance(pre_synaptic_cell_type_specifier, frozenset)
         ), pre_synaptic_cell_type_specifier
-
         assert (
             post_synaptic_cell_type_specifier is None
             or isinstance(post_synaptic_cell_type_specifier, frozenset)
         ), post_synaptic_cell_type_specifier
+
         logger.study(
             logger.get_source_info(),
             """
@@ -228,6 +246,7 @@ class PathwayProperty(WithFields):
             """.format(
                 pre_synaptic_cell_type_specifier,
                 post_synaptic_cell_type_specifier))
+
         key_cache =\
             (pre_synaptic_cell_type_specifier,
              post_synaptic_cell_type_specifier)\
@@ -273,13 +292,19 @@ class PathwayProperty(WithFields):
                 self.store[key_cache] = measurement
             return self.store[key_cache]
 
-        return pd\
-            .concat([
-                pairs[self.measurement_variables].agg(self.aggregators).transpose()
+        summary =\
+            pd.concat([
+                pairs[["pairs"]]
                 for pairs in measurement_values])\
-            .reset_index(drop=True)\
-            .rename(columns=self.columns)\
-            .agg("sum")
+              .reset_index(drop=True)\
+              .assign(group=0)\
+              .groupby("group")\
+              .agg(self.aggregators)\
+              .rename(columns=self.columns)\
+              .iloc[0]
+        return\
+            summary.append(pd.Series({
+                self.measurement_label: self.definition(summary)}))
 
     def _get_cell_type_specifier(self, cell):
         """
@@ -461,10 +486,11 @@ class PathwayProperty(WithFields):
 
         return values
 
+
 class ConnectionProbability(PathwayProperty):
     phenomenon = "connection_probability"
     aggregators = ["size", "sum"]
-    measurement_variables = ["pairs"]
+    measurement_label = ("pairs", "connection_probability")
     columns = {"size": "total", "sum": "connected"}
 
     @staticmethod
