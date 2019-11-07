@@ -255,10 +255,4 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             circuit_model\
             .connection_probability(
-                pathway=CellType.pathway(pre_synaptic, post_synaptic),
-                    # pd.Series(pre_synaptic),
-                    # pd.Series(post_synaptic)),
-                # groupby=Pathway.GroupByVariables(
-                #     pre_synaptic_cell_type=CellType(pre_synaptic).specifier,
-                #     post_synaptic_cell_type=CellType(post_synaptic).specifier),
-                **kwargs)
+                pathway=CellType.pathway(pre_synaptic, post_synaptic))
