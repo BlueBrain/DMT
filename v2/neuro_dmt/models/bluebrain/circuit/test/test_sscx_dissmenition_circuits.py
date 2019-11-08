@@ -49,7 +49,7 @@ def test_cell_denisty_analysis():
                 ylabel=phenomenon.name,
                 gvar="dataset")))
 
-    analysis_test.test_circuit_model(circuit_label)
+    #analysis_test.test_circuit_model(circuit_label)
     cell_density_measurement =\
         analysis_test.test_get_measurement(circuit_model_bio_one)
     assert len(cell_density_measurement) == 1
@@ -71,7 +71,7 @@ def test_cell_denisty_analysis():
             circuit_model_bio_one,
             output_folder="analyses")
 
-def test_cell_denisty_validation():
+def test_cell_density_validation():
     """
     `BrainCircuitAnalysis` for cell density should work with
     `BlueBrainCircuitModel` and `BlueBrainCircuitAdapter`.
@@ -104,7 +104,7 @@ def test_cell_denisty_validation():
                 ylabel=phenomenon.name,
                 gvar="dataset")))
 
-    validation_test.test_circuit_model(circuit_label)
+    #validation_test.test_circuit_model(circuit_label)
     cell_density_measurement =\
         validation_test.test_get_measurement(
             circuit_model_bio_one,

@@ -63,3 +63,4 @@ class ConnectomeAdapterInterface(ConnectionProbabilityInterface):
     """
     Combines individual connectome measurement interfaces.
     """
+    pass

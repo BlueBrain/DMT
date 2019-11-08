@@ -165,7 +165,7 @@ class Parameters(WithFields):
             .set_index(
                 additional_index_columns
                 + list(parameters_dataframe.columns.values))
-
+   
     @staticmethod
     def as_dataframe(parameter_values):
         """
@@ -179,6 +179,8 @@ class Parameters(WithFields):
                 """
                 Only a list or a pandas.DataFrame accepted as parameter values.
                 """)
+        if isinstance(parameter_values, pandas.DataFrame):
+            return parameter_values
         return pandas\
             .DataFrame(
                 [index_tree.as_unnested_dict(d) for d in parameter_values])\

@@ -5,8 +5,12 @@ Brain circuit analyses and validations.
 from abc import abstractmethod
 import os
 import pandas        
+from dmt.data.observation.measurement.collection\
+    import primitive_type as primitive_type_measurement_collection
 from dmt.analysis import Analysis
 from dmt.model.interface import InterfaceMeta
+from dmt.data.observation.measurement.collection import\
+    primitive_type as primitive_type_measurement_collection
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
@@ -37,6 +41,11 @@ class BrainCircuitAnalysis(
         ~   2. `index`, returning a pandas.Index object to be used as an
         ~       index on the measurement.
         """)
+    measurement_collection = Field(
+        """
+        A callable that will collected measurements passed as an iterable.
+        """,
+        __default_value__=primitive_type_measurement_collection)
     plotter = Field(
         """
         A class or a module that has `plot` method that will be used to
@@ -109,6 +118,8 @@ class BrainCircuitAnalysis(
                 """.format(
                     measurement_name,
                     error))
+        return RuntimeError(
+            "Unreachable point in code.")
 
     def get_measurement(self,
             circuit_model,
@@ -130,26 +141,23 @@ class BrainCircuitAnalysis(
                     size=sample_size)
         get_measurement =\
             self._get_measurement_method(adapter)
-        measured_values = pandas\
-            .DataFrame(
-                [get_measurement(circuit_model, **p, **kwargs)
-                 for p in parameter_values],
-                columns=[self.phenomenon.label])\
-            .assign(dataset=adapter.get_label(circuit_model))
-        return self.measurement_parameters\
-                   .join(
-                       parameter_values,
-                       measured_values,
-                       additional_index_columns=["dataset"])
-        # return pandas\
-        #     .concat(
-        #         [self.measurement_parameters.as_dataframe(parameter_values),
-        #          measured_values],
-        #         axis=1)\
-        #     .assign(
-        #         dataset=adapter.get_label(circuit_model))\
-        #     .set_index(
-        #         ["dataset"] + self.names_measurement_parameters)
+        measured_values = self\
+            .measurement_collection(
+                (p, get_measurement(circuit_model, **p, **kwargs))
+                for p in parameter_values)\
+            .rename(columns={"value": self.phenomenon.label})
+        return measured_values\
+            .reset_index()\
+            .assign(
+                dataset=adapter.get_label(circuit_model))\
+            .set_index(
+                ["dataset"] + measured_values.index.names)
+
+        # return self.measurement_parameters\
+        #            .join(
+        #                parameter_values,
+        #                measured_values,
+        #                additional_index_columns=["dataset"])
 
     def _with_reference_data(self,
             measurement,

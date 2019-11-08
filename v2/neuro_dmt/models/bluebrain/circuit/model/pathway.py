@@ -191,8 +191,9 @@ class PathwayProperty(WithFields):
     @staticmethod
     def _at(role_synaptic):
         """..."""
+        excluded_variables = ["gid", "x", "y", "z"]
         def _rename_column(variable):
-            return variable if variable == "gid"\
+            return variable if variable in excluded_variables\
                 else  "{}_{}".format(role_synaptic, variable)
         return _rename_column
 
@@ -281,13 +282,15 @@ class PathwayProperty(WithFields):
                 for pairs in measurement_pairs])\
               .reset_index(drop=True)\
               .assign(group=0)\
-              .groupby("group")\
+              .groupby(["group"] + self.other_variables)\
               .agg(self.aggregators)\
               .pairs\
               .rename(columns=self.columns)\
-              .iloc[0]
-        value = self.definition(summary)
-        return summary.append(pd.Series({self.measurement_label: value}))
+              .assign(**{
+                  self.measurement_label: self.definition})
+        if summary.shape[0] == 1:
+            return summary.iloc[0]
+        return summary
     
     def _grouped_summary(self,
             measurement_pairs,
@@ -307,7 +310,8 @@ class PathwayProperty(WithFields):
                       + post_synaptic_columns]\
                 .groupby(
                     pre_synaptic_columns
-                    + post_synaptic_columns)\
+                    + post_synaptic_columns
+                    + self.other_variables)\
                 .agg(
                     self.aggregators)\
                 .pairs\
@@ -316,7 +320,8 @@ class PathwayProperty(WithFields):
                 for pairs in measurement_pairs])\
             .groupby(
                 pre_synaptic_columns
-                + post_synaptic_columns)\
+                + post_synaptic_columns
+                + self.other_variables)\
             .agg("sum")\
             .assign(**{
                 self.phenomenon: self.definition})
@@ -459,12 +464,6 @@ class PathwayProperty(WithFields):
                     """)
             pre_synaptic_cell_group = pathway.pre_synaptic
             post_synaptic_cell_group = pathway.post_synaptic
-            # groupby = groupby\
-            #     if (groupby.pre_synaptic_cell_type_specifier is not None
-            #         and groupby.post_synaptic_cell_type_specifier is not None)\
-            #         else GroupByVariables(
-            #                 CellType(pre_synaptic_cell_group).specifier,
-            #                 CellType(post_synaptic_cell_group).specifier)
 
         if (pre_synaptic_cell_group is not None
             and post_synaptic_cell_group is None):
@@ -474,6 +473,7 @@ class PathwayProperty(WithFields):
                 in the arguments, but no value for `post_synaptic_cell_group`.
                 """.format(
                     pre_synaptic_cell_group))
+
         if (post_synaptic_cell_group is not None
             and pre_synaptic_cell_group is None):
             raise _type_error(
@@ -524,7 +524,6 @@ class PathwayProperty(WithFields):
                         columns=self._at("post_synaptic")))
             if (groupby.pre_synaptic_cell_type_specifier is not None
                 and groupby.post_synaptic_cell_type_specifier is not None):
-                print("group summary")
                 return self._grouped_summary(
                     measurement_pairs,
                     groupby.pre_synaptic_cell_type_specifier,
@@ -557,6 +556,7 @@ class ConnectionProbability(PathwayProperty):
     aggregators = ["size", "sum"]
     measurement_label = "connection_probability"
     columns = {"size": "pairs_total", "sum": "pairs_connected"}
+    other_variables = []
 
     @staticmethod
     def definition(summary_measurement):
@@ -588,7 +588,74 @@ class ConnectionProbability(PathwayProperty):
             """.format(
                 pre_synaptic_cells.shape[0],
                 post_synaptic_cells.shape[0]))
-        for count, post_cell in post_synaptic_cells.iterrows():
+        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
+            logger.ignore(
+                logger.get_source_info(),
+                """
+                Get all pairs for post cell {} / {} ({})
+                """.format(
+                    post_cell,
+                    post_synaptic_cells.shape[0],
+                  count / post_synaptic_cells.shape[0]))
+            pairs = pre_synaptic_cells\
+                .drop(
+                    columns="gid"
+                ).reset_index(
+                    drop=True
+                ).assign(
+                    pairs=np.in1d(
+                        pre_synaptic_cells.gid.values,
+                        self.circuit_model.connectome.afferent_gids(
+                            post_cell.gid)))
+            post_cell_info = pd.DataFrame(
+                pre_synaptic_cells.shape[0] * [post_cell.drop("gid")]
+            ).reset_index(
+                drop=True)
+            yield pd.concat(
+                [pairs, post_cell_info],
+                axis=1)
+
+
+class ConnectionProbabilityBySomaDistance(ConnectionProbability):
+    """
+    Get connection probability between cells in a pathway by soma-distance.
+    """
+    other_variables = ["soma_distance"]
+    soma_distance_bin_size = 100.
+
+    def soma_distance(self, xcell, ycell):
+        """
+        Soma distance between cells.
+
+        Arguments
+        -------------------------
+        xcell / ycell : A single cell (i.e. a pandas.Series),
+        ~               a collection of cells (i.e. a pandas.DataFrame)
+        """
+        XYZ = ["x", "y", "z"]
+        distance = np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
+        bin_size = self.soma_distance_bin_size
+        bin_starts = bin_size * np.floor(distance / bin_size)
+        #bin_ends = bin_size + bin_starts
+        #return np.vstack([bin_start, bin_start + bin_size]).transpose()
+        return [(bin_start, bin_start + bin_size) for bin_start in bin_starts]
+
+    def get_pairs(self,
+            pre_synaptic_cells,
+            post_synaptic_cells,
+            *args, **kwargs):
+        """..."""
+
+        logger.study(
+            logger.get_source_info(),
+            """
+            Get connection probability among
+            {} pre-synaptic cells
+            {} post-synaptic cells
+            """.format(
+                pre_synaptic_cells.shape[0],
+                post_synaptic_cells.shape[0]))
+        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
             logger.ignore(
                 logger.get_source_info(),
                 """
@@ -605,7 +672,11 @@ class ConnectionProbability(PathwayProperty):
                 ).assign(
                     pairs=np.in1d(
                         pre_synaptic_cells.gid.values,
-                        self.circuit_model.connectome.afferent_gids(post_cell.gid)))
+                        self.circuit_model.connectome.afferent_gids(
+                            post_cell.gid)),
+                    soma_distance=self.soma_distance(
+                        pre_synaptic_cells,
+                        post_cell))
             post_cell_info = pd.DataFrame(
                 pre_synaptic_cells.shape[0] * [post_cell.drop("gid")]
             ).reset_index(
@@ -614,7 +685,8 @@ class ConnectionProbability(PathwayProperty):
                 [pairs, post_cell_info],
                 axis=1)
 
-            
+
+
 def pathway_property(instance_method):
     """
     Decorate an `instance_method` as a PathwayProperty.
