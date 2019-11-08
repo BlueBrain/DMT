@@ -162,7 +162,8 @@ class PathwayProperty(WithFields):
             cell_type_specifier = list(cell_group.keys())
             cells = self._resolve_cell_group(
                 self.circuit_model.get_cells(**cell_group))
-            return cells[cell_type_specifier + ["gid"]]
+            return cells
+            #return cells[cell_type_specifier + ["gid"]]
 
         if isinstance(cell_group, pd.DataFrame):
             result = cell_group\
@@ -278,7 +279,7 @@ class PathwayProperty(WithFields):
         """..."""
         summary =\
             pd.concat([
-                pairs[["pairs"]]
+                pairs[["pairs"] + self.other_variables]
                 for pairs in measurement_pairs])\
               .reset_index(drop=True)\
               .assign(group=0)\
@@ -307,7 +308,8 @@ class PathwayProperty(WithFields):
             .concat([
                 pairs[["pairs"]
                       + pre_synaptic_columns
-                      + post_synaptic_columns]\
+                      + post_synaptic_columns
+                      + self.other_variables]\
                 .groupby(
                     pre_synaptic_columns
                     + post_synaptic_columns
