@@ -5,7 +5,7 @@ import numpy
 import pandas
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.utils import get_label
-from ..observation import Observation
+from ...observation import Observation
 
 
 class Measurement(
