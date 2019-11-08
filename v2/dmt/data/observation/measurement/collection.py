@@ -3,6 +3,7 @@ Utiility methods to create collections of individual measurements.
 """
 from collections.abc import Mapping
 import pandas as pd
+from dmt.tk.parameters import index_tree
 
 def _with_index(dataframe):
     """..."""
@@ -23,12 +24,14 @@ def primitive_type(measurement_generator):
     """
     def _join(parameters_measurement, value_measurement):
         """..."""
-        parameters_measurement = pd.Series(parameters_measurement)
+        if isinstance(parameters_measurement, Mapping):
+            parameters_measurement =\
+                pd.Series(
+                    index_tree.as_unnested_dict(
+                        parameters_measurement))
         return\
-            pd.Series(
-                parameters_measurement)\
-              .append(
-                  pd.Series({"value": value_measurement}))
+            parameters_measurement.append(
+                pd.Series({"value": value_measurement}))
     return _with_index(
         pd.DataFrame([
             _join(parameters, value)
@@ -40,13 +43,18 @@ def series_type(measurement_generator):
     """
     def _join(parameters_measurement, value_measurement):
         """..."""
-        parameters_measurement = pd.Series(parameters_measurement)
+        if isinstance(parameters_measurement, Mapping):
+            parameters_measurement =\
+                pd.Series(
+                    index_tree.as_unnested_dict(
+                        parameters_measurement))
         return\
             value_measurement.rename("value")\
                              .reset_index()\
                              .apply(
-                                 pd.Series(
-                                     parameters_measurement).append, axis=1)
+                                 parameters_measurement.append,
+                                 axis=1)
+                                     
     return _with_index(
         pd.concat([
             _join(*args)
