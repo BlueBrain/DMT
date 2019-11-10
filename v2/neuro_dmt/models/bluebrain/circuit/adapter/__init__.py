@@ -256,3 +256,34 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model\
             .connection_probability(
                 pathway=CellType.pathway(pre_synaptic, post_synaptic))
+
+    def get_connection_probability_by_soma_distance(self,
+            circuit_model=None,
+            pre_synaptic={},
+            post_synaptic={},
+            soma_distance_bins=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
+        """
+        Since the plotter needs a numeric column, we have to convert the
+        soma-distance bin tuples obtained from the model to floats.
+        See the hack below.
+        """
+        if soma_distance_bins is not None:
+            raise NotImplementedError(
+                """
+                Not yet implemented for custom values of `soma_distance_bins`.
+                """)
+        return\
+            self._resolve(
+                circuit_model
+            ).connection_probability(
+                pathway=CellType.pathway(pre_synaptic, post_synaptic)
+            ).reset_index(
+            ).assign(
+                soma_distance=lambda df: df.soma_distance.apply(np.mean)
+            ).set_index(
+                "soma_distance"
+            ).connection_probability
+        
+

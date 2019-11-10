@@ -18,7 +18,7 @@ from dmt.tk.collections import take
 from neuro_dmt import terminology
 from ..atlas import BlueBrainCircuitAtlas
 from .cell_type import CellType
-from .pathway import ConnectionProbability
+from .pathway import ConnectionProbability, ConnectionProbabilityBySomaDistance
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
@@ -107,6 +107,13 @@ class BlueBrainCircuitModel(WithFields):
         Compute and cache pathway connection probabilities
         """
         return ConnectionProbability(circuit_model=self)
+
+    @lazyfield
+    def connection_probability_by_soma_distance(self):
+        """
+        Compute and cache pathway connection probabilities by soma-distance.
+        """
+        return ConnectionProbabilityBySomaDistance(circuit_model=self)
 
 
     def get_path(self, *relative_path):
