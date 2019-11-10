@@ -277,21 +277,24 @@ class PathwayProperty(WithFields):
     def _full_summary(self,
             measurement_pairs):
         """..."""
-        summary =\
+        return\
             pd.concat([
-                pairs[["pairs"] + self.other_variables]
+                pairs[
+                    ["pairs"] + self.other_variables]
                 for pairs in measurement_pairs])\
-              .reset_index(drop=True)\
-              .assign(group=0)\
-              .groupby(["group"] + self.other_variables)\
-              .agg(self.aggregators)\
-              .pairs\
-              .rename(columns=self.columns)\
-              .assign(**{
-                  self.measurement_label: self.definition})
-        if summary.shape[0] == 1:
-            return summary.iloc[0]
-        return summary
+              .reset_index(
+                  drop=True
+              ).assign(
+                  group=0
+              ).groupby(
+                  ["group"] + self.other_variables
+              ).agg(
+                  self.aggregators
+              ).pairs.rename(
+                  columns=self.columns
+              ).assign(**{
+                  self.measurement_label: self.definition
+              }).loc[0]
     
     def _grouped_summary(self,
             measurement_pairs,
