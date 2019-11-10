@@ -4,11 +4,11 @@ Plot heat maps.
 import pandas
 import matplotlib.pyplot as plt
 import seaborn
+from dmt.tk.plotting.utils import pivot_table
+from dmt.tk.field import Field, LambdaField, WithFields
+from dmt.data.observation import measurement
 from . import golden_aspect_ratio
 from .figure import Figure
-from dmt.tk.plotting.utils import pivot_table
-from dmt.tk.field import Field, LambdaField, lazyproperty, WithFields
-from dmt.data.observation import measurement
 
 class HeatMap(WithFields):
     """

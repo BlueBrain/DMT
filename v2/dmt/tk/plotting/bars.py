@@ -88,20 +88,16 @@ class Bars(WithFields):
             caption=caption)
 
     def plot(self,
-            dataframe,
             *args, **kwargs):
         """
         Plot the dataframe
-        """
-        return self\
-            .get_figure(
-                dataframe,
-                *args, **kwargs)
+         """
+        return self.get_figure(*args, **kwargs)
 
     def __call__(self,
-            dataframe):
+                 *args, **kwargs):
         """
         Make this class a callable,
         so that it can masquerade as a function!
         """
-        return self.plot(dataframe)
+        return self.get_figure(*args, **kwargs)
