@@ -1,0 +1,50 @@
+INTRODUCTION
+------------
+Connection Probability, measured by layer
+
+    Probability that two neurons in a pathway are connected.
+    While most of the interest will be in `mtype-->mtype` pathways,
+    we can define a pathway as a any two group of cells, one on 
+    the afferent side, the other on the efferent side of a (possible)
+    synapse. Given the pre-synaptic and post-synaptic cell types (groups),
+    connection probability counts the fraction of connected pre-synaptic,
+    post-synaptic pairs. Connection probability may be calculated as a 
+    function of the soma-distance between the cells in a pair, in which
+    case the measured quantity will be vector-valued data such as a 
+    `pandas.Series`.
+    .
+----------------------------------------------------------------------
+METHODS
+-------
+
+        Arguments
+        -----------
+        `pre_synaptic_cell_type` : pandas.Series specifying the
+        type of the cells on the pre-synaptic side.
+        `post_synaptic_cell_type`: pandas.Series specifying the
+        type of the cells on the post-synaptic side.
+        
+----------------------------------------------------------------------
+RESULTS
+-------
+Results are presented in the figure.
+----------------------------------------------------------------------
+DISCUSSION
+----------
+To be provided after a review of the results
+----------------------------------------------------------------------
+FIGURES
+-------
+analyses/connection_probability/figures
+----------------------------------------------------------------------
+FIGURE CAPTIONS
+---------------
+(connection_probability_by_pre_synaptic_mtype_post_synaptic_mtype). 
+        Arguments
+        -----------
+        `pre_synaptic_cell_type` : pandas.Series specifying the
+        type of the cells on the pre-synaptic side.
+        `post_synaptic_cell_type`: pandas.Series specifying the
+        type of the cells on the post-synaptic side.
+        
+----------------------------------------------------------------------

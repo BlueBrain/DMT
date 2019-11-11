@@ -403,7 +403,6 @@ class BlueBrainCircuitModel(WithFields):
             dict(row)
             for row in _get_tuple_values(tuple(cell_type_specifier))])
 
-    @CellType.memoized
     def pathways(self,
             cell_type_specifier=None,
             cell_types=None):

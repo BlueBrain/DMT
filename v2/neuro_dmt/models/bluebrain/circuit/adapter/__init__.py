@@ -3,6 +3,7 @@ Adapters for circuits from the Blue Brain Project.
 """
 
 from copy import deepcopy
+from collections.abc import Set, Mapping
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger 
@@ -223,18 +224,41 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_pathways(self,
             circuit_model=None,
-            cell_type_specifier=("mtype", )):
+            cell_group=None):
         """
         Arguments
         ---------------
-        cell_type_specifier : An object that specifies cell groups.
-        Examples:
-        1. A tuple of strings representing cell properties. When each tuple is
-        coupled with a value, the resulting key-value pairs specify a
-        group of neurons in the circuit.
+        cell_group : An object that specifies cell groups.
+        ~   This may be 
+        ~   1. Either a frozen-set of strings that represent cell properties.
+        ~   2. Or, a mapping from cell properties to their values.
+
+        Returns
+        ------------
+        pandas.DataFrame with nested columns, with two columns 
+        `(pre_synaptic, post_synaptic)` at the 0-th level.
+        Under each of these two columns should be one column each for
+        the cell properties specified in the `cell_group` when it is a
+        set, or its keys if it is a mapping.
+        ~   1. When `cell_group` is a set of cell properties, pathways between
+        ~      all possible values of these cell properties.
+        ~   2. When `cell-group` is a mapping, pathways between cell groups
+        ~      that satisfy the mapping values.
         """
         circuit_model = self._resolve(circuit_model)
-        return circuit_model.pathways(cell_type_specifier)
+        if isinstance(cell_group, Set) :
+            return\
+                circuit_model.pathways(
+                    cell_type_specifier=cell_group)
+        if isinstance(cell_group, pd.DataFrame):
+            return\
+                circuit_model.pathways(
+                    cell_types=cell_group)
+        raise TypeError(
+            """
+            `get_pathways(...)` argument `cell_group` is neither a set of
+            cell properties, nor a `pandas.DataFrame` specifying cell types.
+            """)
 
     def get_connection_probability(self,
             circuit_model=None,
@@ -285,5 +309,5 @@ class BlueBrainCircuitAdapter(WithFields):
             ).set_index(
                 "soma_distance"
             ).connection_probability
-        
+
 
