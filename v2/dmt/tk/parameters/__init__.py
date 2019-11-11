@@ -174,17 +174,18 @@ class Parameters(WithFields):
         `parameter_values` : A pandas.DataFrame or a list of parameter rows,
         each of which is a mapping (or a pandas Series)...
         """
-        if not isinstance(parameter_values, (list, pandas.DataFrame)):
-            raise TypeError(
-                """
-                Only a list or a pandas.DataFrame accepted as parameter values.
-                """)
         if isinstance(parameter_values, pandas.DataFrame):
             return parameter_values
-        return pandas\
-            .DataFrame(
-                [index_tree.as_unnested_dict(d) for d in parameter_values])\
-            .apply(make_hashable, axis=0)
+        if isinstance(parameter_values, list):
+            return pandas\
+                .DataFrame(
+                    [pandas.Series(index_tree.as_unnested_dict(d))
+                     for d in parameter_values])\
+                .apply(make_hashable, axis=0)
+        raise TypeError(
+            """
+            Only a list or a pandas.DataFrame accepted as parameter values.
+            """)
 
     def get_index(self, parameter_values):
         """

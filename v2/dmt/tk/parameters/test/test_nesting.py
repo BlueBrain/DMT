@@ -2,6 +2,8 @@
 Test nesting, unnesting
 """
 
+import pandas as pd
+import pytest as pyt
 from ..import index_tree
 
 def test_unnesting():
@@ -34,3 +36,42 @@ def test_unnesting():
     assert ("x1", "y1", "z1") in unnested_dict
     assert unnested_dict[("x1", "y1", "z1")] == 7
 
+def test_nested_dict_from_multi_level_indexed_series():
+    """
+    `index_tree.as_nested_dict(...)` should return a nested dict for properly
+    formed pandas.Series with a multi-level index.
+    """
+    empty_key_level_0 =\
+        pd.Series({
+            ("pre_synaptic", "mtype"): "L23_MC",
+            ("pre_synaptic", "etype"): "bNAC",
+            ("post_synaptic", "mtype"): "L6_TPC:A",
+            ("post_synaptic", "etype"): "bNAC",
+            ("soma_distance", ""): 500.})
+    nested_dict =\
+        index_tree.as_nested_dict(
+            empty_key_level_0)
+    assert "pre_synaptic" in nested_dict
+    assert "mtype" in nested_dict["pre_synaptic"]
+    assert nested_dict["pre_synaptic"]["mtype"] == "L23_MC"
+    assert "etype" in nested_dict["pre_synaptic"]
+    assert nested_dict["pre_synaptic"]["etype"] == "bNAC"
+
+    assert "post_synaptic" in nested_dict
+    assert "mtype" in nested_dict["post_synaptic"]
+    assert nested_dict["post_synaptic"]["mtype"] == "L6_TPC:A"
+    assert "etype" in nested_dict["post_synaptic"]
+    assert nested_dict["post_synaptic"]["etype"] == "bNAC"
+
+    assert "soma_distance" in nested_dict
+    assert nested_dict["soma_distance"] == 500.
+
+    second_level_empty_key =\
+        pd.Series(
+            [500., "test_value"],
+            index=pd.MultiIndex.from_tuples(
+                [("soma_distance", ""),
+                 ("soma_distance", "test_key")]))
+
+    with pyt.raises(TypeError):
+        index_tree.as_nested_dict(second_level_empty_key)

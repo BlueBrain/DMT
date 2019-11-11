@@ -61,6 +61,15 @@ def as_nested_dict(row):
     assert isinstance(row, pandas.Series)
     
     if not isinstance(row.index, pandas.MultiIndex):
+        if len(row) == 1 and row.index.values[0] == "":
+            return row.values[0]
+        if any(key == "" for key in row.index.values):
+            raise TypeError(
+                """
+                `as_nested_dict(...)` cannot unnest a pandas.Series with
+                single level index that has an empty string as a key:
+                \t{}
+                """.format(row))
         return row.to_dict()
     
     zero_level_values = row.index.get_level_values(level=0)

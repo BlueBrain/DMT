@@ -92,15 +92,19 @@ def test_parameters_from_callable_returning_iterable_mapping_to_dicts():
     sampling_params = parameters.for_sampling(size=20)
     assert len(sampling_params) == size * len(parameter_list)
 
-    index = parameters.get_index(sampling_params)
+    sampling_dataframe = parameters.as_dataframe(sampling_params)
+    assert ("pre", "layer") in list(sampling_dataframe.columns.values)
+    assert ("post", "layer") in list(sampling_dataframe.columns.values)
     
+    index = parameters.get_index(sampling_params)
     assert len(index) == size * len(parameter_list)
     assert isinstance(index, pd.MultiIndex)
 
-    assert "pre" in index.names
+    assert ("pre", "layer") in index.names
     for row in parameter_list:
-        assert list(index.get_level_values("pre")).count(row["pre"]) == size
-        assert  list(index.get_level_values("post")).count(row["post"]) == size
+        pre_layer_values = list(index.get_level_values(("pre", "layer")))
+        assert pre_layer_values.count(row["pre"]["layer"]) == size
+        post_layer_values = list(index.get_level_values(("post", "layer")))
+        assert  post_layer_values.count(row["post"]["layer"]) == size
         
-    assert "post" in index.names
-
+    assert ("post", "layer") in index.names
