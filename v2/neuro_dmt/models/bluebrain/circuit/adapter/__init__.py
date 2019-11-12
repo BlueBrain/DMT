@@ -264,6 +264,7 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model=None,
             pre_synaptic={},
             post_synaptic={},
+            upper_bound_soma_distance=None,
             sampling_methodology=terminology.sampling_methodology.random,
             **kwargs):
         """
@@ -279,7 +280,8 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             circuit_model\
             .connection_probability(
-                pathway=CellType.pathway(pre_synaptic, post_synaptic))
+                pathway=CellType.pathway(pre_synaptic, post_synaptic),
+                upper_bound_soma_distance=upper_bound_soma_distance)
 
     def get_connection_probability_by_soma_distance(self,
             circuit_model=None,

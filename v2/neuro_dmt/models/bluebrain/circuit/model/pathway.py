@@ -218,6 +218,7 @@ class PathwayProperty(WithFields):
     def _cached(self,
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
+            upper_bound_soma_distance=None,
             by=None,
             resample=False,
             sampling_methodology=terminology.sampling_methodology.random,
@@ -261,7 +262,8 @@ class PathwayProperty(WithFields):
             pre_synaptic_cells.rename(
                 columns=self._at("pre_synaptic")),
             post_synaptic_cells.rename(
-                columns=self._at("post_synaptic")))
+                columns=self._at("post_synaptic")),
+            upper_bound_soma_distance=upper_bound_soma_distance)
 
         if (key_cache not in self.store
             or (sampling_methodology == terminology.sampling_methodology.random
@@ -387,6 +389,7 @@ class PathwayProperty(WithFields):
             groupby=GroupByVariables(
                 pre_synaptic_cell_type_specifier=None,
                 post_synaptic_cell_type_specifier=None),
+            upper_bound_soma_distance=None,
             by=None,
             given=None,
             resample=False,
@@ -526,7 +529,8 @@ class PathwayProperty(WithFields):
                     pre_synaptic_cells.rename(
                         columns=self._at("pre_synaptic")),
                     post_synaptic_cells.rename(
-                        columns=self._at("post_synaptic")))
+                        columns=self._at("post_synaptic")),
+                    upper_bound_soma_distance=upper_bound_soma_distance)
             if (groupby.pre_synaptic_cell_type_specifier is not None
                 and groupby.post_synaptic_cell_type_specifier is not None):
                 return self._grouped_summary(
@@ -550,6 +554,7 @@ class PathwayProperty(WithFields):
         return self._cached(
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
+            upper_bound_soma_distance=upper_bound_soma_distance,
             by=by,
             resample=resample,
             sampling_methodology=sampling_methodology,
@@ -567,9 +572,22 @@ class ConnectionProbability(PathwayProperty):
     def definition(summary_measurement):
         return summary_measurement.pairs_connected / summary_measurement.pairs_total
 
+    def soma_distance(self, xcell, ycell):
+        """
+        Soma distance between cells.
+
+        Arguments
+        -------------------------
+        xcell / ycell : A single cell (i.e. a pandas.Series),
+        ~               or a collection of cells (i.e. a pandas.DataFrame)
+        """
+        XYZ = ["x", "y", "z"]
+        return np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
+
     def get_pairs(self,
             pre_synaptic_cells,
             post_synaptic_cells,
+            upper_bound_soma_distance=None,
             *args, **kwargs):
         """
 
@@ -612,13 +630,24 @@ class ConnectionProbability(PathwayProperty):
                         pre_synaptic_cells.gid.values,
                         self.circuit_model.connectome.afferent_gids(
                             post_cell.gid)))
+            if upper_bound_soma_distance is not None:
+                soma_distance = self\
+                    .soma_distance(
+                        pre_synaptic_cells,
+                        post_cell)
+                pairs = pairs[
+                    soma_distance < upper_bound_soma_distance
+                ].reset_index(
+                    drop=True)
             post_cell_info = pd.DataFrame(
-                pre_synaptic_cells.shape[0] * [post_cell.drop("gid")]
+                pairs.shape[0] * [post_cell.drop("gid")]
             ).reset_index(
                 drop=True)
             yield pd.concat(
                 [pairs, post_cell_info],
-                axis=1)
+                axis=1
+            ).reset_index(
+                drop=True)
 
 
 class ConnectionProbabilityBySomaDistance(ConnectionProbability):
@@ -635,7 +664,7 @@ class ConnectionProbabilityBySomaDistance(ConnectionProbability):
         Arguments
         -------------------------
         xcell / ycell : A single cell (i.e. a pandas.Series),
-        ~               a collection of cells (i.e. a pandas.DataFrame)
+        ~               or a collection of cells (i.e. a pandas.DataFrame)
         """
         XYZ = ["x", "y", "z"]
         distance = np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
