@@ -52,7 +52,6 @@ class Pathway:
         return Pathway._as(cell_group, "post_synaptic")
 
 
-
 class Pathways(pd.Series):
     """
     Organize what we mean by a pathway.
@@ -214,7 +213,6 @@ class PathwayProperty(WithFields):
         """
         raise NotImplementedError
 
-
     def _cached(self,
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
             post_synaptic_cell_type_specifier, post_synaptic_cells,
@@ -282,21 +280,42 @@ class PathwayProperty(WithFields):
         return\
             pd.concat([
                 pairs[
-                    ["pairs"] + self.other_variables]
-                for pairs in measurement_pairs])\
-              .reset_index(
-                  drop=True
-              ).assign(
-                  group=0
-              ).groupby(
-                  ["group"] + self.other_variables
-              ).agg(
-                  self.aggregators
-              ).pairs.rename(
-                  columns=self.columns
-              ).assign(**{
-                  self.measurement_label: self.definition
-              }).loc[0]
+                    self.measured_variables
+                ].reset_index(
+                    drop=True
+                ).assign(
+                    dummy_variable=0
+                ).groupby(
+                    ["dummy_variable"] + self.other_grouping_variables
+                ).agg(
+                    self.aggregators
+                ).pairs.rename(
+                    columns=self.columns
+                ) for pairs in measurement_pairs]
+            ).groupby(
+                ["dummy_variable"]
+            ).agg(
+                "sum"
+            ).assign(**{
+                self.phenomenon: self.definition}
+            ).loc[0]
+        # return\
+        #     pd.concat([
+        #         pairs[["pairs"] + self.other_variables]
+        #         for pairs in measurement_pairs]
+        #       ).reset_index(
+        #           drop=True
+        #       ).assign(
+        #           group=0
+        #       ).groupby(
+        #           ["group"] + self.other_variables
+        #       ).agg(
+        #           self.aggregators
+        #       ).pairs.rename(
+        #           columns=self.columns
+        #       ).assign(**{
+        #           self.measurement_label: self.definition
+        #       }).loc[0]
     
     def _grouped_summary(self,
             measurement_pairs,
@@ -311,14 +330,15 @@ class PathwayProperty(WithFields):
             for variable in post_synaptic_cell_type_specifier]
         return pd\
             .concat([
-                pairs[["pairs"]
-                      + pre_synaptic_columns
-                      + post_synaptic_columns
-                      + self.other_variables]\
+                pairs[
+                    self.measured_variables
+                    + pre_synaptic_columns
+                    + post_synaptic_columns
+                    + self.other_variables]\
                 .groupby(
                     pre_synaptic_columns
                     + post_synaptic_columns
-                    + self.other_variables)\
+                    + self.other_grouping_variables)\
                 .agg(
                     self.aggregators)\
                 .pairs\
@@ -328,11 +348,10 @@ class PathwayProperty(WithFields):
             .groupby(
                 pre_synaptic_columns
                 + post_synaptic_columns
-                + self.other_variables)\
+                + self.other_grouping_variables)\
             .agg("sum")\
             .assign(**{
                 self.phenomenon: self.definition})
-
 
     def _get_cell_type_specifier(self, cell):
         """
@@ -566,7 +585,8 @@ class ConnectionProbability(PathwayProperty):
     aggregators = ["size", "sum"]
     measurement_label = "connection_probability"
     columns = {"size": "pairs_total", "sum": "pairs_connected"}
-    other_variables = []
+    measured_variables = ["pairs"]
+    other_grouping_variables = []
 
     @staticmethod
     def definition(summary_measurement):
@@ -654,7 +674,8 @@ class ConnectionProbabilityBySomaDistance(ConnectionProbability):
     """
     Get connection probability between cells in a pathway by soma-distance.
     """
-    other_variables = ["soma_distance"]
+    measured_variables = ["pairs", "soma_distance"]
+    other_grouping_variables = ["soma_distance"]
     soma_distance_bin_size = 100.
 
     def soma_distance(self, xcell, ycell):
