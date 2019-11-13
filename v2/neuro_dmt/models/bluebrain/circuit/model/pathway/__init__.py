@@ -11,7 +11,7 @@ import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from neuro_dmt import terminology
-from .cell_type import CellType
+from ..cell_type import CellType
 
 
 logger = Logger(client=__file__)
@@ -158,11 +158,8 @@ class PathwayProperty(WithFields):
                 cell_group.to_dict(),
                 **other_args)
         if isinstance(cell_group, Mapping):
-            cell_type_specifier = list(cell_group.keys())
-            cells = self._resolve_cell_group(
+            return self._resolve_cell_group(
                 self.circuit_model.get_cells(**cell_group))
-            return cells
-            #return cells[cell_type_specifier + ["gid"]]
 
         if isinstance(cell_group, pd.DataFrame):
             result = cell_group\
@@ -277,7 +274,7 @@ class PathwayProperty(WithFields):
     def _full_summary(self,
             measurement_pairs):
         """..."""
-        return\
+        summary =\
             pd.concat([
                 pairs[
                     self.measured_variables
@@ -288,35 +285,19 @@ class PathwayProperty(WithFields):
                 ).groupby(
                     ["dummy_variable"] + self.other_grouping_variables
                 ).agg(
-                    self.aggregators
+                    self.aggregators_inner
                 ).pairs.rename(
                     columns=self.columns
                 ) for pairs in measurement_pairs]
             ).groupby(
-                ["dummy_variable"]
+                ["dummy_variable"] + self.other_grouping_variables
             ).agg(
-                "sum"
-            ).assign(**{
-                self.phenomenon: self.definition}
-            ).loc[0]
-        # return\
-        #     pd.concat([
-        #         pairs[["pairs"] + self.other_variables]
-        #         for pairs in measurement_pairs]
-        #       ).reset_index(
-        #           drop=True
-        #       ).assign(
-        #           group=0
-        #       ).groupby(
-        #           ["group"] + self.other_variables
-        #       ).agg(
-        #           self.aggregators
-        #       ).pairs.rename(
-        #           columns=self.columns
-        #       ).assign(**{
-        #           self.measurement_label: self.definition
-        #       }).loc[0]
-    
+                self.aggregators_outer
+            ).assign(
+                **self.definition
+            )
+        return self.empty if summary.empty else summary.loc[0]
+            
     def _grouped_summary(self,
             measurement_pairs,
             pre_synaptic_cell_type_specifier,
@@ -580,167 +561,6 @@ class PathwayProperty(WithFields):
             number=100)
 
 
-class ConnectionProbability(PathwayProperty):
-    phenomenon = "connection_probability"
-    aggregators = ["size", "sum"]
-    measurement_label = "connection_probability"
-    columns = {"size": "pairs_total", "sum": "pairs_connected"}
-    measured_variables = ["pairs"]
-    other_grouping_variables = []
-
-    @staticmethod
-    def definition(summary_measurement):
-        return summary_measurement.pairs_connected / summary_measurement.pairs_total
-
-    def soma_distance(self, xcell, ycell):
-        """
-        Soma distance between cells.
-
-        Arguments
-        -------------------------
-        xcell / ycell : A single cell (i.e. a pandas.Series),
-        ~               or a collection of cells (i.e. a pandas.DataFrame)
-        """
-        XYZ = ["x", "y", "z"]
-        return np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
-
-    def get_pairs(self,
-            pre_synaptic_cells,
-            post_synaptic_cells,
-            upper_bound_soma_distance=None,
-            *args, **kwargs):
-        """
-
-        Arguments
-        --------------
-        pre_synaptic_cells : pandas.DataFrame
-        post_synaptic_cells : pandas.DataFrame
-        *args, **kwargs : Accommodate super's call to `get`.
-
-        Returns
-        --------------
-        A generator of data-frames that provides values for individual
-        pairs `(pre_synaptic_cell, post_synaptic_cell)`.
-        """
-        logger.study(
-            logger.get_source_info(),
-            """
-            Get connection probability for
-            {} pre synaptic cells
-            {} post synaptic cells
-            """.format(
-                pre_synaptic_cells.shape[0],
-                post_synaptic_cells.shape[0]))
-        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
-            logger.ignore(
-                logger.get_source_info(),
-                """
-                Get all pairs for post cell {} / {} ({})
-                """.format(
-                    post_cell,
-                    post_synaptic_cells.shape[0],
-                  count / post_synaptic_cells.shape[0]))
-            pairs = pre_synaptic_cells\
-                .drop(
-                    columns="gid"
-                ).reset_index(
-                    drop=True
-                ).assign(
-                    pairs=np.in1d(
-                        pre_synaptic_cells.gid.values,
-                        self.circuit_model.connectome.afferent_gids(
-                            post_cell.gid)))
-            if upper_bound_soma_distance is not None:
-                soma_distance = self\
-                    .soma_distance(
-                        pre_synaptic_cells,
-                        post_cell)
-                pairs = pairs[
-                    soma_distance < upper_bound_soma_distance
-                ].reset_index(
-                    drop=True)
-            post_cell_info = pd.DataFrame(
-                pairs.shape[0] * [post_cell.drop("gid")]
-            ).reset_index(
-                drop=True)
-            yield pd.concat(
-                [pairs, post_cell_info],
-                axis=1
-            ).reset_index(
-                drop=True)
-
-
-class ConnectionProbabilityBySomaDistance(ConnectionProbability):
-    """
-    Get connection probability between cells in a pathway by soma-distance.
-    """
-    measured_variables = ["pairs", "soma_distance"]
-    other_grouping_variables = ["soma_distance"]
-    soma_distance_bin_size = 100.
-
-    def soma_distance(self, xcell, ycell):
-        """
-        Soma distance between cells.
-
-        Arguments
-        -------------------------
-        xcell / ycell : A single cell (i.e. a pandas.Series),
-        ~               or a collection of cells (i.e. a pandas.DataFrame)
-        """
-        XYZ = ["x", "y", "z"]
-        distance = np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
-        bin_size = self.soma_distance_bin_size
-        bin_starts = bin_size * np.floor(distance / bin_size)
-        #bin_ends = bin_size + bin_starts
-        #return np.vstack([bin_start, bin_start + bin_size]).transpose()
-        return [(bin_start, bin_start + bin_size) for bin_start in bin_starts]
-
-    def get_pairs(self,
-            pre_synaptic_cells,
-            post_synaptic_cells,
-            *args, **kwargs):
-        """..."""
-
-        logger.study(
-            logger.get_source_info(),
-            """
-            Get connection probability among
-            {} pre-synaptic cells
-            {} post-synaptic cells
-            """.format(
-                pre_synaptic_cells.shape[0],
-                post_synaptic_cells.shape[0]))
-        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
-            logger.ignore(
-                logger.get_source_info(),
-                """
-                Get all pairs for post cell {} / {} ({})
-                """.format(
-                    post_cell,
-                    post_synaptic_cells.shape[0],
-                    count / post_synaptic_cells.shape[0]))
-            pairs = pre_synaptic_cells\
-                .drop(
-                    columns="gid"
-                ).reset_index(
-                    drop=True
-                ).assign(
-                    pairs=np.in1d(
-                        pre_synaptic_cells.gid.values,
-                        self.circuit_model.connectome.afferent_gids(
-                            post_cell.gid)),
-                    soma_distance=self.soma_distance(
-                        pre_synaptic_cells,
-                        post_cell))
-            post_cell_info = pd.DataFrame(
-                pre_synaptic_cells.shape[0] * [post_cell.drop("gid")]
-            ).reset_index(
-                drop=True)
-            yield pd.concat(
-                [pairs, post_cell_info],
-                axis=1)
-
-
 
 def pathway_property(instance_method):
     """
@@ -811,3 +631,8 @@ def pathway_property(instance_method):
                         post_cell_type]
 
     return effective
+
+
+from .connection_probability import\
+    ConnectionProbability,\
+    ConnectionProbabilityBySomaDistance

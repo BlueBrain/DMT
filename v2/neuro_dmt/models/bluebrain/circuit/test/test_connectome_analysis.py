@@ -6,16 +6,19 @@ import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.parameters import Parameters
-from dmt.tk.plotting import Bars, HeatMap
+from dmt.tk.plotting import Bars, HeatMap, LinePlot
 from dmt.data.observation import measurement
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.connectome.interfaces import\
-    ConnectionProbabilityInterface
+    ConnectionProbabilityInterface,\
+    ConnectionProbabilityBySomaDistanceInterface
 from ..mock.circuit import MockCircuit
 from ..mock.test.mock_circuit_light import\
     circuit_composition,\
     circuit_connectivity
 from ..model import BlueBrainCircuitModel
+from ..model.cell_type import CellType
+from ..adapter import BlueBrainCircuitAdapter
 from . import\
     BlueBrainCircuitAnalysisTest,\
     get_path_circuit
@@ -69,7 +72,7 @@ def test_connection_probability():
 
     #analysis_test.test_circuit_data_path(mock_circuit_model)
     connection_probability_measurement =\
-        analysis_test.test_get_measurement(mock_circuit_model, sample_size=10)
+        analysis_test.test_get_measurement(mock_circuit_model, sample_size=2)
     assert len(connection_probability_measurement) == 1
     dataset, dataframe = [
         (k, v) for k, v in connection_probability_measurement.items()][0]
@@ -111,25 +114,38 @@ def test_connection_probability_by_distance():
         but also by soma-distance from a given location.
         """,
         group="Connectome")
-    number_pathways = 5
+    adapter =\
+        BlueBrainCircuitAdapter()
+    cell_types =\
+        pd.DataFrame([
+            {"mtype": "L23_MC"},
+            {"mtype": "L6_TPC:A"},
+            {"mtype": "L5_TPC:A"},
+            {"mtype": "L5_MC"},
+            {"mtype":"L6_ChC"}])
     pathways =\
-        mock_circuit_model.pathways(frozenset(("mtype",)))\
-                          .sample(n=number_pathways)
+        adapter.get_pathways(
+            mock_circuit_model,
+            cell_group=cell_types)
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
-            AdapterInterface=ConnectionProbabilityInterface,
+            AdapterInterface=ConnectionProbabilityBySomaDistanceInterface,
             measurement_parameters=Parameters(pathways),
-            plotter=HeatMap(
-                xvar=("pre_synaptic", "mtype"),
-                xlabel="pre-mtype",
-                yvar=("post_synaptic", "mtype"),
-                ylabel="post-mtype",
-                vvar=("connection_probability", "mean"))))
+            measurement_collection=measurement.collection.series_type,
+            plotter=LinePlot(
+                xvar="soma_distance",
+                xlabel="Soma Distance",
+                yvar="connection_probability",
+                ylabel="Connection Probability",
+                gvar=("pre_synaptic", "mtype"),
+                fvar=("post_synaptic", "mtype"))))
 
-    #analysis_test.test_circuit_data_path(mock_circuit_model)
+    logger.info(
+        logger.get_source_info(),
+        "Test get measurement")
     connection_probability_measurement =\
-        analysis_test.test_get_measurement(mock_circuit_model, sample_size=10)
+        analysis_test.test_get_measurement(mock_circuit_model, sample_size=2)
     assert len(connection_probability_measurement) == 1
     dataset, dataframe = [
         (k, v) for k, v in connection_probability_measurement.items()][0]
@@ -137,8 +153,12 @@ def test_connection_probability_by_distance():
     summary =\
         measurement.concat_as_summaries(
             connection_probability_measurement)
-    assert summary.shape[0] == number_pathways,\
-        summary.shape
+    without_soma_distance =\
+        summary.groupby(list(pathways.columns.values))\
+               .agg("size")
+            
+    assert without_soma_distance.shape[0] == pathways.shape[0],\
+        (without_soma_distance.shape[0], pathways.shape[0])
     
     logger.info(
         logger.get_source_info(),

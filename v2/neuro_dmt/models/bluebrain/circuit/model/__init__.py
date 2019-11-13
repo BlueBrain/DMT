@@ -81,25 +81,7 @@ class BlueBrainCircuitModel(WithFields):
         """
         if circuit is not None:
             self._bluepy_circuit = circuit
-
-
-        # self.connection_probability =\
-        #     PathwayPropertyFamily(
-        #         phenomenon="connection_probability",
-        #         family_variables=tuple(),#variable but constant over the family members
-        #         definition=self.get_connection_probability)
-        # self.connection_probability_by_distance =\
-        #     PathwayPropertyFamily(
-        #         phenomenon="connection_probability",
-        #         family_variables=("soma_distance",),#variable, but constant over the family members
-        #         definition=self.get_connection_probability_by_distance)
-        # self.connection_probability =\
-        #     PathwayProperty(
-        #         label="connection_probability",
-        #         definition=self.get_connection_probability)
-
         super().__init__(*args, **kwargs)
-
 
     @lazyfield
     def connection_probability(self):
@@ -114,7 +96,6 @@ class BlueBrainCircuitModel(WithFields):
         Compute and cache pathway connection probabilities by soma-distance.
         """
         return ConnectionProbabilityBySomaDistance(circuit_model=self)
-
 
     def get_path(self, *relative_path):
         """

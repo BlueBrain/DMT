@@ -35,7 +35,8 @@ class LinePlot(WithFields):
         Facet Variable: Column in the dataframe that will be plotted on several
         faces. A default value of empty string will be interpreted as not set,
         and hence there will be only one face in the figure.
-        """)
+        """,
+        __default_value__="")
     xlabel = LambdaField(
         """
         The label to be displayed along the y-axis.
@@ -58,6 +59,11 @@ class LinePlot(WithFields):
         Aspect ratio width / height for the figure.
         """,
         __default_value__=golden_aspect_ratio)
+    number_columns = LambdaField(
+        """
+        Number of columns in the figure.
+        """,
+        lambda self: None if not self.fvar else 3)
 
     def get_dataframe(self, data, dataset=None):
         """
@@ -89,6 +95,7 @@ class LinePlot(WithFields):
                 self.get_dataframe(data, dataset),
                 col=self.fvar if self.fvar else None,
                 hue=self.gvar if self.gvar else None,
+                col_wrap=self.number_columns,
                 legend_out=True)
         grid.map(
             seaborn.lineplot,

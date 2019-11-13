@@ -303,7 +303,7 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             self._resolve(
                 circuit_model
-            ).connection_probability(
+            ).connection_probability_by_soma_distance(
                 pathway=CellType.pathway(pre_synaptic, post_synaptic)
             ).reset_index(
             ).assign(
@@ -312,4 +312,123 @@ class BlueBrainCircuitAdapter(WithFields):
                 "soma_distance"
             ).connection_probability
 
+
+    def get_connection_strength(self,
+            circuit_model=None,
+            pre_synaptic={},
+            post_synaptic={},
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
+        """
+        Get number of connection from pre synaptic cell group to post synaptic
+        cell group.
+        """
+        self._resolve(
+            circuit_model
+        ).connection_strength(
+            pathway=CellType.pathway(pre_synaptic, post_synaptic)
+        ).reset_index(
+        ).connection_strength
+
+    def get_afferent_connections_summary(self,
+            circuit_model=None,
+            post_synaptic_cell_type=None,
+            pre_synaptic_cell_type_specifier=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            sample_size=100):
+        """
+        Statistical summary of the number of afferent connection counts.
+        """
+        if not pre_synaptic_cell_type_specifier:
+            pre_synaptic_cell_type_specifier =\
+                list(post_synaptic_cell_type.keys())
+
+        circuit_model =\
+            self._resolve(circuit_model)
+        post_synaptic_cells =\
+            circuit_model.get_cells(
+                **post_synaptic_cell_type)
+        post_synaptic_gids =\
+            post_synaptic_cells.gid\
+            if sampling_methodology == terminology.sampling_methodology.random\
+               else post_synaptic_cells.sample(n=sample_size).gid
+        afferent_gids =\
+            post_synaptic_gids.apply(
+                circuit_model.connectome.afferent_gids
+            ).rename()
+
+        def _statistical_summary(pre_synaptic_cells):
+            return\
+                afferent_gids.apply(
+                    lambda gids: np.sum(np.in1d(
+                        pre_synaptic_cells.gid.values,
+                        gids))
+                ).agg(
+                    ["size", "mean", "std"]
+                )
+        return\
+            circuit_model.cells.groupby(
+                list(pre_synaptic_cell_type_specifier)
+            ).apply(
+                _statistical_summary
+            ).reset_index(
+            ).rename(
+                columns={
+                    variable: "pre_synaptic_{}".format(variable)
+                    for variable in pre_synaptic_cell_type_specifier}
+            ).set_index([
+                "pre_synaptic_{}".format(variable) 
+                for variable in pre_synaptic_cell_type_specifier
+            ])
+
+    def get_efferent_connections_summary(self,
+            circuit_model=None,
+            pre_synaptic_cell_type=None,
+            post_synaptic_cell_type_specifier=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            sample_size=100):
+        """
+        Statistical summary of the number of afferent connection counts.
+        """
+        if not post_synaptic_cell_type_specifier:
+            post_synaptic_cell_type_specifier =\
+                list(pre_synaptic_cell_type.keys())
+
+        circuit_model =\
+            self._resolve(circuit_model)
+        pre_synaptic_cells =\
+            circuit_model.get_cells(
+                **pre_synaptic_cell_type)
+        pre_synaptic_gids =\
+            pre_synaptic_cells.gid\
+            if sampling_methodology == terminology.sampling_methodology.random\
+               else pre_synaptic_cells.sample(n=sample_size).gid
+        efferent_gids =\
+            pre_synaptic_gids.apply(
+                circuit_model.connectome.efferent_gids
+            ).rename()
+
+        def _statistical_summary(post_synaptic_cells):
+            return\
+                efferent_gids.apply(
+                    lambda gids: np.sum(np.in1d(
+                        post_synaptic_cells.gid.values,
+                        gids))
+                ).agg(
+                    ["size", "mean", "std"]
+                )
+        return\
+            circuit_model.cells.groupby(
+                list(post_synaptic_cell_type_specifier)
+            ).apply(
+                _statistical_summary
+            ).reset_index(
+            ).rename(
+                columns={
+                    variable: "post_synaptic_{}".format(variable)
+                    for variable in post_synaptic_cell_type_specifier}
+            ).set_index([
+                "post_synaptic_{}".format(variable) 
+                for variable in post_synaptic_cell_type_specifier
+            ])
 
