@@ -22,6 +22,7 @@ from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from ..model.cell_type import CellType
 from ..model.pathway import Pathway
 
+logger = Logger(client=__file__)
 
 @implements(CellDensityAdapterInterface)
 @implements(ConnectomeAdapterInterface)
@@ -86,6 +87,80 @@ class BlueBrainCircuitAdapter(WithFields):
             `circuit_model` instance as an argument to the `AdapterInterface`
             methods it adapts.
             """)
+        raise RuntimeError(
+            "Execution of _resolve(...) should not have reached here.")
+
+    def _resolve_cell_group(self,
+            circuit_model=None,
+            cell_group=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            resample=False,
+            number=100):
+        """
+
+        Returns
+        ---------
+        pandas.DataFrame containing cells.
+        """
+        if cell_group is None:
+            raise TypeError(
+                """
+                Missing required argument `cell_group`
+                in call to _resolve_cell_group(...)
+                """)
+        circuit_model = self._resolve(circuit_model)
+        other_args = dict(
+            sampling_methodology=sampling_methodology,
+            resample=resample,
+            number=number)
+        logger.study(
+            logger.get_source_info(),
+            """
+            resolve cell group {}
+            given that {}
+            """.format(
+                cell_group,
+                other_args))
+        if cell_group is None:
+            return self._resolve_cell_group(
+                circuit_model.cells,
+                **other_args)
+        if isinstance(cell_group, np.ndarray):
+            return self._resolve_cell_group(
+                circuit_model.cells.loc[cell_group],
+                **other_args)
+        if isinstance(cell_group, pd.Series):
+            return self._resolve_cell_group(
+                cell_group.to_dict(),
+                **other_args)
+        if isinstance(cell_group, Mapping):
+            return self._resolve_cell_group(
+                circuit_model.get_cells(**cell_group))
+
+        if isinstance(cell_group, pd.DataFrame):
+            result = cell_group\
+                if (sampling_methodology!=terminology.sampling_methodology.random
+                    or cell_group.shape[1] > number - 1
+                ) else (
+                    cell_group.sample(n=number)\
+                    if number < cell_group.shape[0]\
+                    else cell_group)
+            logger.study(
+                logger.get_source_info(),
+                """
+                Final result for cell group, dataframe with shape {}
+                """.format(
+                    result.shape))
+            return result
+                    
+        raise NotImplementedError(
+            """
+            '_resolve_cell_group' not implemented for argument `cell_group`
+            value {} of type {}.
+            """.format(
+                cell_group,
+                type(cell_group)))
+
 
     def _query_hash(self, **kwargs):
         """

@@ -176,7 +176,7 @@ class ConnectomeSummary(WithFields):
         `summary` : A pandas.Series or a mapping that will be converted to one.
         """
         super().__init__(value=summary)
-            
+
     @lazyfield
     def pandas_series(self):
         """..."""
@@ -215,14 +215,10 @@ GroupByVariables = namedtuple(
      "post_synaptic_cell_type_specifier"])
 
 
-class PathwayProperty(WithFields):
+class PathwaySummary(WithFields):
     """
     Compute and store a circuit's pathway properties.
     """
-    phenomenon = Field(
-        """
-        A label to go with the pathway property.
-        """)
     circuit_model = Field(
         """
         The circuit model for which this `PathwayProperty` has been defined.
@@ -258,69 +254,6 @@ class PathwayProperty(WithFields):
                             cell_type_specifier
                     )].values])
 
-    def _resolve_cell_group(self,
-            cell_group,
-            sampling_methodology=terminology.sampling_methodology.random,
-            resample=False,
-            number=100):
-        """
-
-        Returns
-        ---------
-        pandas.DataFrame containing cells.
-        """
-        other_args = dict(
-            sampling_methodology=sampling_methodology,
-            resample=resample,
-            number=number)
-        logger.study(
-            logger.get_source_info(),
-            """
-            resolve cell group {}
-            given that {}
-            """.format(
-                cell_group,
-                other_args))
-        if cell_group is None:
-            return self._resolve_cell_group(
-                self.circuit_model.cells,
-                **other_args)
-        if isinstance(cell_group, np.ndarray):
-            return self._resolve_cell_group(
-                self.circuit_model.cells.loc[cell_group],
-                **other_args)
-        if isinstance(cell_group, pd.Series):
-            return self._resolve_cell_group(
-                cell_group.to_dict(),
-                **other_args)
-        if isinstance(cell_group, Mapping):
-            return self._resolve_cell_group(
-                self.circuit_model.get_cells(**cell_group))
-
-        if isinstance(cell_group, pd.DataFrame):
-            result = cell_group\
-                if (sampling_methodology!=terminology.sampling_methodology.random
-                    or cell_group.shape[1] > number - 1
-                ) else (
-                    cell_group.sample(n=number)\
-                    if number < cell_group.shape[0]\
-                    else cell_group)
-            logger.study(
-                logger.get_source_info(),
-                """
-                Final result for cell group, dataframe with shape {}
-                """.format(
-                    result.shape))
-            return result
-                    
-        raise NotImplementedError(
-            """
-            '_resolve_cell_group' not implemented for argument `cell_group`
-            value {} of type {}.
-            """.format(
-                cell_group,
-                type(cell_group)))
-
     @staticmethod
     def _at(role_synaptic):
         """..."""
@@ -329,22 +262,6 @@ class PathwayProperty(WithFields):
             return variable if variable in excluded_variables\
                 else  "{}_{}".format(role_synaptic, variable)
         return _rename_column
-
-    @abstractmethod
-    def get(self,
-            pre_synaptic_cells,
-            post_synaptic_cells):
-        """
-        Get the pathway property value.
-
-        Arguments
-        -------------
-        pre_synaptic_cells : pandas.DataFrame containing cells on
-                             pre-synaptic side.
-        post_synaptic_cells : pandas.DataFrame containing cells on
-                             post-synaptic side.
-        """
-        raise NotImplementedError
 
     def _cached(self,
             pre_synaptic_cell_type_specifier, pre_synaptic_cells,
@@ -408,29 +325,48 @@ class PathwayProperty(WithFields):
         return self.store[key_cache]
 
     def _full_summary(self,
-            measurement_pairs):
+            measurement_pairs,
+            with_soma_distance=False):
         """..."""
-        summary =\
-            pd.concat([
+        variables_groupby=\
+            ["dummy_variable", "soma_distance"]\
+            if with_soma_distance else\
+               ["dummy_variable"]
+        measured_variables =\
+            ["number_pairs_connected", "soma_distance", "number_cells_pre_synaptic"]\
+            if with_soma_distance else\
+               ["pairs"]
+        def _pre_summary(pairs):
+            pairs_summary =\
                 pairs[
-                    self.measured_variables
+                    measured_variables
                 ].reset_index(
                     drop=True
                 ).assign(
                     dummy_variable=0
                 ).groupby(
-                    ["dummy_variable"] + self.other_grouping_variables
+                    variables_groupby
                 ).agg(
-                    ["size", "sum"]#self.aggregators_inner
-                ).pairs.rename(
+                    "sum"
+                )
+            return\
+                pairs_summary.pairs.rename(
                     columns={
                         "size": "number_pairs_total",
                         "sum": "number_pairs_connected"}
-                ) for pairs in measurement_pairs]
+                ).assign(
+                    number_cells_post_synaptic=1.
+                ).join(
+                    pairs_summary.number_cells_pre_synaptic)
+        
+        summary =\
+            pd.concat([
+                _pre_summary(pairs)
+                for pairs in measurement_pairs]
             ).groupby(
-                ["dummy_variable"] + self.other_grouping_variables
+               variables_groupby 
             ).agg(
-                "sum"#self.aggregators_outer
+                "sum"
             )
         return self.empty if summary.empty else summary.loc[0]
 
@@ -499,212 +435,32 @@ class PathwayProperty(WithFields):
         """..."""
         return\
             pd.Series({
-                key: 0.
-                for key in self.columns.values()})\
-              .append(
-                  pd.Series({self.measurement_label: np.nan}))
+                "number_pairs_total" : 0.,
+                "number_pairs_connected" : 0.})
 
-    def get_summary(self,
-            pre_synaptic_cell_group,
-            post_synaptic_cell_group,
-            **kwargs):
+    def soma_distance(self,
+            xcell, ycell,
+            bin_size=100.):
         """
-        Get a full summary for the pathway property for all (cell, cell) pairs.
-        """
-        return self.__call__(
-            pre_synaptic_cell_group=pre_synaptic_cell_group,
-            post_synaptic_cell_group=post_synaptic_cell_group,
-            with_summary_statistics=True,
-            **kwargs)
-
-    def __call__(self,
-            pathway=None,
-            pre_synaptic_cell_group=None,
-            post_synaptic_cell_group=None,
-            groupby=GroupByVariables(
-                pre_synaptic_cell_type_specifier=None,
-                post_synaptic_cell_type_specifier=None),
-            upper_bound_soma_distance=None,
-            by=None,
-            given=None,
-            resample=False,
-            sampling_methodology=terminology.sampling_methodology.random,
-            number=100,
-            with_summary_statistics=False):
-        """
-        Compute, or retrieve from the store...
+        Soma distance between cells.
 
         Arguments
-        -------------
-        pre_synaptic_cell_group : Group of cells on the pre-synaptic side.
-        post_synaptic_cell_group : Group of cells on the post-synaptic side.
-        by : A property of a connection ((pre_synaptic_cell, post_synaptic_cell).
-             Pathway property will be computed for given values of this variable.
-             If a list of variables, the computation will be conditioned on all
-             the variables.
-        given: A dict providing variables and their values for which the
-               the pathway property will be returned. """
-        logger.study(
-            logger.get_source_info(),
-            """
-            Call to connection probability.
-            pathway:
-            \t{}
-            pre_synaptic_cell_group:
-            \t{}
-            post_synaptic_cell_group:
-            \t{}
-            to be group by:
-            \t{}
-            methodology:
-            \t{}
-            """.format(
-                str(pathway).replace('\n', "\n\t\t"),
-                pre_synaptic_cell_group,
-                post_synaptic_cell_group,
-                groupby,
-                sampling_methodology))
-        if by is not None:
-            raise NotImplementedError(
-                """
-                Computation of {} pathway property by {}.
-                """.format(
-                    self.phenomenon,
-                    by))
-        if given is not None:
-            raise NotImplementedError(
-                """
-                Computation of {} pathway property given {}.
-                """.format(
-                    self.phenomenon,
-                    given))
-
-        def _type_error(what):
-            return TypeError(
-                """
-                {}.
-                __call__ may be called either without any parameters about 
-                which cell pairs to compute for, or a value for argument 
-                `pathway`, or values for arguments `pre_synaptic_cell_group`
-                and `post_synaptic_cell_group`, but not both.
-                """.format(what))
-
-        memoize = (
-            self.memoize
-            and pathway is None
-            and pre_synaptic_cell_group is None
-            and post_synaptic_cell_group is None
-            and groupby.pre_synaptic_cell_type_specifier is not None
-            and groupby.post_synaptic_cell_type_specifier is not None)
-
-        if pathway is not None:
-            if (pre_synaptic_cell_group is not None
-                or post_synaptic_cell_group is not None):
-                raise _type_error(
-                    """
-                    __call__ called with values for both pathway and
-                    pre / post synaptic cell groups.
-                    """)
-            pre_synaptic_cell_group = pathway.pre_synaptic
-            post_synaptic_cell_group = pathway.post_synaptic
-
-        if (pre_synaptic_cell_group is not None
-            and post_synaptic_cell_group is None):
-            raise _type_error(
-                """
-                __call__ called with a value {} for `pre_synaptic_cell_group` 
-                in the arguments, but no value for `post_synaptic_cell_group`.
-                """.format(
-                    pre_synaptic_cell_group))
-
-        if (post_synaptic_cell_group is not None
-            and pre_synaptic_cell_group is None):
-            raise _type_error(
-                """
-                __call__called with a value {} for `post_synaptic_cell_group` 
-                in the arguments, but no value for `pre_synaptic_cell_group`.
-                """.format(
-                    post_synaptic_cell_group))
-
-        if pathway is None:
-            if (isinstance(pre_synaptic_cell_group, pd.Series)
-                and isinstance(post_synaptic_cell_group, pd.Series)):
-                pathway =\
-                    CellType.pathway(
-                        pre_synaptic_cell_group,
-                        post_synaptic_cell_group)
-
-        logger.study(
-            logger.get_source_info(),
-            """
-            After processing arguments,
-            compute pathway property for:
-            pre_synaptic_cell_group: {}
-            post_synaptic_cell_group: {}
-            """.format(
-                pre_synaptic_cell_group,
-                post_synaptic_cell_group))
-
-        pre_synaptic_cells =\
-            self._resolve_cell_group(
-                pre_synaptic_cell_group,
-                sampling_methodology=sampling_methodology,
-                resample=resample,
-                number=number)
-        post_synaptic_cells =\
-            self._resolve_cell_group(
-                post_synaptic_cell_group,
-                sampling_methodology=sampling_methodology,
-                resample=resample,
-                number=number)
-
-        if not memoize:
-            measurement_pairs =\
-                self.get_pairs(
-                    pre_synaptic_cells.rename(
-                        columns=self._at("pre_synaptic")),
-                    post_synaptic_cells.rename(
-                        columns=self._at("post_synaptic")),
-                    upper_bound_soma_distance=upper_bound_soma_distance)
-            if (groupby.pre_synaptic_cell_type_specifier is not None
-                and groupby.post_synaptic_cell_type_specifier is not None):
-                return self._grouped_summary(
-                    measurement_pairs,
-                    groupby.pre_synaptic_cell_type_specifier,
-                    groupby.post_synaptic_cell_type_specifier)
-
-            summary = self._full_summary(measurement_pairs)
-            summary.at["number_cells_pre_synaptic"] =\
-                pre_synaptic_cells.shape[0]
-            summary.at["number_cells_post_synaptic"] =\
-                post_synaptic_cells.shape[0]
-            return summary
-            #return summary if with_summary_statistics\
-        #        else summary[self.measurement_label]
-
-        pre_synaptic_cell_type_specifier =\
-            frozenset(groupby.pre_synaptic_cell_type_specifier)\
-            if groupby.pre_synaptic_cell_type_specifier is not None else\
-               self._get_cell_type_specifier(pre_synaptic_cell_group)
-        post_synaptic_cell_type_specifier =\
-            frozenset(groupby.post_synaptic_cell_type_specifier)\
-            if groupby.post_synaptic_cell_type_specifier is not None else\
-               self._get_cell_type_specifier(post_synaptic_cell_group)
-
-        return self._cached(
-            pre_synaptic_cell_type_specifier, pre_synaptic_cells,
-            post_synaptic_cell_type_specifier, post_synaptic_cells,
-            upper_bound_soma_distance=upper_bound_soma_distance,
-            by=by,
-            resample=resample,
-            sampling_methodology=sampling_methodology,
-            number=100)
-
+        -------------------------
+        xcell / ycell : A single cell (i.e. a pandas.Series),
+        ~               or a collection of cells (i.e. a pandas.DataFrame)
+        """
+        XYZ = ["x", "y", "z"]
+        distance = np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
+        bin_starts = bin_size * np.floor(distance / bin_size)
+        return [
+            (bin_start, bin_start + bin_size)
+            for bin_start in bin_starts]
 
     def get_pairs(self,
             pre_synaptic_cells,
             post_synaptic_cells,
             upper_bound_soma_distance=None,
+            with_soma_distance=False,
             *args, **kwargs):
         """
         Arguments
@@ -742,10 +498,11 @@ class PathwayProperty(WithFields):
                 ).reset_index(
                     drop=True
                 ).assign(
-                    pairs=np.in1d(
+                    number_pairs_connected=np.in1d(
                         pre_synaptic_cells.gid.values,
                         self.circuit_model.connectome.afferent_gids(
-                            post_cell.gid)))
+                            post_cell.gid)),
+                    number_cells_pre_synaptic=1.)
             if upper_bound_soma_distance is not None:
                 soma_distance = self\
                     .soma_distance(
@@ -755,19 +512,78 @@ class PathwayProperty(WithFields):
                     soma_distance < upper_bound_soma_distance
                 ].reset_index(
                     drop=True)
+            if with_soma_distance:
+                pairs = pairs.assign(
+                    soma_distance=self.soma_distance(
+                        pre_synaptic_cells,
+                        post_cell))
             post_cell_info = pd.DataFrame(
                 pairs.shape[0] * [post_cell.drop("gid")]
             ).reset_index(
-                drop=True)
+                drop=True
+            )
             yield pd.concat(
                 [pairs, post_cell_info],
                 axis=1
             ).reset_index(
                 drop=True)
 
+    def __call__(self,
+            pre_synaptic_cells,
+            post_synaptic_cells,
+            groupby=GroupByVariables(
+                pre_synaptic_cell_type_specifier=None,
+                post_synaptic_cell_type_specifier=None),
+            upper_bound_soma_distance=None,
+            with_soma_distance=None):
+        """
+        Compute, or retrieve from the store...
 
+        Arguments
+        -------------
+        pre_synaptic_cells : pandas.DataFrame of cells on the pre-synaptic side.
+        post_synaptic_cells: pandas.DataFrame of cells on the post-synaptic side.
+        """
+        if upper_bound_soma_distance is not None and with_soma_distance:
+            raise TypeError(
+                """
+                Argument `with_soma_distance` cannot be `True` in
+                `get_pairs(...)` call with a valid value of
+                `upper_bound_soma_distance`.
+                """)
 
+        logger.study(
+            logger.get_source_info(),
+            """
+            Compute pathway property for 
+            pre_synaptic_cells:
+            \t{}
+            post_synaptic_cells:
+            \t{}
+            """.format(
+                pre_synaptic_cells.shape[0],
+                post_synaptic_cells.shape[0]))
 
+        measurement_pairs =\
+            self.get_pairs(
+                pre_synaptic_cells.rename(
+                    columns=self._at("pre_synaptic")),
+                post_synaptic_cells.rename(
+                    columns=self._at("post_synaptic")),
+                upper_bound_soma_distance=upper_bound_soma_distance,
+                with_soma_distance=with_soma_distance)
+
+        summary =\
+            self._full_summary(
+                measurement_pairs,
+                with_soma_distance=with_soma_distance)
+        summary.at[
+            "number_cells_pre_synaptic"] =\
+                pre_synaptic_cells.shape[0]
+        summary.at[
+            "number_cells_post_synaptic"] =\
+                post_synaptic_cells.shape[0]
+        return connectome_summary(summary)
 
 
 def pathway_property(instance_method):
@@ -839,8 +655,3 @@ def pathway_property(instance_method):
                         post_cell_type]
 
     return effective
-
-
-from .connection_probability import\
-    ConnectionProbability,\
-    ConnectionProbabilityBySomaDistance

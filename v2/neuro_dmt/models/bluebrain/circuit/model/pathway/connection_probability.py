@@ -44,7 +44,7 @@ class ConnectionProbability(PathwayProperty):
         XYZ = ["x", "y", "z"]
         return np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
 
-    def get_pairs(self,
+    def get_pairs_0(self,
             pre_synaptic_cells,
             post_synaptic_cells,
             upper_bound_soma_distance=None,
@@ -128,23 +128,6 @@ class ConnectionProbabilityBySomaDistance(ConnectionProbability):
             columns=["pairs_total", "pairs_connected", self.phenomenon],
             index=pd.Index([], name="soma_distance"))
 
-
-    def soma_distance(self, xcell, ycell):
-        """
-        Soma distance between cells.
-
-        Arguments
-        -------------------------
-        xcell / ycell : A single cell (i.e. a pandas.Series),
-        ~               or a collection of cells (i.e. a pandas.DataFrame)
-        """
-        XYZ = ["x", "y", "z"]
-        distance = np.linalg.norm(xcell[XYZ] - ycell[XYZ], axis=1)
-        bin_size = self.soma_distance_bin_size
-        bin_starts = bin_size * np.floor(distance / bin_size)
-        #bin_ends = bin_size + bin_starts
-        #return np.vstack([bin_start, bin_start + bin_size]).transpose()
-        return [(bin_start, bin_start + bin_size) for bin_start in bin_starts]
 
     def get_pairs(self,
             pre_synaptic_cells,
