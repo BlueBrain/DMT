@@ -73,11 +73,147 @@ class Pathways(pd.Series):
         """
         raise NotImplementedError
 
+    
+class ConnectomeSummary(WithFields):
+    """
+    Define a connectome summary.
+    """
+    value = Field(
+        """
+        A `pandas.Series` containing keys that fully define a connectome
+        summary.
+        Required variables
+        -----------------------
+        1. variables that define the pre-synaptic cell type.
+        2. variables that define the post-synaptic cell type.
+        2. `number_cells_pre_synaptic`
+        """)
+
+    @lazyfield
+    def pre_synaptic_cell_type_specifier(self):
+        """
+        Set of cell properties that specify the cell type on the pre-synaptic
+        side.
+        """
+        return{
+            variable
+            for variable in summary.index.names
+            if variable.startswith("pre_synaptic")}
+
+    @lazyfield
+    def post_synaptic_cell_type_specifier(self):
+        """
+        Set of cell properties that specify the cell type on the post-synaptic
+        side.
+        """
+        return{
+            variable
+            for variable in summary.index.names
+            if variable.startswith("post_synaptic")}
+    
+    @lazyfield
+    def number_cells_pre_synaptic(self):
+        """
+        Number of cells on the pre-synaptic side of the pathway.
+        """
+        return self.value.number_cells_pre_synaptic
+
+    @lazyfield
+    def number_cells_post_synaptic(self):
+        """
+        Number of cells on the post-synaptic side of the pathway.
+        """
+        return self.value.number_cells_post_synaptic
+
+    @lazyfield
+    def number_pairs_connected(self):
+        """
+        Number of pairs in the pathway that are connected,
+        """
+        return self.value.number_pairs_connected
+
+    @lazyfield
+    def number_pairs_total(self):
+        """
+        Total number of `(pre_synaptic_cell, post_synaptic_cell)` pairs in the
+        pathway used to make this statistical summary.
+        """
+        return self.number_cells_pre_synaptic * self.number_cells_post_synaptic
+
+    @lazyfield
+    def probability_connection(self):
+        """
+        Probability that any cell in the pre-synaptic group is connected to any
+        cell in the post-synaptic group.
+        """
+        return self.number_pairs_connected / self.number_pairs_total
+
+    @lazyfield
+    def number_connections_afferent(self):
+        """
+        The number of pre-synaptic cells that a randomly sampled post-synaptic
+        cell in connected to in a given pathway.
+        """
+        return\
+            self.number_pairs_connected / self.number_cells_post_synaptic
+
+    @lazyfield
+    def number_connections_efferent(self):
+        """
+        The number of post-synaptic cells that a randomly sampled pre-synaptic
+        cell is connected to in a given pathway.
+        """
+        return\
+            self.number_pairs_connected / self.number_cells_pre_synaptic
+
+    def __init__(self, summary):
+        """
+        Initialize from a pandas.Series, assuming that it contains all the
+        required keys.
+
+        Arguments
+        ----------
+        `summary` : A pandas.Series or a mapping that will be converted to one.
+        """
+        super().__init__(value=summary)
+            
+    @lazyfield
+    def pandas_series(self):
+        """..."""
+        return pd.Series(dict(
+            number_cells_pre_synaptic = self.number_cells_pre_synaptic,
+            number_cells_post_synaptic = self.number_cells_post_synaptic,
+            number_pairs_total = self.number_pairs_total,
+            number_pairs_connected=self.number_pairs_connected,
+            probability_connection=self.probability_connection,
+            number_connections_afferent=self.number_connections_afferent,
+            number_connections_efferent=self.number_connections_efferent))
+
+
+def connectome_summary(
+        summary_with_numbers,
+        type_summary=pd.Series):
+    """
+    Get a connectome summary,
+    as a `pandas.Series` by default.
+
+    Arugments
+    -------------
+    summary_with_numbers : pandas.Series
+    """
+    summary =\
+        ConnectomeSummary(
+            summary_with_numbers)
+    return summary.pandas_series\
+        if type_summary==pd.Series\
+           else summary
+
 
 GroupByVariables = namedtuple(
     "GroupByVariables",
     ["pre_synaptic_cell_type_specifier",
      "post_synaptic_cell_type_specifier"])
+
 
 class PathwayProperty(WithFields):
     """
@@ -285,19 +421,19 @@ class PathwayProperty(WithFields):
                 ).groupby(
                     ["dummy_variable"] + self.other_grouping_variables
                 ).agg(
-                    self.aggregators_inner
+                    ["size", "sum"]#self.aggregators_inner
                 ).pairs.rename(
-                    columns=self.columns
+                    columns={
+                        "size": "number_pairs_total",
+                        "sum": "number_pairs_connected"}
                 ) for pairs in measurement_pairs]
             ).groupby(
                 ["dummy_variable"] + self.other_grouping_variables
             ).agg(
-                self.aggregators_outer
-            ).assign(
-                **self.definition
+                "sum"#self.aggregators_outer
             )
         return self.empty if summary.empty else summary.loc[0]
-            
+
     def _grouped_summary(self,
             measurement_pairs,
             pre_synaptic_cell_type_specifier,
@@ -357,7 +493,6 @@ class PathwayProperty(WithFields):
         except TypeError:
             pass
         return None
-
 
     @property
     def empty_summary(self):
@@ -539,8 +674,13 @@ class PathwayProperty(WithFields):
                     groupby.post_synaptic_cell_type_specifier)
 
             summary = self._full_summary(measurement_pairs)
-            return summary if with_summary_statistics\
-                else summary[self.measurement_label]
+            summary.at["number_cells_pre_synaptic"] =\
+                pre_synaptic_cells.shape[0]
+            summary.at["number_cells_post_synaptic"] =\
+                post_synaptic_cells.shape[0]
+            return summary
+            #return summary if with_summary_statistics\
+        #        else summary[self.measurement_label]
 
         pre_synaptic_cell_type_specifier =\
             frozenset(groupby.pre_synaptic_cell_type_specifier)\
@@ -559,6 +699,74 @@ class PathwayProperty(WithFields):
             resample=resample,
             sampling_methodology=sampling_methodology,
             number=100)
+
+
+    def get_pairs(self,
+            pre_synaptic_cells,
+            post_synaptic_cells,
+            upper_bound_soma_distance=None,
+            *args, **kwargs):
+        """
+        Arguments
+        --------------
+        pre_synaptic_cells : pandas.DataFrame
+        post_synaptic_cells : pandas.DataFrame
+        *args, **kwargs : Accommodate super's call to `get`.
+
+        Returns
+        --------------
+        A generator of data-frames that provides values for individual
+        pairs `(pre_synaptic_cell, post_synaptic_cell)`.
+        """
+        logger.study(
+            logger.get_source_info(),
+            """
+            Get connection probability for
+            {} pre synaptic cells
+            {} post synaptic cells
+            """.format(
+                pre_synaptic_cells.shape[0],
+                post_synaptic_cells.shape[0]))
+        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
+            logger.info(
+                logger.get_source_info(),
+                """
+                Get all pairs for post cell {} / {} ({})
+                """.format(
+                    post_cell,
+                    post_synaptic_cells.shape[0],
+                  count / post_synaptic_cells.shape[0]))
+            pairs = pre_synaptic_cells\
+                .drop(
+                    columns="gid"
+                ).reset_index(
+                    drop=True
+                ).assign(
+                    pairs=np.in1d(
+                        pre_synaptic_cells.gid.values,
+                        self.circuit_model.connectome.afferent_gids(
+                            post_cell.gid)))
+            if upper_bound_soma_distance is not None:
+                soma_distance = self\
+                    .soma_distance(
+                        pre_synaptic_cells,
+                        post_cell)
+                pairs = pairs[
+                    soma_distance < upper_bound_soma_distance
+                ].reset_index(
+                    drop=True)
+            post_cell_info = pd.DataFrame(
+                pairs.shape[0] * [post_cell.drop("gid")]
+            ).reset_index(
+                drop=True)
+            yield pd.concat(
+                [pairs, post_cell_info],
+                axis=1
+            ).reset_index(
+                drop=True)
+
+
+
 
 
 

@@ -19,3 +19,22 @@ class ConnectionStrength(ConnectionProbability):
     aggregators_outer = ["size", "mean", "std"]
     measurement_label = "connection_strength"
     columns = {"sum": "connection_strength"}
+
+    @lazyfield
+    def definition(self):
+        """..."""
+        return {}
+
+
+class AfferentConnectionStrengthBySomaDistance(
+        ConnectionProbabilityByDistance):
+    """..."""
+    phenomenon = "Afferent Connections"
+    aggregators_inner = ["sum"]
+    aggregators_outer = ["size", "mean", "std"]
+    measurement_label = "afferent_connections"
+    columns = {"sum": "afferent_connections"}
+
+    @property
+    def definition(self):
+        return {}
