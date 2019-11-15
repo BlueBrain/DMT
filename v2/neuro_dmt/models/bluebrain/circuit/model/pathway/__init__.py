@@ -431,8 +431,7 @@ class PathwaySummary(WithFields):
             pre_synaptic_cells,
             post_synaptic_cells,
             upper_bound_soma_distance=None,
-            with_soma_distance=False,
-            with_full_summary=False):
+            with_soma_distance=False):
         """
         Summarized connection probability.
 
@@ -494,16 +493,13 @@ class PathwaySummary(WithFields):
                     number_pairs_connected=0.,
                     probability_connection=np.nan)
                 )
-        if with_full_summary:
-            return summary.loc[0]
-        return summary.loc[0].probability_connection
+        return summary.loc[0]
 
     def number_connections_afferent(self,
             pre_synaptic_cells,
             post_synaptic_cells,
             upper_bound_soma_distance=None,
-            with_soma_distance=False,
-            with_full_summary=False):
+            with_soma_distance=False):
         """
         Summrized number of afferent connections.
 
@@ -513,7 +509,6 @@ class PathwaySummary(WithFields):
         pre_synaptic_cells : pandas.DataFrame of cells on the pre-synaptic side.
         post_synaptic_cells: pandas.DataFrame of cells on the post-synaptic side.
 
-        with_full_summary : Boolean, return mean and std if true, else only mean.
         """
         pairs_measured = self.get_pairs(
             pre_synaptic_cells.rename(
@@ -569,8 +564,6 @@ class PathwaySummary(WithFields):
                 ("number_pairs_connected", "std"): 0.
             })
 
-        if not with_full_summary:
-            return summary.loc[0].number_pairs_connected["mean"]
         return pd.DataFrame({
             ("number_pairs_total", "mean"): summary.number_pairs_total["mean"],
             ("number_pairs_total", "std"): summary.number_pairs_total["std"],

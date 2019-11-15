@@ -335,12 +335,30 @@ class BlueBrainCircuitAdapter(WithFields):
             cell properties, nor a `pandas.DataFrame` specifying cell types.
             """)
 
+    def _resolve_sample_cells(self,
+            circuit_model,
+            cell_type,
+            sampling_methodology,
+            sample_size):
+        """..."""
+        cells_all =\
+            circuit_model.get_cells(**cell_type)
+        return\
+            cells_all.sample(
+                n=np.minimum(
+                    sample_size,
+                    cells_all.shape[0])
+            ) if sampling_methodology==terminology.sampling_methodology.random\
+            else cells_all
+
     def get_connection_probability(self,
             circuit_model=None,
             pre_synaptic={},
             post_synaptic={},
             upper_bound_soma_distance=None,
             sampling_methodology=terminology.sampling_methodology.random,
+            sample_size_pre_synaptic_cells=100,
+            sample_size_post_synaptic_cells=100,
             **kwargs):
         """
         Arguments
@@ -352,11 +370,28 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         circuit_model =\
             self._resolve(circuit_model)
+        pre_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                pre_synaptic,
+                sampling_methodology,
+                sample_size_pre_synaptic_cells)
+        post_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                post_synaptic,
+                sampling_methodology,
+                sample_size_post_synaptic_cells)
         return\
-            circuit_model\
-            .connection_probability(
-                pathway=CellType.pathway(pre_synaptic, post_synaptic),
-                upper_bound_soma_distance=upper_bound_soma_distance)
+            circuit_model.pathway_summary.probability_connection(
+                pre_synaptic_cells,
+                post_synaptic_cells,
+                with_soma_distance=False
+            ).probability_connection
+
+    @property
+    def _soma_distance_mid_point(self):
+        return lambda df: df.soma_distance.apply(np.mean)
 
     def get_connection_probability_by_soma_distance(self,
             circuit_model=None,
@@ -364,6 +399,8 @@ class BlueBrainCircuitAdapter(WithFields):
             post_synaptic={},
             soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
+            sample_size_pre_synaptic_cells=100,
+            sample_size_post_synaptic_cells=100,
             **kwargs):
         """
         Since the plotter needs a numeric column, we have to convert the
@@ -375,35 +412,98 @@ class BlueBrainCircuitAdapter(WithFields):
                 """
                 Not yet implemented for custom values of `soma_distance_bins`.
                 """)
+        circuit_model =\
+            self._resolve(circuit_model)
+        pre_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                pre_synaptic,
+                sampling_methodology,
+                sample_size_pre_synaptic_cells)
+        post_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                post_synaptic,
+                sampling_methodology,
+                sample_size_post_synaptic_cells)
         return\
-            self._resolve(
-                circuit_model
-            ).connection_probability_by_soma_distance(
-                pathway=CellType.pathway(pre_synaptic, post_synaptic)
+            circuit_model.pathway_summary.probability_connection(
+                pre_synaptic_cells,
+                post_synaptic_cells,
+                with_soma_distance=True
             ).reset_index(
             ).assign(
-                soma_distance=lambda df: df.soma_distance.apply(np.mean)
+                soma_distance=self._soma_distance_mid_point
             ).set_index(
                 "soma_distance"
-            ).connection_probability
+            ).probability_connection
 
-
-    def get_connection_strength(self,
+    def get_number_connections_afferent(self,
             circuit_model=None,
             pre_synaptic={},
             post_synaptic={},
+            soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
+            sample_size_post_synaptic_cells=100,
             **kwargs):
-        """
-        Get number of connection from pre synaptic cell group to post synaptic
-        cell group.
-        """
-        self._resolve(
-            circuit_model
-        ).connection_strength(
-            pathway=CellType.pathway(pre_synaptic, post_synaptic)
-        ).reset_index(
-        ).connection_strength
+        """..."""
+        if soma_distance_bins is not None:
+            raise NotImplementedError(
+                """
+                Not yet implemented for custom values of `soma_distance_bins`.
+                """)
+        circuit_model =\
+            self._resolve(circuit_model)
+        pre_synaptic_cells =\
+            circuit_model.get_cells(**pre_synaptic)
+        post_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                post_synaptic,
+                sampling_methodology,
+                sample_size_post_synaptic_cells)
+        return\
+            circuit_model.pathway_summary.number_connections_afferent(
+                pre_synaptic_cells,
+                post_synaptic_cells,
+                with_soma_distance=False
+            ).number_connections_afferent["mean"]
+
+    def get_number_connections_afferent_by_soma_distance(self,
+            circuit_model=None,
+            pre_synaptic={},
+            post_synaptic={},
+            soma_distance_bins=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            sample_size_post_synaptic_cells=100,
+            **kwargs):
+        """..."""
+        if soma_distance_bins is not None:
+            raise NotImplementedError(
+                """
+                Not yet implemented for custom values of `soma_distance_bins`.
+                """)
+        circuit_model =\
+            self._resolve(circuit_model)
+        pre_synaptic_cells =\
+            circuit_model.get_cells(**pre_synaptic)
+        post_synaptic_cells =\
+            self._resolve_sample_cells(
+                circuit_model,
+                post_synaptic,
+                sampling_methodology,
+                sample_size_post_synaptic_cells)
+        return\
+            circuit_model.pathway_summary.number_connections_afferent(
+                pre_synaptic_cells,
+                post_synaptic_cells,
+                with_soma_distance=True
+            ).reset_index(
+            ).assign(
+                soma_distance=self._soma_distance_mid_point
+            ).set_index(
+                "soma_distance"
+            ).number_connections_afferent["mean"]
 
     def get_afferent_connections_summary(self,
             circuit_model=None,
