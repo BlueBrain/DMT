@@ -189,6 +189,25 @@ class ConnectomeSummary(WithFields):
             number_connections_afferent=self.number_connections_afferent,
             number_connections_efferent=self.number_connections_efferent))
 
+def afferent_summary(pairs):
+    """..."""
+    pairs.at["number_pairs_total"] =\
+        pairs.number_cells_pre_synaptic * pairs.number_cells_post_synaptic
+    pairs.at["probabilty_connection"] =\
+        pairs.number_pairs_connected / pairs.number_pairs_total
+    pairs.at["number_connections_afferent"] =\
+        pairs.number_pairs_connected / pairs.number_cells_post_synaptic
+    return pairs
+
+def efferent_summary(pairs):
+    """..."""
+    pairs.at["number_pairs_total"] =\
+        pairs.number_cells_pre_synaptic * pairs.number_cells_post_synaptic
+    pairs.at["probabilty_connection"] =\
+        pairs.number_pairs_connected / pairs.number_pairs_total
+    pairs.at["number_connections_efferent"] =\
+        pairs.number_pairs_connected / pairs.number_cells_pre_synaptic
+    return pairs
 
 def connectome_summary(
         summary_with_numbers,
@@ -348,6 +367,8 @@ class PathwaySummary(WithFields):
                     variables_groupby
                 ).agg(
                     "sum"
+                ).assign(
+                    number_cells_post=1.
                 )
             return\
                 pairs_summary.pairs.rename(
@@ -405,6 +426,59 @@ class PathwaySummary(WithFields):
             .agg("sum")\
             .assign(**{
                 self.phenomenon: self.definition})
+
+    def probability_connection(self,
+            pre_synaptic_cells,
+            post_synaptic_cells,
+            upper_bound_soma_distance=None,
+            with_soma_distance=False):
+        """
+        Summarized connection probability.
+
+        Arguments
+        -------------
+        pre_synaptic_cells : pandas.DataFrame of cells on the pre-synaptic side.
+        post_synaptic_cells: pandas.DataFrame of cells on the post-synaptic side.
+        """
+        pairs_measured =\
+            self.get_pairs(
+                pre_synaptic_cells.rename(
+                    columns=self._at("pre_synaptic")),
+                post_synaptic_cells.rename(
+                    columns=self._at("post_synaptic")),
+                upper_bound_soma_distance=upper_bound_soma_distance,
+                with_soma_distance=with_soma_distance)
+        variables_measured =\
+            ["number_pairs_total", "number_pairs_connected", "soma_distance"]\
+            if with_soma_distance else\
+               ["number_pairs_total", "number_pairs_connected"]
+        variables_groupby =\
+            ["dummy_variable", "soma_distance"]\
+            if with_soma_distance else\
+               ["dummy_variable"]
+
+        def _probability_connection(summary):
+            return summary.number_pairs_connected / summary.number_pairs_total
+       
+        return pd.concat([
+            pairs[
+                variables_measured
+            ].reset_index(
+                drop=True
+            ).assign(
+                dummy_variable=0
+            ).groupby(
+                variables_groupby
+            ).agg(
+                "sum"
+            ) for pairs in pairs_measured
+        ]).groupby(
+            variables_groupby
+        ).agg(
+            "sum"
+        ).assign(
+            probability_connection=_probability_connection
+        )
 
     def _get_cell_type_specifier(self, cell):
         """
@@ -493,16 +567,14 @@ class PathwaySummary(WithFields):
                     post_synaptic_cells.shape[0],
                   count / post_synaptic_cells.shape[0]))
             pairs = pre_synaptic_cells\
-                .drop(
-                    columns="gid"
-                ).reset_index(
+                .reset_index(
                     drop=True
                 ).assign(
                     number_pairs_connected=np.in1d(
                         pre_synaptic_cells.gid.values,
                         self.circuit_model.connectome.afferent_gids(
                             post_cell.gid)),
-                    number_cells_pre_synaptic=1.)
+                    number_pairs_total=1.)
             if upper_bound_soma_distance is not None:
                 soma_distance = self\
                     .soma_distance(
