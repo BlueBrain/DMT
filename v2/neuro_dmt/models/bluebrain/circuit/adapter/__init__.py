@@ -20,7 +20,7 @@ from neuro_dmt.models.bluebrain.circuit.model import\
 from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from ..model.cell_type import CellType
-from ..model.pathway import Pathway
+from ..model.pathway import PathwaySummary
 
 logger = Logger(client=__file__)
 
@@ -161,7 +161,6 @@ class BlueBrainCircuitAdapter(WithFields):
                 cell_group,
                 type(cell_group)))
 
-
     def _query_hash(self, **kwargs):
         """
         Hash for a query.
@@ -281,13 +280,54 @@ class BlueBrainCircuitAdapter(WithFields):
                 self.logger.get_source_info(),
                 """
                 no more random regions of interest for query:
-                \t{}""".format(query))
+                \t{}
+                """.format(query))
             return np.nan
 
         number_cells = circuit_model\
             .get_cell_count(
                 region=region_of_interest)
         return number_cells / (1.e-9 * region_of_interest.volume)
+
+    @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
+    def get_fiber_density(self,
+            circuit_model=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
+        """
+        Get density of dendritic and aboreal segments.
+        """
+        circuit_model =\
+            self._resolve(
+                circuit_model)
+        query =\
+            terminology.cell.filter(
+                **terminology.circuit.filter(
+                    **kwargs))
+        if sampling_methodology != terminology.sampling_methodology.random:
+            return self\
+                ._get_fiber_density_overall(
+                    circuit_model,
+                    **query)
+        try:
+            region_of_interest = next(
+                self.random_region_of_interest(
+                    circuit_model,
+                    **query))
+        except StopIteration:
+            self.logger.warn(
+                self.logger.get_source_info(),
+                """
+                No more random regions of interest for query:
+                \t{}
+                """.format(query))
+            return np.nan
+
+        number_segments = circuit_model\
+            .get_segment_count(
+                region=region_of_interest)
+        return number_segments / (1.e-9 * region_of_interest.volume)
+
 
     def get_mtypes(self,
             circuit_model=None):
@@ -357,8 +397,8 @@ class BlueBrainCircuitAdapter(WithFields):
             post_synaptic={},
             upper_bound_soma_distance=None,
             sampling_methodology=terminology.sampling_methodology.random,
-            sample_size_pre_synaptic_cells=100,
-            sample_size_post_synaptic_cells=100,
+            sample_size_pre_synaptic_cells=20,
+            sample_size_post_synaptic_cells=20,
             **kwargs):
         """
         Arguments
@@ -399,8 +439,8 @@ class BlueBrainCircuitAdapter(WithFields):
             post_synaptic={},
             soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
-            sample_size_pre_synaptic_cells=100,
-            sample_size_post_synaptic_cells=100,
+            sample_size_pre_synaptic_cells=20,
+            sample_size_post_synaptic_cells=20,
             **kwargs):
         """
         Since the plotter needs a numeric column, we have to convert the
@@ -444,7 +484,7 @@ class BlueBrainCircuitAdapter(WithFields):
             post_synaptic={},
             soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
-            sample_size_post_synaptic_cells=100,
+            sample_size_post_synaptic_cells=20,
             **kwargs):
         """..."""
         if soma_distance_bins is not None:
@@ -475,7 +515,7 @@ class BlueBrainCircuitAdapter(WithFields):
             post_synaptic={},
             soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
-            sample_size_post_synaptic_cells=100,
+            sample_size_post_synaptic_cells=20,
             **kwargs):
         """..."""
         if soma_distance_bins is not None:
@@ -503,107 +543,95 @@ class BlueBrainCircuitAdapter(WithFields):
                 soma_distance=self._soma_distance_mid_point
             ).set_index(
                 "soma_distance"
-            ).number_connections_afferent["mean"]
+            ).number_connections_afferent[
+                "mean"
+            ].rename(
+                "number_connections_afferent"
+            )
 
-    def get_afferent_connections_summary(self,
+    def get_afferent_connection_count_summary(self,
             circuit_model=None,
-            post_synaptic_cell_type=None,
+            post_synaptic=None,
             pre_synaptic_cell_type_specifier=None,
             sampling_methodology=terminology.sampling_methodology.random,
-            sample_size=100):
-        """
-        Statistical summary of the number of afferent connection counts.
-        """
-        if not pre_synaptic_cell_type_specifier:
+            sample_size_post_synaptic_cells=100,
+            by_soma_distance=True,
+            as_series=True,
+            **kwargs):
+        """..."""
+        circuit_model =\
+            self._resolve(circuit_model)
+        if post_synaptic is None:
+            raise TypeError(
+                """
+                Missing required argument `post_synaptic_cell_type` in call to
+                'get_afferent_connection_count_summary(..)'.
+                """)
+        if pre_synaptic_cell_type_specifier is None:
             pre_synaptic_cell_type_specifier =\
-                list(post_synaptic_cell_type.keys())
+                frozenset(post_synaptic.keys())
 
-        circuit_model =\
-            self._resolve(circuit_model)
+        def _prefix_pre_synaptic(variable):
+            return\
+                ("pre_synaptic", variable)\
+                if variable in pre_synaptic_cell_type_specifier\
+                   else variable
+
+        variables_groupby = [
+            _prefix_pre_synaptic(variable)
+            for variable in pre_synaptic_cell_type_specifier
+        ]
+        if by_soma_distance:
+            variables_groupby.append(
+                "soma_distance")
+
+        def _summary_afferent(post_synaptic_cell):
+            """..."""
+            gids_afferent =\
+                circuit_model.connectome.afferent_gids(
+                    post_synaptic_cell.gid
+                )
+
+            def _soma_distance(pre_cells, bin_size=100):
+                XYZ = ["x", "y", "z"]
+                distance =\
+                    np.linalg.norm(
+                        pre_cells[XYZ] - post_synaptic_cell[XYZ],
+                        axis=1)
+                bin_starts = bin_size * np.floor(distance / bin_size)
+                return [
+                    bin_start + bin_size / 2
+                    for bin_start in bin_starts]
+                    
+            variables_measurement =\
+                dict(number_connections_afferent=1, soma_distance=_soma_distance)\
+                if by_soma_distance else\
+                   dict(number_connections_afferent=1)
+            return\
+                circuit_model.cells.loc[
+                    gids_afferent
+                ].assign(**
+                    variables_measurement
+                ).rename(
+                    columns=_prefix_pre_synaptic
+                )[
+                    variables_groupby
+                    + ["number_connections_afferent"]
+                ].groupby(
+                    variables_groupby
+                ).agg("sum")
+        
+        post_synaptic_cells_all =\
+            circuit_model.get_cells(
+                **post_synaptic)
         post_synaptic_cells =\
-            circuit_model.get_cells(
-                **post_synaptic_cell_type)
-        post_synaptic_gids =\
-            post_synaptic_cells.gid\
+            post_synaptic_cells_all.sample(n=sample_size_post_synaptic_cells)\
             if sampling_methodology == terminology.sampling_methodology.random\
-               else post_synaptic_cells.sample(n=sample_size).gid
-        afferent_gids =\
-            post_synaptic_gids.apply(
-                circuit_model.connectome.afferent_gids
-            ).rename()
-
-        def _statistical_summary(pre_synaptic_cells):
-            return\
-                afferent_gids.apply(
-                    lambda gids: np.sum(np.in1d(
-                        pre_synaptic_cells.gid.values,
-                        gids))
-                ).agg(
-                    ["size", "mean", "std"]
-                )
+               else post_synaptic_cells_all
+        dataframe = pd.concat([
+            _summary_afferent(post_synaptic_cell)
+            for _, post_synaptic_cell in post_synaptic_cells.iterrows()
+        ])
         return\
-            circuit_model.cells.groupby(
-                list(pre_synaptic_cell_type_specifier)
-            ).apply(
-                _statistical_summary
-            ).reset_index(
-            ).rename(
-                columns={
-                    variable: "pre_synaptic_{}".format(variable)
-                    for variable in pre_synaptic_cell_type_specifier}
-            ).set_index([
-                "pre_synaptic_{}".format(variable) 
-                for variable in pre_synaptic_cell_type_specifier
-            ])
-
-    def get_efferent_connections_summary(self,
-            circuit_model=None,
-            pre_synaptic_cell_type=None,
-            post_synaptic_cell_type_specifier=None,
-            sampling_methodology=terminology.sampling_methodology.random,
-            sample_size=100):
-        """
-        Statistical summary of the number of afferent connection counts.
-        """
-        if not post_synaptic_cell_type_specifier:
-            post_synaptic_cell_type_specifier =\
-                list(pre_synaptic_cell_type.keys())
-
-        circuit_model =\
-            self._resolve(circuit_model)
-        pre_synaptic_cells =\
-            circuit_model.get_cells(
-                **pre_synaptic_cell_type)
-        pre_synaptic_gids =\
-            pre_synaptic_cells.gid\
-            if sampling_methodology == terminology.sampling_methodology.random\
-               else pre_synaptic_cells.sample(n=sample_size).gid
-        efferent_gids =\
-            pre_synaptic_gids.apply(
-                circuit_model.connectome.efferent_gids
-            ).rename()
-
-        def _statistical_summary(post_synaptic_cells):
-            return\
-                efferent_gids.apply(
-                    lambda gids: np.sum(np.in1d(
-                        post_synaptic_cells.gid.values,
-                        gids))
-                ).agg(
-                    ["size", "mean", "std"]
-                )
-        return\
-            circuit_model.cells.groupby(
-                list(post_synaptic_cell_type_specifier)
-            ).apply(
-                _statistical_summary
-            ).reset_index(
-            ).rename(
-                columns={
-                    variable: "post_synaptic_{}".format(variable)
-                    for variable in post_synaptic_cell_type_specifier}
-            ).set_index([
-                "post_synaptic_{}".format(variable) 
-                for variable in post_synaptic_cell_type_specifier
-            ])
-
+            dataframe.number_connections_afferent\
+            if as_series else dataframe

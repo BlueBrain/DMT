@@ -101,6 +101,64 @@ class ConnectionProbabilityBySomaDistanceInterface(PathwayPropertyInterface):
         raise NotImplementedError
 
 
+class AfferentConnectionCountInterface(PathwayPropertyInterface):
+    """
+    Documents the methods that must be adapted for your circuit model
+    to afferent connection count analyses.
+    """
+    __measurement__ = "afferent_connection_count_summary"
+
+    def get_afferent_connection_count_summary(self,
+            circuit_model,
+            post_synaptic,
+            pre_synaptic_cell_type_specifier=None):
+        """
+        Get number of afferent connections by distance between the somas
+        of the afferent and efferent cells in a pathway pair.
+
+        Arguments
+        --------------
+        post_synaptic_cell_type: A mapping of cell property to its value.
+        ~                        The mapping defines the cell type on the
+        ~                        efferent side of a synapse.
+        pre_synaptic_cell_type_specifier :  A set of cell property names
+        ~                        that will be used to group pre-synaptic cells
+        ~                        to count afferent counts from.
+        ~                        If not provided, keys of the argument
+        ~                        `post_synaptic_cell_type` should be used.
+        """
+        raise NotImplementedError
+
+   
+class AfferentConnectionCountBySomaDistanceInterface(PathwayPropertyInterface):
+    """
+    Documents the methods that must be adapted for your circuit model
+    to use connection probability by soma-distance analyses.
+    """
+    __measurement__ = "number_connections_afferent_by_soma_distance"
+
+    def get_number_connections_afferent_by_soma_distance(self,
+            circuit_model,
+            pre_synaptic,
+            post_synaptic,
+            soma_distance_bins):
+        """
+        Get number of afferent connections by distance between the somas
+        of the afferent and efferent cells in a pathway pair.
+
+        Arguments
+        --------------
+        pre/(post)_synaptic_cell_type: A mapping of cell property to its value.
+        ~                              The two mappings defines the cell type 
+        ~                              on the afferent, and efferent sides of
+        ~                              a synapse.
+        soma_distance_bins : A list of two-tuples in which the soma distance
+        ~                    between afferent, efferent cells.
+        """
+        raise NotImplementedError
+
+
+
 class ConnectomeAdapterInterface(ConnectionProbabilityInterface):
     """
     Combines individual connectome measurement interfaces.

@@ -64,6 +64,13 @@ class LinePlot(WithFields):
         Number of columns in the figure.
         """,
         lambda self: None if not self.fvar else 3)
+    drawstyle = Field(
+        """
+        Specify how to draw the lines that join the (x, y) points.
+        Default value join the points with simple points. Other possibilities
+        are steps.
+        """,
+        __default_value__="default")
 
     def get_dataframe(self, data, dataset=None):
         """
@@ -101,6 +108,7 @@ class LinePlot(WithFields):
             seaborn.lineplot,
             self.xvar,
             self.yvar,
+            drawstyle=self.drawstyle,
             alpha=0.7)
         grid.add_legend()
         return Figure(

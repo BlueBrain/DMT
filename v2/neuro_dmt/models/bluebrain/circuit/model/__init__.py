@@ -7,10 +7,11 @@ from copy import deepcopy
 import yaml
 import numpy as np
 import pandas as pd
+import neurom
 import bluepy
 from bluepy.v2.circuit import Circuit as BluePyCircuit
 from bluepy.exceptions import BluePyError
-from bluepy.v2.enums import Cell
+from bluepy.v2.enums import Cell, Segment, Section
 from dmt.tk import collections
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal import Logger
@@ -462,3 +463,87 @@ class BlueBrainCircuitModel(WithFields):
             "sum"
         ).assign(
             connection_probability=_connection_probability )
+
+    @lazyfield
+    def segment_index(self):
+        """..."""
+        return self.morph.spatial_index
+
+    def get_segment_length_by_neurite_type(self,
+            region_of_interest):
+        """..."""
+        if not self.segment_index:
+            return None
+
+        corner_0, corner_1 =\
+            region_of_interest.bbox
+        dataframe_segment =\
+            self.segment_index\
+                .q_window_oncenter(
+                    corner_0,
+                    corner_1
+                ).assign(
+                    length=lambda segments: np.linalg.norm(
+                        segments[[Segment.X1, Segment.Y1, Segment.Z1]].values
+                        - segments[[Segment.X2, Segment.Y2, Segment.Z2]].values
+                    )
+                )
+
+        def _total_length(neurite_type):
+            return np.sum(
+                dataframe_segment.length[
+                    dataframe_segment[Section.NEURITE_TYPE] == neurite_type
+                ].values
+            )
+        return pd.Series({
+            neurom.AXON: _total_length(neurom.AXON),
+            neurom.BASAL_DENDRITE: _total_length(neurom.BASAL_DENDRITE),
+            neurom.APICAL_DENDRITE: _total_length(neurom.APICAL_DENDRITE)
+        })
+
+    def get_segment_length_densities_by_mtype(self,
+            region_of_interest):
+        """..."""
+        if not self.segment_index:
+            return None
+
+        def _get_length(segments):
+            """
+            Compute total length of segments.
+            """
+            return\
+                np.linalg.norm(
+                    segments[[Segment.X1, Segment.Y1, Segment.Z1]]
+                    - segments[[Segment.X2, Segment.Y2, Segment.Z2]])
+
+        corner_0, corner_1 =\
+            region_of_interest.bbox
+        dataframe_segments = self\
+            .segment_index\
+            .q_window_oncenter(
+                corner_0,
+                corner_1)\
+            .assign(
+                length=_get_length)\
+            .set_index("gid")\
+            .join(
+                self.cells[
+                    Cell.MTYPE]
+            ).groupby(
+                u'mtype'
+            ).apply(
+                lambda segments: {
+                    neurom.AXON: np.sum(
+                        segments.length[
+                            segments[Section.NEURITE_TYPE] == neurom.AXON
+                        ]).values / region_of_interest.volume,
+                    neurom.BASAL_DENDRITE: np.sum(
+                        segments.length[
+                            segments[Section.NEURITE_TYPE] == neurom.BASAL_DENDRITE
+                        ]).values / region_of_interest.volume,
+                    neurom.APICAL_DENDRITE: np.sum(
+                        segments.length[
+                            segments[Section.NEURITE_TYPE] == neurom.APICAL_DENDRITE
+                        ]).values / region_of_interest.volume
+                }
+            )

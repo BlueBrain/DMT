@@ -5,6 +5,7 @@ Tools for reporting analysis results.
 from abc import ABC, abstractmethod
 import os
 import pandas as pd
+from dmt.tk.utils import timestamp
 from dmt.tk.field import Field, lazyproperty, WithFields
 from dmt.tk.plotting.figure import Figure
 
@@ -14,11 +15,15 @@ class Report(WithFields):
     We follow the principle of IMRAD (Introduction, Methods, Results, and
     Discussion: https://en.wikipedia.org/wiki/IMRAD  )
     """
+    author = Field(
+        """
+        Author of this report.
+        """)
     phenomenon = Field(
         """
         Label for the phenomenon that this report is about.
         """,
-        __default_value__="measurement")
+        __default_value__="Measurement")
     figures = Field(
         """
         A dict mapping label to an object with a `.graphic` and `.caption`
@@ -72,29 +77,31 @@ class Reporter(WithFields):
         __default_value__=os.getcwd())
 
     def get_output_folder(self,
-            path_output_folder=None):
+            path_output_folder=None,
+            with_time_stamp=True):
         """
         Create the folder if it does not exist.
         """
-        path_output_folder = path_output_folder\
-            if path_output_folder else\
-               self.path_output_folder
-
+        if not path_output_folder:
+            path_output_folder = self.path_output_folder
+        if with_time_stamp:
+            daytime = timestamp()
+            path_output_folder = os.path.join(
+                path_output_folder,
+                daytime.day,
+                daytime.time)
         if not os.path.exists(path_output_folder):
             os.makedirs(path_output_folder)
 
         return path_output_folder
 
     def get_figures_folder(self,
-            path_output_folder=None):
+            path_output_folder):
         """
         Get a folder that will contain figures for a report.
         """
-        output_folder = self\
-            .get_output_folder(
-                path_output_folder=path_output_folder)
         path_figures_folder = os.path\
-            .join(output_folder, "figures")
+            .join(path_output_folder, "figures")
         if not os.path.exists(path_figures_folder):
             os.makedirs(path_figures_folder)
 
@@ -106,10 +113,13 @@ class Reporter(WithFields):
         """
         Save report at the path provided.
         """
-        output_folder = os.path.join(
-            self.get_output_folder(path_output_folder),
-            report.phenomenon)
-        figures_folder = self.get_figures_folder(output_folder)
+        output_folder =\
+            os.path.join(
+                self.get_output_folder(path_output_folder),
+                report.phenomenon)
+        figures_folder =\
+            self.get_figures_folder(
+                output_folder)
 
         def __write(output_file, attribute, text=""):
             section_end = 70 *'-'
@@ -164,7 +174,6 @@ class Reporter(WithFields):
                 , dpi=100)
 
         return output_folder
-
 
     def post(self,
             report,

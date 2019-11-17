@@ -603,7 +603,8 @@ class PathwaySummary(WithFields):
                 "number_pairs_total" : 0.,
                 "number_pairs_connected" : 0.})
 
-    def soma_distance(self,
+    @staticmethod
+    def soma_distance(
             xcell, ycell,
             bin_size=100.):
         """
