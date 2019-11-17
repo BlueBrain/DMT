@@ -123,7 +123,7 @@ class CircuitAnalysisTest(WithFields):
             Path.cwd().joinpath(
                 kwargs.get("output_folder", ""))
         reporter =\
-            Reporter(path_output_folder=output_path)
+            Reporter(output_path)
         path_report =\
             Path(reporter.post(report))
         assert path_report.stem == get_label(phenomenon),\

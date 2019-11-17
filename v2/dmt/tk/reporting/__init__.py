@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 import os
 import pandas as pd
 from dmt.tk.utils import timestamp
-from dmt.tk.field import Field, lazyproperty, WithFields
+from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
 
 class Report(WithFields):
@@ -18,7 +19,8 @@ class Report(WithFields):
     author = Field(
         """
         Author of this report.
-        """)
+        """,
+        __default_value__=Author.anonymous)
     phenomenon = Field(
         """
         Label for the phenomenon that this report is about.
@@ -63,6 +65,19 @@ class Report(WithFields):
         """,
         __default_value__="Not provided")
 
+    @lazyfield
+    def field_values(self):
+        """..."""
+        return {
+            "author": self.author,
+            "phenomenon": self.phenomenon,
+            "figures": self.figures,
+            "introduction": self.introduction,
+            "methods": self.methods,
+            "results": self.results,
+            "discussion": self.discussion
+        }
+
 
 class Reporter(WithFields):
     """
@@ -76,7 +91,7 @@ class Reporter(WithFields):
         """,
         __default_value__=os.getcwd())
 
-    def get_output_folder(self,
+    def get_output_location(self,
             path_output_folder=None,
             with_time_stamp=True):
         """
@@ -95,7 +110,7 @@ class Reporter(WithFields):
 
         return path_output_folder
 
-    def get_figures_folder(self,
+    def get_figures_location(self,
             path_output_folder):
         """
         Get a folder that will contain figures for a report.
@@ -107,6 +122,17 @@ class Reporter(WithFields):
 
         return path_figures_folder
 
+    @staticmethod
+    def _flattened_columns(dataframe):
+        """
+        Flatten MultiIndexed columns...
+        """
+        return pd.DataFrame(
+            dataframe.values,
+            columns=pd.Index([
+                '_'.join(t) if isinstance(t, tuple) else t
+                for t in dataframe.columns.values]))
+
     def save(self,
             report,
             path_output_folder=None):
@@ -115,10 +141,10 @@ class Reporter(WithFields):
         """
         output_folder =\
             os.path.join(
-                self.get_output_folder(path_output_folder),
+                self.get_output_location(path_output_folder),
                 report.phenomenon)
         figures_folder =\
-            self.get_figures_folder(
+            self.get_figures_location(
                 output_folder)
 
         def __write(output_file, attribute, text=""):
@@ -152,14 +178,8 @@ class Reporter(WithFields):
                     "({}). {}".format(label, figure.caption)
                     for label, figure in report.figures.items()))
 
-        def _flattened_columns(dataframe):
-            return pd.DataFrame(
-                dataframe.values,
-                columns=pd.Index([
-                    '_'.join(t) if isinstance(t, tuple) else t
-                    for t in dataframe.columns.values]))
         try:
-            _flattened_columns(report.measurement.reset_index()).to_csv(
+            self._flattened_columns(report.measurement.reset_index()).to_csv(
                 os.path.join(
                     output_folder,
                     "{}.csv".format(report.phenomenon)))
