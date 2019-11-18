@@ -19,7 +19,7 @@ by_layer_summary_2 =\
         index=pd.Index(range(1,7), name="layer"))
  
 samples =\
-    Bars._as_single_dataframe({
+    Bars.get_dataframe({
         "one": by_layer_summary_1,
         "two": by_layer_summary_2})
 assert isinstance(samples, pd.DataFrame)

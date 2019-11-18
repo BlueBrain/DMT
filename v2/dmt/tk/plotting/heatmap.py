@@ -89,7 +89,7 @@ class HeatMap(WithFields):
         """..."""
         if instance(data, (pandas.Series, pandas.DataFrame)):
             return ata
-        assert isinstance(data, Mapping) and len(data) == 1\
+        assert isinstance(data, Mapping) and len(data) == 1,\
             """
             Cannot decide which one to plot among more than one dataset:
             \t{}

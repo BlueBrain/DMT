@@ -17,12 +17,19 @@ class CircuitComposition(WithFields):
         A tuple containing layer labels.
         We set the default assuming a cortical circuit.
         """,
-        __default_value__=np.array((1, 2, 3, 4, 5, 6)))
+        __default_value__=np.array(tuple("L{}".format(index)
+                                         for index in (1, 2, 3, 4, 5, 6))))
+    regions = Field(
+        """
+        A sequence of region labels modeled in the circuit.
+        """,
+        __default_value__=np.array(("S1HL", "S1FL", "S1Tr", "S1Sh")))
     layers_ordered = Field(
         """
         Layers ordered by their position.
         """,
-        __default_value__=(np.array((6, 5, 4, 3, 2, 1))))
+        __default_value__=(np.array(tuple("L{}".format(index)
+                                          for index in (1, 2, 3, 4, 5, 6)))))
     thickness_layer = Field(
         """
         A dict mapping layer label to its thickness in the column,

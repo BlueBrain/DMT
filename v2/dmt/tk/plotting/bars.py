@@ -63,9 +63,10 @@ class Bars(WithFields):
         """
         pass
 
-    def get_dataframe(self, data):
+    @classmethod
+    def get_dataframe(cls, data):
         """..."""
-        return data
+        return data\
             if isinstance(data, (pandas.Series, pandas.DataFrame)) else\
                measurement.concat_as_samples(data).reset_index()\
 

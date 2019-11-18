@@ -133,7 +133,7 @@ class Crosses(WithFields):
         """..."""
         return data\
             if isinstance(data, (pd.Series, pd.DataFrame)) else\
-               measurement.concat_as_summaries(data).reset_index())
+               measurement.concat_as_summaries(data).reset_index()
         
     def get_figure(self,
             data,

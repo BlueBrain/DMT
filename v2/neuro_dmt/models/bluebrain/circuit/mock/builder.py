@@ -56,7 +56,7 @@ class CircuitBuilder(WithFields):
                     (region, layer, mtype) if region else (layer, mtype),
                     level=(REGION, LAYER, MTYPE) if region else (LAYER, MTYPE))
 
-    def get_number_cells(self, layer, mtype, region=None):
+    def get_number_cells(self, region, layer, mtype):
         """
         How many cells of given 'mtype' in a given 'layer'?
         """
@@ -74,13 +74,15 @@ class CircuitBuilder(WithFields):
         """
         return [
             Cell(
+                region=region,
                 layer=layer,
                 position=Position.sample(
                     self.composition.bounding_box(layer, mtype)),
                 mtype=mtype)
+            for region in self.composition.regions
             for layer in self.composition.layers
             for mtype in self.composition.mtypes
-            for _ in range(self.get_number_cells(layer, mtype))]
+            for _ in range(self.get_number_cells(region, layer, mtype))]
 
     def get_cell_collection(self):
         """

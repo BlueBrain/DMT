@@ -133,9 +133,12 @@ class CellCollection(WithFields):
         return\
             self._dataframe[cell_property]\
                 .apply(
-                    lambda v: v == value\
-                    if not isinstance(value, (set, list)) else\
-                    lambda v: v in set(value))
+                    lambda v: (
+                        v == value
+                        if not isinstance(value, (frozenset, set, list))\
+                        else v in frozenset(value)
+                    )
+                )
 
 
     def get(self, group=None, properties=None):
@@ -166,14 +169,10 @@ class CellCollection(WithFields):
         assert isinstance(group, Mapping)
         if len(group) == 0:
             return __get_properties(self._dataframe)
-        if len(group) == 1:
-            cell_property, property_value = tuple(group.items())[0]
-            return __get_properties(
-                self._dataframe[self.get_property_filter(
-                    cell_property,
-                    property_value)])
+
+        cell_property, property_value = tuple(group.items())[0]
         return __get_properties(
             self._dataframe[
-                np.logical_and([
-                    self.get_property_filter(cell_property, property_value)
-                    for cell_property, property_value in group.items()])])
+                self.get_property_filter(
+                    cell_property,
+                    property_value)])
