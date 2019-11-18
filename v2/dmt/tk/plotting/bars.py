@@ -63,6 +63,12 @@ class Bars(WithFields):
         """
         pass
 
+    def get_dataframe(self, data):
+        """..."""
+        return data
+            if isinstance(data, (pandas.Series, pandas.DataFrame)) else\
+               measurement.concat_as_samples(data).reset_index()\
+
     def get_figure(self,
             data,
             *args,
@@ -73,7 +79,7 @@ class Bars(WithFields):
         """
         graphic = seaborn\
             .catplot(
-                data=measurement.concat_as_samples(data).reset_index(),
+                data=self.get_dataframe(data),
                 x=self.xvar,
                 y=self.yvar,
                 kind="bar",

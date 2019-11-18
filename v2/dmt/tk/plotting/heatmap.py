@@ -1,6 +1,7 @@
 """
 Plot heat maps.
 """
+from collections.abc import Mapping
 import pandas
 import matplotlib.pyplot as plt
 import seaborn
@@ -86,15 +87,16 @@ class HeatMap(WithFields):
     @staticmethod
     def _get_dataframe_default(data):
         """..."""
-        assert isinstance(data, pandas.DataFrame) or len(data) == 1,\
+        if instance(data, (pandas.Series, pandas.DataFrame)):
+            return ata
+        assert isinstance(data, Mapping) and len(data) == 1\
             """
             Cannot decide which one to plot among more than one dataset:
             \t{}
             """.format(list(data.keys()))
         dataframe = measurement\
             .get_summary(
-                data if isinstance(data, pandas.DataFrame)\
-                else list(data.values())[0])\
+                list(data.values())[0])\
             .reset_index()
         if not isinstance(dataframe.columns, pandas.MultiIndex):
             return dataframe
