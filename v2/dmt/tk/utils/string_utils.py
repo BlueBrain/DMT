@@ -28,11 +28,13 @@ def make_text_like(
             if len(word) > 0)
 
 
-def make_name(string):
+def make_name(string, separator=None):
     """
     Make name from a string.
     Unlike a label, a name may have spaces.
     """
+    if separator:
+        string = string.replace(separator, ' ')
     return make_text_like(
         string,
         separator=' ',

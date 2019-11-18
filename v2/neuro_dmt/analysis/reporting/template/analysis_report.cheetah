@@ -1,0 +1,55 @@
+<html>
+  <body>
+
+    <h1>$phenomenon Analysis</h1>
+    <h2> Author </h2>
+    <h3> $author_name </h3>
+    <h3> Affiliation: $author_affiliation </h3>
+    <br>
+    <img src="./$image_name" alt="apologies.png"/>
+    </br>
+    <h3>Caption</h3>
+    <ul>
+      $caption
+    </ul>
+
+    <h2>Introduction</h2>
+    <ul>
+      #for $line in $introduction
+      <li>
+        <p>$line</p>
+      </li>
+      #end for
+    </ul>
+
+    <h2>Methods</h2>
+    <ul>
+      #for $line in $methods
+      <li>
+        <p>$line</p>
+      </li>
+      #end for
+    </ul>
+
+    <h2>Results</h2>
+    <ul>
+      #for $line in $results
+      <li>
+        <p>$line</p>
+      </li>
+      #end for
+    </ul>
+
+    <h2>Discussion</h2>
+    <ul>
+      #for $line in $discussion
+      <li>
+        <p>$line</p>
+      </li>
+      #end for
+    </ul>
+
+  </body>
+
+</html>
+

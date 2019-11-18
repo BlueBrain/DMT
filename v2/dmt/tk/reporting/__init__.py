@@ -92,23 +92,34 @@ class Reporter(WithFields):
         __default_value__=os.getcwd())
 
     def get_output_location(self,
+            report,
             path_output_folder=None,
             with_time_stamp=True):
         """
+        Where should the report be saved.
         Create the folder if it does not exist.
         """
-        if not path_output_folder:
-            path_output_folder = self.path_output_folder
+        path_parent =\
+            path_output_folder if path_output_folder\
+            else self.path_output_folder
+        if not os.path.exists(path_parent):
+            os.makedirs(path_parent)
+        path_report_folder =\
+            os.path.join(
+                path_parent,
+                report.phenomenon)
         if with_time_stamp:
-            daytime = timestamp()
-            path_output_folder = os.path.join(
-                path_output_folder,
-                daytime.day,
-                daytime.time)
-        if not os.path.exists(path_output_folder):
-            os.makedirs(path_output_folder)
+            daytime =\
+                timestamp()
+            path_report_folder =\
+                os.path.join(
+                    path_report_folder,
+                    daytime.day,
+                    daytime.time)
 
-        return path_output_folder
+        if not os.path.exists(path_report_folder):
+            os.makedirs(path_report_folder)
+        return path_report_folder
 
     def get_figures_location(self,
             path_output_folder):
@@ -133,6 +144,21 @@ class Reporter(WithFields):
                 '_'.join(t) if isinstance(t, tuple) else t
                 for t in dataframe.columns.values]))
 
+    def _save_figures(self, report, output_folder, format_file=".png"):
+        """..."""
+        if format_file[0] != '.':
+            format_file = '.' + format_file
+        figures_folder =\
+            self.get_figures_location(output_folder)
+        figure_locations = {}
+        for label, figure in report.figures.items():
+            location =\
+                os.path.join(figures_folder, "{}{}".format(label, format_file))
+            figure.save(location, dpi=100)
+            figure_locations[label] = location
+
+        return (figures_folder, figure_locations)
+                
     def save(self,
             report,
             path_output_folder=None):
@@ -140,12 +166,9 @@ class Reporter(WithFields):
         Save report at the path provided.
         """
         output_folder =\
-            os.path.join(
-                self.get_output_location(path_output_folder),
-                report.phenomenon)
-        figures_folder =\
-            self.get_figures_location(
-                output_folder)
+                self.get_output_location(
+                    report,
+                    path_output_folder)
 
         def __write(output_file, attribute, text=""):
             section_end = 70 *'-'
@@ -156,6 +179,9 @@ class Reporter(WithFields):
                     underline,
                     text if text else getattr(report, attribute),
                     section_end))
+
+        folder_figures, _ =\
+            self._save_figures(report, output_folder)
 
         with open(
                 os.path.join(
@@ -171,7 +197,7 @@ class Reporter(WithFields):
             __write(
                 output_file, "discussion")
             __write(
-                output_file, "figures", figures_folder)
+                output_file, "figures", folder_figures)
             __write(
                 output_file, "figure captions",
                 "\n".join(
@@ -186,12 +212,6 @@ class Reporter(WithFields):
         except AttributeError:
             pass
 
-        for label, figure in report.figures.items():
-            figure.save(
-                os.path.join(
-                    figures_folder,
-                    label)
-                , dpi=100)
 
         return output_folder
 
