@@ -159,17 +159,9 @@ class Reporter(WithFields):
 
         return (figures_folder, figure_locations)
                 
-    def save(self,
-            report,
-            path_output_folder=None):
-        """
-        Save report at the path provided.
-        """
-        output_folder =\
-                self.get_output_location(
-                    report,
-                    path_output_folder)
 
+    def _save_text_report(self, report, output_folder, folder_figures):
+        """..."""
         def __write(output_file, attribute, text=""):
             section_end = 70 *'-'
             underline = len(attribute) * '-'
@@ -179,9 +171,6 @@ class Reporter(WithFields):
                     underline,
                     text if text else getattr(report, attribute),
                     section_end))
-
-        folder_figures, _ =\
-            self._save_figures(report, output_folder)
 
         with open(
                 os.path.join(
@@ -204,6 +193,29 @@ class Reporter(WithFields):
                     "({}). {}".format(label, figure.caption)
                     for label, figure in report.figures.items()))
 
+
+    def save(self,
+            report,
+            path_output_folder=None):
+        """
+        Save report at the path provided.
+        """
+        output_folder =\
+                self.get_output_location(
+                    report,
+                    path_output_folder)
+
+        folder_figures, _ =\
+            self._save_figures(report, output_folder)
+
+        self._save_measurement(report, output_folder)
+
+        self._save_text_report(report, output_folder, folder_figures)
+
+        return output_folder
+
+    def _save_measurement(self, report, output_folder):
+        """..."""
         try:
             self._flattened_columns(report.measurement.reset_index()).to_csv(
                 os.path.join(
@@ -212,8 +224,6 @@ class Reporter(WithFields):
         except AttributeError:
             pass
 
-
-        return output_folder
 
     def post(self,
             report,

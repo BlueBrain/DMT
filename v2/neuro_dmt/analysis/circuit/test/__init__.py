@@ -123,12 +123,12 @@ class CircuitAnalysisTest(WithFields):
             Path.cwd().joinpath(
                 kwargs.get("output_folder", ""))
         reporter =\
-            Reporter(output_path)
+            Reporter(path_output_folder=output_path)
         path_report =\
             Path(reporter.post(report))
-        assert path_report.stem == get_label(phenomenon),\
+        assert get_label(phenomenon) in path_report.as_posix(),\
             "{} != {}".format(
-                path_report.stem,
+                path_report,
                 get_label(phenomenon))
         assert path_report.is_dir()
         assert any(p.is_file() for p in path_report.glob("report*")),\

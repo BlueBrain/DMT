@@ -108,6 +108,8 @@ class CheetahReporter(Reporter):
         folder_figures, locations_figures =\
             self._save_figures(report, output_uri)
 
+        self._save_measurement(report, output_uri)
+
         try:
             report_template_filled =\
                 Template(
@@ -131,7 +133,7 @@ class CheetahReporter(Reporter):
                 "Error during filling the report template: \n\t{}".format(
                     template_fill_error))
 
-            return super().save(report, output_uri)
+            return super()._save_text(report, output_uri, folder_figures)
 
         raise RuntimeError(
             "Execution should not have reached here.")
