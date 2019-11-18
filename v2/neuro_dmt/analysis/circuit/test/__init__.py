@@ -16,6 +16,7 @@ from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import get_label
+from neuro_dmt.analysis.reporting import CheetahReporter
 from ..composition.interfaces import CellDensityAdapterInterface
 from .. import BrainCircuitAnalysis
 
@@ -123,14 +124,14 @@ class CircuitAnalysisTest(WithFields):
             Path.cwd().joinpath(
                 kwargs.get("output_folder", ""))
         reporter =\
-            Reporter(path_output_folder=output_path)
+            CheetahReporter(path_output_folder=output_path)
         path_report =\
             Path(reporter.post(report))
         assert get_label(phenomenon) in path_report.as_posix(),\
             "{} != {}".format(
                 path_report,
                 get_label(phenomenon))
-        assert path_report.is_dir()
+        assert path_report.is_dir(), path_report
         assert any(p.is_file() for p in path_report.glob("report*")),\
             "Did not find a report file."
         path_report_figures = path_report.joinpath("figures")

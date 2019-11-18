@@ -125,7 +125,7 @@ class CheetahReporter(Reporter):
             with open(path_report_file, "w") as file_output:
                 file_output.write(report_html)
 
-            return path_report_file
+            return output_uri
 
         except Exception as template_fill_error:
             logger.warning(
