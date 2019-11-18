@@ -129,6 +129,12 @@ class Crosses(WithFields):
         phenomenon = self._get_phenomenon(dataframe_long)
         return ' '.join(word.capitalize() for word in phenomenon.split('_'))
 
+    def get_dataframe(self, data):
+        """..."""
+        return data\
+            if isinstance(data, (pd.Series, pd.DataFrame)) else\
+               measurement.concat_as_summaries(data).reset_index())
+        
     def get_figure(self,
             data,
             *args,
@@ -141,7 +147,7 @@ class Crosses(WithFields):
         -----------
         data : A dict mapping dataset to dataframe.
         """
-        dataframe_long = measurement.concat_as_summaries(data)
+        dataframe_long = self.get_dataframe(data)
         dataframe_wide = self._get_plotting_data(dataframe_long)
         graphic =\
             seaborn.FacetGrid(

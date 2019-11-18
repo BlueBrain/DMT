@@ -82,6 +82,8 @@ class LinePlot(WithFields):
                 `LinePLot.get_figure(...)` current version does not support
                 argument `dataset`.
                 """)
+        if isintance(data, (pd.Series, pd.DataFrame)):
+            return data
         return measurement.concat_as_samples(data).reset_index()
 
     def get_figure(self,
