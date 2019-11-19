@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import os
 import pandas as pd
 from dmt.tk.utils import timestamp
+from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
@@ -68,9 +69,13 @@ class Report(WithFields):
     @lazyfield
     def field_values(self):
         """..."""
+        try:
+            name_phenomenon = self.phenomenon.name
+        except AttributeError:
+            name_phenomenon = make_name(self.phenomenon, separator='_')
         return {
             "author": self.author,
-            "phenomenon": self.phenomenon,
+            "phenomenon": name_phenomenon,
             "figures": self.figures,
             "introduction": self.introduction,
             "methods": self.methods,

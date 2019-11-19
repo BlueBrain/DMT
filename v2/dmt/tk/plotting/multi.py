@@ -4,6 +4,7 @@ Generate several plots.
 from collections import OrderedDict
 import pandas
 import seaborn
+from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, lazyfield, WithFields
 
 class MultiPlot(WithFields):
@@ -29,6 +30,10 @@ class MultiPlot(WithFields):
             caption,
             *args, **kwargs):
         """..."""
+        name_mvar =\
+            make_name(
+                '_'.join(self.mvar) if isinstance(self.mvar, tuple) else self.mvar,
+                separator='_')
         return self.plotter.get_figure(
             dataframe_subset,
             *args,
