@@ -9,12 +9,12 @@ import pandas as pd
 from dmt.tk.journal import Logger 
 from dmt.model.interface import implements
 from dmt.model.adapter import adapts
-from dmt.tk.field import Field, WithFields 
+from dmt.tk.field import Field, lazyfield, WithFields 
 from dmt.tk.collections import take
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
 from neuro_dmt.analysis.circuit.connectome.interfaces import\
-    ConnectomeAdapterInterface
+    AfferentConnectionCountInterface
 from neuro_dmt.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
@@ -25,7 +25,6 @@ from ..model.pathway import PathwaySummary
 logger = Logger(client=__file__)
 
 @implements(CellDensityAdapterInterface)
-@implements(ConnectomeAdapterInterface)
 @adapts(BlueBrainCircuitModel)
 class BlueBrainCircuitAdapter(WithFields):
     """
@@ -254,13 +253,47 @@ class BlueBrainCircuitAdapter(WithFields):
         count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
         return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
 
+    def get_method_description(self,
+            name_measurement,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
+        """
+        Describe methods.
+        """
+        if name_measurement == CellDensityAdapterInterface.__measurement__:
+            if sampling_methodology == terminology.sampling_methodology.random:
+                return """
+                Cells were counted in a box with sides of length {} um.
+                Each cube was centered at a cell that was randomly sampled from 
+                a population described by a cell-query.
+                """.format(self.bounding_box_size)
+            elif sampling_methodology == terminology.sampling_methodology.exhaustive:
+                return """
+                Count of cells in all the voxcells confirming to a cell-query
+                was divided by the total volume of these voxcells.
+                """
+            else:
+                pass
+
+        if name_measurement == AfferentConnectionCountInterface.__measurement__:
+            return """
+            Post-synaptic cells were sampled, given their cell-type. For example,
+            when the post-synaptic cell is specified by it's mtype, a group
+            of cells with the specified mtype is sampled.
+            For each post-synaptic cell, it's afferent connections from all the 
+            cells in the circuit were counted and grouped by their (specified)
+            cell type (for example, the pre-synaptic cell's mtype). 
+            """
+        return ValueError(
+            "Undescribed measurement method {}".format(name_measurement))
+
     @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
             sampling_methodology=terminology.sampling_methodology.random,
             **kwargs):
         """
-        Get cell type density for either the `circuit_model` passes as a
+        Get cell type density for either the `circuit_model` passed as a
         parameter or `self.circuit_model`.
         """
         circuit_model = self._resolve(circuit_model)
@@ -289,7 +322,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 region=region_of_interest)
         return number_cells / (1.e-9 * region_of_interest.volume)
 
-    @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
+    #@terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_fiber_density(self,
             circuit_model=None,
             sampling_methodology=terminology.sampling_methodology.random,
@@ -327,7 +360,6 @@ class BlueBrainCircuitAdapter(WithFields):
             .get_segment_count(
                 region=region_of_interest)
         return number_segments / (1.e-9 * region_of_interest.volume)
-
 
     def get_mtypes(self,
             circuit_model=None):

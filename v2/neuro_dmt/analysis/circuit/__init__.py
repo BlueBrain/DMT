@@ -235,7 +235,7 @@ class BrainCircuitAnalysis(
             phenomenon=self.phenomenon.label,
             measurement=measurement,
             figures=figures,
-            introduction="{}, measured by layer\n{}.".format(
+            introduction="{} \n{}.".format(
                 self.phenomenon.name,
                 self.phenomenon.description),
             methods=method_measurement,
@@ -333,8 +333,13 @@ class BrainCircuitAnalysis(
                     "sampling_methodology",
                     terminology.sampling_methodology.random),
                 **kwargs)
-        measurement_method =\
-            self._get_measurement_method(adapter).__doc__
+        try:
+            measurement_method =\
+                adapter.get_method_description(
+                    self.AdapterInterface.__measurement__)
+        except (AttributeError, ValueError):
+            measurement_method =\
+                self._get_measurement_method(adapter).__doc__
         report =\
             self.get_report(
                 measurement,

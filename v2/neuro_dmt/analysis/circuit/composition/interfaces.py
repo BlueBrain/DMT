@@ -21,6 +21,16 @@ class CellDensityAdapterInterface(Interface):
         """
         raise NotImplementedError
 
+    def get_method_description(self, name_measurement):
+        """
+        A dict that provides a description of how a measurement was made.
+
+        Arguments
+        --------------
+        name_measurement : name of the measurement to be described
+        """
+        raise NotImplementedError
+
     def get_cell_density(self,
             circuit_model,
             mtype=None,

@@ -1,9 +1,8 @@
 """
 Little useful methods.
 """
-from .string_utils import *
-import time
 from collections import namedtuple
+import time
 
 def get_label(something):
     """

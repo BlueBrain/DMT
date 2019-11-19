@@ -28,17 +28,10 @@ class CheetahReporter(Reporter):
     <h3> $author_name </h3>
     <h3> Affiliation: $author_affiliation </h3>
     <br>
+    <h2> Figures </h2>
     #for $label_image, $location_image in $images.items()
         <img src=$location_image alt="apologies.png"/>
-        <p>$label_image</p>
-    #end for
-    </br>
-
-    <h3>Captions</h3>
-    <br>
-    #for $label_figure, $caption_figure in $captions.items():
-        <h4>$label_figure</h4>
-        <p>$caption_figure</p>
+        <p><strong>$captions[$label_image]</strong></p>
     #end for
     </br>
 
@@ -51,7 +44,7 @@ class CheetahReporter(Reporter):
         <p>$methods</p>
 
     <h3>Results</h3>
-        <p>$methods</p>
+        <p>$results</p>
 
     <h3>Discussion</h3>
         <p>$discussion</p>
@@ -87,7 +80,10 @@ class CheetahReporter(Reporter):
             images={
                 _make_name(label): location
                 for label, location in figure_locations.items()},
-            captions=self._get_captions(report)))
+            captions={
+                _make_name(label): figure.caption
+                for label, figure in report.figures.items()
+            }))
         return template_dict
 
     def post(self,

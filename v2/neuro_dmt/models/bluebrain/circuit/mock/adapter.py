@@ -7,6 +7,7 @@ import pandas
 from dmt.model import interface, adapter
 from dmt.tk.field import WithFields, Field, lazyproperty
 from .circuit import MockCircuit
+from neuro_dmt import terminology
 from neuro_dmt.analysis.circuit.composition.interfaces\
     import CellDensityAdapterInterface
 
@@ -32,6 +33,15 @@ class MockCircuitAdapter(WithFields):
         """
         return "mock_circuit"
 
+    def get_method_description(self,
+            name_measurement,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
+        """
+        Describe methods.
+        """
+        return "Mock Mock Mock"
+
     def get_cell_density(self,
             mock_circuit_model,
             *args, **kwargs):
@@ -55,4 +65,3 @@ class MockCircuitAdapter(WithFields):
 
         raise Exception(
             "Code excecution should not reach here.")
-            
