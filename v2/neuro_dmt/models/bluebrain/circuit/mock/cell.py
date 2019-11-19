@@ -124,23 +124,24 @@ class CellCollection(WithFields):
         self.size = self._dataframe.shape[0]
         self.gids = np.array(self._dataframe.index)
 
-    def get_property_filter(self, cell_property, value):
+    def get_property_filter(self, property_name, property_value):
         """
         Get a logical vector that can be used to filter 'cell_property',
         by applying it to the cell collectiondef  dataframe.
         """
-        property_values = self._dataframe[cell_property]
+        if property_name in ["x", "y", "z"]:
+            return np.logical_and(
+                self._dataframe[property_name] >= property_value[0],
+                self._dataframe[property_name] < property_value[1])
         return\
-            self._dataframe[cell_property]\
+            self._dataframe[property_name]\
                 .apply(
                     lambda v: (
-                        v == value
-                        if not isinstance(value, (frozenset, set, list))\
-                        else v in frozenset(value)
+                        v == property_value
+                        if not isinstance(property_value, (frozenset, set, list))
+                        else v in frozenset(property_value)
                     )
                 )
-
-
     def get(self, group=None, properties=None):
         """
         Get a dataframe, with cells of 'group' (any cell type if None).
@@ -170,9 +171,17 @@ class CellCollection(WithFields):
         if len(group) == 0:
             return __get_properties(self._dataframe)
 
-        cell_property, property_value = tuple(group.items())[0]
-        return __get_properties(
-            self._dataframe[
+        filtered =\
+            pd.Series(
+                self._dataframe.shape[0] * [True],
+                name="filtered")
+        for property_name, property_value in group.items():
+            property_filter =\
                 self.get_property_filter(
-                    cell_property,
-                    property_value)])
+                    property_name,
+                    property_value)
+            filtered =\
+                np.logical_and(filtered, property_filter)
+
+        return __get_properties(self._dataframe[filtered])
+            

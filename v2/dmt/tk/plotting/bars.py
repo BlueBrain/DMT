@@ -66,7 +66,7 @@ class Bars(WithFields):
     @classmethod
     def get_dataframe(cls, data):
         """..."""
-        return data\
+        return data.reset_index()\
             if isinstance(data, (pandas.Series, pandas.DataFrame)) else\
                measurement.concat_as_samples(data).reset_index()\
 
@@ -89,7 +89,8 @@ class Bars(WithFields):
                 aspect=self.aspect_ratio_figure)\
             .set(
                 xlabel=self.xlabel,
-                ylabel=self.ylabel)
+                ylabel=self.ylabel,
+                title=kwargs.pop("title", ""))
         return Figure(
             graphic,
             caption=caption)

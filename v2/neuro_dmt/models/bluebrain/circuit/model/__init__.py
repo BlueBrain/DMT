@@ -230,11 +230,11 @@ class BlueBrainCircuitModel(WithFields):
                 return [_get_query_layer(layer) for layer in layers]
 
             layer = layers
-            # if isinstance(layer, (int, np.int)):
-            #     return layer
-            # if layer.startswith('L') and layer[1] in "123456":
-            #     return int(layer[1])
-            return layer
+            if isinstance(layer, (int, np.int)):
+                return layer
+            if layer.startswith('L') and layer[1] in "123456":
+                return int(layer[1])
+            return None
 
         cell_query = terminology.circuit.filter(
             **terminology.cell.filter(**query))

@@ -10,33 +10,33 @@ from .. import CircuitComposition, SimpleUniformRandomConnectivity
 
 log = Logger(client = "test develop mock circuit")
 
-layers = tuple("L{}".format(index) for index in (1, 2, 3, 4, 5, 6))
+layers =  (1, 2, 3, 4, 5, 6)
 
 regions = ("S1HL", "S1FL", "S1Tr", "S1Sh")
 
 thickness_layer ={
-    "L1": 122.3,
-    "L2": 113.5,
-    "L3": 302.9,
-    "L4": 176.4,
-    "L5": 477.9,
-    "L6": 647.3}
+    1: 122.3,
+    2: 113.5,
+    3: 302.9,
+    4: 176.4,
+    5: 477.9,
+    6: 647.3}
 
 cell_density_layer ={
-    "L1": 18566,
-    "L2": 131561,
-    "L3": 81203,
-    "L4": 183128,
-    "L5": 98080,
-    "L6": 116555}
+    1: 18566,
+    2: 131561,
+    3: 81203,
+    4: 183128,
+    5: 98080,
+    6: 116555}
 
 ei_ratio_layer ={
-    "L1": 0.,
-    "L2": 2.55,
-    "L3": 5.63,
-    "L4": 9.55,
-    "L5": 4.93,
-    "L6": 9.49}
+    1: 0.,
+    2: 2.55,
+    3: 5.63,
+    4: 9.55,
+    5: 4.93,
+    6: 9.49}
 
 length_base = 250.
 
@@ -68,9 +68,9 @@ def get_layers(mtype):
     n = int(mtype.split('_')[0][1:])
     l0 = n % 10
     l1 = int(n / 10)
-    return ["L{}".format(l1), "L{}".format(l0)]\
+    return [l0, l1]\
         if l1 != 0 else\
-           ["L{}".format(l0)]
+           [l0]
 
 def get_mtypes(layer):
     """

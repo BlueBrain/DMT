@@ -23,6 +23,21 @@ class MultiPlot(WithFields):
         for the values of `mvar`.
         """)
 
+    def _get_sub_figure(self,
+            value_mvar,
+            dataframe_subset,
+            caption,
+            *args, **kwargs):
+        """..."""
+        return self.plotter.get_figure(
+            dataframe_subset,
+            *args,
+            caption=caption,
+            title="{} {}".format(self.mvar, value_mvar),
+            **kwargs
+        )
+
+
     def get_figures(self,
             data,
             *args,
@@ -34,17 +49,13 @@ class MultiPlot(WithFields):
         OrderedDict mapping value of `self.mvar` to its plot.
         """
 
-        def _get_sub_figure(dataframe_subset):
-            """..."""
-            return self.plotter.get_figure(
-                dataframe_subset,
-                *args,
-                caption=caption
-            )
-
         dataframe = self.plotter.get_dataframe(data)
-        return dataframe.groupby(
-            self.mvar
-        ).apply(
-            _get_sub_figure
-        ).to_dict()
+        values_mvar = dataframe[self.mvar].unique()
+        return OrderedDict([
+            (value_mvar,
+             self._get_sub_figure(
+                 value_mvar,
+                 dataframe[dataframe[self.mvar] == value_mvar],
+                 caption,
+                 *args, **kwargs))
+             for value_mvar in values_mvar])

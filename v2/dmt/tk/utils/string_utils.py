@@ -8,13 +8,15 @@ def make_text_like(
         with_capitalized_words,
         with_characters_to_remove=[
             ',', ':', '&', '#', '/',
-            '\\', '$', '?', '^', ';', '.']):
+            '\\', '$', '?', '^', ';', '.'],
+        keep_original_capitalization=False):
     """
     Turn a string into normal text like.
     Keep only ASCII characters, removing the provided list.
     And capitalize...
     """
-
+    if keep_original_capitalization:
+        with_capitalized_words = False
     def __removed(word):
         return ''.join(c for c in word if c not in with_characters_to_remove)
 
@@ -23,12 +25,16 @@ def make_text_like(
 
     return separator\
         .join(
-            __captialzed(__removed(word))
-            for word in string.lower().strip().split(' ')
+            __captialzed(
+                __removed(
+                    word if keep_original_capitalization else word.lower()))
+            for word in string.strip().split(' ')
             if len(word) > 0)
 
-
-def make_name(string, separator=None):
+def make_name(
+        string,
+        separator=None,
+        keep_original_capitalization=False):
     """
     Make name from a string.
     Unlike a label, a name may have spaces.
@@ -38,7 +44,8 @@ def make_name(string, separator=None):
     return make_text_like(
         string,
         separator=' ',
-        with_capitalized_words=True)
+        with_capitalized_words=True,
+        keep_original_capitalization=keep_original_capitalization)
 
 def make_label(string):
     """

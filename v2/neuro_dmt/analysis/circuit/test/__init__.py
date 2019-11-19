@@ -119,10 +119,11 @@ class CircuitAnalysisTest(WithFields):
         The reporter should place the report in a folder.
         """
         phenomenon = get_label(self.analysis.phenomenon)
-        report = self.analysis(*args, **kwargs)
         output_path =\
             Path.cwd().joinpath(
-                kwargs.get("output_folder", ""))
+                kwargs.pop("output_folder", ""))
+        report =\
+            self.analysis(*args, **kwargs)
         reporter =\
             CheetahReporter(path_output_folder=output_path)
         path_report =\

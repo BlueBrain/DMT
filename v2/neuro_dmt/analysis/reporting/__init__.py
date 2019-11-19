@@ -75,11 +75,18 @@ class CheetahReporter(Reporter):
         Fill in the template.
         """
         template_dict = report.field_values
+        def _make_name(label):
+            return\
+                string_utils.make_name(
+                    label,
+                    separator='_',
+                    keep_original_capitalization=True)
         template_dict.update(dict(
             author_name=report.author.name,
             author_affiliation=report.author.affiliation,
-            images={string_utils.make_name(label, separator='_'): location
-                    for label, location in figure_locations.items()},
+            images={
+                _make_name(label): location
+                for label, location in figure_locations.items()},
             captions=self._get_captions(report)))
         return template_dict
 

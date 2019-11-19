@@ -144,6 +144,10 @@ class Reporter(WithFields):
                 '_'.join(t) if isinstance(t, tuple) else t
                 for t in dataframe.columns.values]))
 
+    def _get_file_path(self, folder_files, label_file, format_file):
+        """..."""
+        return 
+
     def _save_figures(self, report, output_folder, format_file=".png"):
         """..."""
         if format_file[0] != '.':

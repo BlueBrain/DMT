@@ -40,21 +40,32 @@ def test_cell_density():
         group="Composition"
     )
     layers =[
-        "L()".format(layer) for layer in range(1, 7)
+        "L{}".format(layer) for layer in range(1, 7)
     ]
     regions =[
         "S1HL", "S1FL", "S1Sh", "S1Tr"
     ]
-    reference_datasets = dict(
-        DeFelipe2017=rat.defelipe2017.summary_measurement.samples(1000),
-        DeFelipe2014=rat.defelipe2014.summary_measurement.samples(1000),
-        meyer2010=rat.meyer2010.samples(1000)
-    )
+    def _append_region(reference_dataframe):
+        return pd.concat([
+            reference_dataframe\
+            .reset_index()\
+            .assign(region=region)\
+            .set_index(["region", "layer"])
+            for region in regions])
+    
+    reference_data =\
+        dict(
+            DeFelipe2017=_append_region(
+                rat.defelipe2017.summary_measurement.samples(1000)),
+            DeFelipe2014=_append_region(
+                rat.defelipe2014.summary_measurement.samples(1000)),
+            meyer2010=_append_region(
+                rat.meyer2010.samples(1000)))
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
             AdapterInterface=CellDensityAdapterInterface,
-            reference_data=reference_datasets,
+            reference_data=reference_data,
             measurement_parameters=Parameters(
                 pd.DataFrame({
                     "region": [
@@ -79,13 +90,13 @@ def test_cell_density():
             mock_circuit_model,
             sample_size=10)
 
-    assert len(cell_density_measurement) == 1 + len(reference_datasets),\
+    assert len(cell_density_measurement) == 1 + len(reference_data),\
         """
         observed {}
         expected {}
         """.format(
             len(cell_density_measurement),
-            1 + len(reference_datasets))
+            1 + len(reference_data))
     dataset, dataframe =[
         (k, v) for k, v in cell_density_measurement.items()][0]
 
@@ -95,7 +106,7 @@ def test_cell_density():
             cell_density_measurement)
     number_expected_rows =\
         len(layers) * len(regions)\
-        + len(layers) * len(reference_datasets)
+        * (1. + len(reference_data))
     assert summary.shape[0] == number_expected_rows,\
         (summary.shape, number_expected_rows)
 
@@ -106,9 +117,10 @@ def test_cell_density():
     analysis_test\
         .test_call_analysis(
             mock_circuit_model)
+
     analysis_test\
         .test_post_report(
             mock_circuit_model,
-            output_folder="validation")
+            output_folder="validations")
 
 
