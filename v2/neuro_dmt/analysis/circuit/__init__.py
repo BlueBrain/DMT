@@ -217,7 +217,7 @@ class BrainCircuitAnalysis(
             return self.plotter.get_figures(data, caption=caption)
         except AttributeError:
             return {
-                self.label: self.plotter.get_figure(data, caption=caption)}
+                "figure": self.plotter.get_figure(data, caption=caption)}
         raise RuntimeError(
             """
             Execution of `get_figures(...)` should not reach here.

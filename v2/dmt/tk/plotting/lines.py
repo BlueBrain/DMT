@@ -4,6 +4,7 @@ PLot lines.
 import pandas
 import matplotlib.pyplot as plt
 import seaborn
+from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from dmt.data.observation import measurement
 from . import golden_aspect_ratio
@@ -82,8 +83,8 @@ class LinePlot(WithFields):
                 `LinePLot.get_figure(...)` current version does not support
                 argument `dataset`.
                 """)
-        if isintance(data, (pd.Series, pd.DataFrame)):
-            return data
+        if isinstance(data, (pandas.Series, pandas.DataFrame)):
+            return data.reset_index()
         return measurement.concat_as_samples(data).reset_index()
 
     def get_figure(self,
@@ -99,6 +100,11 @@ class LinePlot(WithFields):
         data : Either a dataframe or a dict mapping dataset to dataframe.
         dataset : dataset or list of dataset names whose data will be plotted.
         """
+        def _make_name(label):
+            return make_name(
+                '_'.join(label) if isinstance(label, tuple) else label,
+                separator='_')
+
         grid = seaborn\
             .FacetGrid(
                 self.get_dataframe(data, dataset),
@@ -111,8 +117,11 @@ class LinePlot(WithFields):
             self.xvar,
             self.yvar,
             drawstyle=self.drawstyle,
-            alpha=0.7)
-        grid.add_legend()
+            alpha=0.7
+        ).set_titles(
+            _make_name(self.fvar) + "\n{col_name} "
+        ).add_legend(
+            title=_make_name(self.gvar))
         return Figure(
             grid.set(
                 xlabel=self.xlabel,
