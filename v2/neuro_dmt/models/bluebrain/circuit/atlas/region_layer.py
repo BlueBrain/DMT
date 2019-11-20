@@ -220,6 +220,22 @@ class FullLayerRepresentation(
     @classmethod
     def get_query_layer(cls, layer):
         """..."""
+        try:
+            layer = int(layer)
+        except ValueError:
+            pass
+        if isinstance(layer, int) and layer > 0 and layer < 7:
+            return "L{}".format(layer)
+
+        if isinstance(layer, str):
+            if not layer[0] == "L":
+                raise ValueError(
+                    """
+                    Query `layer` should start with an L for a circuit atlas
+                    that uses patterns {} to represent their layers.
+                    `layer` value passed: {}
+                    """.format(cls.applicable_patterns,
+                               layer))
         return layer
 
 
