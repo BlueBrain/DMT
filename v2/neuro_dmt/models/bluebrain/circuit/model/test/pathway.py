@@ -61,11 +61,9 @@ def test_call_with_dataframes_input():
     conn_prob =\
         circuit_model.connection_probability
     pre_synaptic_cells =\
-        Pathway.as_pre_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     post_synaptic_cells =\
-        Pathway.as_post_synaptic(
-            circuit_model.cells.sample(n=100))
+        circuit_model.cells.sample(n=100)
     result = conn_prob(
         pre_synaptic_cell_group=pre_synaptic_cells,
         post_synaptic_cell_group=post_synaptic_cells)
