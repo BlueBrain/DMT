@@ -60,11 +60,13 @@ class circuit(TermCollection):
         """
         Used at BBP, probably the same as a meso-column.
         """)
-    spatial_parameters =(
+    spatial_terms =(
         region,
         layer,
         depth,
-        height)
+        height,
+        mesocolumn,
+        hypercolumn)
     terms =(
         region,
         layer,
@@ -72,6 +74,17 @@ class circuit(TermCollection):
         height,
         mesocolumn,
         hypercolumn)
+
+    @classmethod
+    def get_spatial_query(cls, query_dict):
+        """
+        Extract spatial parameters and their values from a `query_dict`.
+        """
+        return {
+            parameter: query_dict.pop(parameter, None)
+            for parameter in cls.spatial_terms
+        }
+
 
 
 class cell(TermCollection):
