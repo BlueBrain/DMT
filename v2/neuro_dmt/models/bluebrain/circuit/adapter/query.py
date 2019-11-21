@@ -13,6 +13,11 @@ class QueryDB(WithFields):
         """
         A callable to get values to cache.
         """)
+    def __init__(self, method_to_memoize):
+        """..."""
+        super().__init__(
+            method_to_memoize=method_to_memoize)
+
     @lazyfield
     def store(self): return {}
 
@@ -57,11 +62,11 @@ class SpatialQueryData(WithFields):
     """
     Define data critical to answer spatial queries.
     """
-    visible_voxel_ids = Field(
+    ids = Field(
         """
         Ids of voxels that passed the spatial query filter.
         """)
-    visible_cell_gids = Field(
+    cell_gids = Field(
         """
         pandas.Series that provides the gids of all the cells in voxels
         that passed the spatial query filter, indexed by the corresponding

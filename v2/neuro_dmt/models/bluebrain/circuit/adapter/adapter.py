@@ -205,14 +205,6 @@ class BlueBrainCircuitAdapter(WithFields):
                         visible_voxel_ids.intersection(
                             circuit_model.voxel_indexed_cell_gids.index.values)])
             )
-    def get_visible_voxel_ids_to_cache(self,
-            circuit_model,
-            query):
-        """
-        ...
-        """
-        
-
     @lazyfield
     def spatial_query_cache(self):
         """
@@ -222,36 +214,24 @@ class BlueBrainCircuitAdapter(WithFields):
             value_to_cache=self.get_spatial_query_data
         )
     @lazyfield
-    def visible_voxel_ids(self):
+    def visible_voxel(self):
         """
-        ...
+        If it is not masked, a voxel is visible.
         """
-        def _get_visible_voxel_ids(circuit_model, query):
-            return {
-                tuple(ijk) for ijk in zip(
-                    *np.where(
-                        circuit_model.atlas.get_mask(
-                            terminology.circuit.get_spatial_query(query_dict)
-                        )
-                    )
-                )
-            }
-            # return pd.Series(
-            #     list(visible_ids),
-            #     name="voxel_id"
-            # )
-        return QueryDB(
-            method_to_memoize=_get_visible_voxel_ids
-        )
-    def visible_cell_gids(self, circuit_model, query):
-        """..."""
-        return circuit_model.voxel_indexed_cell_gids.loc[
-            self.visible_voxel_ids(
-                circuit_model, query
-            ).intersection(
-                circuit_model.voxel_indexed_cell_gids.index
-            )
-        ]
+        def _get_visible_voxel_data(circuit_model, query):
+            """..."""
+            visible_voxel_ids ={
+                tuple(ijk) for ijk in zip(*np.where( 
+                    circuit_model.atlas.get_mask(
+                        terminology.circuit.get_spatial_query(query))))}
+            return SpatialQueryData(
+                ids=pd.Series(visible_voxel_ids, name="voxel_id"),
+                cell_gids=pd.Series(
+                    circuit_model.voxel_indexed_cell_gids.loc[
+                        visible_voxel_ids.intersection(
+                            circuit_model.voxel_indexed_cell_gids.index.values)]))
+        return QueryDB(_get_visible_voxel_data)
+
     def _get_random_positions(self,
             circuit_model,
             **spatial_parameters):
@@ -267,6 +247,17 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         Get a generator for random positions for given spatial parameters.
         """
+        while True:
+            yield\
+                circuit_model.atlas.voxel_data.indices_to_positions(
+                    self.visible_voxel(
+                        circuit_model,
+                        query
+                    ).ids.sanple(
+                        n=1
+                    ).iloc[0].values
+                )
+
         spatial_query =\
             terminology.circuit.get_spatial_query(query)
         voxel_mask =\
