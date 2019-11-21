@@ -16,6 +16,10 @@ def project(number):
     """
     return "/gpfs/bbp.cscs.ch/project/proj{}".format(number)
 
+path_rat_sscx_dissemination_atlases = os.path.join(
+    project(64),
+    "dissemination",
+    "data/atlas/S1/MEAN/juvenile_L23_MC_BTC_shifted_down_L1_ALL_INH")
 path_atlas = {
     "O1MouseSSCx": os.path.join(
         project(66),
@@ -35,10 +39,17 @@ path_atlas = {
         project(68),
         "entities/",
         "dev/atlas/ccf_2017-50um/20181114"),
-    "S1RatSSCxDiss": os.path.join(
-        project(64),
-        "dissemination",
-        "data/atlas/S1/MEAN/juvenile_L23_MC_BTC_shifted_down",
+    "S1RatSSCxDiss_Bio0": os.path.join(
+        path_rat_sscx_dissemination_atlases,
+        "Bio_0"),
+    "S1RatSSCxDiss_Bio1": os.path.join(
+        path_rat_sscx_dissemination_atlases,
+        "Bio_1"),
+    "S1RatSSCxDiss_Bio2": os.path.join(
+        path_rat_sscx_dissemination_atlases,
+        "Bio_2"),
+    "S1RatSSCxDiss_BioM": os.path.join(
+        path_rat_sscx_dissemination_atlases,
         "Bio_M")}
 
 def expect_equal(x, y, message=""):

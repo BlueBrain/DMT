@@ -447,9 +447,10 @@ class Test_CircuitAtlas:
                 np.any([atlas_y == p for p in posns], axis=0),
                 self.atlas.load_data("brain_regions").raw != 0)
 
-            npt.assert_array_equal(self.circuit_atlas.mask_for_parameters(
-                {ABSOLUTE_DEPTH: posns}),
-                                   exp_masks)
+            npt.assert_array_equal(
+                self.circuit_atlas.mask_for_parameters(
+                    {ABSOLUTE_DEPTH: posns}),
+                exp_masks)
 
         def test_absolute_heights(self):
             expheights = np.unique(self.atlas.load_data("[PH]y").raw

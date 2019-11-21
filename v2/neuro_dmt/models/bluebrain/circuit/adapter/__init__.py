@@ -49,17 +49,18 @@ class BlueBrainCircuitAdapter(WithFields):
         the circuit.
         """,
         __default_value__=50. * np.ones(3))
-    random_position_generator = Field(
-        """
-        A (nested) dict mapping circuit, and a spatial query to their
-        random position generator. 
-        """,
-        __default_value__={})
     logger = Field(
         """
         A logger to be used to log the activity of this code.
         """,
         __default_value__=Logger(client="BlueBrainCircuitAdapter"))
+
+    @lazyfield
+    def _random_position_generator_cache(self):
+        """
+        Cache random position generators.
+        """
+        return {}
 
     def for_circuit_model(self, circuit_model, **kwargs):
         """
@@ -181,26 +182,44 @@ class BlueBrainCircuitAdapter(WithFields):
              if value is not None),
             key=lambda xy: xy[0])))
 
+    def _get_random_positions(self,
+            circuit_model,
+            **spatial_parameters):
+        """
+        Create a generator of random positions. 
+        """
+        depth_query =\
+
+
     def random_positions(self,
             circuit_model,
             **spatial_parameters):
         """
         Get a generator for random positions for given spatial parameters.
         """
-        if circuit_model not in self.random_position_generator:
-            self.random_position_generator[circuit_model] = {}
+        if circuit_model not in self._random_position_generator_cache:
+            self._random_position_generator_cache[circuit_model] = {}
 
         query_hash =\
             self._query_hash(**spatial_parameters)
-        if query_hash not in self.random_position_generator[circuit_model]:
-            self.random_position_generator[circuit_model][query_hash] =\
-                circuit_model.random_positions(**spatial_parameters)
+        if query_hash not in self._random_position_generator_cache[circuit_model]:
+            self.random_position_generator_cache[circuit_model][query_hash] =\
+                self._get_random_positions(circuit_model, **spatial_parameters)
 
-        return self.random_position_generator[circuit_model][query_hash]
+        return self._random_position_generator_cache[circuit_model][query_hash]
+
+    @staticmethod
+    def spatial_parameters(query_parameters):
+        """
+        Extract spatial parameters.
+        """
+        return {
+            parameter: query_parameters.pop(parameter, None)
+            for parameter in terminology.circuit.spatial_parameters}
 
     def random_region_of_interest(self,
             circuit_model,
-            **spatial_parameters):
+            **query_parameters):
         """
         Get a generator for random regions of interest for given spatial
         parameters.
@@ -211,7 +230,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 position + self.bounding_box_size / 2.)
             for position in self.random_positions(
                     circuit_model,
-                    **spatial_parameters))
+                    **self.spatial_parameters(query_parameters))
 
     def random_pathway_pairs(self,
             circuit_model,

@@ -95,6 +95,17 @@ class PrincipalAxis(WithFields):
         depth / height: A single tuple of floats or a list of such tuples,
         with each tuple representing a bin.
         """
+        def _get_list(item):
+            """..."""
+            if (
+                    isinstance(item, tuple)
+                    and len(item) > 0
+                    and isinstance(item[0], (int, np.integer, float, np.float))
+            ):
+                return [item]
+            return get_list(item)
+
+
         def _get_one(_bin):
             """
             Mask for one bin
@@ -103,17 +114,24 @@ class PrincipalAxis(WithFields):
             return np.logical_and(_bin[0] <= values, values < _bin[1])
 
         if depth is not None:
-            assert height is None,\
-                "Cannot define a mask at given depth as well as height."
+            if height is not None:
+                raise TypeError(
+                    """
+                    Cannot define a principal axis mask at given depth
+                    as well as height.
+                    """)
             return np.logical_and(
                 self.valid_voxels,
-                np.any([_get_one(_bin) for _bin in get_list(depth)], axis=0))
+                np.any([_get_one(_bin) for _bin in _get_list(depth)], axis=0))
 
-        assert height is not None,\
-            "Need at least a value for depth or height to define a mask."
-
+        if height is None:
+            raise TypeError(
+                """
+                Need at least a value for depth or height to define a
+                principal axis mask.
+                """)
         return np.logical_and(
             self.valid_voxels,
-            np.any([_get_one(_bin) for _bin in get_list(height)], axis=0))
+            np.any([_get_one(_bin) for _bin in _get_list(height)], axis=0))
                 
 

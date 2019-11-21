@@ -60,6 +60,11 @@ class circuit(TermCollection):
         """
         Used at BBP, probably the same as a meso-column.
         """)
+    spatial_parameters =(
+        region,
+        layer,
+        depth,
+        height)
     terms =(
         region,
         layer,

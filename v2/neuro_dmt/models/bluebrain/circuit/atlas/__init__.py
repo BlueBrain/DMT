@@ -6,6 +6,7 @@ import os
 import numpy
 import pandas
 from voxcell.nexus.voxelbrain import Atlas
+from bluepy.v2.enums import Cell
 from dmt.tk import collections
 from dmt.tk.field import Field, lazyfield, WithFields
 from neuro_dmt.terminology.atlas import translate
@@ -117,7 +118,7 @@ class BlueBrainCircuitAtlas(WithFields):
             return region_layer_mask
 
         if depth is not None and height is not None:
-            raise RuntimeError(
+            raise TypeError(
                 "Cannot define a mask for both depth and height.")
 
         principal_axis_mask =\
@@ -135,6 +136,45 @@ class BlueBrainCircuitAtlas(WithFields):
                 layer=None):
         """..."""
         return numpy.sum(self.get_mask(region=region, layer=layer))
+
+    def get_bin_counts(self,
+            positions):
+        """
+        Get the number of positions that fall in each voxcell
+
+        Arguments
+        ---------------
+        positions : Either a numpy.ndarray of dimension (N, 3),
+        ~           or a pandas.DataFrame containing columns <x, y, z>
+        """
+        if not isinstance(positions, numpy.ndarray):
+            positions = positions[[Cell.X, Cell.Y, Cell.Z]].values
+
+        voxel_counts =\
+            pandas.DataFrame(
+                self.voxel_data.positions_to_indices(positions),
+                columns=[Cell.X, Cell.Y, Cell.Z]
+            ).apply(
+                lambda row: (row[Cell.X], row[Cell.Y], row[Cell.Z]),
+                axis=1
+            ).value_counts(
+            ).reset_index(
+            ).rename(
+                columns={
+                    "index": "voxel_index",
+                    0: "number"
+                }
+            )
+        voxel_count_array =\
+            numpy.zeros(shape=self.voxel_data.shape)
+        indices_count_array =\
+            tuple(
+                numpy.array(
+                    list(voxel_counts.voxel_index.values)
+                ).transpose()
+            )
+        voxel_count_array[indices_count_array] = voxel_counts.number.values
+        return voxel_count_array
 
     def random_positions(self,
             **spatial_parameters):

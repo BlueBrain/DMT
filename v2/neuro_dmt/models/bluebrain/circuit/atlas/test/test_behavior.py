@@ -9,7 +9,7 @@ def test_S1RatSSCxDiss():
     """
     Test Rat SSCx Dissemination atlas.
     """
-    name_atlas = "S1RatSSCxDiss"
+    name_atlas = "S1RatSSCxDiss_Bio0"
     circuit_atlas_test =\
         CircuitAtlasTest(
             label=name_atlas,

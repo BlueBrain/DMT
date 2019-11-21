@@ -176,6 +176,32 @@ class BlueBrainCircuitModel(WithFields):
         """
         return self.cells.etype.unique()
 
+    @lazyfield
+    def voxel_cell_count(self):
+        """
+        A pandas.Series providing cell counts in each voxel ---
+        indexed by a tuple representing the voxel indices.
+
+        Returns
+        -----------
+        A numpy.ndarray of the same dimensions as `self.atlas` voxel data.
+        """
+        return self.atlas.get_bin_counts(self.cells)
+
+    @lazyfield
+    def voxel_indexed_cell_gids(self):
+        """
+        A pandas series mapping a cell's gid to it's voxel index.
+        """
+        return pd.Series(
+            self.cells.index.values,
+            index=pd.Series(
+                list(
+                    self.atlas.voxel_data.positions_to_indices(
+                        self.cells[[Cell.X, Cell.Y, Cell.Z]].values)
+                )
+            ).apply(tuple)
+        )
     def _atlas_value(self,
             key, value):
         """
@@ -204,7 +230,13 @@ class BlueBrainCircuitModel(WithFields):
             return query
 
         for axis in XYZ:
-            assert axis not in query, list(query.keys())
+            if axis in query:
+                raise TypeError(
+                    """
+                    Cell query contained coordinates: {}.
+                    To query in a region, use its bounding box as the value
+                    for key `region`.
+                    """.format(axis))
 
         region = query.pop(terminology.circuit.region)
         assert region, query
@@ -218,7 +250,7 @@ class BlueBrainCircuitModel(WithFields):
 
     def _get_cell_query(self, **query):
         """
-        Convert `query` that will be accepted by `BluePyCircuit`.
+        Convert `query` that will be accepted by a `BluePyCircuit`.
         """
         def _get_query_layer(layers):
             """
@@ -302,11 +334,38 @@ class BlueBrainCircuitModel(WithFields):
         Generate random positions (as np.array([x, y, z])) in a region defined
         by spatial parameters in the query.
         """
-        cells = self\
-            .get_cells(
-                properties=XYZ,
-                with_gid_column=False,
-                **query_parameters)
+        depth_query =\
+            query_parameters.pop(
+                terminology.circuit.depth, None)
+        height_query =\
+            query_parameters.pop(
+                terminology.circuit.height, None)
+        region_query =\
+            query_parameters.pop(
+                terminology.circuit.region, None)
+        layer_query =\
+            query_parameters.pop(
+                terminology.circuit.layer, None)
+        mask =\
+            self.atlas.get_mask(
+                region=region_query,
+                layer=layer_query,
+                depth=depth_query,
+                height=height_query)
+
+
+
+    def random_positions_from_cells(self,
+            as_array=False,
+            **query_parameters):
+        """
+        Generate random positions (as np.array([x, y, z])) in a region defined
+        by spatial parameters in the query.
+        """
+        cells = self.get_cells(
+            properties=XYZ,
+            with_gid_column=False,
+            **query_parameters)
         while cells.shape[0] > 0:
             position = cells.sample(n=1).iloc[0]
             yield position.values if as_array else position

@@ -1,0 +1,3 @@
+"""
+Test-develop adapter methods.
+"""
