@@ -232,15 +232,6 @@ class BlueBrainCircuitAdapter(WithFields):
                             circuit_model.voxel_indexed_cell_gids.index.values)]))
         return QueryDB(_get_visible_voxel_data)
 
-    def _get_random_positions(self,
-            circuit_model,
-            **spatial_parameters):
-        """
-        Create a generator of random positions. 
-        """
-        depth_query =\
-            
-
     def random_positions(self,
             circuit_model,
             query):
@@ -248,29 +239,29 @@ class BlueBrainCircuitAdapter(WithFields):
         Get a generator for random positions for given spatial parameters.
         """
         while True:
+            voxel_indices =\
+                self.visible_voxel(circuit_model, query)\
+                    .ids\
+                    .sample(n=1)\
+                    .iloc[0].values
             yield\
-                circuit_model.atlas.voxel_data.indices_to_positions(
-                    self.visible_voxel(
-                        circuit_model,
-                        query
-                    ).ids.sanple(
-                        n=1
-                    ).iloc[0].values
-                )
-
-        spatial_query =\
-            terminology.circuit.get_spatial_query(query)
-        voxel_mask =\
-            circuit_model.atlas.get_mask(spatial_query)
-        if np.nansum(voxel_mask) == 0:
-            raise StopIteration(
-                """
-                No valid voxels that satisfy spatial query: {}
-                """.format(spatial_query))
-        voxel_indices = list(zip(*np.where(voxel_mask)))
-        while True:
-            yield circuit_model.atlas.voxel_data.indices_to_positions(
-                voxel_indices[np.random.randint(len(voxel_indices))])
+                circuit_model.atlas\
+                             .voxel_data\
+                             .indices_to_positions(
+                                 voxel_indices)
+        # spatial_query =\
+        #     terminology.circuit.get_spatial_query(query)
+        # voxel_mask =\
+        #     circuit_model.atlas.get_mask(spatial_query)
+        # if np.nansum(voxel_mask) == 0:
+        #     raise StopIteration(
+        #         """
+        #         No valid voxels that satisfy spatial query: {}
+        #         """.format(spatial_query))
+        # voxel_indices = list(zip(*np.where(voxel_mask)))
+        # while True:
+        #     yield circuit_model.atlas.voxel_data.indices_to_positions(
+        #         voxel_indices[np.random.randint(len(voxel_indices))])
         # if circuit_model not in self._random_position_generator_cache:
         #     self._random_position_generator_cache[circuit_model] = {}
 
@@ -293,7 +284,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 position + self.bounding_box_size / 2.)
             for position in self.random_positions(
                     circuit_model,
-                    terminology.circuit.get_spatial_parameters(query_dict))
+                    terminology.circuit.get_spatial_parameters(query_dict)))
 
     def random_pathway_pairs(self,
             circuit_model,
@@ -311,29 +302,6 @@ class BlueBrainCircuitAdapter(WithFields):
                 circuit_model.random_pathway_pairs(**pathway_parameters)
 
         return self.random_pathway_pairs_generator[circuit_model][query_hash]
-
-    def get_label(self,
-            circuit_model):
-        """..."""
-        return self._resolve(circuit_model).label
-
-    def _get_cell_density_overall(self,
-            circuit_model=None,
-            **query_parameters):
-        """
-        Get cell density over the entire relevant volume.
-
-        Pass only keyword arguments that are accepted for cell queries by
-        the circuit model.
-        """
-        query_spatial = {
-            key: query_parameters[key]
-            for key in ["region", "layer", "depth", "height"]
-            if key in query_parameters}
-        circuit_model = self._resolve(circuit_model)
-        count_cells = circuit_model.get_cell_count(**query_spatial)
-        count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
-        return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
 
     def get_method_description(self,
             name_measurement,
@@ -369,6 +337,29 @@ class BlueBrainCircuitAdapter(WithFields):
         return ValueError(
             "Undescribed measurement method {}".format(name_measurement))
 
+    def get_label(self,
+            circuit_model):
+        """..."""
+        return self._resolve(circuit_model).label
+
+    def _get_cell_density_overall(self,
+            circuit_model=None,
+            **query_parameters):
+        """
+        Get cell density over the entire relevant volume.
+
+        Pass only keyword arguments that are accepted for cell queries by
+        the circuit model.
+        """
+        query_spatial = {
+            key: query_parameters[key]
+            for key in ["region", "layer", "depth", "height"]
+            if key in query_parameters}
+        circuit_model = self._resolve(circuit_model)
+        count_cells = circuit_model.get_cell_count(**query_spatial)
+        count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
+        return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
+
     @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
@@ -399,9 +390,9 @@ class BlueBrainCircuitAdapter(WithFields):
                 """.format(query))
             return np.nan
 
-        number_cells = circuit_model\
-            .get_cell_count(
-                region=region_of_interest)
+        number_cells =\
+            circuit_model.get_cell_count(
+                roi=region_of_interest)
         return number_cells / (1.e-9 * region_of_interest.volume)
 
     #@terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
@@ -487,8 +478,8 @@ class BlueBrainCircuitAdapter(WithFields):
             """
             `get_pathways(...)` argument `cell_group` is neither a set of
             cell properties, nor a `pandas.DataFrame` specifying cell types.
-            """)
-
+            """
+        )
     def _resolve_sample_cells(self,
             circuit_model,
             cell_type,
@@ -499,10 +490,8 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model.get_cells(**cell_type)
         return\
             cells_all.sample(
-                n=np.minimum(
-                    sample_size,
-                    cells_all.shape[0])
-            ) if sampling_methodology==terminology.sampling_methodology.random\
+                n=np.minimum(sample_size, cells_all.shape[0]))
+            if sampling_methodology==terminology.sampling_methodology.random\
             else cells_all
 
     def get_connection_probability(self,
@@ -621,8 +610,9 @@ class BlueBrainCircuitAdapter(WithFields):
                 pre_synaptic_cells,
                 post_synaptic_cells,
                 with_soma_distance=False
-            ).number_connections_afferent["mean"]
-
+            ).number_connections_afferent[
+                "mean"
+            ]
     def get_number_connections_afferent_by_soma_distance(self,
             circuit_model=None,
             pre_synaptic={},
@@ -662,7 +652,6 @@ class BlueBrainCircuitAdapter(WithFields):
             ].rename(
                 "number_connections_afferent"
             )
-
     def get_afferent_connection_count_summary(self,
             circuit_model=None,
             post_synaptic=None,

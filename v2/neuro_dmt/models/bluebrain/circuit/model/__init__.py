@@ -217,7 +217,7 @@ class BlueBrainCircuitModel(WithFields):
             "Unknown / NotYetImplemented query parameter {}".format(key))
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
-    def _resolve_query_region(self, **query):
+    def _resolve_query_region(self, roi=None, **query):
         """
         Resolve region in query.
 
@@ -225,8 +225,11 @@ class BlueBrainCircuitModel(WithFields):
         ------------
         query : a dict providing parameters for a circuit query.
         """
-        if (terminology.circuit.region not in query
-            or isinstance(query[terminology.circuit.region], str)):
+        if not (terminology.circuit.roi in query
+            or (terminology.circuit.region in query
+                 and not isinstance(query[terminology.circuit.region], str)
+            )
+        ):
             return query
 
         for axis in XYZ:

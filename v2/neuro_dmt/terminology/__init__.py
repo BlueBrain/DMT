@@ -60,6 +60,12 @@ class circuit(TermCollection):
         """
         Used at BBP, probably the same as a meso-column.
         """)
+    roi = Term(
+        "roi", 
+        """
+        Region of interest packaged as a bounding-box or a type
+        that will return a bounding-box on invocation of `.bbox`.
+        """)
     spatial_terms =(
         region,
         layer,
