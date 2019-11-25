@@ -15,7 +15,7 @@ from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
 from neuro_dmt.data import rat
 from ..model import BlueBrainCircuitModel
-from ..mock.circuit import MockCircuit
+from ..mock.circuit import MockBlueBrainCircuitModel
 from ..mock.test.mock_circuit_light import\
     circuit_composition,\
     circuit_connectivity
@@ -24,10 +24,9 @@ from . import\
     get_path_circuit
 
 mock_circuit_model =\
-    BlueBrainCircuitModel(
-        MockCircuit.build(
-            circuit_composition,
-            circuit_connectivity),
+    MockBlueBrainCircuitModel(
+        circuit_composition,
+        circuit_connectivity,
         label="BlueBrainCircuitModelMockLight")
 
 def test_cell_density():

@@ -21,7 +21,7 @@ from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from ..model.cell_type import CellType
 from ..model.pathway import PathwaySummary
-from .query import QueryCache, SpatialQueryData
+from .query import QueryDB, SpatialQueryData
 
 logger = Logger(client=__file__)
 
@@ -56,12 +56,12 @@ class BlueBrainCircuitAdapter(WithFields):
         """,
         __default_value__=Logger(client="BlueBrainCircuitAdapter"))
 
-    @lazyfield
-    def _random_position_generator_cache(self):
-        """
-        Cache random position generators.
-        """
-        return {}
+    # @lazyfield
+    # def _random_position_generator_cache(self):
+    #     """
+    #     Cache random position generators.
+    #     """
+    #     return {}
 
     def for_circuit_model(self, circuit_model, **kwargs):
         """
@@ -162,59 +162,29 @@ class BlueBrainCircuitAdapter(WithFields):
                 cell_group,
                 type(cell_group)))
 
-    def _query_hash(self, **kwargs):
-        """
-        Hash for a query.
-        Keep only keyword arguments with non-None values.
-        """
-        def __hashable(xs):
-            """
-            Convert xs to a hashable type.
-            """
-            try:
-                h = hash(xs)
-                return xs
-            except TypeError:
-                return ','.join(str(x) for x in xs)
+    # def _query_hash(self, **kwargs):
+    #     """
+    #     Hash for a query.
+    #     Keep only keyword arguments with non-None values.
+    #     """
+    #     def __hashable(xs):
+    #         """
+    #         Convert xs to a hashable type.
+    #         """
+    #         try:
+    #             h = hash(xs)
+    #             return xs
+    #         except TypeError:
+    #             return ','.join(str(x) for x in xs)
 
-        return hash(tuple(sorted(
-           ((key, __hashable(value))
-             for key, value in kwargs.items()
-             if value is not None),
-            key=lambda xy: xy[0])))
+    #     return hash(tuple(sorted(
+    #        ((key, __hashable(value))
+    #          for key, value in kwargs.items()
+    #          if value is not None),
+    #         key=lambda xy: xy[0])))
 
-    def get_spatial_query_data(self,
-            circuit_model,
-            query_dict):
-        """
-        Data filtered by a spatial query.
-        """
-        spatial_mask = circuit_model.atlas.get_mask(
-            terminology.circuit.get_spatial_query(query_dict)
-        )
-        visible_voxel_ids ={
-            tuple(ijk) for ijk in zip(
-                *np.where(spatial_mask))}
-        return\
-            SpatialQueryData(
-                visible_voxel_ids=pd.Series(
-                    visible_voxel_ids,
-                    name="voxel_id"),
-                visible_cell_gids=pd.Series(
-                    circuit_model.voxel_indexed_cell_gids.loc[
-                        visible_voxel_ids.intersection(
-                            circuit_model.voxel_indexed_cell_gids.index.values)])
-            )
     @lazyfield
-    def spatial_query_cache(self):
-        """
-        A cache of data for queries.
-        """
-        return QueryCache(
-            value_to_cache=self.get_spatial_query_data
-        )
-    @lazyfield
-    def visible_voxel(self):
+    def visible_voxels(self):
         """
         If it is not masked, a voxel is visible.
         """
@@ -222,33 +192,32 @@ class BlueBrainCircuitAdapter(WithFields):
             """..."""
             visible_voxel_ids ={
                 tuple(ijk) for ijk in zip(*np.where( 
-                    circuit_model.atlas.get_mask(
+                    circuit_model.get_mask(
                         terminology.circuit.get_spatial_query(query))))}
             return SpatialQueryData(
-                ids=pd.Series(visible_voxel_ids, name="voxel_id"),
+                ids=pd.Series(
+                    list(visible_voxel_ids), name="voxel_id"),
+                positions=circuit_model.get_voxel_positions(
+                    np.array(list(visible_voxel_ids))),
                 cell_gids=pd.Series(
                     circuit_model.voxel_indexed_cell_gids.loc[
-                        visible_voxel_ids.intersection(
-                            circuit_model.voxel_indexed_cell_gids.index.values)]))
+                        list(visible_voxel_ids.intersection(
+                            circuit_model.voxel_indexed_cell_gids.index.values
+                        ))
+                    ]
+                )
+            )
         return QueryDB(_get_visible_voxel_data)
 
-    def random_positions(self,
+    def random_position(self,
             circuit_model,
             query):
         """
         Get a generator for random positions for given spatial parameters.
         """
-        while True:
-            voxel_indices =\
-                self.visible_voxel(circuit_model, query)\
-                    .ids\
-                    .sample(n=1)\
-                    .iloc[0].values
-            yield\
-                circuit_model.atlas\
-                             .voxel_data\
-                             .indices_to_positions(
-                                 voxel_indices)
+        positions = self.visible_voxels(circuit_model, query).positions
+        return positions.sample(n=1).iloc[0] if not positions.empty else None
+            
         # spatial_query =\
         #     terminology.circuit.get_spatial_query(query)
         # voxel_mask =\
@@ -278,13 +247,12 @@ class BlueBrainCircuitAdapter(WithFields):
         Get a generator for random regions of interest for given spatial
         parameters.
         """
-        return (
-            Cuboid(
-                position - self.bounding_box_size / 2.,
-                position + self.bounding_box_size / 2.)
-            for position in self.random_positions(
-                    circuit_model,
-                    terminology.circuit.get_spatial_parameters(query_dict)))
+        random_position = self.random_position(circuit_model, query_dict)
+        cuboid = lambda : Cuboid(
+            random_position - self.bounding_box_size / 2.,
+            random_position + self.bounding_box_size / 2.
+        )
+        return cuboid() if random_position is not None else None
 
     def random_pathway_pairs(self,
             circuit_model,
@@ -372,28 +340,15 @@ class BlueBrainCircuitAdapter(WithFields):
         circuit_model = self._resolve(circuit_model)
         query = terminology.cell.filter(
             **terminology.circuit.filter(**kwargs))
-        if sampling_methodology != terminology.sampling_methodology.random:
-            return self._get_cell_density_overall(
-                circuit_model,
-                **query)
-        try:
-            region_of_interest = next(
-                self.random_region_of_interest(
-                    circuit_model,
-                    **query))
-        except StopIteration:
-            self.logger.warn(
-                self.logger.get_source_info(),
-                """
-                no more random regions of interest for query:
-                \t{}
-                """.format(query))
-            return np.nan
 
-        number_cells =\
-            circuit_model.get_cell_count(
-                roi=region_of_interest)
-        return number_cells / (1.e-9 * region_of_interest.volume)
+        if sampling_methodology != terminology.sampling_methodology.random:
+            return self._get_cell_density_overall(circuit_model, query)
+
+        random_roi = self.random_region_of_interest(circuit_model, query)
+        if random_roi is None:
+            return np.nan
+        number_cells = circuit_model.get_cell_count(roi=random_roi)
+        return number_cells/(1.e-9 * random_roi.volume)
 
     #@terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_fiber_density(self,
@@ -489,8 +444,7 @@ class BlueBrainCircuitAdapter(WithFields):
         cells_all =\
             circuit_model.get_cells(**cell_type)
         return\
-            cells_all.sample(
-                n=np.minimum(sample_size, cells_all.shape[0]))
+            cells_all.sample(n=np.minimum(sample_size, cells_all.shape[0]))\
             if sampling_methodology==terminology.sampling_methodology.random\
             else cells_all
 

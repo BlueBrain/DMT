@@ -79,7 +79,8 @@ class circuit(TermCollection):
         depth,
         height,
         mesocolumn,
-        hypercolumn)
+        hypercolumn,
+        roi)
 
     @classmethod
     def get_spatial_query(cls, query_dict):

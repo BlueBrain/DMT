@@ -3,7 +3,7 @@ A `BlueBrainCircuitAdapter` will need to handle spatial queries on a
 `BlueBrainCircuitModel`. Here we implement helpers towards that endeavor.
 """
 
-from .adapter import *
+from dmt.tk.field import Field, lazyfield, WithFields
 
 class QueryDB(WithFields):
     """
@@ -21,9 +21,10 @@ class QueryDB(WithFields):
     @lazyfield
     def store(self): return {}
 
+    @staticmethod
     def _hashed(query_dict):
         """..."""
-        def _hashable(query_dict):
+        def _hashable(xs):
             """
             Get hash for a query.
             """
@@ -40,8 +41,9 @@ class QueryDB(WithFields):
             for key, value in query_dict.items()
             if value is not None)
         return\
-            hash(_hashable(tuple(
-                sorted(key_values, key=lambda key, _: key))))
+            hash(tuple(sorted(
+                key_values,
+                key=lambda key_value: key_value[0])))
 
     def __call__(self,
             circuit_model,
@@ -49,14 +51,17 @@ class QueryDB(WithFields):
         """
         Call Me.
         """
-        if circuit_model not in self.score:
+        if circuit_model not in self.store:
             self.store[circuit_model] = {}
 
         cache_circuit_model = self.store[circuit_model]
         hash_query = self._hashed(query_dict)
         if hash_query not in cache_circuit_model:
             cache_circuit_model[hash_query] =\
-                self.value_to_cache(circuit_model, query_dict)
+                self.method_to_memoize(circuit_model, query_dict)
+
+        return cache_circuit_model[hash_query]
+
 
 class SpatialQueryData(WithFields):
     """
@@ -66,13 +71,13 @@ class SpatialQueryData(WithFields):
         """
         Ids of voxels that passed the spatial query filter.
         """)
+    positions = Field(
+        """
+        Physical space positions for the voxel with ids in self.ids.
+        """)
     cell_gids = Field(
         """
         pandas.Series that provides the gids of all the cells in voxels
         that passed the spatial query filter, indexed by the corresponding
         voxel ids.
         """)
-
-
-
-

@@ -282,7 +282,7 @@ class RegionLayer(WithFields):
     """
     atlas = Field(
         """
-        The associated atlas.
+        The associated base atlas.
         """)
 
     @lazyfield

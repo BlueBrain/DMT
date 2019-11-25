@@ -5,8 +5,9 @@ import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.journal import Logger
-from dmt.tk.field import Field, WithFields
+from dmt.tk.field import Field, lazyfield, WithFields
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
+from neuro_dmt.models.bluebrain.circuit.model import BlueBrainCircuitModel
 from .cell import CellCollection
 from .connectome import Connectome
 
@@ -14,7 +15,6 @@ from .composition import CircuitComposition
 from .builder import CircuitBuilder
 
 logger = Logger(client=__file__)
-
 
 class MockCircuit(WithFields):
     """
@@ -32,7 +32,6 @@ class MockCircuit(WithFields):
         """
         An object representing the connectome of this circuit.
         """)
-
 
     @classmethod
     def build(cls, composition, connectivity):
@@ -52,3 +51,129 @@ class MockCircuit(WithFields):
         return MockCircuit(
             cells=cell_collection,
             connectome=circuit_builder.get_connectome(cell_collection))
+
+
+class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
+    """
+    A class to mock `BlueBrainCircuitModel`.
+    This mock overrides atlas related methods, plugging in mock methods
+    instead of invoking them on atlas which does not exist for a mock-circuit.
+    """
+    voxel_dimensions = Field(
+        """
+        A 3D np.ndarray that provides dimensions of a mock atlas voxel data.
+        """,
+        __default_value__=50. * np.ones(3))
+
+    def __init__(self,
+            circuit_composition,
+            circuit_connectivity,
+            label="MockBlueBrainCircuitModel"):
+        """..."""
+        super().__init__(
+            MockCircuit.build(
+                circuit_composition,
+                circuit_connectivity),
+            label=label)
+
+    @lazyfield
+    def voxel_offset(self):
+        """
+        Minimum values of cell positions x, y, z components.
+        """
+        return np.floor(
+            np.min(self.cells[
+                [CellProperty.X, CellProperty.Y, CellProperty.Z]
+            ])
+        ).values
+
+    @lazyfield
+    def atlas(self):
+        """
+        Mock atlas for a mock circuit model.
+        """
+        raise AttributeError(
+            """
+            Atlas not defined for a mock circuit.
+            """)
+
+    def _positions_to_indices(self, positions):
+        """
+        A method defined on VoxelData.
+        We need it here to mock a circuit atlas
+        """
+        return np.int32(np.floor(
+            (positions - self.voxel_offset) / self.voxel_dimensions
+        ))
+
+    @lazyfield
+    def voxel_data_shape(self):
+        """..."""
+        return self._positions_to_indices(
+            np.max(self.cells[
+                [CellProperty.X, CellProperty.Y, CellProperty.Z]
+            ]).values
+        ) + 1
+    @lazyfield
+    def voxel_cell_count(self):
+        """
+        Mock count of cells in each voxel of a mock atlas.
+        """
+        xyz = [CellProperty.X, CellProperty.Y, CellProperty.Z]
+        positions = self.cells[xyz].values
+        indices = [tuple(ijk) for ijk in self._positions_to_indices(positions)]
+        voxel_counts = pd.Series(
+            indices
+        ).value_counts(
+        ).reset_index(
+        ).rename(
+            columns={
+                "index": "voxel_index",
+                0: "number"
+            }
+        )
+        voxel_count_array = np.zeros(self.voxel_data_shape)
+        indices_count_array = tuple(
+            np.array(
+                list(voxel_counts.voxel_index.values)
+            ).transpose()
+        )
+        voxel_count_array[indices_count_array] = voxel_counts.number.values
+        return voxel_count_array
+
+    @lazyfield
+    def voxel_indexed_cell_gids(self):
+        """
+        A pandas series mapping a cell's gid to it's mocked voxel index.
+        """
+        xyz = [CellProperty.X, CellProperty.Y, CellProperty.Z]
+        return pd.Series(
+            self.cells.index.values,
+            index=pd.MultiIndex.from_tuples(
+                [tuple(ijk) 
+                 for ijk in self._positions_to_indices(self.cells[xyz].values)],
+                names=xyz)
+        )
+    def _atlas_value(self, key, value):
+        """
+        Value of a query parameter as understood by a mocked atlas.
+        """
+        return value
+
+    def get_mask(self, query):
+        """
+        Get mask for a spatial query from a mocked atlas.
+        """
+        mask = np.zeros(self.voxel_data_shape, dtype=bool)
+        mask[np.where(self.voxel_cell_count)] = True
+        return mask
+
+    def get_voxel_positions(self, voxel_ids):
+        """..."""
+        return pd.DataFrame(
+            self.voxel_offset + self.voxel_dimensions * voxel_ids,
+            columns=[CellProperty.X, CellProperty.Y, CellProperty.Z],
+            index=pd.MultiIndex.from_arrays(
+                [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
+                names=["i", "j", "k"])
+        )

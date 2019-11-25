@@ -121,9 +121,19 @@ class BlueBrainCircuitModel(WithFields):
         """
         Atlas associated with this circuit.
         """
-        return BlueBrainCircuitAtlas(
-            path=self.bluepy_circuit.atlas.dirpath)
-
+        try:
+            return BlueBrainCircuitAtlas(
+                self.bluepy_circuit.atlas
+            )
+        except AttributeError:
+            return BlueBrainCircuitAtlas(
+                path=self.bluepy_circuit.atlas.dirpath
+            )
+        raise RuntimeError(
+            """
+            Execution of `.atlas(...)` should not have reached here.
+            """
+        )
     @lazyfield
     def cell_collection(self):
         """
@@ -202,6 +212,21 @@ class BlueBrainCircuitModel(WithFields):
                 )
             ).apply(tuple)
         )
+    def get_voxel_positions(self, voxel_ids):
+        """
+        Get positions of voxels from the atlas.
+
+        Arguments
+        -----------
+        voxel_ids : Iterable of voxel indices as tuples (i, j, k)
+        """
+        return pd.DataFrame(
+            self.atlas.indices_to_positions(voxel_ids),
+            columns=[Cell.X, Cell.Y, Cell.Z],
+            index=pd.MultiIndex.from_arrays(
+                [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
+                names=["i", "j", "k"])
+        )
     def _atlas_value(self,
             key, value):
         """
@@ -238,13 +263,26 @@ class BlueBrainCircuitModel(WithFields):
                     """
                     Cell query contained coordinates: {}.
                     To query in a region, use its bounding box as the value
-                    for key `region`.
+                    for key `roi`.
                     """.format(axis))
 
-        region = query.pop(terminology.circuit.region)
-        assert region, query
-        corner_0, corner_1 =\
-            _get_bounding_box(region)
+        if terminology.circuit.roi in query:
+            roi = query.pop(terminology.circuit.roi)
+            if terminology.circuit.region in query:
+                region = query.pop(terminology.circuit.region)
+                raise TypeError(
+                    """
+                    Cannot disambiguate query.
+                    Query contained both {}: {}
+                    and {}: {}
+                    """.format(
+                        terminology.circuit.roi, roi,
+                        terminology.circuit.region, region)
+                )
+        else:
+            roi = query.pop(terminology.circuit.region)
+
+        corner_0, corner_1 = _get_bounding_box(region)
         query.update({
             Cell.X: (corner_0[0], corner_1[0]),
             Cell.Y: (corner_0[1], corner_1[1]),
@@ -305,6 +343,13 @@ class BlueBrainCircuitModel(WithFields):
         """..."""
         return self.get_cells(**query).shape[0]
 
+    def get_mask(self, query):
+        """
+        Get a mask from the atlas.
+        """
+        return self.atlas.get_mask(
+            terminology.circuit.get_spatial_query(query))
+
     @terminology.use(
         terminology.circuit.region,
         terminology.circuit.layer,
@@ -322,56 +367,54 @@ class BlueBrainCircuitModel(WithFields):
         while cells.shape[0] > 0:
             yield cells.sample(n=1).iloc[0]
 
-    @terminology.use(
-        terminology.circuit.region,
-        terminology.circuit.layer,
-        terminology.circuit.depth,
-        terminology.circuit.height,
-        terminology.cell.mtype,
-        terminology.cell.etype,
-        terminology.cell.synapse_class)
-    def random_positions(self,
-            as_array=False,
-            **query_parameters):
-        """
-        Generate random positions (as np.array([x, y, z])) in a region defined
-        by spatial parameters in the query.
-        """
-        depth_query =\
-            query_parameters.pop(
-                terminology.circuit.depth, None)
-        height_query =\
-            query_parameters.pop(
-                terminology.circuit.height, None)
-        region_query =\
-            query_parameters.pop(
-                terminology.circuit.region, None)
-        layer_query =\
-            query_parameters.pop(
-                terminology.circuit.layer, None)
-        mask =\
-            self.atlas.get_mask(
-                region=region_query,
-                layer=layer_query,
-                depth=depth_query,
-                height=height_query)
+    # @terminology.use(
+    #     terminology.circuit.region,
+    #     terminology.circuit.layer,
+    #     terminology.circuit.depth,
+    #     terminology.circuit.height,
+    #     terminology.cell.mtype,
+    #     terminology.cell.etype,
+    #     terminology.cell.synapse_class)
+    # def random_positions(self,
+    #         as_array=False,
+    #         **query_parameters):
+    #     """
+    #     Generate random positions (as np.array([x, y, z])) in a region defined
+    #     by spatial parameters in the query.
+    #     """
+    #     depth_query =\
+    #         query_parameters.pop(
+    #             terminology.circuit.depth, None)
+    #     height_query =\
+    #         query_parameters.pop(
+    #             terminology.circuit.height, None)
+    #     region_query =\
+    #         query_parameters.pop(
+    #             terminology.circuit.region, None)
+    #     layer_query =\
+    #         query_parameters.pop(
+    #             terminology.circuit.layer, None)
+    #     mask =\
+    #         self.atlas.get_mask(
+    #             region=region_query,
+    #             layer=layer_query,
+    #             depth=depth_query,
+    #             height=height_query)
 
-
-
-    def random_positions_from_cells(self,
-            as_array=False,
-            **query_parameters):
-        """
-        Generate random positions (as np.array([x, y, z])) in a region defined
-        by spatial parameters in the query.
-        """
-        cells = self.get_cells(
-            properties=XYZ,
-            with_gid_column=False,
-            **query_parameters)
-        while cells.shape[0] > 0:
-            position = cells.sample(n=1).iloc[0]
-            yield position.values if as_array else position
+    # def random_positions_from_cells(self,
+    #         as_array=False,
+    #         **query_parameters):
+    #     """
+    #     Generate random positions (as np.array([x, y, z])) in a region defined
+    #     by spatial parameters in the query.
+    #     """
+    #     cells = self.get_cells(
+    #         properties=XYZ,
+    #         with_gid_column=False,
+    #         **query_parameters)
+    #     while cells.shape[0] > 0:
+    #         position = cells.sample(n=1).iloc[0]
+    #         yield position.values if as_array else position
 
     def are_connected(self, pre_neuron, post_neuron):
         """
@@ -383,23 +426,23 @@ class BlueBrainCircuitModel(WithFields):
         """..."""
         return self.connectome.get_afferent_ids(neuron)
 
-    def random_pathway_pairs(self,
-            pre_cell_type={},
-            post_cell_type={}):
-        """
-        Generate random pairs of neurons in a given pathway.
-        """
-        pre_neurons =\
-            self.cell_collection\
-                .ids(group=self._get_cell_query(**pre_cell_type))
-        post_neurons =\
-            self.cell_collection\
-                .ids(group=self._get_cell_query(**post_cell_type))
-        while len(pre_neurons) > 0:
-            pre_neuron = np.random.sample(pre_neurons)
-            while len(post_neurons) > 0:
-                post_neuron = np.random.sample(post_neurons)
-                yield (pre_neuron, post_neuron)
+    # def random_pathway_pairs(self,
+    #         pre_cell_type={},
+    #         post_cell_type={}):
+    #     """
+    #     Generate random pairs of neurons in a given pathway.
+    #     """
+    #     pre_neurons =\
+    #         self.cell_collection\
+    #             .ids(group=self._get_cell_query(**pre_cell_type))
+    #     post_neurons =\
+    #         self.cell_collection\
+    #             .ids(group=self._get_cell_query(**post_cell_type))
+    #     while len(pre_neurons) > 0:
+    #         pre_neuron = np.random.sample(pre_neurons)
+    #         while len(post_neurons) > 0:
+    #             post_neuron = np.random.sample(post_neurons)
+    #             yield (pre_neuron, post_neuron)
 
     def get_cell_types(self, cell_type_specifier):
         """

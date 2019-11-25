@@ -24,10 +24,21 @@ class BlueBrainCircuitAtlas(WithFields):
         """
         Path to the directory that holds the circuit atlas data.
         This path may be a URL.
-        """)
+        A value is required if a base `Atlas` instance is not passed
+        to the initializer.
+        """,
+        __required__=False)
+
+    def __init__(self,
+            base_atlas=None,
+            *args, **kwargs):
+        """..."""
+        if base_atlas is not None:
+            self._base_atlas = base_atlas
+        super().__init__(*args, **kwargs)
 
     @lazyfield
-    def atlas(self):
+    def base_atlas(self):
         """
         `Atlas` instance to load the data.
         """
@@ -38,18 +49,18 @@ class BlueBrainCircuitAtlas(WithFields):
         """
         Hierarchy of brain regions.
         """
-        return self.atlas.load_hierarchy()
+        return self.base_atlas.load_hierarchy()
 
     @lazyfield
     def region_map(self):
         """
         Region map associated with the atlas.
         """
-        return self.atlas.load_region_map()
+        return self.base_atlas.load_region_map()
 
     dataset_brain_regions = Field(
         """
-        Dataset that provides brain regions in `self.atlas`.
+        Dataset that provides brain regions in `self.base_atlas`.
         """,
         __default_value__="brain_regions")
 
@@ -58,14 +69,14 @@ class BlueBrainCircuitAtlas(WithFields):
         """
         Volumetric data that provides brain regions in the atlas.
         """
-        return self.atlas.load_data(self.dataset_brain_regions).raw
+        return self.base_atlas.load_data(self.dataset_brain_regions).raw
 
     @lazyfield
     def voxel_data(self):
         """
         A representative `VoxelData` object associated with `self.atlas`.
         """
-        return self.atlas.load_data(self.dataset_brain_regions)
+        return self.base_atlas.load_data(self.dataset_brain_regions)
 
     @lazyfield
     def volume_voxel(self):
@@ -92,14 +103,14 @@ class BlueBrainCircuitAtlas(WithFields):
         An object that expresses how region and layer are combined in the
         atlas, how their acronyms are represented in the hierarchy.
         """
-        return RegionLayer(atlas=self.atlas)
+        return RegionLayer(atlas=self.base_atlas)
 
     @lazyfield
     def principal_axis(self):
         """
         An object to handle queries concerning the voxel principal axis.
         """
-        return PrincipalAxis(atlas=self.atlas)
+        return PrincipalAxis(atlas=self.base_atlas)
 
     def get_mask(self,
             region=None,
