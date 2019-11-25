@@ -6,10 +6,35 @@ import os
 from Cheetah.Template import Template
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.journal import Logger
-from dmt.tk.reporting import Reporter
+from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import string_utils, get_file_name_base
 
 logger = Logger(client=__file__)
+
+class CircuitAnalysisReport(Report):
+    """
+    Add some circuit analysis specific attributes to `Report`
+    """
+    animal = Field(
+        """
+        Animal species whose brain was modeled.
+        """,
+        __default_value__="Not Available")
+    age = Field(
+        """
+        Age of the animal.
+        """,
+        __default_value__="Not Available")
+    brain_region = Field(
+        """
+        Name of the region in the brain that the circuit models.
+        """,
+        __default_value__="Not Available")
+    uri_circuit = Field(
+        """
+        Location of the circuit.
+        """,
+        __default_value__="Not Available")
 
 class CheetahReporter(Reporter):
     """
