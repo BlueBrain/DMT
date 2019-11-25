@@ -242,7 +242,7 @@ class BlueBrainCircuitModel(WithFields):
             "Unknown / NotYetImplemented query parameter {}".format(key))
 
     @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
-    def _resolve_query_region(self, roi=None, **query):
+    def _resolve_query_region(self, **query):
         """
         Resolve region in query.
 
@@ -282,7 +282,7 @@ class BlueBrainCircuitModel(WithFields):
         else:
             roi = query.pop(terminology.circuit.region)
 
-        corner_0, corner_1 = _get_bounding_box(region)
+        corner_0, corner_1 = _get_bounding_box(roi)
         query.update({
             Cell.X: (corner_0[0], corner_1[0]),
             Cell.Y: (corner_0[1], corner_1[1]),
