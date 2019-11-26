@@ -101,4 +101,3 @@ def test_class_field_decorator():
 
     with pyt.raises(TypeError):
         egg.example_class_field_one = 10
-

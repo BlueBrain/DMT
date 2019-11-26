@@ -60,6 +60,20 @@ class Crosses(WithFields):
         Height of the figure.
         """,
         __default_value__ = 8.)
+    aspect_ratio_figure = Field(
+        """
+        Aspect ratio width / height for the figure.
+        """,
+        __default_value__=golden_aspect_ratio)
+    confidence_interval = Field(
+        """
+        float or “sd” or None, optional
+        Size of confidence intervals to draw around estimated values.
+        If “sd”, skip bootstrapping and draw the standard deviation of the
+        observations. If None, no bootstrapping will be performed,
+        and error bars will not be drawn.
+        """,
+        __default_value__="sd")
 
     @lazyfield
     def xerr(self):

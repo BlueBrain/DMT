@@ -13,8 +13,14 @@ from .figure import Figure
 
 class Bars(WithFields):
     """
-    Specifies a plotting method, and the all the variables that can be set 
+    Specifies a plotting method, and all its required attributes.
     """
+    title = Field(
+        """
+        Title to be displayed.
+        If not provided phenomenon for the data will be used.
+        """,
+        __default_value__="")
     xvar = Field(
         """
         Column in the data-frame to be plotted along the x-axis.
@@ -55,13 +61,31 @@ class Bars(WithFields):
         Aspect ratio width / height for the figure.
         """,
         __default_value__=golden_aspect_ratio)
+    confidence_interval = Field(
+        """
+        float or “sd” or None, optional
+        Size of confidence intervals to draw around estimated values.
+        If “sd”, skip bootstrapping and draw the standard deviation of the
+        observations. If None, no bootstrapping will be performed,
+        and error bars will not be drawn.
+        """,
+        __default_value__="sd")
 
-    def __plotting_parameters(self,
-            **kwargs):
+    @staticmethod
+    def _get_phenomenon(dataframe_long):
         """
-        Extract plotting parameters from keyword arguments.
+        Get phenomenon to be plotted.
         """
-        pass
+        return dataframe_long.columns[0]
+
+    def _get_title(self, dataframe_long):
+        """
+        Get a title to display.
+        """
+        if self.title:
+            return self.title
+        phenomenon = self._get_phenomenon(dataframe_long)
+        return ' '.join(word.capitalize() for word in phenomenon.split('_'))
 
     @classmethod
     def get_dataframe(cls, data):
@@ -103,7 +127,7 @@ class Bars(WithFields):
         return self.get_figure(*args, **kwargs)
 
     def __call__(self,
-                 *args, **kwargs):
+            *args, **kwargs):
         """
         Make this class a callable,
         so that it can masquerade as a function!

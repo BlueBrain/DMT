@@ -147,7 +147,8 @@ def test_mock_circuit_validation():
                 xlabel="Layer",
                 yvar=cell_density_phenomenon.label,
                 ylabel=cell_density_phenomenon.name,
-                gvar="dataset"),
+                gvar="dataset",
+                title="Cell Density Validation"),
             adapter=mock_adapter)
     assert hasattr(cell_density_analysis, "reference_data")
     assert cell_density_analysis._has_reference_data
@@ -211,61 +212,3 @@ def test_mock_circuit_analysis_with_callable_measurement_parameters():
         .test_post_report(
             mock_circuit_model,
             output_folder="analyses")
-
-
-
-# def test_mock_circuit_validation_with_adapter():
-#     """
-#     Circuit validation with adapter already set should produce the expected
-#     output.
-#     """
-#      cell_density_phenomenon =\
-#         Phenomenon(
-#             "Cell Density",
-#             "Count of cells in a unit volume.",
-#             group="composition")
-#     mock_circuit_model = mock.get_circuit_model()
-#     mock_adapter = mock.get_circuit_adapter(mock_circuit_model)
-#     reference_datasets = pandas\
-#         .concat([
-#             rat.defelipe2014\
-#             .summary_measurement\
-#             .samples(1000)\
-#             .assign(dataset="DeFelipe2014"),
-#             rat.defelipe2017\
-#             .summary_measurement\
-#             .samples(1000)\
-#             .assign(dataset="DeFelipe2017"),
-#             rat.meyer2010\
-#             .samples(1000)\
-#             .assign(dataset="Meyer2010")])\
-#         .reset_index()\
-#         .set_index(["dataset", "layer"])
-
-#     cell_density_validation =\
-#         BrainCircuitAnalysis(
-#             phenomenon=cell_density_phenomenon,
-#             AdapterInterface=CellDensityAdapterInterface,
-#             reference_data=reference_datasets,
-#             measurement_parameters=Parameters(
-#                 pandas.DataFrame({"layer": range(1, 7)})),
-#             plotter=Bars(
-#                 xvar="layer",
-#                 xlabel="Layer",
-#                 yvar=cell_density_phenomenon.label,
-#                 ylabel=cell_density_phenomenon.name,
-#                 gvar="dataset"),
-#             adapter=MockCircuitAdapter())
-   
-
-
-# def test_sscx_dissemination_circuit():
-#     """
-#     Test circuit analysis using a circuit built for the SSCx dissemination
-#     project.
-#     """
-#     path_circuit = Path(path_project(64))\
-#         .joinpath(
-#             "dissemination",
-#             "circuits", "S1", "juvenile", "L23_BTC_shifted_down",
-#             "Bio_1/20190903")

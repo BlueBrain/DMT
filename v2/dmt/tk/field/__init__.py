@@ -336,7 +336,6 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
-
 def lazyfield(instance_field):
     """
     Make an 'instance_field' lazy.
