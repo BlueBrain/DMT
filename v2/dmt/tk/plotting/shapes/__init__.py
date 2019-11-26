@@ -66,7 +66,7 @@ class Geometry(ABC, WithFields):
         """
         for child in self.children:
             child.draw(*args, **kwargs)
-        self._draw_this(*args, **kwargs)
+        return self._draw_this(*args, **kwargs)
 
 
 class Curve(Geometry):
@@ -100,11 +100,12 @@ class Path(Curve):
         """
         Convert vertices to the number of points demanded.
         """
-        if number > len(self.vertices):
+        if number >= len(self.vertices):
             return self.vertices
-        return np.random.choice(
-            self.vertices, number, replace=False)
-
+        return self.vertices[
+            np.random.choice(
+                range(len(self.vertices)), number, replace=False)
+        ]
 
 class Polygon(Geometry):
     """

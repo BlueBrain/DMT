@@ -8,6 +8,7 @@ from collections import OrderedDict, defaultdict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from ...shapes import Geometry, Path, Polygon, PolarPoint, Circle, Arc
 
@@ -115,7 +116,7 @@ class NodeGeometry(ChartGeometry, Polygon):
             rotation=180 * self.label_rotation/np.pi,
             fontsize=self.chart.fontsize)
 
- 
+
 class FlowGeometry(ChartGeometry, Polygon):
     """
     Geometry to represent a flow from a begin node to an end node.
@@ -168,6 +169,62 @@ class FlowGeometry(ChartGeometry, Polygon):
         A flow lies between its begin and end nodes.
         """
         return (self.begin_node.position, self.end_node.position)
+
+    @lazyfield
+    def curve(self):
+        """
+        A curve along the middle of this `FlowGeometry` instance.
+        """
+        arc_begin =\
+            self.chart.get_flow_position(self.begin_node, self)
+        angle_begin =\
+            (arc_begin[0] + arc_begin[1]) / 2
+        if self.begin_node == self.end_node:
+            return Path(
+                label="{}_curve".format(self.label),
+                vertices=[
+                    begin_vertex,
+                    self.chart.point_at(
+                        self.begin_node.shape.radial[0],
+                        angle_begin),
+                    self.chart.point_at(
+                        self.chart.inner_circle.radius,
+                        angle_begin)
+                ])
+        arc_end =\
+            self.chart.get_flow_position(self.end_node, self)
+        angle_end =\
+            (arc_end[0] + arc_end[1]) / 2
+        vertices =\
+            self.chart.flow_curve(
+                self.chart.inner_circle.radius,
+                angle_begin,
+                angle_end)
+        return Path(
+            label="{}_curve".format(self.label),
+            vertices = vertices)
+                
+    def draw(self, axes, *args, **kwargs):
+        """
+        Draw the `Polygon` associated with this `FlowGeometry` instance,
+        and then draw an arrow over it.
+        """
+        super().draw(*args, **kwargs)
+        self.curve.draw(*args, **kwargs)
+        N = len(self.curve.vertices)
+        n = -1#np.int32(-0.1 * N)
+        arrow_start = self.curve.vertices[n]
+        arrow_direction =\
+            self.curve.vertices[n] - self.curve.vertices[n-1]
+        arrow_end = arrow_start + arrow_direction
+        arrow_direction = arrow_end - arrow_start
+        axes.arrow(
+            arrow_start[0], arrow_start[1],
+            arrow_direction[0], arrow_direction[1],
+            head_width=self.size, head_length=0.05,
+            fc='k', #self.facecolor,
+            ec='k')#self.facecolor)
+        return axes
 
 
 class CircularNetworkChart(WithFields):
@@ -389,41 +446,41 @@ class CircularNetworkChart(WithFields):
             [flow_weights, _flow_sizes("source"), _flow_sizes("target")],
             axis=1)
 
-    @lazyfield
-    def flow_data_original(self):
-        """
-        Data associated with a flow: size, position, etc..
-        """
-        def flow_sizes(node_type):
-            """..."""
-            assert node_type in ("begin", "end")
-            if node_type == "begin":
-                nodes =\
-                    self.link_data.index.get_level_values("begin_node")
-                node_weights =\
-                    self.node_data.out_flow.loc[nodes].values
-                node_sizes =\
-                    self.node_data.out_size.loc[nodes].values
-                return node_sizes * (
-                    self.link_data.rename("size_begin") / node_weights)
-            else:
-                nodes =\
-                    self.link_data.index.get_level_values("end_node")
-                node_weights =\
-                    self.node_data.in_flow.loc[nodes].values
-                node_sizes =\
-                    self.node_data.in_size.loc[nodes].values
-                return node_sizes * (
-                    self.link_data.rename("size_end") / node_weights)
+    # @lazyfield
+    # def flow_data_original(self):
+    #     """
+    #     Data associated with a flow: size, position, etc..
+    #     """
+    #     def flow_sizes(node_type):
+    #         """..."""
+    #         assert node_type in ("begin", "end")
+    #         if node_type == "begin":
+    #             nodes =\
+    #                 self.link_data.index.get_level_values("begin_node")
+    #             node_weights =\
+    #                 self.node_data.out_flow.loc[nodes].values
+    #             node_sizes =\
+    #                 self.node_data.out_size.loc[nodes].values
+    #             return node_sizes * (
+    #                 self.link_data.rename("size_begin") / node_weights)
+    #         else:
+    #             nodes =\
+    #                 self.link_data.index.get_level_values("end_node")
+    #             node_weights =\
+    #                 self.node_data.in_flow.loc[nodes].values
+    #             node_sizes =\
+    #                 self.node_data.in_size.loc[nodes].values
+    #             return node_sizes * (
+    #                 self.link_data.rename("size_end") / node_weights)
 
-            raise Exception("Execution shouldn't reach here")
+    #         raise Exception("Execution shouldn't reach here")
 
-        assert isinstance(self.link_data, pd.Series)
-        flow_weights =\
-            self.link_data / self.link_data.sum()
-        return pd.concat(
-            [flow_weights, flow_sizes("begin"), flow_sizes("end")],
-            axis=1)
+    #     assert isinstance(self.link_data, pd.Series)
+    #     flow_weights =\
+    #         self.link_data / self.link_data.sum()
+    #     return pd.concat(
+    #         [flow_weights, flow_sizes("begin"), flow_sizes("end")],
+    #         axis=1)
 
     @lazyfield
     def node_geometries(self):
@@ -575,16 +632,24 @@ class CircularNetworkChart(WithFields):
         """
         Curve of a flow.
         """
-        angle_mean      = (angle_begin + angle_end) / 2.
-        angle_min       = np.minimum(angle_begin, angle_end)
-        angle_off       = angle_mean - angle_min
-        angle_center    = np.pi - 2 * angle_off
-        angle_rotation  = np.pi / 2. - angle_min
-        length          = radius / np.cos(angle_off)
-        radius_arc      = radius * np.tan(angle_off)
-        center_arc      = self.center + np.array([
-            length * np.sin(angle_mean + self.rotation),
-            length * np.cos(angle_mean + self.rotation)])
+        angle_mean =\
+            (angle_begin + angle_end) / 2.
+        angle_min =\
+            np.minimum(angle_begin, angle_end)
+        angle_off =\
+            angle_mean - angle_min
+        angle_center =\
+            np.pi - 2 * angle_off
+        angle_rotation =\
+            np.pi / 2. - angle_min
+        length =\
+            radius / np.cos(angle_off)
+        radius_arc =\
+            radius * np.tan(angle_off)
+        center_arc =\
+            self.center + np.array([
+                length * np.sin(angle_mean + self.rotation),
+                length * np.cos(angle_mean + self.rotation)])
         if not label:
             label = "{}==>{}".format(angle_begin, angle_end)
         rotation =\
@@ -777,9 +842,6 @@ class CircularNetworkChart(WithFields):
         axes.set(xlim=(-s, s), ylim=(-s, s))
         self.outer_circle.draw(*args, **kwargs)
         self.inner_circle.draw(*args, **kwargs)
-        # for node_geometry in self.node_geometries.values():
-        #     node_geometry.draw(axes, *args, **kwargs)
-        #     node_geometry.add_text(axes, *args, **kwargs)
         for node_geometry in self.source_geometries.values():
             node_geometry.draw(axes, *args, **kwargs)
             node_geometry.add_text(axes, *args, **kwargs)
@@ -790,6 +852,6 @@ class CircularNetworkChart(WithFields):
             if (flow_geometry.begin_node == flow_geometry.end_node
                 and not draw_diagonal):
                 continue
-            flow_geometry.draw(*args, **kwargs)
+            flow_geometry.draw(axes, *args, **kwargs)
 
         # Circle(label="study", radius=1.5).draw()
