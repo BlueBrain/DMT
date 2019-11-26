@@ -10,6 +10,7 @@ from dmt.tk.parameters import Parameters
 from dmt.tk.plotting import Bars, HeatMap
 from dmt.tk.plotting.multi import MultiPlot
 from dmt.data.observation import measurement
+from neuro_dmt.analysis.reporting import CircuitAnalysisReport
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
@@ -60,6 +61,15 @@ def test_cell_density():
                 rat.defelipe2014.summary_measurement.samples(1000)),
             meyer2010=_append_region(
                 rat.meyer2010.samples(1000)))
+
+    def report(**kwargs):
+        return CircuitAnalysisReport(
+            animal="Rat",
+            age="P12",
+            brain_region="SSCx",
+            uri="MockBlueBrainCircuitModel",
+            **kwargs)
+
     analysis_test = BlueBrainCircuitAnalysisTest(
         analysis=BrainCircuitAnalysis(
             phenomenon=phenomenon,
@@ -82,7 +92,8 @@ def test_cell_density():
                     xlabel="Layer",
                     yvar=phenomenon.label,
                     ylabel=phenomenon.name,
-                    gvar="dataset"))))
+                    gvar="dataset")),
+            report=report))
 
     cell_density_measurement =\
         analysis_test.test_get_measurement(

@@ -48,7 +48,7 @@ class BrainCircuitAnalysis(
         __default_value__=primitive_type_measurement_collection)
     plotter = Field(
         """
-        A class or a module that has `plot` method that will be used to
+        A class instance or a module that has `plot` method that will be used to
         plot the results of this analysis. The plotter should know how to 
         interpret the data provided. For example, the plotter will have to know
         which columns are the x-axis, and which the y-axis. The `Plotter`
@@ -56,6 +56,12 @@ class BrainCircuitAnalysis(
         set as instance attributes.
         """,
         __required__=False)
+    report = Field(
+        """
+        A callable that will generate a report. The callable should be able to
+        take arguments listed in `get_report(...)` method defined below.
+        """,
+        __default_value__=Report)
     reporter = Field(
         """
         A class or a module that will report the results of this analysis.
@@ -231,7 +237,7 @@ class BrainCircuitAnalysis(
         """
         Get a report for the given `measurement`.
         """
-        return Report(
+        return self.report(
             phenomenon=self.phenomenon.label,
             measurement=measurement,
             figures=figures,

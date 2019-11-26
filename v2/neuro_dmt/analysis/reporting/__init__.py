@@ -30,11 +30,24 @@ class CircuitAnalysisReport(Report):
         Name of the region in the brain that the circuit models.
         """,
         __default_value__="Not Available")
-    uri_circuit = Field(
+    uri = Field(
         """
         Location of the circuit.
         """,
         __default_value__="Not Available")
+
+
+    @lazyfield
+    def field_values(self):
+        """..."""
+        fields = super().field_values
+        fields.update(dict(
+            animal=self.animal,
+            age=self.age,
+            brain_region=self.brain_region,
+            uri=self.uri
+        ))
+        return fields
 
 class CheetahReporter(Reporter):
     """
@@ -59,6 +72,12 @@ class CheetahReporter(Reporter):
         <p><strong>$captions[$label_image]</strong></p>
     #end for
     </br>
+
+    <h3>Circuit Analyzed</h3>
+        <p>Animal: $animal</p>
+        <p>Age: $age</p>
+        <p>Brain Region: $brain_region</p>
+        <p>URI: $uri</p>
 
     <h3>Introduction</h3>
     <p>
@@ -161,7 +180,7 @@ class CheetahReporter(Reporter):
                 "Error during filling the report template: \n\t{}".format(
                     template_fill_error))
 
-            return super()._save_text(report, output_uri, folder_figures)
+            return super()._save_text_report(report, output_uri, folder_figures)
 
         raise RuntimeError(
             "Execution should not have reached here.")
