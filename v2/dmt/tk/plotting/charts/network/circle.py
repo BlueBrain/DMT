@@ -4,7 +4,7 @@ Nodes are placed on a circle's periphery, and arcs connect
 them with edges whose thickness is proportional to that connection's
 strength.
 """
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -210,20 +210,30 @@ class FlowGeometry(ChartGeometry, Polygon):
         and then draw an arrow over it.
         """
         super().draw(*args, **kwargs)
-        self.curve.draw(*args, **kwargs)
+        #self.curve.draw(*args, **kwargs)
         N = len(self.curve.vertices)
         n = -1#np.int32(-0.1 * N)
-        arrow_start = self.curve.vertices[n]
+        #arrow_start = self.curve.vertices[n]
+        arc_end =\
+            self.chart.get_flow_position(self.end_node, self)
+        angle_end =\
+            (arc_end[0] + arc_end[1]) / 2
+        arrow_start =\
+            self.chart.point_at(
+                self.end_node.position.radial - self.end_node.size.radial,
+                angle_end)
         arrow_direction =\
             self.curve.vertices[n] - self.curve.vertices[n-1]
         arrow_end = arrow_start + arrow_direction
         arrow_direction = arrow_end - arrow_start
+        color = self.facecolor
+        color[3] = 0.5
         axes.arrow(
             arrow_start[0], arrow_start[1],
             arrow_direction[0], arrow_direction[1],
-            head_width=self.size, head_length=0.05,
-            fc='k', #self.facecolor,
-            ec='k')#self.facecolor)
+            head_width=self.size, head_length=self.end_node.size.radial,
+            fc=color,
+            ec="gray")#self.facecolor)
         return axes
 
 

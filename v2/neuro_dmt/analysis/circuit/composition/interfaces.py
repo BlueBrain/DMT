@@ -36,7 +36,9 @@ class CellDensityAdapterInterface(Interface):
             mtype=None,
             etype=None,
             region=None,
-            layer=None):
+            layer=None,
+            depth=None,
+            height=None):
         """
         Get number of cells in a unit volume in the circuit represented by
         `circuit_model`.
@@ -91,4 +93,15 @@ class CellDensityAdapterInterface(Interface):
         """
         raise NotImplementedError
 
-
+    def get_inhibitory_cell_fraction(self,
+            circuit_model,
+            mtype=None,
+            etype=None,
+            region=None,
+            layer=None,
+            depth=None,
+            height=None):
+        """
+        Get fraction of inhibitory cells.
+        """
+        pass

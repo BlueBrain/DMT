@@ -11,6 +11,12 @@ class Network(WithFields):
     """
     A chart that will display network properties.
     """
+    chart_type = Field(
+        """
+        A callable that takes a network's link-weight data, and a color map to 
+        generate a chart for the input network data.
+        """,
+        __default_value__=CircularNetworkChart)
     title = Field(
         """
         Title to be displayed.
@@ -63,7 +69,7 @@ class Network(WithFields):
             name="weight")
 
 
-        return CircularNetworkChart(
+        return self.chart_type(
             link_data=link_weights,
             color_map=self.color_map)
 
