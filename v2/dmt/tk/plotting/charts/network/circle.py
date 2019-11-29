@@ -53,6 +53,40 @@ class NodeArcGeometry(NodeGeometry, Polygon):
         angle = 3.*np.pi/2. - self.position.angular
         return angle if angle < 0. else 2*np.pi + angle
 
+    @lazyfield
+    def sides(self):
+        """
+        Sides of the polygon that will be plotted.
+        """
+        #return self.chart.get_sides(self)
+        radius = self.shape.radial
+        angle = self.shape.angular
+        radial_out = Path(
+            label=self.label,
+            vertices=[
+                self.chart.point_at(radius[0], angle[0]),
+                self.chart.point_at(radius[1], angle[0])]
+        )
+        arc_anti_clockwise = Path(
+            label=self.label,
+            vertices=self.chart.arc(radius[1], angle[0], angle[1])
+        )
+        radial_in = Path(
+            label=self.label,
+            vertices=[
+                self.chart.point_at(radius[1], angle[1]),
+                self.chart.point_at(radius[0], angle[1])]
+        )
+        arc_clockwise = Path(
+            label=self.label,
+             vertices=self.chart.arc(radius[0], angle[1], angle[0])
+        )
+        return [
+            radial_out,
+            arc_anti_clockwise,
+            radial_in,
+            arc_clockwise
+        ]
     def add_text(self, axes, *args, **kwargs):
         """
         For plotting
@@ -293,52 +327,79 @@ class CircularNetworkChart(NetworkChart):
             radius=self.axes_size - self.inner_outer_spacing)
 
     @lazyfield
+    def node_geometry_size(self):
+        """
+        Size of the geometry that will represent a node.
+        In a pandas series of tuples (radial, angular)
+        """
+        return self.node_weight.apply(
+            lambda weight: (
+                pd.Series({
+                    "total": (
+                        self.radial_size_node,
+                        self.unit_node_size* weight.total),
+                    "source": (
+                        self.radial_size_node,
+                        self.unit_node_size*weight.source),
+                    "target":(
+                        self.radial_size_node,
+                        self.unit_node_size*weight.target)})),
+            axis=1
+        )
+
+    @lazyfield
     def node_position(self):
         """
         Positions where the nodes will be displayed.
         """
-        number_nodes = self.node_size.shape[0]
+        number_nodes = self.node_weight.shape[0]
         spacing = 2. * np.pi * self.spacing_factor / number_nodes
 
         def _positions_angular():
             position_end = - spacing
-            for size in self.node_size.total.values:
+            for size in self.node_geometry_size.total.values:
                 position_start = position_end + spacing
-                position_end = position_start + size
+                position_end = position_start + size[1]
                 yield (position_start + position_end) / 2.
 
         positions_angular = pd.Series(
             list(_positions_angular()),
-            index=self.node_size.index,
+            index=self.node_geometry_size.index,
             name="angular"
         )
+        node_geometry_size_angular = self.node_geometry_size.apply(
+            lambda node_size: pd.Series(dict(
+                total=node_size.total[1],
+                source=node_size.source[1],
+                target=node_size.target[1])),
+            axis=1)
         starts_source = (
-            positions_angular - self.node_size.total / 2.
+            positions_angular - node_geometry_size_angular.total / 2.
         ).rename(
             "start_source"
         )
         positions_angular_source = (
-            starts_source + self.node_size.source / 2.
+            starts_source + node_geometry_size_angular.source / 2.
         ).rename(
             "angular"
         )
         positions_source = positions_angular_source.apply(
             lambda position_angular: (
-                self.inner_circle.radius, position_angular)
+                self.outer_circle.radius, position_angular)
         )
         starts_target = (
-            positions_angular_source + self.node_size.source / 2.
+            positions_angular_source + node_geometry_size_angular.source / 2.
         ).rename(
             "start_target"
         )
         positions_angular_target = (
-            starts_target + self.node_size.target / 2.
+            starts_target + node_geometry_size_angular.target / 2.
         ).rename(
             "angular"
         )
         positions_target = positions_angular_target.apply(
             lambda position_angular: (
-                self.outer_circle.radius, position_angular)
+                self.inner_circle.radius, position_angular)
         )
         return pd.concat(
             [positions_source, positions_target],
@@ -475,8 +536,8 @@ class CircularNetworkChart(NetworkChart):
             chart=self,
             label=label,
             position=PolarPoint(*node_data.position.source),
-            size=PolarPoint(*node_data.size.source),
-            flow_weight=node_data.flow.incoming
+            size=PolarPoint(*node_data.geometry_size.source),
+            flow_weight=node_data.flow.outgoing
         )
     def get_target_geometry(self,
                 label,
@@ -486,7 +547,7 @@ class CircularNetworkChart(NetworkChart):
             chart=self,
             label=label,
             position=PolarPoint(*node_data.position.target),
-            size=PolarPoint(*node_data.size.target),
+            size=PolarPoint(*node_data.geometry_size.target),
             flow_weight=node_data.flow.incoming
         )
 
@@ -750,14 +811,14 @@ class CircularNetworkChart(NetworkChart):
         self.inner_circle.draw(*args, **kwargs)
         for node_geometry in self.source_geometries.values():
             node_geometry.draw(axes, *args, **kwargs)
-            node_geometry.add_text(axes, *args, **kwargs)
+            #node_geometry.add_text(axes, *args, **kwargs)
         for node_geometry in self.target_geometries.values():
             node_geometry.draw(axes, *args, **kwargs)
-            node_geometry.add_text(axes, *args, **kwargs)
-        for flow_geometry in self.flow_geometries.values():
-            if (flow_geometry.begin_node == flow_geometry.end_node
-                and not draw_diagonal):
-                continue
-            flow_geometry.draw(axes, *args, **kwargs)
+            #node_geometry.add_text(axes, *args, **kwargs)
+        # for flow_geometry in self.flow_geometries.values():
+        #     if (flow_geometry.begin_node == flow_geometry.end_node
+        #         and not draw_diagonal):
+        #         continue
+        #     flow_geometry.draw(axes, *args, **kwargs)
 
         # Circle(label="study", radius=1.5).draw()

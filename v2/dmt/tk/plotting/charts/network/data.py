@@ -68,32 +68,36 @@ class NetworkChart(WithFields):
             axis=1
         )
     @lazyfield
-    def node_size(self):
+    def node_weight(self):
         """
-        Transform `self.link_data` to data required to plot nodes.
+        Compute weight of a node from it's in and out flows.
+        A node's weight calculated here will determine it's plotted
+        position and size.
         """
         number_nodes = self.node_flow.shape[0]
         total_out_flow = self.node_flow.outgoing.sum()
         total_in_flow = self.node_flow.incoming.sum()
         total_flow = total_out_flow + total_in_flow
 
-        sizes = (
-            self.node_flow.incoming + self.node_flow.outgoing
+        weights = (
+            (self.node_flow.incoming + self.node_flow.outgoing)/ total_flow
+        ).apply(
+            lambda weight: weight 
         ).rename(
             "total"
         )
-        sizes_source = (
-            sizes * (self.node_flow.outgoing / self.node_flow.total)
+        weights_source = (
+            weights * (self.node_flow.outgoing / self.node_flow.total)
         ).rename(
             "source"
         )
-        sizes_target = (
-            sizes * (self.node_flow.incoming / self.node_flow.total)
+        weights_target = (
+            weights * (self.node_flow.incoming / self.node_flow.total)
         ).rename(
             "target"
         )
         return pd.concat(
-            [sizes, sizes_source, sizes_target],
+            [weights, weights_source, weights_target],
             axis=1,
             keys=["total", "source", "target"]
         )
@@ -146,9 +150,10 @@ class NetworkChart(WithFields):
     def node_data(self):
         """All of node data..."""
         return pd.concat(
-            [self.node_position, self.node_size, self.node_flow],
+            [self.node_position, self.node_geometry_size,
+             self.node_weight, self.node_flow],
             axis=1,
-            keys=["position", "size", "flow"]
+            keys=["position", "geometry_size", "weight", "flow"]
         )
     @lazyfield
     def source_geometries(self):
