@@ -10,6 +10,14 @@ class NetworkChart(WithFields):
     """
     A mixin that computes data required to plot a network chart.
     """
+    NodeGeometryType = Field(
+        """
+        A callable that returns a node geometry
+        """)
+    FlowGeometryType = Field(
+        """
+        A callable that returns a flow geometry
+        """)
     link_data = Field(
         """
         A `pandas.Series` with a double leveled index <`begin_node`, `end_node`>,
@@ -129,6 +137,17 @@ class NetworkChart(WithFields):
             axis=1,
             keys=["position", "geometry_size", "weight", "flow"]
         )
+    def get_source_geometry(self,
+                label,
+                node_data):
+        """..."""
+        return self.NodeGeometryType(
+            chart=self,
+            label=label,
+            position=node_data.position.source,
+            size=node_data.geometry_size.source,
+            flow_weight=node_data.flow.outgoing
+        )
     @lazyfield
     def source_geometries(self):
         """
@@ -137,6 +156,18 @@ class NetworkChart(WithFields):
         return OrderedDict([
             (label, self.get_source_geometry(label, node))
             for label, node in self.node_data.iterrows()])
+
+    def get_target_geometry(self,
+                label,
+                node_data):
+        """..."""
+        return self.NodeGeometryType(
+            chart=self,
+            label=label,
+            position=node_data.position.target,
+            size=node_data.geometry_size.target,
+            flow_weight=node_data.flow.incoming
+        )
     @lazyfield
     def target_geometries(self):
         """
@@ -152,6 +183,18 @@ class NetworkChart(WithFields):
         return pd.concat(
             [self.flow_weight, self.flow_geometry_size],
             axis=1
+        )
+    def get_flow_geometry(self,
+            begin_node_label,
+            end_node_label,
+            flow_size):
+        """..."""
+        return self.FlowGeometryType(
+            chart=self,
+            begin_node=self.source_geometries[begin_node_label],
+            end_node=self.target_geometries[end_node_label],
+            size_begin=flow_size.begin,
+            size_end=flow_size.end
         )
     @lazyfield
     def flow_geometries(self):
