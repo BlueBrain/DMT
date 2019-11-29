@@ -155,6 +155,79 @@ class FlowArcGeometry(ChartGeometry, Polygon):
         return (self.begin_node.position, self.end_node.position)
 
     @lazyfield
+    def sides(self):
+        """..."""
+        arc_begin = self.chart.get_flow_position(
+            self.begin_node, self
+        )
+        begin_base = Path(
+            label=self.label,
+            vertices=self.chart.arc(
+                self.begin_node.shape.radial[0],
+                arc_begin[0],
+                arc_begin[1])
+        )
+        if self.begin_node == self.end_node:
+            side_forward = Path(
+                label=self.label,
+                vertices=[
+                    self.chart.point_at(
+                        self.begin_node.shape.radial[0],
+                        arc_begin[1]),
+                    self.chart.point_at(
+                        self.inner_circle.radius,
+                        arc_begin[1])]
+            )
+            end_base = Path(
+                label=self.label,
+                vertices=self.chart.arc(
+                    self.chart.inner_circle.radius,
+                    arc_begin[1],
+                    arc_begin[0])
+            )
+            side_backward = Path(
+                label=self.label,
+                vertices=[
+                    self.chart.point_at(
+                        self.chart.inner_circle.radius,
+                        self.chart.point_at(
+                            self.begin_node.shape.radial[0],
+                            arc_begin[0]))]
+            )
+        else:
+            arc_end = self.chart.get_flow_position(
+                self.end_node, self
+            )
+            side_forward = Path(
+                label=self.label,
+                vertices=self.chart.flow_curve(
+                    self.chart.inner_circle.radius,
+                    arc_begin[1],
+                    arc_end[0])
+            )
+            end_base = Path(
+                label=self.label,
+                vertices=self.chart.arc(
+                    self.chart.inner_circle.radius,
+                    arc_end[0],
+                    arc_end[1])
+            )
+            side_backward = Path(
+                label=self.label,
+                vertices=self.chart.flow_curve(
+                    self.chart.inner_circle.radius,
+                    arc_end[1],
+                    arc_begin[0])
+            )
+        return [
+            begin_base,
+            side_forward,
+            end_base,
+            side_backward
+        ]
+
+
+    @lazyfield
     def curve(self):
         """
         A curve along the middle of this `FlowGeometry` instance.
@@ -187,7 +260,7 @@ class FlowArcGeometry(ChartGeometry, Polygon):
         return Path(
             label="{}_curve".format(self.label),
             vertices = vertices)
-                
+
     def draw(self, axes, *args, **kwargs):
         """
         Draw the `Polygon` associated with this `FlowGeometry` instance,
@@ -212,12 +285,12 @@ class FlowArcGeometry(ChartGeometry, Polygon):
         arrow_direction = arrow_end - arrow_start
         color = self.facecolor
         color[3] = 0.5
-        axes.arrow(
-            arrow_start[0], arrow_start[1],
-            arrow_direction[0], arrow_direction[1],
-            head_width=self.size, head_length=self.end_node.size.radial,
-            fc=color,
-            ec="gray")#self.facecolor)
+        # axes.arrow(
+        #     arrow_start[0], arrow_start[1],
+        #     arrow_direction[0], arrow_direction[1],
+        #     head_width=self.size, head_length=self.end_node.size.radial,
+        #     fc=color,
+        #     ec="gray")#self.facecolor)
         return axes
 
 
@@ -815,10 +888,10 @@ class CircularNetworkChart(NetworkChart):
         for node_geometry in self.target_geometries.values():
             node_geometry.draw(axes, *args, **kwargs)
             #node_geometry.add_text(axes, *args, **kwargs)
-        # for flow_geometry in self.flow_geometries.values():
-        #     if (flow_geometry.begin_node == flow_geometry.end_node
-        #         and not draw_diagonal):
-        #         continue
-        #     flow_geometry.draw(axes, *args, **kwargs)
+        for flow_geometry in self.flow_geometries.values():
+            if (flow_geometry.begin_node == flow_geometry.end_node
+                and not draw_diagonal):
+                continue
+            flow_geometry.draw(axes, *args, **kwargs)
 
         # Circle(label="study", radius=1.5).draw()

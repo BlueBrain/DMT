@@ -111,6 +111,21 @@ class NetworkChart(WithFields):
         ).rename(
             "weight"
         )
+
+    @staticmethod
+    def _angular_size(dataframe_size):
+        """..."""
+        return dataframe_size.apply(
+            lambda row: pd.Series(dict(
+                source=row.source[1],
+                target=row.target[1])),
+            axis=1
+        )
+    @lazyfield
+    def node_angular_size(self):
+        """..."""
+        return self._angular_size(self.node_geometry_size)
+
     @lazyfield
     def flow_size(self):
         """..."""
@@ -119,14 +134,14 @@ class NetworkChart(WithFields):
             assert node_type in ("source", "target")
             if node_type == "source":
                 nodes = self.link_data.index.get_level_values("begin_node")
-                return self.node_size.source.loc[nodes].values * (
+                return self.node_angular_size.source.loc[nodes].values * (
                     self.link_data / self.node_flow.outgoing.loc[nodes].values
                 ).rename(
                     "begin"
                 )
             else:
                 nodes = self.link_data.index.get_level_values("end_node")
-                return self.node_size.source.loc[nodes].values * (
+                return self.node_angular_size.source.loc[nodes].values * (
                     self.link_data / self.node_flow.incoming.loc[nodes].values
                 ).rename(
                     "end"
