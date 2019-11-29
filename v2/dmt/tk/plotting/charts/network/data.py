@@ -112,47 +112,6 @@ class NetworkChart(WithFields):
             "weight"
         )
 
-    @staticmethod
-    def _angular_size(dataframe_size):
-        """..."""
-        return dataframe_size.apply(
-            lambda row: pd.Series(dict(
-                source=row.source[1],
-                target=row.target[1])),
-            axis=1
-        )
-    @lazyfield
-    def node_angular_size(self):
-        """..."""
-        return self._angular_size(self.node_geometry_size)
-
-    @lazyfield
-    def flow_size(self):
-        """..."""
-        def _flow_sizes(node_type):
-            """..."""
-            assert node_type in ("source", "target")
-            if node_type == "source":
-                nodes = self.link_data.index.get_level_values("begin_node")
-                return self.node_angular_size.source.loc[nodes].values * (
-                    self.link_data / self.node_flow.outgoing.loc[nodes].values
-                ).rename(
-                    "begin"
-                )
-            else:
-                nodes = self.link_data.index.get_level_values("end_node")
-                return self.node_angular_size.source.loc[nodes].values * (
-                    self.link_data / self.node_flow.incoming.loc[nodes].values
-                ).rename(
-                    "end"
-                )
-            raise RuntimeError(
-                "Execution of `flow_data(...)` should not have reached here."
-            )
-        return pd.concat(
-            [_flow_sizes("source"), _flow_sizes("target")],
-            axis=1
-        )
     @abstractproperty
     def node_position(self):
         """
@@ -191,7 +150,7 @@ class NetworkChart(WithFields):
     def flow_data(self):
         """..."""
         return pd.concat(
-            [self.flow_weight, self.flow_size],
+            [self.flow_weight, self.flow_geometry_size],
             axis=1
         )
     @lazyfield
@@ -202,5 +161,5 @@ class NetworkChart(WithFields):
         return OrderedDict([
             ((begin_node, end_node),
              self.get_flow_geometry(begin_node, end_node, flow))
-            for (begin_node, end_node), flow in self.flow_size.iterrows()])
+            for (begin_node, end_node), flow in self.flow_data.iterrows()])
 

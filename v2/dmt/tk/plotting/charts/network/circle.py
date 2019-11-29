@@ -131,7 +131,7 @@ class FlowArcGeometry(ChartGeometry, Polygon):
         """
         Label can be constructed from nodes.
         """,
-        lambda self: "{}==>{}".format(
+        lambda self: (
             self.begin_node.label,
             self.end_node.label))
 
@@ -163,7 +163,8 @@ class FlowArcGeometry(ChartGeometry, Polygon):
         begin_base = Path(
             label=self.label,
             vertices=self.chart.arc(
-                self.begin_node.shape.radial[0],
+                self.chart.outer_circle.radius,
+                #self.begin_node.shape.radial[0],
                 arc_begin[0],
                 arc_begin[1])
         )
@@ -420,6 +421,32 @@ class CircularNetworkChart(NetworkChart):
             axis=1
         )
 
+    @staticmethod
+    def _angular_size(dataframe_size):
+        """..."""
+        try:
+            return dataframe_size.apply(
+                lambda row: pd.Series(dict(
+                    total=row.total[1],
+                    source=row.source[1],
+                    target=row.target[1])),
+                axis=1
+            )
+        except AttributeError:
+            return dataframe_size.apply(
+                lambda row: pd.Series(dict(
+                    source=row.source[1],
+                    target=row.target[1])),
+                axis=1
+            )
+        raise RuntimeError(
+            "Execution of _angular_size(...) should not reach here."
+        )
+    @lazyfield
+    def node_angular_size(self):
+        """..."""
+        return self._angular_size(self.node_geometry_size)
+
     @lazyfield
     def node_position(self):
         """
@@ -440,19 +467,13 @@ class CircularNetworkChart(NetworkChart):
             index=self.node_geometry_size.index,
             name="angular"
         )
-        node_geometry_size_angular = self.node_geometry_size.apply(
-            lambda node_size: pd.Series(dict(
-                total=node_size.total[1],
-                source=node_size.source[1],
-                target=node_size.target[1])),
-            axis=1)
         starts_source = (
-            positions_angular - node_geometry_size_angular.total / 2.
+            positions_angular - self.node_angular_size.total / 2.
         ).rename(
             "start_source"
         )
         positions_angular_source = (
-            starts_source + node_geometry_size_angular.source / 2.
+            starts_source + self.node_angular_size.source / 2.
         ).rename(
             "angular"
         )
@@ -461,12 +482,12 @@ class CircularNetworkChart(NetworkChart):
                 self.outer_circle.radius, position_angular)
         )
         starts_target = (
-            positions_angular_source + node_geometry_size_angular.source / 2.
+            positions_angular_source + self.node_angular_size.source / 2.
         ).rename(
             "start_target"
         )
         positions_angular_target = (
-            starts_target + node_geometry_size_angular.target / 2.
+            starts_target + self.node_angular_size.target / 2.
         ).rename(
             "angular"
         )
@@ -764,113 +785,140 @@ class CircularNetworkChart(NetworkChart):
 
         return position
 
-    def get_sides(self, handled_geometry):
-        """
-        Get sides for a geometry handled by this `Chart`.
-        """
-        assert handled_geometry.chart == self
+    # def get_sides(self, handled_geometry):
+    #     """
+    #     Get sides for a geometry handled by this `Chart`.
+    #     """
+    #     assert handled_geometry.chart == self
 
-        def _get_sides_flow(geometry):
-            """..."""
-            arc_begin =\
-                self.get_flow_position(geometry.begin_node, geometry)
-            begin_base = Path(
-                label="{}_begin".format(geometry.label),
-                vertices=self.arc(
-                    geometry.begin_node.shape.radial[0],
-                    arc_begin[0],
-                    arc_begin[1]))
-            if geometry.begin_node == geometry.end_node:
-                side_forward = Path(
-                    label="{}_side_forward".format(geometry.label),
-                    vertices=[
-                        self.point_at(
-                            geometry.begin_node.shape.radial[0],
-                            arc_begin[1]),
-                        self.point_at(
-                            self.inner_circle.radius,
-                            arc_begin[1])])
-                end_base = Path(
-                    label="{}_end".format(geometry.label),
-                    vertices=self.arc(
-                        self.inner_circle.radius,
-                        arc_begin[1],
-                        arc_begin[0]))
-                side_backward = Path(
-                    label="{}_side_backward".format(geometry.label),
-                    vertices=[
-                        self.point_at(
-                            self.inner_circle.radius,
-                            arc_begin[0]),
-                        self.point_at(
-                            geometry.begin_node.shape.radial[0],
-                            arc_begin[0])])
-            else:
-                arc_end =\
-                    self.get_flow_position(geometry.end_node, geometry)
-                side_forward = Path(
-                    label="{}_side_forward".format(geometry.label),
-                    vertices=self.flow_curve(
-                        self.inner_circle.radius,
-                        arc_begin[1],
-                        arc_end[0]))
-                end_base = Path(
-                    label="{}_end".format(geometry.label),
-                    vertices=self.arc(
-                        self.inner_circle.radius,
-                        arc_end[0],
-                        arc_end[1]))
-                side_backward = Path(
-                    label="{}_side_backward".format(geometry.label),
-                    vertices=self.flow_curve(
-                        self.inner_circle.radius,
-                        arc_end[1],
-                        arc_begin[0]))
+    #     def _get_sides_flow(geometry):
+    #         """..."""
+    #         arc_begin =\
+    #             self.get_flow_position(geometry.begin_node, geometry)
+    #         begin_base = Path(
+    #             label="{}_begin".format(geometry.label),
+    #             vertices=self.arc(
+    #                 geometry.begin_node.shape.radial[0],
+    #                 arc_begin[0],
+    #                 arc_begin[1]))
+    #         if geometry.begin_node == geometry.end_node:
+    #             side_forward = Path(
+    #                 label="{}_side_forward".format(geometry.label),
+    #                 vertices=[
+    #                     self.point_at(
+    #                         geometry.begin_node.shape.radial[0],
+    #                         arc_begin[1]),
+    #                     self.point_at(
+    #                         self.inner_circle.radius,
+    #                         arc_begin[1])])
+    #             end_base = Path(
+    #                 label="{}_end".format(geometry.label),
+    #                 vertices=self.arc(
+    #                     self.inner_circle.radius,
+    #                     arc_begin[1],
+    #                     arc_begin[0]))
+    #             side_backward = Path(
+    #                 label="{}_side_backward".format(geometry.label),
+    #                 vertices=[
+    #                     self.point_at(
+    #                         self.inner_circle.radius,
+    #                         arc_begin[0]),
+    #                     self.point_at(
+    #                         geometry.begin_node.shape.radial[0],
+    #                         arc_begin[0])])
+    #         else:
+    #             arc_end =\
+    #                 self.get_flow_position(geometry.end_node, geometry)
+    #             side_forward = Path(
+    #                 label="{}_side_forward".format(geometry.label),
+    #                 vertices=self.flow_curve(
+    #                     self.inner_circle.radius,
+    #                     arc_begin[1],
+    #                     arc_end[0]))
+    #             end_base = Path(
+    #                 label="{}_end".format(geometry.label),
+    #                 vertices=self.arc(
+    #                     self.inner_circle.radius,
+    #                     arc_end[0],
+    #                     arc_end[1]))
+    #             side_backward = Path(
+    #                 label="{}_side_backward".format(geometry.label),
+    #                 vertices=self.flow_curve(
+    #                     self.inner_circle.radius,
+    #                     arc_end[1],
+    #                     arc_begin[0]))
                        
-            return [
-                begin_base,
-                side_forward,
-                end_base,
-                side_backward]
+    #         return [
+    #             begin_base,
+    #             side_forward,
+    #             end_base,
+    #             side_backward]
 
-        def _get_sides_node(geometry):
+        # def _get_sides_node(geometry):
+        #     """..."""
+        #     radius = geometry.shape.radial
+        #     angle = geometry.shape.angular
+        #     radial_out = Path(
+        #         label="{}_radial_out".format(geometry.label),
+        #         vertices=[
+        #             self.point_at(radius[0], angle[0]),
+        #             self.point_at(radius[1], angle[0])])
+        #     arc_anti_clockwise = Path(
+        #         label="{}_arc_anti_clockwise".format(geometry.label),
+        #         vertices=self.arc(radius[1], angle[0], angle[1]))
+        #     radial_in = Path(
+        #         label="{}_radial_in".format(geometry.label),
+        #         vertices=[
+        #             self.point_at(radius[1], angle[1]),
+        #             self.point_at(radius[0], angle[1])])
+        #     arc_clockwise = Path(
+        #         label="{}_arc_clockwise".format(geometry.label),
+        #         vertices=self.arc(radius[0], angle[1], angle[0]))
+        #     return [
+        #         radial_out,
+        #         arc_anti_clockwise,
+        #         radial_in,
+        #         arc_clockwise]
+
+        # if isinstance(handled_geometry, NodeGeometry):
+        #     return _get_sides_node(handled_geometry)
+        # if isinstance(handled_geometry, FlowGeometry):
+        #     return _get_sides_flow(handled_geometry)
+
+        # raise TypeError(
+        #     """
+        #     Unknown handled geometry:
+        #     \t{}
+        #     {}
+        #     {}
+        #     """.format(type(handled_geometry)))
+    @lazyfield
+    def flow_geometry_size(self):
+        """..."""
+        def _flow_sizes(node_type):
             """..."""
-            radius = geometry.shape.radial
-            angle = geometry.shape.angular
-            radial_out = Path(
-                label="{}_radial_out".format(geometry.label),
-                vertices=[
-                    self.point_at(radius[0], angle[0]),
-                    self.point_at(radius[1], angle[0])])
-            arc_anti_clockwise = Path(
-                label="{}_arc_anti_clockwise".format(geometry.label),
-                vertices=self.arc(radius[1], angle[0], angle[1]))
-            radial_in = Path(
-                label="{}_radial_in".format(geometry.label),
-                vertices=[
-                    self.point_at(radius[1], angle[1]),
-                    self.point_at(radius[0], angle[1])])
-            arc_clockwise = Path(
-                label="{}_arc_clockwise".format(geometry.label),
-                vertices=self.arc(radius[0], angle[1], angle[0]))
-            return [
-                radial_out,
-                arc_anti_clockwise,
-                radial_in,
-                arc_clockwise]
-
-        if isinstance(handled_geometry, NodeGeometry):
-            return _get_sides_node(handled_geometry)
-        if isinstance(handled_geometry, FlowGeometry):
-            return _get_sides_flow(handled_geometry)
-
-        raise TypeError(
-            """
-            Unknown handled geometry:
-            \t{}
-            {}
-            {}
-            """.format(type(handled_geometry)))
+            assert node_type in ("source", "target")
+            if node_type == "source":
+                nodes = self.link_data.index.get_level_values("begin_node")
+                return self.node_angular_size.source.loc[nodes].values * (
+                    self.link_data / self.node_flow.outgoing.loc[nodes].values
+                ).rename(
+                    "begin"
+                )
+            else:
+                nodes = self.link_data.index.get_level_values("end_node")
+                return self.node_angular_size.target.loc[nodes].values * (
+                    self.link_data / self.node_flow.incoming.loc[nodes].values
+                ).rename(
+                    "end"
+                )
+            raise RuntimeError(
+                "Execution of `flow_data(...)` should not have reached here."
+            )
+        return pd.concat(
+            [_flow_sizes("source"), _flow_sizes("target")],
+            axis=1
+        )
 
     def draw(self, draw_diagonal=True, *args, **kwargs):
         """
