@@ -7,7 +7,8 @@ from ...shapes import PolarPoint, Polygon, Path, Circle, Arc
 from ...figure import Figure
 from .circle import CircularNetworkChart
 
-class Network(WithFields):
+
+class NetworkChartPlot(WithFields):
     """
     A chart that will display network properties.
     """
@@ -30,12 +31,12 @@ class Network(WithFields):
         `node_variable` must be set to 'mtype'.
         """,
         __examples__=["mtype"])
-    pre_variable = LambdaField(
+    source_variable = LambdaField(
         """
         Variable providing values of the beginning node of an edge.
         """,
         lambda self: "pre_{}".format(self.node_variable))
-    post_variable = LambdaField(
+    target_variable = LambdaField(
         """
         Variable providing values of the ending node of an edge
         """,
@@ -63,12 +64,16 @@ class Network(WithFields):
         except KeyError:
             weights = dataframe[self.phenomenon].values
 
+        new_index_name = {
+            self.source_variable: "begin_node",
+            self.target_variable: "end_node"
+        }
         link_weights = pd.Series(
             weights,
-            index=dataframe.index.rename(["begin_node", "end_node"]),
-            name="weight")
-
-
+            index=dataframe.index.rename([
+                new_index_name[name] for name in dataframe.index.names]),
+            name="weight"
+        )
         return self.chart_type(
             link_data=link_weights,
             color_map=self.color_map)
@@ -83,7 +88,7 @@ class Network(WithFields):
 
         Arguments
         -----------
-        dataframe :: <pre_variable, post_variable, phenomenon>
+        dataframe :: <source_variable, source_variable, phenomenon>
         """
         chart = self.chart(dataframe)
         return Figure(
