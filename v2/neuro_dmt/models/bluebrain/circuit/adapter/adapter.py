@@ -349,7 +349,40 @@ class BlueBrainCircuitAdapter(WithFields):
             return np.nan
         number_cells = circuit_model.get_cell_count(roi=random_roi)
         return number_cells/(1.e-9 * random_roi.volume)
+    def _get_node_geometry(self,
+            label,
+            position_radial,
+            node_data):
+        """..."""
+        return NodeArcGeometry(
+            chart=self,
+            label=label,
+            position=PolarPoint(
+                position_radial,
+                node_data.position),
+            size=PolarPoint(
+                self.radial_size_node,
+                node_data.size_total),
+            flow_weight=node_data.out_flow + node_data.in_flow)
 
+    @terminology.require(*terminology.circuit.terms)
+    def get_inhibitory_cell_fraction(self,
+            circuit_model=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **query):
+        """
+        Get fraction of inhibitory neurons in region of the brain specified by
+        `query`
+        """
+        circuit_model = self._resolve(circuit_model)
+        random_roi = self.random_region_of_interest(circuit_model, query)
+        if random_roi is None:
+            return np.nan
+        cells_roi = circuit_model.get_cells(roi=random_roi)
+        return(
+            np.sum(cells_roi.synapse_class == "INH")
+            / cells_roi.shape[0]
+        )
     #@terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
     def get_fiber_density(self,
             circuit_model=None,

@@ -134,12 +134,14 @@ class CheetahReporter(Reporter):
             report,
             output_uri=None,
             report_file_name="report.html",
+            strict=False,
             *args, **kwargs):
         """
         Post the report.
 
         output_uri : Uniform resource identifier where the report should be
         ~            posted.
+        strict : If `True`, a backup text report will not be generated.
         """
         output_uri =\
             self.get_output_location(
@@ -175,6 +177,8 @@ class CheetahReporter(Reporter):
             return output_uri
 
         except Exception as template_fill_error:
+            if strict:
+                raise template_fill_error
             logger.warning(
                 logger.get_source_info(),
                 "Error during filling the report template: \n\t{}".format(

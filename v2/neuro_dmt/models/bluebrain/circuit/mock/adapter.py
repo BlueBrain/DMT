@@ -65,3 +65,11 @@ class MockCircuitAdapter(WithFields):
 
         raise Exception(
             "Code excecution should not reach here.")
+
+    def get_inhibitory_cell_fraction(self,
+                mock_circuit_model,
+                *args, **kwargs):
+        """
+        Mock inhibitory cell fraction.
+        """
+        return numpy.random.unform(0., 1.)
