@@ -1,6 +1,7 @@
 """
 Generate several plots.
 """
+from copy import deepcopy
 from collections import OrderedDict
 import pandas
 import seaborn
@@ -34,7 +35,8 @@ class MultiPlot(WithFields):
             make_name(
                 '_'.join(self.mvar) if isinstance(self.mvar, tuple) else self.mvar,
                 separator='_')
-        return self.plotter.get_figure(
+        plotter = deepcopy(self.plotter)
+        return plotter.get_figure(
             dataframe_subset,
             *args,
             caption=caption,
