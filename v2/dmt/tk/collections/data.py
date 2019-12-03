@@ -120,6 +120,14 @@ def make_hashable(values):
                 frozen_ordered_dict_error,
                 tuple_error))
 
+    def _ordered(dict_like):
+        """..."""
+        if isinstance(dict_like, (FrozenOrderedDict, OrderedDict)):
+            return _ordered
+        assert isinstance(dict_like, dict)
+        return OrderedDict(
+            sorted(dict_like.items(), key=lambda kv: kv[0]))
+
     if not isinstance(values, Iterable):
         return _hashable_one(values)
     if isinstance(values, six.string_types):
@@ -128,7 +136,7 @@ def make_hashable(values):
         return\
             FrozenOrderedDict(
                 (make_hashable(key), make_hashable(value))
-                for key, value in values.items())
+                for key, value in _ordered(values).items())
 
     generator = (make_hashable(value) for value in values)
     if isinstance(values, Generator):
