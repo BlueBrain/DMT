@@ -54,7 +54,7 @@ class LinePlot(WithFields):
         """
         Height of the figure.
         """,
-        __default_value__=8.)
+        __default_value__=12.)
     aspect_ratio_figure = Field(
         """
         Aspect ratio width / height for the figure.
@@ -111,6 +111,8 @@ class LinePlot(WithFields):
                 col=self.fvar if self.fvar else None,
                 hue=self.gvar if self.gvar else None,
                 col_wrap=self.number_columns,
+                height=self.height_figure,
+                aspect=self.aspect_ratio_figure,
                 legend_out=True)
         grid.map(
             seaborn.lineplot,
