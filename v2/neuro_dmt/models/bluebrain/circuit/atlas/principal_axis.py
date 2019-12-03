@@ -105,13 +105,33 @@ class PrincipalAxis(WithFields):
                 return [item]
             return get_list(item)
 
-
         def _get_one(_bin):
             """
             Mask for one bin
             """
             values = self.depth if depth is not None else self.height
-            return np.logical_and(_bin[0] <= values, values < _bin[1])
+            try:
+                begin = _bin[0]
+                end   = _bin[1]
+            except KeyError as key_error_0_1:
+                try:
+                    begin = _bin["begin"]
+                    end   = _bin["end"]
+                except KeyError as key_error_begin_end:
+                    raise ValueError(
+                        """
+                        {} values of type {} are not a tuple
+                        or a mapping<begin -> depth_begin, end -> depth_end>.
+                        KeyErrors raised:
+                        {}
+                        {}
+                        """.format(
+                            "Depth" if depth is not None else "Height",
+                            type(values),
+                            key_error_0_1,
+                            key_error_begin_end)
+                    )
+            return np.logical_and(begin <= values, values < end)
 
         if depth is not None:
             if height is not None:

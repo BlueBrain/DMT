@@ -93,8 +93,6 @@ class circuit(TermCollection):
             for parameter in cls.spatial_terms
         }
 
-
-
 class cell(TermCollection):
     """
     A collection of terms used in neuroscience.

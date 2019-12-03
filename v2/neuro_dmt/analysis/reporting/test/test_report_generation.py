@@ -5,7 +5,7 @@ import pytest as pyt
 from dmt.tk.reporting import Report
 from dmt.tk.plotting import golden_figure
 from dmt.tk.plotting.figure import Figure
-from ..import CheetahReporter
+from ..import CircuitAnalysisReport, CheetahReporter
 
 
 def test_template_filling():
@@ -29,9 +29,21 @@ def test_post():
         range(100),
         np.cumsum(np.random.uniform(size=100)))
     report =\
-        Report(
+        CircuitAnalysisReport(
+            animal="Not Defined",
+            age="Not Defined",
+            brain_region="Not Defined",
+            uri="Not Defined",
             figures={
-                "random_walk_1": Figure(figure, caption="Random Walk")})
+                "random_walk_1": Figure(
+                    figure,
+                    caption="""
+                    Random Walk
+                    ================
+                    Each random walk step size is uniformly drawn from [0, 1).
+                    The individual steps are added up cummulatively to obtain
+                    the location of the walk at a given time.
+                    """)})
     reporter =\
         CheetahReporter("random_walks")
     reporter.post(report)

@@ -3,6 +3,7 @@ A `BlueBrainCircuitAdapter` will need to handle spatial queries on a
 `BlueBrainCircuitModel`. Here we implement helpers towards that endeavor.
 """
 
+from dmt.tk.collections.data import make_hashable
 from dmt.tk.field import Field, lazyfield, WithFields
 
 class QueryDB(WithFields):
@@ -22,28 +23,19 @@ class QueryDB(WithFields):
     def store(self): return {}
 
     @staticmethod
+    def _hashable(query_dict):
+        """..."""
+        return tuple(sorted(
+           [(key, make_hashable(value))
+            for key, value in query_dict.items()
+            if value is not None],
+            key=lambda key_value: key_value[0]))
+
+    @staticmethod
     def _hashed(query_dict):
         """..."""
-        def _hashable(xs):
-            """
-            Get hash for a query.
-            """
-            try:
-                _ = hash(xs)
-                return xs
-            except TypeError:
-                return ';'.join(str(x) for x in xs)
-            raise RuntimeError(
-                "Execution of _hashed(...) should not reach here.")
-
-        key_values =(
-            (key, _hashable(value))
-            for key, value in query_dict.items()
-            if value is not None)
         return\
-            hash(tuple(sorted(
-                key_values,
-                key=lambda key_value: key_value[0])))
+            hash(QueryDB._hashable(query_dict))
 
     def __call__(self,
             circuit_model,
@@ -55,7 +47,7 @@ class QueryDB(WithFields):
             self.store[circuit_model] = {}
 
         cache_circuit_model = self.store[circuit_model]
-        hash_query = self._hashed(query_dict)
+        hash_query = self._hashable(query_dict)
         if hash_query not in cache_circuit_model:
             cache_circuit_model[hash_query] =\
                 self.method_to_memoize(circuit_model, query_dict)

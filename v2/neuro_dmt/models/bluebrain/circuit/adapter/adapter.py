@@ -4,6 +4,7 @@ Adapters for circuits from the Blue Brain Project.
 
 from copy import deepcopy
 from collections.abc import Set, Mapping
+from functools import wraps
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger 
@@ -24,6 +25,17 @@ from ..model.pathway import PathwaySummary
 from .query import QueryDB, SpatialQueryData
 
 logger = Logger(client=__file__)
+
+def measurement_method(description):
+    """
+    Decorator to provide description about how an adapter method makes 
+    measurements on the circuit model.
+    """
+    def decorated(adapter_method):
+        adapter_method.__method__ = description
+        return adapter_method
+
+    return decorated
 
 @implements(CellDensityAdapterInterface)
 @adapts(BlueBrainCircuitModel)
@@ -278,32 +290,18 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         Describe methods.
         """
-        if name_measurement == CellDensityAdapterInterface.__measurement__:
-            if sampling_methodology == terminology.sampling_methodology.random:
-                return """
-                Cells were counted in a box with sides of length {} um.
-                Each cube was centered at a cell that was randomly sampled from 
-                a population described by a cell-query.
-                """.format(self.bounding_box_size)
-            elif sampling_methodology == terminology.sampling_methodology.exhaustive:
-                return """
-                Count of cells in all the voxcells confirming to a cell-query
-                was divided by the total volume of these voxcells.
-                """
-            else:
-                pass
+        try:
+            measurement_method =\
+                getattr(self, name_measurement)
+        except AttributeError:
+            try:
+                measurement_method =\
+                    getattr(self, "get_{}".format(name_measurement))
+            except AttributeError:
+                raise ValueError(
+                    "Undescribed measurement method {}".format(name_measurement))
 
-        if name_measurement == AfferentConnectionCountInterface.__measurement__:
-            return """
-            Post-synaptic cells were sampled, given their cell-type. For example,
-            when the post-synaptic cell is specified by it's mtype, a group
-            of cells with the specified mtype is sampled.
-            For each post-synaptic cell, it's afferent connections from all the 
-            cells in the circuit were counted and grouped by their (specified)
-            cell type (for example, the pre-synaptic cell's mtype). 
-            """
-        return ValueError(
-            "Undescribed measurement method {}".format(name_measurement))
+        return measurement_method.__method__.format(self.field_dict)
 
     def get_label(self,
             circuit_model):
@@ -328,7 +326,19 @@ class BlueBrainCircuitAdapter(WithFields):
         count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
         return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
 
-    @terminology.require(*(terminology.circuit.terms + terminology.cell.terms))
+    @measurement_method("""
+    =============================
+    Exhaustive Methodology
+    =============================
+        Count of cells in all the voxcells confirming to a cell-query was divided by the total volume of these voxcells.
+    =============================
+    Random Sampling Methodology
+    =============================
+        Cells were counted in a box with sides of dimensions {bounding_box_size} um. Each cube was centered at a cell that was randomly sampled from  a population described by a cell-query.
+    """)
+    @terminology.require(
+        *(terminology.circuit.terms + terminology.cell.terms)
+    )
     def get_cell_density(self,
             circuit_model=None,
             sampling_methodology=terminology.sampling_methodology.random,
@@ -349,22 +359,10 @@ class BlueBrainCircuitAdapter(WithFields):
             return np.nan
         number_cells = circuit_model.get_cell_count(roi=random_roi)
         return number_cells/(1.e-9 * random_roi.volume)
-    def _get_node_geometry(self,
-            label,
-            position_radial,
-            node_data):
-        """..."""
-        return NodeArcGeometry(
-            chart=self,
-            label=label,
-            position=PolarPoint(
-                position_radial,
-                node_data.position),
-            size=PolarPoint(
-                self.radial_size_node,
-                node_data.size_total),
-            flow_weight=node_data.out_flow + node_data.in_flow)
 
+    @measurement_method("""
+    Fraction of inhibitory cells was computed in randomly sampled boxes of dimensions {bounding_box_size} um. 
+    """)
     @terminology.require(*terminology.circuit.terms)
     def get_inhibitory_cell_fraction(self,
             circuit_model=None,
@@ -639,6 +637,14 @@ class BlueBrainCircuitAdapter(WithFields):
             ].rename(
                 "number_connections_afferent"
             )
+    @measurement_method("""
+    Post-synaptic cells were sampled, given their cell-type. For example,
+    when the post-synaptic cell is specified by it's mtype, a group
+    of cells with the specified mtype is sampled.
+    For each post-synaptic cell, it's afferent connections from all the 
+    cells in the circuit were counted and grouped by their (specified)
+    cell type (for example, the pre-synaptic cell's mtype). 
+    """)
     def get_afferent_connection_count_summary(self,
             circuit_model=None,
             post_synaptic=None,

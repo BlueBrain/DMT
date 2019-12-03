@@ -43,7 +43,7 @@ class BrainCircuitAnalysis(
         """)
     measurement_collection = Field(
         """
-        A callable that will collected measurements passed as an iterable.
+        A callable that will collect measurements passed as an iterable.
         """,
         __default_value__=primitive_type_measurement_collection)
     plotter = Field(
@@ -152,18 +152,20 @@ class BrainCircuitAnalysis(
                 (p, get_measurement(circuit_model, **p, **kwargs))
                 for p in parameter_values)\
             .rename(columns={"value": self.phenomenon.label})
-        return measured_values\
-            .reset_index()\
-            .assign(
-                dataset=adapter.get_label(circuit_model))\
-            .set_index(
-                ["dataset"] + measured_values.index.names)
+        measurement =\
+              measured_values.reset_index()\
+                             .assign(
+                                 dataset=adapter.get_label(circuit_model))\
+                             .set_index(
+                                 ["dataset"] + measured_values.index.names)
+        try:
+            method = get_measurement.__method__
+        except AttributeError:
+            method = "Measurement method description not provided."
 
-        # return self.measurement_parameters\
-        #            .join(
-        #                parameter_values,
-        #                measured_values,
-        #                additional_index_columns=["dataset"])
+        return dict(
+            data=measurement,
+            method=method)
 
     def _with_reference_data(self,
             measurement,
@@ -339,20 +341,13 @@ class BrainCircuitAnalysis(
                     "sampling_methodology",
                     terminology.sampling_methodology.random),
                 **kwargs)
-        try:
-            measurement_method =\
-                adapter.get_method_description(
-                    self.AdapterInterface.__measurement__)
-        except (AttributeError, ValueError):
-            measurement_method =\
-                self._get_measurement_method(adapter).__doc__
         report =\
             self.get_report(
-                measurement,
-                method_measurement=measurement_method,
+                measurement["data"],
+                method_measurement=measurement["method"],
                 figures=self.get_figures(
-                    data=self._with_reference_data(measurement),
-                    caption=measurement_method),
+                    data=self._with_reference_data(measurement["data"]),
+                    caption=measurement["method"]),
                 reference_data=kwargs.get("reference_data", pandas.DataFrame()))
 
         try:

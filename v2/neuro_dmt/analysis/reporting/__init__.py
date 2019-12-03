@@ -69,7 +69,9 @@ class CheetahReporter(Reporter):
     <h2> Figures </h2>
     #for $label_image, $location_image in $images.items()
         <img src=$location_image alt="apologies.png"/>
-        <p><strong>$captions[$label_image]</strong></p>
+        #for $line in $captions[$label_image].splitlines()
+        <br><strong>$line</strong></br>
+        #end for
     #end for
     </br>
 
