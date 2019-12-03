@@ -167,6 +167,13 @@ class Interface(
           """
           return len(cls.__unimplemented_methods(implementation)) == 0
 
+     @classmethod
+     def implementation(cls, adapter):
+          """
+          Return `adapter` as implementation of this `Interface`.
+          """
+          return implements(cls)(adapter)
+
 
 def interfacemethod(method):
      """
