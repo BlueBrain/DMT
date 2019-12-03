@@ -311,7 +311,10 @@ class SummaryMeasurement(Measurement):
             raise TypeError(
                 """
                 To load as a `SummaryMeasurement` a dataframe should have a
-                two-level columns. Received dataframe columns: {}
+                two-level columns. The first level should be the name of the
+                phenomenon measured, and the second level should be `mean`
+                and `std`.
+                Received dataframe columns: {}
                 """.format(dataframe.columns))
         phenomenon, parameters = SummaryMeasurement._read(dataframe)
         dataframe_phenomenon = dataframe[phenomenon]
