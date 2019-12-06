@@ -12,6 +12,7 @@ from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.plotting import Bars, LinePlot
 from dmt.tk.plotting.multi import MultiPlot
 from dmt.tk.parameters import Parameters
+from neuro_dmt import terminology
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.reporting import\
     CircuitAnalysisReport,\
@@ -144,12 +145,24 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                     ylabel=phenomenon.name,
                     gvar="dataset"))
 
+    def _get_random_region(self, circuit_model, adapter, spatial_query):
+        """
+        Get a random region in the circuit model space.
+        """
+        position =\
+            adapter.random_position(
+                circuit_model,
+                **spatial_query)
+        return\
+            Cuboid(
+                position - self.size_roi / 2.,
+                position + self.size_roi / 2.)
+
     def get_cell_density_measurement(self, circuit_model, adapter):
         """
         Get cell density in `circuit_model` using the `adapter` that provides
         the methods defined in `AdapterInterface`.
         """
-        adapter = self.AdapterInterface.implementation(adapter)
 
         regions = adapter.get_brain_regions(circuit_model)
         layers = adapter.get_layers(circuit_model)
@@ -158,30 +171,65 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 "region": [r for r in regions for _ in layers],
                 "layer":  [l for _ in regions for l in layers]})])
 
-        def _random_region(spatial_query):
-            """..."""
-            position =\
-                adapter.random_position(
-                    circuit_model,
-                    **spatial_query)
-            return\
-                Cuboid(
-                    position - self.size_roi / 2.,
-                    position + self.size_roi / 2.)
-
         def _cell_density(spatial_query):
             """..."""
             roi =\
-                _random_region(spatial_query)
+                self._get_random_region(
+                    circuit_model, adapter, spatial_query)
             cell_count =\
-                adapter.get_cells(circuit_model, roi=roi.bbox).shape[0]
+                adapter.get_cells(
+                    circuit_model, roi=roi.bbox
+                ).shape[0]
             return 1.e9 * cell_count / roi.volume
 
         return\
             measurement_parameters.assign(
                 cell_density = lambda df: df.apply(
-                    lambda row: _cell_density(row), axis=1),
-                dataset = adapter.get_label(circuit_model)
+                    _cell_density,
+                    axis=1),
+                dataset = adapter.get_label(
+                    circuit_model)
+            ).set_index(
+                ["dataset"] + list(measurement_parameters.columns.values))
+
+    def get_inhibitory_cell_fraction_measurement(self, circuit_model, adapter):
+        """
+        Get the fraction of inhibitory cells in  `circuit_model` using the
+        `adapter` that provides  the methods defined in `AdapterInterface`.
+        """
+        regions = adapter.get_brain_regions(circuit_model)
+        layers = adapter.get_layers(circuit_model)
+        measurement_parameters = pd.concat( self.sample_size * [
+            pd.DataFrame({
+                "region": [r for r in regions for _ in layers],
+                "layer":  [l for _ in regions for l in layers]})])
+
+        def _inhibitory_cell_fraction(spatial_query):
+            """..."""
+            roi =\
+                self._get_random_region(circuit_model, adapter, spatial_query)
+            cells =\
+                adapter.get_cells(
+                    circuit_model,
+                    properties=[terminology.cell.synapse_class],
+                    roi=roi.bbox)
+            number_synapse_class =\
+                cells.groupby(terminology.cell.synapse_class).agg("size")
+            if number_synapse_class.empty:
+                return np.nan
+            try:
+                return number_synapse_class["INH"] / number_synapse_class.sum()
+            except KeyError:
+                pass
+            return 0.
+
+        return\
+            measurement_parameters.assign(
+                inhibitory_cell_fraction = lambda df: df.apply(
+                    _inhibitory_cell_fraction,
+                    axis=1),
+                dataset = adapter.get_label(
+                    circuit_model)
             ).set_index(
                 ["dataset"] + list(measurement_parameters.columns.values))
 
@@ -277,6 +325,87 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                     for label, reference in reference_data.items()},
                 **adapter.get_provenance(circuit_model))
  
+    def get_inhibitory_cell_fraction_report(self,
+            circuit_model,
+            adapter):
+        """
+        Measure cell densities and generate a report.
+        """
+        phenomenon =\
+            Phenomenon(
+                "Inhibitory Cell Fraction",
+                "Fraction of inhibitory cells",
+                group="Composition")
+        brain_regions = adapter.get_brain_regions(circuit_model)
+        reference_data = {
+            "Ghobril2012": rat.ghobril2012,
+            "LeFort2009": rat.lefort2009,
+            "Beaulieu1992": rat.beaulieu1992}
+        measurement =\
+            self.get_inhibitory_cell_fraction_measurement(
+                circuit_model,
+                adapter)
+        plotter =\
+            self.bars_against_layers_plotter(
+                phenomenon)
+        caption = """
+        Fraction of inhibitory cells was measured in randomly sampled boxes of
+        dimension {} with their position conditioned to lie in a
+        specified brain region and layer. The plot shows mean and
+        standard-deviation of thus sampled cell densities.
+        Reference data plotted alongside model measurements was
+        measured (somewhere) in the SSCx. Specific sub-region for the
+        reference data is not known. All sub-regions in these plots
+        show the same reference data.
+        """.format(self.size_roi).replace('\n', ' ')
+        figures =\
+            plotter.get_figures(
+                self._with_reference_data(
+                    measurement,
+                    {label: self._with_brain_regions(
+                        reference_dataset.samples(1000),
+                        brain_regions)
+                     for label, reference_dataset in reference_data.items()}),
+                caption=caption)
+        introduction = """
+        A circuit model should reproduce experimentally measured ratio of
+        inhibitory cells.
+        For the mammalian cerebral cortex, the simplest measurement to validate
+        against is the fraction of inhibitory cells in each layer. 
+        In this analysis we use three experimentally measured reference datasets
+        (see References section) to validate layer fraction of inhibitory cells
+        in circuit model {}.
+        """.format(
+            adapter.get_label(circuit_model)
+        ).replace(
+            '\n', ' ')
+        methods =  """
+        Fraction of inhibitory cells was measured in randomly sampled boxes of
+        dimension {} with their position conditioned to lie in a
+        specified brain region and layer. The plot shows mean and
+        standard-deviation of thus sampled cell densities.
+        Reference data plotted alongside model measurements was
+        measured (somewhere) in the SSCx. Specific sub-region for the
+        reference data is not known. All sub-regions in these plots
+        show the same reference data.
+        """.format(
+            self.size_roi,
+        ).replace(
+            '\n', ' ')
+        return\
+            CircuitAnalysisReport(
+                phenomenon=phenomenon.label,
+                measurement=measurement,
+                figures=figures,
+                introduction=introduction,
+                methods=methods,
+                results="Results are presented as figures",
+                discussion="Results will be discussed after a review",
+                references={
+                    label: reference.citation
+                    for label, reference in reference_data.items()},
+                **adapter.get_provenance(circuit_model))
+
     def __call__(self, circuit_model, adapter):
         """..."""
         adapter =\
@@ -302,5 +431,18 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             "Cell density analysis report generated at {}"\
             .format(
                 reporter.post(cell_density_report)))
+        LOGGER.info(
+            "1. Analyze Inhibitory Cell Fraction.")
+        inhibitory_cell_fraction_report =\
+            self.get_inhibitory_cell_fraction_report(
+                circuit_model,
+                adapter)
+        LOGGER.info(
+            "\tPOST inhibitory cell fraction report")
+        LOGGER.info(
+            "Inhibitory cell fraction analysis report generated at {}"\
+            .format(
+                reporter.post(inhibitory_cell_fraction_report)))
+
         LOGGER.info(
             "DONE")
