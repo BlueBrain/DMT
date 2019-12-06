@@ -65,6 +65,12 @@ class Report(WithFields):
         for future research?
         """,
         __default_value__="Not provided")
+    references = Field(
+        """
+        A dict mapping reference label to it's citation.
+        """,
+        __default_value__={
+            "None": "Not Provided"})
 
     @lazyfield
     def field_values(self):

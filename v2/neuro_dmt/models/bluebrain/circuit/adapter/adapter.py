@@ -195,6 +195,93 @@ class BlueBrainCircuitAdapter(WithFields):
     #          if value is not None),
     #         key=lambda xy: xy[0])))
 
+    def _resolve_sample_cells(self,
+            circuit_model,
+            cell_type,
+            sampling_methodology,
+            sample_size):
+        """..."""
+        cells_all =\
+            circuit_model.get_cells(**cell_type)
+        return\
+            cells_all.sample(n=np.minimum(sample_size, cells_all.shape[0]))\
+            if sampling_methodology==terminology.sampling_methodology.random\
+            else cells_all
+
+
+    def get_provenance(self,
+            circuit_model=None):
+        """..."""
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.provenance.field_dict
+
+    def get_brain_regions(self,
+            circuit_model=None):
+        """
+        Brain regions that were populated with cells in the circuit model.
+        """
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.brain_regions
+
+    def get_layers(self,
+            circuit_model=None):
+        """
+        All the layers in the circuit model.
+
+        Returns
+        ==============
+        A list of layers.
+        None, if layers are not defined.
+        """
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.layers
+
+    def get_mtypes(self,
+            circuit_model=None):
+        """
+        All the mtypes...
+        """
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.mtypes
+
+    def get_pathways(self,
+            circuit_model=None,
+            cell_group=None):
+        """
+        Arguments
+        ---------------
+        cell_group : An object that specifies cell groups.
+        ~   This may be 
+        ~   1. Either a frozen-set of strings that represent cell properties.
+        ~   2. Or, a mapping from cell properties to their values.
+
+        Returns
+        ------------
+        pandas.DataFrame with nested columns, with two columns 
+        `(pre_synaptic, post_synaptic)` at the 0-th level.
+        Under each of these two columns should be one column each for
+        the cell properties specified in the `cell_group` when it is a
+        set, or its keys if it is a mapping.
+        ~   1. When `cell_group` is a set of cell properties, pathways between
+        ~      all possible values of these cell properties.
+        ~   2. When `cell-group` is a mapping, pathways between cell groups
+        ~      that satisfy the mapping values.
+        """
+        circuit_model = self._resolve(circuit_model)
+        if isinstance(cell_group, Set) :
+            return\
+                circuit_model.pathways(
+                    cell_type_specifier=cell_group)
+        if isinstance(cell_group, pd.DataFrame):
+            return\
+                circuit_model.pathways(
+                    cell_types=cell_group)
+        raise TypeError(
+            """
+            `get_pathways(...)` argument `cell_group` is neither a set of
+            cell properties, nor a `pandas.DataFrame` specifying cell types.
+            """
+        )
     @lazyfield
     def visible_voxels(self):
         """
@@ -223,7 +310,7 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def random_position(self,
             circuit_model,
-            query):
+            **query):
         """
         Get a generator for random positions for given spatial parameters.
         """
@@ -259,7 +346,7 @@ class BlueBrainCircuitAdapter(WithFields):
         Get a generator for random regions of interest for given spatial
         parameters.
         """
-        random_position = self.random_position(circuit_model, query_dict)
+        random_position = self.random_position(circuit_model, **query_dict)
         cuboid = lambda : Cuboid(
             random_position - self.bounding_box_size / 2.,
             random_position + self.bounding_box_size / 2.
@@ -307,6 +394,18 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model):
         """..."""
         return self._resolve(circuit_model).label
+
+    def get_cells(self,
+            circuit_model=None,
+            properties=None,
+            **query):
+        """..."""
+        return self._resolve(
+            circuit_model
+        ).get_cells(
+            properties=properties,
+            with_gid_column=True,
+            **query)
 
     def _get_cell_density_overall(self,
             circuit_model=None,
@@ -419,65 +518,6 @@ class BlueBrainCircuitAdapter(WithFields):
             .get_segment_count(
                 region=region_of_interest)
         return number_segments / (1.e-9 * region_of_interest.volume)
-
-    def get_mtypes(self,
-            circuit_model=None):
-        """
-        All the mtypes...
-        """
-        circuit_model = self._resolve(circuit_model)
-        return circuit_model.mtypes
-
-    def get_pathways(self,
-            circuit_model=None,
-            cell_group=None):
-        """
-        Arguments
-        ---------------
-        cell_group : An object that specifies cell groups.
-        ~   This may be 
-        ~   1. Either a frozen-set of strings that represent cell properties.
-        ~   2. Or, a mapping from cell properties to their values.
-
-        Returns
-        ------------
-        pandas.DataFrame with nested columns, with two columns 
-        `(pre_synaptic, post_synaptic)` at the 0-th level.
-        Under each of these two columns should be one column each for
-        the cell properties specified in the `cell_group` when it is a
-        set, or its keys if it is a mapping.
-        ~   1. When `cell_group` is a set of cell properties, pathways between
-        ~      all possible values of these cell properties.
-        ~   2. When `cell-group` is a mapping, pathways between cell groups
-        ~      that satisfy the mapping values.
-        """
-        circuit_model = self._resolve(circuit_model)
-        if isinstance(cell_group, Set) :
-            return\
-                circuit_model.pathways(
-                    cell_type_specifier=cell_group)
-        if isinstance(cell_group, pd.DataFrame):
-            return\
-                circuit_model.pathways(
-                    cell_types=cell_group)
-        raise TypeError(
-            """
-            `get_pathways(...)` argument `cell_group` is neither a set of
-            cell properties, nor a `pandas.DataFrame` specifying cell types.
-            """
-        )
-    def _resolve_sample_cells(self,
-            circuit_model,
-            cell_type,
-            sampling_methodology,
-            sample_size):
-        """..."""
-        cells_all =\
-            circuit_model.get_cells(**cell_type)
-        return\
-            cells_all.sample(n=np.minimum(sample_size, cells_all.shape[0]))\
-            if sampling_methodology==terminology.sampling_methodology.random\
-            else cells_all
 
     def get_connection_probability(self,
             circuit_model=None,
@@ -641,9 +681,9 @@ class BlueBrainCircuitAdapter(WithFields):
     Post-synaptic cells were sampled, given their cell-type. For example,
     when the post-synaptic cell is specified by it's mtype, a group
     of cells with the specified mtype is sampled.
-    For each post-synaptic cell, it's afferent connections from all the 
+    For each post-synaptic cell, it's afferent connections from all the
     cells in the circuit were counted and grouped by their (specified)
-    cell type (for example, the pre-synaptic cell's mtype). 
+    cell type (for example, the pre-synaptic cell's mtype).
     """)
     def get_afferent_connection_count_summary(self,
             circuit_model=None,

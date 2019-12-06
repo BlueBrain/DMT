@@ -40,7 +40,8 @@ class BrainCircuitAnalysis(
         ~       to pass to a measurement method as keyword arguments.
         ~   2. `index`, returning a pandas.Index object to be used as an
         ~       index on the measurement.
-        """)
+        """,
+        __required__=False)
     measurement_collection = Field(
         """
         A callable that will collect measurements passed as an iterable.

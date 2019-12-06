@@ -88,7 +88,10 @@ class CircuitBuilder(WithFields):
         """
         Get a CellCollection.
         """
-        return CellCollection(self.get_cells())
+        return CellCollection(
+            self.get_cells(),
+            regions=self.composition.regions,
+            layers=self.composition.layers)
 
     def get_connectome(self, cell_collection):
         """

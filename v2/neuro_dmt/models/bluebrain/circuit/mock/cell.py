@@ -107,7 +107,17 @@ class CellCollection(WithFields):
     Cell gids are set here.
     This collection will be immutable.
     """
-    def __init__(self, cells):
+    layers = Field(
+        """
+        Layers represented in the circuit model.
+        """,
+        __required__=False)
+    regions = Field(
+        """
+        Brain regions represented in the circuit model.
+        """,
+        __required__=False)
+    def __init__(self, cells, **field_values):
         """
         Initialize
 
@@ -115,6 +125,7 @@ class CellCollection(WithFields):
         --------------
         cells :: Either a pandas dataframe, or a list of Cells.
         """
+        super().__init__(**field_values)
         if isinstance(cells, pd.DataFrame):
             self._dataframe = cells
         else:

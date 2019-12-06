@@ -36,7 +36,6 @@ class CircuitAnalysisReport(Report):
         """,
         __default_value__="Not Available")
 
-
     @lazyfield
     def field_values(self):
         """..."""
@@ -45,7 +44,8 @@ class CircuitAnalysisReport(Report):
             animal=self.animal,
             age=self.age,
             brain_region=self.brain_region,
-            uri=self.uri
+            uri=self.uri,
+            references=self.references
         ))
         return fields
 
@@ -72,28 +72,45 @@ class CheetahReporter(Reporter):
         #for $line in $captions[$label_image].splitlines()
         <br><strong>$line</strong></br>
         #end for
+    <p>$(140 * '-')</p>
     #end for
     </br>
+    <p>$(70 * '=')</p>
 
     <h3>Circuit Analyzed</h3>
+        <p>$(70 * '=')</p>
         <p>Animal: $animal</p>
         <p>Age: $age</p>
         <p>Brain Region: $brain_region</p>
         <p>URI: $uri</p>
+        <p>$(70 * '=')</p>
 
     <h3>Introduction</h3>
-    <p>
-        $introduction
-    </p>
+        <p>$(70 * '=')</p>
+        <p>$introduction</p>
+        <p>$(70 * '=')</p>
 
     <h3>Methods</h3>
+        <p>$(70 * '=')</p>
         <p>$methods</p>
+        <p>$(70 * '=')</p>
 
     <h3>Results</h3>
+        <p>$(70 * '=')</p>
         <p>$results</p>
+        <p>$(70 * '=')</p>
 
     <h3>Discussion</h3>
+        <p>$(70 * '=')</p>
         <p>$discussion</p>
+        <p>$(70 * '=')</p>
+
+    <h3>References</h3>
+        <p>$(70 * '=')</p>
+        #for $label, $citation in $references.items()
+        <p><strong>$label</strong>: $citation</p>
+        #end for
+        <p>$(70 * '=')</p>
 
   </body>
 
@@ -128,8 +145,9 @@ class CheetahReporter(Reporter):
                 for label, location in figure_locations.items()},
             captions={
                 _make_name(label): figure.caption
-                for label, figure in report.figures.items()
-            }))
+                for label, figure in report.figures.items()},
+            references=report.references
+            ))
         return template_dict
 
     def post(self,

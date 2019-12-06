@@ -37,10 +37,55 @@ def _get_bounding_box(region_of_interest):
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
+class CircuitProvenance(WithFields):
+    """
+    Provenance of a circuit.
+    """
+    label = Field(
+        """
+        A label that names the circuit model.
+        """)
+    authors = Field(
+        """
+        A list of authors who built the circuit model.
+        """)
+    release_date = Field(
+        """
+        When the circuit model was released in its final form.
+        """)
+    location = Field(
+        """
+        URI from where the circuit model can be loaded.
+        """)
+    animal = Field(
+        """
+        The animal whose brain was modeled.
+        """)
+    age = Field(
+        """
+        Age of the animal at which its brain was modeled.
+        """)
+    brain_region = Field(
+        """
+        Brain region that was modeled.
+        """)
+
 class BlueBrainCircuitModel(WithFields):
     """
     A circuit model developed at the Blue Brain Project.
     """
+    provenance = Field(
+        """
+        `CircuitProvenance` instance describing the circuit model
+        """,
+        __default_value__=CircuitProvenance(
+            label="BlueBrainCircuitModel",
+            authors=["BBP Team"],
+            release_date="Not Available",
+            location="Not Available",
+            animal="Not Available",
+            age="Not Available",
+            brain_region="Not Available"))
     label = Field(
         """
         A label to represent your circuit model instance.
@@ -171,6 +216,20 @@ class BlueBrainCircuitModel(WithFields):
                 "Circuit does not have a connectome.",
                 "BluePy complained: \n\t {}".format(error))
         return None
+
+    @lazyfield
+    def brain_regions(self):
+        """
+        Brain regions (or sub regions) that the circuit models.
+        """
+        self.cells.region.unique()
+
+    @lazyfield
+    def layers(self):
+        """
+        All the layers used in this circuit.
+        """
+        return self.atlas.layers
 
     @lazyfield
     def mtypes(self):

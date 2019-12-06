@@ -7,7 +7,9 @@ from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.journal import Logger
 from dmt.tk.field import Field, lazyfield, WithFields
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
-from neuro_dmt.models.bluebrain.circuit.model import BlueBrainCircuitModel
+from neuro_dmt.models.bluebrain.circuit.model import\
+    CircuitProvenance,\
+    BlueBrainCircuitModel
 from .cell import CellCollection
 from .connectome import Connectome
 
@@ -74,7 +76,35 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
             MockCircuit.build(
                 circuit_composition,
                 circuit_connectivity),
-            label=label)
+            label=label,
+            provenance=CircuitProvenance(
+                label=label,
+                authors=["Vishal Sood"],
+                release_date="Not Applicable",
+                location="$DMTPATH/neuro_dmt/models/bluebrain/circuits/mock",
+                animal="Wistar Rat",
+                age="P14",
+                brain_region="SSCx"))
+
+    @lazyfield
+    def brain_regions(self):
+        """
+        `BlueBrainCircuit` will invoke its atlas to get layers.
+        However, atlas is not defined for the mock circuit.
+        """
+        return self.cell_collection.regions
+
+    @lazyfield
+    def layers(self):
+        """
+        `BlueBrainCircuit` will invoke its atlas to get layers.
+        However, atlas is not defined for the mock circuit.
+        """
+        def __add_prefix(layer):
+            if isinstance(layer, (int, np.int)) or layer[0] != 'L':
+                return "L{}".format(layer)
+        return tuple(
+            __add_prefix(layer) for layer in self.cell_collection.layers)
 
     @lazyfield
     def voxel_offset(self):

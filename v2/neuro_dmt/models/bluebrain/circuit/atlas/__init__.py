@@ -94,8 +94,7 @@ class BlueBrainCircuitAtlas(WithFields):
         an atlas specific to the cortex, or a region in the cortex such as the
         Somatosensory cortex (SSCx).
         """,
-        __default_value__={
-            "cortical": ["L1", "L2", "L3", "L4", "L5", "L6"]})
+        __default_value__=("L1", "L2", "L3", "L4", "L5", "L6"))
 
     @lazyfield
     def region_layer(self):
