@@ -222,7 +222,7 @@ class BlueBrainCircuitModel(WithFields):
         """
         Brain regions (or sub regions) that the circuit models.
         """
-        self.cells.region.unique()
+        return self.cells.region.unique()
 
     @lazyfield
     def layers(self):

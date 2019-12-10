@@ -131,20 +131,6 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             """
             raise NotImplementedError
 
-
-    @staticmethod
-    def bars_against_layers_plotter(phenomenon):
-        """..."""
-        return\
-            MultiPlot(
-                mvar="region",
-                plotter=Bars(
-                    xvar="layer",
-                    xlabel="Layer",
-                    yvar=phenomenon.label,
-                    ylabel=phenomenon.name,
-                    gvar="dataset"))
-
     def _get_random_region(self, circuit_model, adapter, spatial_query):
         """
         Get a random region in the circuit model space.
@@ -158,7 +144,59 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 position - self.size_roi / 2.,
                 position + self.size_roi / 2.)
 
-    def get_cell_density_measurement(self, circuit_model, adapter):
+    def _get_cell_density(self,
+            circuit_model,
+            adapter,
+            query):
+        """
+        Get cell density in a region specified by query.
+
+        Arguments
+        --------------
+        query : A dict specifying the desired region in the circuit model space,
+        ~       and cell type.
+        """
+        roi =\
+            self._get_random_region(
+                circuit_model, adapter, query)
+        cell_count =\
+            adapter.get_cells(
+                circuit_model, roi=roi.bbox
+            ).shape[0]
+        return 1.e9 * cell_count / roi.volume
+
+
+    def get_cell_density_measurement(self,
+            circuit_model,
+            adapter,
+            measurement_parameters):
+        """
+        Get cell density in `circuit_model` using the `adapter` that provides
+        the methods defined in `AdapterInterface`.
+
+        Arguments
+        =================
+        measurement_parameters :: pandas.DataFrame, each row contains kwargs.
+        """
+        def _retrieve(query):
+            cuboid_of_interest =\
+                self._get_random_region(
+                    circuit_model, adapter, query)
+            cell_count =\
+                adapter.get_cells(
+                    circuit_model,
+                    roi=cuboid_of_interest.bbox
+                ).shape[0]
+            return 1.e9 * cell_count / cuboid_of_interest.volume
+
+        return measurement_parameters.assign(
+            cell_density = measurement_parameters.apply(
+                lambda query: self._get_cell_density(
+                    circuit_model, adapter, query),
+                axis=1)
+        )
+
+    def get_cell_density_measurement_0(self, circuit_model, adapter):
         """
         Get cell density in `circuit_model` using the `adapter` that provides
         the methods defined in `AdapterInterface`.
@@ -171,26 +209,43 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 "region": [r for r in regions for _ in layers],
                 "layer":  [l for _ in regions for l in layers]})])
 
-        def _cell_density(spatial_query):
-            """..."""
-            roi =\
-                self._get_random_region(
-                    circuit_model, adapter, spatial_query)
-            cell_count =\
-                adapter.get_cells(
-                    circuit_model, roi=roi.bbox
-                ).shape[0]
-            return 1.e9 * cell_count / roi.volume
 
         return\
             measurement_parameters.assign(
                 cell_density = lambda df: df.apply(
-                    _cell_density,
+                    lambda query: self._get_cell_density(
+                        circuit_model, adapter, query),
                     axis=1),
                 dataset = adapter.get_label(
                     circuit_model)
             ).set_index(
                 ["dataset"] + list(measurement_parameters.columns.values))
+
+    def get_mtype_cell_density_by_layer_measurement(self,
+            circuit_model,
+            adapter):
+        """..."""
+        mtypes = adapter.get_mtypes(circuit_model)
+        regions = adapter.get_brain_regions(circuit_model)
+        layers = adapter.get_layers(circuit_model)
+        measurement_parameters =\
+            pd.DataFrame({
+                "mtype":  [m for m in mtypes for _ in regions for _ in layers],
+                "region": [r for _ in mtypes for r in regions for _ in layers],
+                "layer":  [l for _ in mtypes for _ in regions for l in layers]})
+
+        def _cell_density(query):
+            return self._get_cell_density(circuit_model, adapter, query)
+
+        return\
+            pd.concat(
+                self.sample_size * [measumrent_parameters]
+            ).assign(
+                cell_density = measurement_parameters.apply(_cell_density),
+                dataset      = adapter.get_label(circuit_model)
+            ).set_index(
+                ["dataset"] + list(measurement_parameters.columns.values))
+                    
 
     def get_inhibitory_cell_fraction_measurement(self, circuit_model, adapter):
         """
@@ -207,14 +262,18 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         def _inhibitory_cell_fraction(spatial_query):
             """..."""
             roi =\
-                self._get_random_region(circuit_model, adapter, spatial_query)
-            cells =\
+                self._get_random_region(
+                    circuit_model,
+                    adapter,
+                    spatial_query)
+            number_synapse_class =\
                 adapter.get_cells(
                     circuit_model,
-                    properties=[terminology.cell.synapse_class],
-                    roi=roi.bbox)
-            number_synapse_class =\
-                cells.groupby(terminology.cell.synapse_class).agg("size")
+                    roi=roi.bbox
+                ).groupby(
+                    terminology.cell.synapse_class
+                ).agg(
+                    "size")
             if number_synapse_class.empty:
                 return np.nan
             try:
@@ -266,8 +325,14 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         measurement =\
             self.get_cell_density_measurement(circuit_model, adapter)
         plotter =\
-            self.bars_against_layers_plotter(
-                phenomenon)
+            MultiPlot(
+                mvar="region",
+                plotter=Bars(
+                    xvar="layer",
+                    xlabel="Layer",
+                    yvar=phenomenon.label,
+                    ylabel=phenomenon.name,
+                    gvar="dataset"))
         caption = """
         Cell density was measured in randomly sampled boxes of
         dimension {} with their position conditioned to lie in a
@@ -346,8 +411,14 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 circuit_model,
                 adapter)
         plotter =\
-            self.bars_against_layers_plotter(
-                phenomenon)
+            MultiPlot(
+                mvar="region",
+                plotter=Bars(
+                    xvar="layer",
+                    xlabel="Layer",
+                    yvar=phenomenon.label,
+                    ylabel=phenomenon.name,
+                    gvar="dataset"))
         caption = """
         Fraction of inhibitory cells was measured in randomly sampled boxes of
         dimension {} with their position conditioned to lie in a
@@ -421,6 +492,18 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 adapter.get_label(circuit_model)))
         LOGGER.info(
             "1. Analyze Cell Density.")
+
+        regions =\
+            adapter.get_brain_regions(circuit_model)
+        layers =\
+            adapter.get_layers(circuit_model)
+        cell_density_measurement =\
+            self.get_cell_density_measurement(
+                circuit_model,
+                measurement_parameters=pd.DataFrame({
+                    "region": [r for r in regions for _ in layers],
+                    "layer":  [l for _ in regions for l in layers]}))
+                
         cell_density_report =\
             self.get_cell_density_report(
                 circuit_model,
