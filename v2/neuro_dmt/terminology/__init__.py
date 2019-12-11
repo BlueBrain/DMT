@@ -89,8 +89,9 @@ class circuit(TermCollection):
         Extract spatial parameters and their values from a `query_dict`.
         """
         return {
-            parameter: query_dict.pop(parameter, None)
-            for parameter in cls.spatial_terms
+            parameter: value
+            for parameter, value in query_dict.items()
+            if parameter in cls.spatial_terms and value is not None
         }
 
 class cell(TermCollection):

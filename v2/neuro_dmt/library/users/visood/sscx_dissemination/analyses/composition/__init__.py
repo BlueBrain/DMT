@@ -41,7 +41,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         """
         Size of ROIs that composition phenomena will be computed in.
         """,
-        __default_value__ = np.array([50., 50., 50.]) )
+        __default_value__ = np.array([100., 100., 100.]) )
     path_reports = Field(
         """
         Location where the reports will be posted.
@@ -144,59 +144,22 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 position - self.size_roi / 2.,
                 position + self.size_roi / 2.)
 
-    def _get_cell_density(self,
-            circuit_model,
-            adapter,
-            query):
+    def _random_cells(self, circuit_model, adapter, spatial_query):
         """
         Get cell density in a region specified by query.
 
         Arguments
         --------------
-        query : A dict specifying the desired region in the circuit model space,
-        ~       and cell type.
+        spatial_query : A dict specifying a region in the circuit model space,
         """
         roi =\
             self._get_random_region(
-                circuit_model, adapter, query)
-        cell_count =\
+                circuit_model, adapter, spatial_query)
+        return\
             adapter.get_cells(
                 circuit_model, roi=roi.bbox
-            ).shape[0]
-        return 1.e9 * cell_count / roi.volume
-
-
-    def get_cell_density_measurement(self,
-            circuit_model,
-            adapter,
-            measurement_parameters):
-        """
-        Get cell density in `circuit_model` using the `adapter` that provides
-        the methods defined in `AdapterInterface`.
-
-        Arguments
-        =================
-        measurement_parameters :: pandas.DataFrame, each row contains kwargs.
-        """
-        def _retrieve(query):
-            cuboid_of_interest =\
-                self._get_random_region(
-                    circuit_model, adapter, query)
-            cell_count =\
-                adapter.get_cells(
-                    circuit_model,
-                    roi=cuboid_of_interest.bbox
-                ).shape[0]
-            return 1.e9 * cell_count / cuboid_of_interest.volume
-
-        return measurement_parameters.assign(
-            cell_density = measurement_parameters.apply(
-                lambda query: self._get_cell_density(
-                    circuit_model, adapter, query),
-                axis=1)
-        )
-
-    def get_cell_density_measurement_0(self, circuit_model, adapter):
+            )
+    def get_cell_density_measurement(self, circuit_model, adapter):
         """
         Get cell density in `circuit_model` using the `adapter` that provides
         the methods defined in `AdapterInterface`.
@@ -209,15 +172,22 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 "region": [r for r in regions for _ in layers],
                 "layer":  [l for _ in regions for l in layers]})])
 
+        def _retrieve(query):
+            cuboid_of_interest =\
+                self._get_random_region(
+                    circuit_model, adapter, query)
+            cell_count =\
+                adapter.get_cells(
+                    circuit_model,
+                    roi=cuboid_of_interest.bbox
+                ).shape[0]
+            return 1.e9 * cell_count / cuboid_of_interest.volume
+
 
         return\
             measurement_parameters.assign(
-                cell_density = lambda df: df.apply(
-                    lambda query: self._get_cell_density(
-                        circuit_model, adapter, query),
-                    axis=1),
-                dataset = adapter.get_label(
-                    circuit_model)
+                cell_density = measurement_parameters.apply(_retrieve, axis=1),
+                dataset = adapter.get_label(circuit_model)
             ).set_index(
                 ["dataset"] + list(measurement_parameters.columns.values))
 
@@ -225,27 +195,34 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             circuit_model,
             adapter):
         """..."""
-        mtypes = adapter.get_mtypes(circuit_model)
         regions = adapter.get_brain_regions(circuit_model)
         layers = adapter.get_layers(circuit_model)
         measurement_parameters =\
             pd.DataFrame({
-                "mtype":  [m for m in mtypes for _ in regions for _ in layers],
-                "region": [r for _ in mtypes for r in regions for _ in layers],
-                "layer":  [l for _ in mtypes for _ in regions for l in layers]})
+                "region": [r for r in regions for _ in layers],
+                "layer":  [l for _ in regions for l in layers]})
 
-        def _cell_density(query):
-            return self._get_cell_density(circuit_model, adapter, query)
+        def _retrieve(query):
+            cuboid =\
+                self._get_random_region(
+                    circuit_model, adapter, query)
+            cells =\
+                adapter.get_cells(
+                    circuit_model, roi=cuboid)
+            return\
+                cells.groupby("mtype")\
+                     .agg("size")\
+                     .rename("cell_density")\
+                     .apply(lambda density: 1.e9 * density / cuboid.volume)\
+                     .reset_index()\
+                     .assign(**query)\
+                     .set_index(
+                         ["mtype"] + list(query.keys()))
 
-        return\
-            pd.concat(
-                self.sample_size * [measumrent_parameters]
-            ).assign(
-                cell_density = measurement_parameters.apply(_cell_density),
-                dataset      = adapter.get_label(circuit_model)
-            ).set_index(
-                ["dataset"] + list(measurement_parameters.columns.values))
-                    
+        return pd.concat([
+            _retrieve(query)
+            for _, query in measurement_parameters.iterrows()
+            for _ in range(self.sample_size)])
 
     def get_inhibitory_cell_fraction_measurement(self, circuit_model, adapter):
         """
@@ -259,7 +236,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 "region": [r for r in regions for _ in layers],
                 "layer":  [l for _ in regions for l in layers]})])
 
-        def _inhibitory_cell_fraction(spatial_query):
+        def _retrieve(spatial_query):
             """..."""
             roi =\
                 self._get_random_region(
@@ -284,11 +261,8 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
 
         return\
             measurement_parameters.assign(
-                inhibitory_cell_fraction = lambda df: df.apply(
-                    _inhibitory_cell_fraction,
-                    axis=1),
-                dataset = adapter.get_label(
-                    circuit_model)
+                inhibitory_cell_fraction=lambda df: df.apply(_retrieve, axis=1),
+                dataset=adapter.get_label(circuit_model)
             ).set_index(
                 ["dataset"] + list(measurement_parameters.columns.values))
 

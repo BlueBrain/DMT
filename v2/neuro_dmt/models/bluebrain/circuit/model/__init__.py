@@ -407,7 +407,7 @@ class BlueBrainCircuitModel(WithFields):
         Get a mask from the atlas.
         """
         return self.atlas.get_mask(
-            terminology.circuit.get_spatial_query(query))
+            **terminology.circuit.get_spatial_query(query))
 
     @terminology.use(
         terminology.circuit.region,

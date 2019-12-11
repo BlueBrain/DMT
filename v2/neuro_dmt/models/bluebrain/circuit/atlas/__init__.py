@@ -147,6 +147,10 @@ class BlueBrainCircuitAtlas(WithFields):
         """..."""
         return numpy.sum(self.get_mask(region=region, layer=layer))
 
+    def indices_to_positions(self, voxel_ids):
+        """..."""
+        return self.voxel_data.indices_to_positions(voxel_ids)
+
     def get_bin_counts(self,
             positions):
         """
