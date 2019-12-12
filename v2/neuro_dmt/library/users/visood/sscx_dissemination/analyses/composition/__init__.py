@@ -48,6 +48,17 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         """,
         __default_value__=os.getcwd())
 
+    analyzed_phenomenon = {
+        "cell_density": Phenomenon(
+            "Cell Density",
+            "Number of cells in a unit volume (mm^3)",
+            group="Composition"),
+        "inhibitory_cell_fraction": Phenomenon(
+            "Inhibitory Cell Fraction",
+            "Fraction of inhibitory cells.",
+            group="Composition")
+    }
+
     class AdapterInterface(Interface):
         """
         Document the methods that will be used by this analysis to measure a
@@ -79,6 +90,12 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         def get_layers(self, circuit_model):
             """
             A list of layers in the `circuit_model`
+            """
+            raise NotImplementedError
+
+        def get_spatial_volume(self, circuit_model, **spatial_query):
+            """
+            Get total volume in circuit space that satisfies a spatial query.
             """
             raise NotImplementedError
 
@@ -159,30 +176,54 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             adapter.get_cells(
                 circuit_model, roi=roi.bbox
             )
-    def get_cell_density_measurement(self, circuit_model, adapter):
+    def get_cell_density_measurement(self,
+            circuit_model,
+            adapter,
+            exhaustive=False):
         """
         Get cell density in `circuit_model` using the `adapter` that provides
         the methods defined in `AdapterInterface`.
+
+        Arguments
+        ===========
+        exhaustive :: If True cell density will be measured over all the entire
+        circuit space specified by brain-region and layer.
         """
 
-        regions = adapter.get_brain_regions(circuit_model)
-        layers = adapter.get_layers(circuit_model)
-        measurement_parameters = pd.concat( self.sample_size * [
+        regions =\
+            adapter.get_brain_regions(circuit_model)
+        layers =\
+            adapter.get_layers(circuit_model)
+        regions_and_layers =\
             pd.DataFrame({
                 "region": [r for r in regions for _ in layers],
-                "layer":  [l for _ in regions for l in layers]})])
+                "layer":  [l for _ in regions for l in layers]})
+        measurement_parameters =\
+            pd.concat(self.sample_size * [regions_and_layers])\
+            if not exhaustive else\
+               regions_and_layers
 
         def _retrieve(query):
-            cuboid_of_interest =\
-                self._get_random_region(
-                    circuit_model, adapter, query)
+            if not exhaustive:
+                cuboid_of_interest =\
+                    self._get_random_region(
+                        circuit_model, adapter, query)
+                cell_count =\
+                    adapter.get_cells(
+                        circuit_model,
+                        roi=cuboid_of_interest.bbox
+                    ).shape[0]
+                return 1.e9 * cell_count / cuboid_of_interest.volume
+
             cell_count =\
                 adapter.get_cells(
                     circuit_model,
-                    roi=cuboid_of_interest.bbox
-                ).shape[0]
-            return 1.e9 * cell_count / cuboid_of_interest.volume
-
+                    **query).shape[0]
+            spatial_volume =\
+                adapter.get_spatial_volume(
+                    circuit_model,
+                    **query)
+            return cell_count / spatial_volume
 
         return\
             measurement_parameters.assign(
@@ -279,25 +320,32 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 ).set_index(
                     ["region", "layer"]
                 ) for region in brain_regions])
-        
+
     def get_cell_density_report(self,
             circuit_model,
-            adapter):
+            adapter,
+            exhaustive=False):
         """
         Measure cell densities and generate a report.
+
+        Arguments
+        =============
+        exhaustive :: If True, cell density will be computed over the entire
+        circuit space specified by layer and brain-region.
         """
         phenomenon =\
-            Phenomenon(
-                "Cell Density",
-                "Number of cells in a unit volume.",
-                group="Composition")
+            self.analyzed_phenomenon[
+                "cell_density"]
         brain_regions = adapter.get_brain_regions(circuit_model)
         reference_data ={
             "DeFelipe2017": rat.defelipe2017.summary_measurement,
             "DeFelipe2014": rat.defelipe2014.summary_measurement,
             "Meyer2010": rat.meyer2010}
         measurement =\
-            self.get_cell_density_measurement(circuit_model, adapter)
+            self.get_cell_density_measurement(
+                circuit_model,
+                adapter,
+                exhaustive=exhaustive)
         plotter =\
             MultiPlot(
                 mvar="region",
@@ -307,22 +355,32 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                     yvar=phenomenon.label,
                     ylabel=phenomenon.name,
                     gvar="dataset"))
-        caption = """
-        Cell density was measured in randomly sampled boxes of
-        dimension {} with their position conditioned to lie in a
-        specified brain region and layer. The plot shows mean and
-        standard-deviation of thus sampled cell densities.
-        Reference data plotted alongside model measurements was
-        measured (somewhere) in the SSCx. Specific sub-region for the
-        reference data is not known. All sub-regions in these plots
-        show the same reference data.
-        """.format(self.size_roi).replace('\n', ' ')
+        caption =\
+            """
+            Cell density was measured in randomly sampled boxes of
+            dimension {} with their position conditioned to lie in a
+            specified brain region and layer. The plot shows mean and
+            standard-deviation of thus sampled cell densities.
+            Reference data plotted alongside model measurements was
+            measured (somewhere) in the SSCx. Specific sub-region for the
+            reference data is not known. All sub-regions in these plots
+            show the same reference data.
+            """.format(self.size_roi).replace('\n', ' ')\
+                if not exhaustive else\
+                   """
+                   Cell density was measured as the total number of cells in
+                   the circuit's spatial region specified by brain-region and
+                   layer divided by the volume of the spatial region.
+                   Specific sub-region for the
+                   reference data is not known. All sub-regions in these plots
+                   show the same reference data.
+                   """.replace('\n', ' ')
         figures =\
             plotter.get_figures(
                 self._with_reference_data(
                     measurement,
                     {label: self._with_brain_regions(
-                        reference_dataset.samples(1000),
+                        reference_dataset.samples(100),
                         brain_regions)
                      for label, reference_dataset in reference_data.items()}),
                 caption=caption)
@@ -337,22 +395,31 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             adapter.get_label(circuit_model)
         ).replace(
             '\n', ' ')
-        methods =  """
-        Cell density was measured in randomly sampled boxes of
-        dimension {} with their position conditioned to lie in a
-        specified brain region and layer. The plot shows mean and
-        standard-deviation of thus sampled cell densities.
-        Reference data plotted alongside model measurements was
-        measured (somewhere) in the SSCx. Specific sub-region for the
-        reference data is not known. All sub-regions in these plots
-        show the same reference data.
-        """.format(
-            self.size_roi,
-        ).replace(
-            '\n', ' ')
+        methods =\
+            """
+            Cell density was measured in randomly sampled boxes of
+            dimension {} with their position conditioned to lie in a
+            specified brain region and layer. The plot shows mean and
+            standard-deviation of thus sampled cell densities.
+            Reference data plotted alongside model measurements was
+            measured (somewhere) in the SSCx. Specific sub-region for the
+            reference data is not known. All sub-regions in these plots
+            show the same reference data.
+            """.format(self.size_roi).replace('\n', ' ')\
+                if not exhaustive else\
+                   """
+                   Cell density was measured as the total number of cells in
+                   the circuit's spatial region specified by brain-region and
+                   layer divided by the volume of the spatial region.
+                   Specific sub-region for the
+                   reference data is not known. All sub-regions in these plots
+                   show the same reference data.
+                   """.replace('\n', ' ')
         return\
             CircuitAnalysisReport(
-                phenomenon=phenomenon.label,
+                phenomenon="{}{}".format(
+                    "sampled_" if not exhaustive else "overall_",
+                    phenomenon.label),
                 measurement=measurement,
                 figures=figures,
                 introduction=introduction,
@@ -371,10 +438,8 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         Measure cell densities and generate a report.
         """
         phenomenon =\
-            Phenomenon(
-                "Inhibitory Cell Fraction",
-                "Fraction of inhibitory cells",
-                group="Composition")
+            self.analyzed_phenomenon[
+                "inhibitory_cell_fraction"]
         brain_regions = adapter.get_brain_regions(circuit_model)
         reference_data = {
             "Ghobril2012": rat.ghobril2012,
@@ -451,6 +516,65 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                     for label, reference in reference_data.items()},
                 **adapter.get_provenance(circuit_model))
 
+    def get_mtype_cell_density_by_layer_report(self,
+            circuit_model,
+            adapter):
+        """
+        Measure mtype cell densities and generate a report.
+        """
+        phenomenon =\
+            self.analyzed_phenomenon[
+                "cell_density"]
+        brain_regions =\
+            adapter.get_brain_regions(
+                circuit_model)
+        measurement =\
+            self.get_mtype_cell_density_by_layer_measurement(
+                circuit_model,
+                adapter)
+        plotter =\
+            MultiPlot(
+                mvar="mtype",
+                plotter=Bars(
+                    xvar="layer",
+                    xlabel="Layer",
+                    yvar=phenomenon.label,
+                    ylabel=phenomenon.name,
+                    gvar="region"))
+        caption = """
+        Cell density was measured for each cell mtype in randomly sampled boxes
+        of dimension {} with their position conditioned to lie in a specified
+        brain region and layer. The plot shows mean and standard-deviation of
+        the sampled cell densities.
+        """.format(self.size_roi).replace('\n', ' ')
+        figures =\
+            plotter.get_figures(
+                {adapter.get_label(circuit_model): measurement},
+                caption=caption)
+        introduction = """
+        A circuit model should reproduce experimentally measured cell densities.
+        In addition to the total cell densities by layer, here we analyze cell
+        density of each mtype for each layer in all the populated brain regions
+        of the circuit model {}
+        """.format(adapter.get_label(circuit_model)).replace('\n', ' ')
+        methods = """
+        Cell density was measured for each cell mtype in randomly sampled boxes
+        of dimension {} with their position conditioned to lie in a specified
+        brain region and layer. The plot shows mean and standard-deviation of
+        the sampled cell densities.
+        """.format(self.size_roi).replace('\n', ' ')
+        return\
+            CircuitAnalysisReport(
+                phenomenon="mtype_{}".format(phenomenon.label),
+                measurement=measurement,
+                figures=figures,
+                introduction=introduction,
+                methods=methods,
+                results="Results are presented as figures",
+                discussion="Results will be discussed after a review",
+                references={},
+                **adapter.get_provenance(circuit_model))
+
     def __call__(self, circuit_model, adapter):
         """..."""
         adapter =\
@@ -467,17 +591,6 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         LOGGER.info(
             "1. Analyze Cell Density.")
 
-        regions =\
-            adapter.get_brain_regions(circuit_model)
-        layers =\
-            adapter.get_layers(circuit_model)
-        cell_density_measurement =\
-            self.get_cell_density_measurement(
-                circuit_model,
-                measurement_parameters=pd.DataFrame({
-                    "region": [r for r in regions for _ in layers],
-                    "layer":  [l for _ in regions for l in layers]}))
-                
         cell_density_report =\
             self.get_cell_density_report(
                 circuit_model,
@@ -488,8 +601,24 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             "Cell density analysis report generated at {}"\
             .format(
                 reporter.post(cell_density_report)))
+
         LOGGER.info(
-            "1. Analyze Inhibitory Cell Fraction.")
+            "2. Analyze Cell Density, overall without sampling regions.")
+
+        overall_cell_density_report =\
+            self.get_cell_density_report(
+                circuit_model,
+                adapter,
+                exhaustive=True)
+        LOGGER.info(
+            "\tPOST overall cell density report")
+        LOGGER.info(
+            "Overall Cell density analysis report generated at {}"\
+            .format(
+                reporter.post(overall_cell_density_report)))
+
+        LOGGER.info(
+            "3. Analyze Inhibitory Cell Fraction.")
         inhibitory_cell_fraction_report =\
             self.get_inhibitory_cell_fraction_report(
                 circuit_model,
@@ -500,6 +629,19 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             "Inhibitory cell fraction analysis report generated at {}"\
             .format(
                 reporter.post(inhibitory_cell_fraction_report)))
+
+        LOGGER.info(
+            "4. Analyze Mtype Cell Density by Layer.")
+        mtype_cell_density_by_layer_report =\
+            self.get_mtype_cell_density_by_layer_report(
+                circuit_model,
+                adapter)
+        LOGGER.info(
+            "\tPOST mtype cell density by layer report")
+        LOGGER.info(
+            "Mtype cell density by layer analysis report generated at {}"\
+            .format(
+                reporter.post(mtype_cell_density_by_layer_report)))
 
         LOGGER.info(
             "DONE")

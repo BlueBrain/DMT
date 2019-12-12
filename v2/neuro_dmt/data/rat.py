@@ -38,6 +38,7 @@ __defelipe_2017_dataset =\
         "DeFelipe2017")
 
 layers = ["L{}".format(l) for l in range(1,7)]
+shrinkage_factor = 0.895 #correct for cell shrinkage
 defelipe2017 =\
     ByLayerCellDensityMeasurement(
         label=__defelipe_2017_dataset["short_name"],
@@ -50,8 +51,8 @@ defelipe2017 =\
             pandas.DataFrame(
                 dict(sample=rat,
                      layer=layers,
-                     thickness=dataset["thicknesses"],
-                     cell_density=dataset["densities"]))
+                     thickness=numpy.array(dataset["thicknesses"]),
+                     cell_density=shrinkage_factor * numpy.array(dataset["densities"])))
             for rat, dataset in __defelipe_2017_dataset["circuits"].items()]))
 
 __defelipe_2014_dataset =\

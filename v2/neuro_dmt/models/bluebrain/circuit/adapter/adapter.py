@@ -407,6 +407,15 @@ class BlueBrainCircuitAdapter(WithFields):
             with_gid_column=True,
             **query)
 
+    def get_spatial_volume(self, circuit_model=None, **spatial_query):
+        """
+        Get total spatial volume of the circuit space that satisfies a
+        spatial query.
+        """
+        circuit_model = self._resolve(circuit_model)
+        count_voxels = circuit_model.atlas.get_voxel_count(**spatial_query)
+        return 1.e-9 * count_voxels * circuit_model.atlas.volume_voxel 
+
     def _get_cell_density_overall(self,
             circuit_model=None,
             **query_parameters):

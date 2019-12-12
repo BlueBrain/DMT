@@ -65,8 +65,32 @@ class CheetahReporter(Reporter):
     <h2> Author </h2>
     <h3> $author_name </h3>
     <h3> Affiliation: $author_affiliation </h3>
+    <p>$(70 * '=')</p>
+
+    <h2>Circuit Analyzed</h2>
+        <p>$(70 * '=')</p>
+        <p>Animal: $animal</p>
+        <p>Age: $age</p>
+        <p>Brain Region: $brain_region</p>
+        <p>URI: $uri</p>
+        <p>$(70 * '=')</p>
+
+    <h2>Introduction</h2>
+        <p>$(70 * '=')</p>
+        <p>$introduction</p>
+        <p>$(70 * '=')</p>
+
+    <h2>Methods</h2>
+        <p>$(70 * '=')</p>
+        <p>$methods</p>
+        <p>$(70 * '=')</p>
+
+    <h2>Results</h2>
+        <p>$(70 * '=')</p>
+        <p>$results</p>
+        <p>$(70 * '=')</p>
     <br>
-    <h2> Figures </h2>
+    <h3> Figures </h3>
     #for $label_image, $location_image in $images.items()
         <img src=$location_image alt="apologies.png"/>
         #for $line in $captions[$label_image].splitlines()
@@ -75,37 +99,13 @@ class CheetahReporter(Reporter):
     <p>$(140 * '-')</p>
     #end for
     </br>
-    <p>$(70 * '=')</p>
 
-    <h3>Circuit Analyzed</h3>
-        <p>$(70 * '=')</p>
-        <p>Animal: $animal</p>
-        <p>Age: $age</p>
-        <p>Brain Region: $brain_region</p>
-        <p>URI: $uri</p>
-        <p>$(70 * '=')</p>
-
-    <h3>Introduction</h3>
-        <p>$(70 * '=')</p>
-        <p>$introduction</p>
-        <p>$(70 * '=')</p>
-
-    <h3>Methods</h3>
-        <p>$(70 * '=')</p>
-        <p>$methods</p>
-        <p>$(70 * '=')</p>
-
-    <h3>Results</h3>
-        <p>$(70 * '=')</p>
-        <p>$results</p>
-        <p>$(70 * '=')</p>
-
-    <h3>Discussion</h3>
+    <h2>Discussion</h2>
         <p>$(70 * '=')</p>
         <p>$discussion</p>
         <p>$(70 * '=')</p>
 
-    <h3>References</h3>
+    <h2>References</h2>
         <p>$(70 * '=')</p>
         #for $label, $citation in $references.items()
         <p><strong>$label</strong>: $citation</p>
