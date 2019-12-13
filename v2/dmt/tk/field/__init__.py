@@ -107,7 +107,7 @@ class WithFields:
                 pass
 
             if field in kwargs:
-                return kwargs[field]
+                return class_field._cast(kwargs[field])
 
             return class_field.default_value
 

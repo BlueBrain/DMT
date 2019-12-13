@@ -18,6 +18,7 @@ class Field:
             __validation__=lambda x: True,
             __required__=True,
             __default_value__=None,
+            __as__=lambda obj: obj,
             __examples__=[]):
         """Initialize Me"""
         self.__doc__ = __doc__
@@ -26,6 +27,7 @@ class Field:
         self.__required__ = __required__
         self.__attr_name__ = None
         self._default_value = __default_value__
+        self._cast = __as__
         self.__examples__  = __examples__
         self.__defined_in__ = "Unknown"
 
