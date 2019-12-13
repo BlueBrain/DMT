@@ -11,7 +11,8 @@ from dmt.analysis import Analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.data.observation.measurement.collection import\
     primitive_type as primitive_type_measurement_collection
-from dmt.tk.field import Field, lazyfield
+from dmt.tk.field import Field, LambdaField, lazyfield
+from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
 from neuro_dmt import terminology
@@ -26,6 +27,23 @@ class BrainCircuitAnalysis(
         An object whose `.label` is a single word name for the phenomenon 
         analyzed by this `BrainCircuitAnalysis`.
         """)
+    abstract = LambdaField(
+        """
+        A short description of the analysis.
+        """,
+        lambda self: self.phenomenon.description)
+    introduction = Field(
+        """
+        A scientific introduction to this analysis, that will be used to
+        produce a report. 
+        """,
+        __default_value__="Not provided.")
+    methods = Field(
+        """
+        Describe the algorithm / procedure used to computer the results or
+        the experimental measurement presented in this analysis.
+        """,
+        __default_value__="Not provided.")
     AdapterInterface  = Field(
         """
         The interface that will be used to get measurements for the circuit
@@ -41,6 +59,7 @@ class BrainCircuitAnalysis(
         ~   2. `index`, returning a pandas.Index object to be used as an
         ~       index on the measurement.
         """,
+        __as__=Parameters,
         __required__=False)
     measurement_collection = Field(
         """
@@ -234,22 +253,29 @@ class BrainCircuitAnalysis(
 
     def get_report(self,
             measurement,
-            method_measurement="Not available.",
             figures=None,
-            reference_data=None):
+            reference_data=None,
+            provenance={}):
         """
         Get a report for the given `measurement`.
         """
+        reference_data =\
+            reference_data if reference_data is not None\
+            else self.reference_data
+
         return self.report(
             phenomenon=self.phenomenon.label,
+            abstract=self.abstract,
+            introduction=self.introduction,
+            methods=self.methods,
             measurement=measurement,
             figures=figures,
-            introduction="{} \n{}.".format(
-                self.phenomenon.name,
-                self.phenomenon.description),
-            methods=method_measurement,
             results="Results are presented in the figure.",
-            discussion="To be provided after a review of the results")
+            discussion="To be provided after a review of the results",
+            references={
+                label: reference.citation
+                for label, reference in self.reference_data.items()},
+            **provenance)
 
     def _resolve_adapter_and_model(self,  *args):
         """
@@ -342,14 +368,20 @@ class BrainCircuitAnalysis(
                     "sampling_methodology",
                     terminology.sampling_methodology.random),
                 **kwargs)
+        reference_data =\
+            kwargs.get(
+                "reference_data",
+                self.reference_data)
         report =\
             self.get_report(
                 measurement["data"],
-                method_measurement=measurement["method"],
                 figures=self.get_figures(
-                    data=self._with_reference_data(measurement["data"]),
+                    data=self._with_reference_data(
+                        measurement["data"],
+                        reference_data),
                     caption=measurement["method"]),
-                reference_data=kwargs.get("reference_data", pandas.DataFrame()))
+                reference_data=reference_data,
+                **adapter.get_provenance(circuit_model))
 
         try:
             return self.reporter.post(report)
