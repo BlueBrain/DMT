@@ -265,10 +265,18 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             for _, query in measurement_parameters.iterrows()
             for _ in range(self.sample_size)])
 
-    def get_inhibitory_cell_fraction_measurement(self, circuit_model, adapter):
+    def get_inhibitory_cell_fraction_measurement(self,
+            circuit_model,
+            adapter,
+            exhaustive=True):
         """
         Get the fraction of inhibitory cells in  `circuit_model` using the
         `adapter` that provides  the methods defined in `AdapterInterface`.
+
+        Arguments
+        ============
+        exhaustive :: If True, cells in the entire region in circuit space
+        specified by a spatial query will be considered.
         """
         regions = adapter.get_brain_regions(circuit_model)
         layers = adapter.get_layers(circuit_model)
@@ -279,19 +287,28 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
 
         def _retrieve(spatial_query):
             """..."""
-            roi =\
-                self._get_random_region(
-                    circuit_model,
-                    adapter,
-                    spatial_query)
+            if not exhaustive:
+                roi =\
+                    self._get_random_region(
+                        circuit_model,
+                        adapter,
+                        spatial_query)
+                number_synapse_class =\
+                    adapter.get_cells(circuit_model,roi=roi.bbox)\
+                           .groupby(terminology.cell.synapse_class)\
+                           .agg("size")
+                if number_synapse_class.empty:
+                    return np.nan
+                try:
+                    return number_synapse_class["INH"] / number_synapse_class.sum()
+                except KeyError:
+                    pass
+                return 0.
+
             number_synapse_class =\
-                adapter.get_cells(
-                    circuit_model,
-                    roi=roi.bbox
-                ).groupby(
-                    terminology.cell.synapse_class
-                ).agg(
-                    "size")
+                adapter.get_cells(circuit_model, **spatial_query)\
+                       .groupby(terminology.cell.synapse_class)\
+                       .agg("size")
             if number_synapse_class.empty:
                 return np.nan
             try:
@@ -299,7 +316,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             except KeyError:
                 pass
             return 0.
-
+            
         return\
             measurement_parameters.assign(
                 inhibitory_cell_fraction=lambda df: df.apply(_retrieve, axis=1),
@@ -433,9 +450,15 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
  
     def get_inhibitory_cell_fraction_report(self,
             circuit_model,
-            adapter):
+            adapter,
+            exhaustive=True):
         """
         Measure cell densities and generate a report.
+
+        Arguments
+        ============
+        exhaustive :: If True, cells in the entire region in circuit space
+        specified by a spatial query will be considered.
         """
         phenomenon =\
             self.analyzed_phenomenon[
@@ -448,7 +471,8 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         measurement =\
             self.get_inhibitory_cell_fraction_measurement(
                 circuit_model,
-                adapter)
+                adapter,
+                exhaustive)
         plotter =\
             MultiPlot(
                 mvar="region",
@@ -622,7 +646,8 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         inhibitory_cell_fraction_report =\
             self.get_inhibitory_cell_fraction_report(
                 circuit_model,
-                adapter)
+                adapter,
+                exhaustive=True)
         LOGGER.info(
             "\tPOST inhibitory cell fraction report")
         LOGGER.info(
