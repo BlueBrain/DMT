@@ -57,3 +57,11 @@ def make_label(string):
         separator='_',
         with_capitalized_words=False)
     
+def paragraphs(string):
+    """
+    Convert a (doc-)string into paragraphs, with each paragraph consisting
+    of a single line. It is assumed that the input string separates paragraphs
+    by at least two line-end `\n` characters.
+    """
+    return [
+        line.strip() for line in string.split("\n\n")]

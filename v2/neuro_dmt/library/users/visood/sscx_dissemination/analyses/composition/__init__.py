@@ -47,7 +47,6 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         Location where the reports will be posted.
         """,
         __default_value__=os.getcwd())
-
     analyzed_phenomenon = {
         "cell_density": Phenomenon(
             "Cell Density",
@@ -56,8 +55,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
         "inhibitory_cell_fraction": Phenomenon(
             "Inhibitory Cell Fraction",
             "Fraction of inhibitory cells.",
-            group="Composition")
-    }
+            group="Composition")}
 
     class AdapterInterface(Interface):
         """
@@ -382,16 +380,17 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             measured (somewhere) in the SSCx. Specific sub-region for the
             reference data is not known. All sub-regions in these plots
             show the same reference data.
-            """.format(self.size_roi).replace('\n', ' ')\
-                if not exhaustive else\
-                   """
-                   Cell density was measured as the total number of cells in
-                   the circuit's spatial region specified by brain-region and
-                   layer divided by the volume of the spatial region.
-                   Specific sub-region for the
-                   reference data is not known. All sub-regions in these plots
-                   show the same reference data.
-                   """.replace('\n', ' ')
+            """.format(self.size_roi)\
+            if not exhaustive else\
+                    """
+                    Cell density was measured as the total number of cells in
+                    the circuit's spatial region specified by brain-region and
+                    layer divided by the volume of the spatial region.
+                    Specific sub-region for the
+                    reference data is not known. All sub-regions in these plots
+                    show the same reference data.
+                    """
+
         figures =\
             plotter.get_figures(
                 self._with_reference_data(
@@ -401,17 +400,15 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                         brain_regions)
                      for label, reference_dataset in reference_data.items()}),
                 caption=caption)
-        introduction = """
-        A circuit model should reproduce experimentally measured cell densities.
-        For the mammalian cerebral cortex, the simplest measurement to validate
-        against is the cell density of each layer. In this analysis we use
-        three experimentally measured reference datasets
-        (see References section) to validate layer cell densities of the
-        circuit model {}.
-        """.format(
-            adapter.get_label(circuit_model)
-        ).replace(
-            '\n', ' ')
+        introduction =\
+            """
+            A circuit model should reproduce experimentally measured cell 
+            densities. For the mammalian cerebral cortex, the simplest 
+            measurement to validate against is the cell density of each layer.
+             In this analysis we use three experimentally measured reference 
+            datasets (see References section) to validate layer cell densities 
+            of the circuit model {}.
+            """.format(adapter.get_label(circuit_model))
         methods =\
             """
             Cell density was measured in randomly sampled boxes of
@@ -422,7 +419,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             measured (somewhere) in the SSCx. Specific sub-region for the
             reference data is not known. All sub-regions in these plots
             show the same reference data.
-            """.format(self.size_roi).replace('\n', ' ')\
+            """.format(self.size_roi))\
                 if not exhaustive else\
                    """
                    Cell density was measured as the total number of cells in
@@ -431,7 +428,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                    Specific sub-region for the
                    reference data is not known. All sub-regions in these plots
                    show the same reference data.
-                   """.replace('\n', ' ')
+                   """
         return\
             CircuitAnalysisReport(
                 phenomenon="{}{}".format(
@@ -440,7 +437,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 measurement=measurement,
                 figures=figures,
                 introduction=introduction,
-                methods=methods,
+                methods=methods.split('\n'),
                 results="Results are presented as figures",
                 discussion="Results will be discussed after a review",
                 references={
@@ -482,16 +479,17 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                     yvar=phenomenon.label,
                     ylabel=phenomenon.name,
                     gvar="dataset"))
-        caption = """
-        Fraction of inhibitory cells was measured in randomly sampled boxes of
-        dimension {} with their position conditioned to lie in a
-        specified brain region and layer. The plot shows mean and
-        standard-deviation of thus sampled cell densities.
-        Reference data plotted alongside model measurements was
-        measured (somewhere) in the SSCx. Specific sub-region for the
-        reference data is not known. All sub-regions in these plots
-        show the same reference data.
-        """.format(self.size_roi).replace('\n', ' ')
+        caption =\
+            """
+            Fraction of inhibitory cells was measured in randomly sampled boxes 
+            of dimension {} with their position conditioned to lie in a
+            specified brain region and layer. The plot shows mean and
+            standard-deviation of thus sampled cell densities.
+            Reference data plotted alongside model measurements was
+            measured (somewhere) in the SSCx. Specific sub-region for the
+            reference data is not known. All sub-regions in these plots
+            show the same reference data.
+            """.format(self.size_roi)
         figures =\
             plotter.get_figures(
                 self._with_reference_data(
@@ -501,31 +499,26 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                         brain_regions)
                      for label, reference_dataset in reference_data.items()}),
                 caption=caption)
-        introduction = """
-        A circuit model should reproduce experimentally measured ratio of
-        inhibitory cells.
-        For the mammalian cerebral cortex, the simplest measurement to validate
-        against is the fraction of inhibitory cells in each layer. 
-        In this analysis we use three experimentally measured reference datasets
-        (see References section) to validate layer fraction of inhibitory cells
-        in circuit model {}.
-        """.format(
-            adapter.get_label(circuit_model)
-        ).replace(
-            '\n', ' ')
-        methods =  """
-        Fraction of inhibitory cells was measured in randomly sampled boxes of
-        dimension {} with their position conditioned to lie in a
-        specified brain region and layer. The plot shows mean and
-        standard-deviation of thus sampled cell densities.
-        Reference data plotted alongside model measurements was
-        measured (somewhere) in the SSCx. Specific sub-region for the
-        reference data is not known. All sub-regions in these plots
-        show the same reference data.
-        """.format(
-            self.size_roi,
-        ).replace(
-            '\n', ' ')
+        introduction =\
+            """
+            A circuit model should reproduce experimentally measured ratio of
+            inhibitory cells. For the mammalian cerebral cortex, the simplest 
+            measurement to validate against is the fraction of inhibitory 
+            cells in each layer. In this analysis we use three experimentally
+            measured reference datasets (see References section) to validate
+            layer fraction of inhibitory cells in circuit model {}.
+            """.format(adapter.get_label(circuit_model))
+        methods =\
+            """
+            Fraction of inhibitory cells was measured in randomly sampled boxes 
+            of dimension {} with their position conditioned to lie in a
+            specified brain region and layer. The plot shows mean and
+            standard-deviation of thus sampled cell densities.
+            Reference data plotted alongside model measurements was
+            measured (somewhere) in the SSCx. Specific sub-region for the
+            reference data is not known. All sub-regions in these plots
+            show the same reference data.
+            """.format(self.size_roi)
         return\
             CircuitAnalysisReport(
                 phenomenon=phenomenon.label,

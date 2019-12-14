@@ -10,6 +10,7 @@ from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
+from dmt.tk.utils.string_utils import paragraphs
 
 class Report(WithFields):
     """
@@ -43,19 +44,22 @@ class Report(WithFields):
         Provide the research question, and the tested hypothesis or the
         purpose of the research?
         """,
-        __default_value__="Not provided")
+        __default_value__="Not provided",
+        __as__=paragraphs)
     methods = Field(
         """
         Describe the algorithm / procedure used to compute the results
         or the experimental measurement presented in this `Report`. This
         `Field` will be used in the figure caption.
         """,
-        __default_value__="Not provided")
+        __default_value__="Not provided",
+        __as__=paragraphs)
     results = Field(
         """
         Answer to the research question, to be included in the figure caption.
         """,
-        __default_value__="Not provided")
+        __default_value__="Not provided",
+        __as__=paragraphs)
     discussion = Field(
         """
         A longer text describing how the results presented in the report fit
@@ -64,7 +68,8 @@ class Report(WithFields):
         with what other researchers have found? What are the perspectives
         for future research?
         """,
-        __default_value__="Not provided")
+        __default_value__="Not provided",
+        __as__=paragraphs)
     references = Field(
         """
         A dict mapping reference label to it's citation.

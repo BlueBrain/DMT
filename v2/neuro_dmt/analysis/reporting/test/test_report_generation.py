@@ -30,6 +30,13 @@ def test_post():
         np.cumsum(np.random.uniform(size=100)))
     report =\
         CircuitAnalysisReport(
+            introduction="""
+            This is an introduction.
+            A single paragraph can have lines ending in at most a single endline
+            marker. If you insert two line breaks, such as follows
+
+            a new paragraph should start...
+            """,
             animal="Not Defined",
             age="Not Defined",
             brain_region="Not Defined",

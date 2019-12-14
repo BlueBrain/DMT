@@ -77,17 +77,23 @@ class CheetahReporter(Reporter):
 
     <h2>Introduction</h2>
         <p>$(70 * '=')</p>
+        #for $line in $introduction
         <p>$introduction</p>
+        #end for
         <p>$(70 * '=')</p>
 
     <h2>Methods</h2>
         <p>$(70 * '=')</p>
-        <p>$methods</p>
+        #for $line in $methods
+        <p>$line</p>
+        #end for
         <p>$(70 * '=')</p>
 
     <h2>Results</h2>
         <p>$(70 * '=')</p>
-        <p>$results</p>
+        for $line in $results
+        <p>$line</p>
+        #end for
         <p>$(70 * '=')</p>
     <br>
     <h3> Figures </h3>
@@ -102,7 +108,9 @@ class CheetahReporter(Reporter):
 
     <h2>Discussion</h2>
         <p>$(70 * '=')</p>
-        <p>$discussion</p>
+        #for $line in $discussion
+        <p>$line</p>
+        #end for
         <p>$(70 * '=')</p>
 
     <h2>References</h2>
