@@ -83,7 +83,7 @@ class Field:
         """
         Get default value.
         """
-        return copy.deepcopy(self._default_value)
+        return self._cast(copy.deepcopy(self._default_value))
 
     @property
     def description(self):

@@ -26,9 +26,6 @@ LOGGER = Logger(client=__file__, level="DEBUG")
 class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
     """
     Analyze the composition of a brain circuit.
-    Circuit composition phenomena are measured in randomly sampled
-    regions of interest (ROIs). The location of these ROIs can be specified
-    by brain region, cortical layer, cortical depth, or cortical height.
     """
 
     sample_size = Field(
@@ -159,7 +156,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
                 position - self.size_roi / 2.,
                 position + self.size_roi / 2.)
 
-    def _random_cells(self, circuit_model, adapter, spatial_query):
+    def _get_random_cells(self, circuit_model, adapter, spatial_query):
         """
         Get cell density in a region specified by query.
 

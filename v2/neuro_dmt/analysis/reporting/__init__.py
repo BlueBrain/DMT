@@ -78,7 +78,7 @@ class CheetahReporter(Reporter):
     <h2>Introduction</h2>
         <p>$(70 * '=')</p>
         #for $line in $introduction
-        <p>$introduction</p>
+        <p>$line</p>
         #end for
         <p>$(70 * '=')</p>
 
@@ -91,7 +91,7 @@ class CheetahReporter(Reporter):
 
     <h2>Results</h2>
         <p>$(70 * '=')</p>
-        for $line in $results
+        #for $line in $results
         <p>$line</p>
         #end for
         <p>$(70 * '=')</p>
