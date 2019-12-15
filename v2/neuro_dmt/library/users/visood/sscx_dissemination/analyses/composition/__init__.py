@@ -12,6 +12,7 @@ from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.plotting import Bars, LinePlot
 from dmt.tk.plotting.multi import MultiPlot
 from dmt.tk.parameters import Parameters
+from dmt.data.observation import measurement
 from neuro_dmt import terminology
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.reporting import\
@@ -176,6 +177,7 @@ class CompositionAnalysis(WithFields):
             "Ghobril2012": rat.ghobril2012,
             "LeFort2009": rat.lefort2009,
             "Beaulieu1992": rat.beaulieu1992}
+
     def sample_measurement_cell_density(self,
             circuit_model,
             adapter,
@@ -192,17 +194,19 @@ class CompositionAnalysis(WithFields):
                     circuit_model, adapter, spatial_query)
             cell_count =\
                 adapter.get_cells(
-                    circuit_model, ro=i=cuboid_of_interest
+                    circuit_model, roi=cuboid_of_interest
                 ).shape[0]
-            return 1.e9 * cell_count / cuboid_of_interest.volume
+            spatial_volume =\
+                cuboid_of_interest.volume   
+        else:
+            cell_count =\
+                adapter.get_cells(
+                    circuit_model, **spatial_query
+                ).shape[0]
+            spatial_volume =\
+                adapter.get_spatial_volume(
+                    circuit_model, **spatial_query)
 
-        cell_count =\
-            adapter.get_cells(
-                circuit_model, **spatial_query
-            ).shape[0]
-        spatial_volume =\
-            adapter.get_spatial_volume(
-                circuit_model, **spatial_query)
         return cell_count / spatial_volume
 
     def get_mtype_cell_density_by_layer_measurement(self,
@@ -328,18 +332,43 @@ class CompositionAnalysis(WithFields):
         return Parameters(_regions_and_layers)
 
     @lazyfield
-    def analysis_cell_density(self):
+    def parameters_regions_and_depths(self):
         """..."""
+        def _regions_and_depths(adapter, circuit_model):
+            regions =\
+                adapter.get_brain_regions(circuit_model)
+            depths =\
+                np.linspace(0., 2500., 51)
+            return\
+                pd.DataFrame({
+                    "region": [r for r in region for _ in depths],
+                    "depth_begin": [d for _ in region for d in depths],
+                    "depth_end": [d + 50. for _ in region for d in depths]})
+
+        return Parameters(_regions_and_depths)
+
+    @lazyfield
+    def phenomenon_cell_density(self):
         return\
-            BrainCircuitAnalysis(
-                phenomenon=Phenomenon(
-                    "Cell Density",
-                    "Number of cells in a unit volume (mm^3)",
-                    group="Composition"),
+            Phenomenon(
+                "Cell Density",
+                "Number of cells in a unit volume (mm^3)",
+                group="Composition")
+
+    @staticmethod
+    def sampled_reference_data(reference_data):
+        return {
+            label:dataset.samples(20)
+            for label, dataset in reference_data.items()}
+
+    @lazyfield
+    def analysis_cell_density_by_layer(self):
+        """..."""
+             BrainCircuitAnalysis(
+                phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
-                reference_data={
-                    label: dataset.samples(20)
-                    for label, dataset in self.reference_data_cell_density.items()},
+                reference_data=self.sampled_reference_data(
+                    self.reference_data_cell_density.items()),
                 measurement_parameters=self.parameters_regions_and_layers,
                 sample_measurement=self.sample_measurement_cell_density,
                 plotter=MultiPlot(
@@ -352,7 +381,26 @@ class CompositionAnalysis(WithFields):
                         gvar="dataset")),
                 report=CircuitAnalysisReport)
 
-    def analysis_inhibitory_cell_fraction(self):
+    @lazyfield
+    def analysis_cell_density_by_depth(self):
+        """..."""
+        return\
+            BrainCircuitAnalysis(
+                phenomenon=self.phenomenon_cell_density,
+                AdapterInterface=self.AdapterInterface,
+                measurement_parameters=self.parameters_regions_and_depths,
+                sample_measurement=self.sample_measurement_cell_density,
+                plotter=MultiPlot(
+                    mvar="region",
+                    plotter=LinePlot(
+                        xvar="depth",
+                        xlabel="Cortical Depth",
+                        yvar="cell_density",
+                        ylabel="Cell Density")),
+                report=CircuitAnalysisReport)
+
+    @lazyfield
+    def analysis_inhibitory_cell_fraction_by_layer(self):
         """..."""
         return\
             BrainCircuitAnalysis(
@@ -361,9 +409,8 @@ class CompositionAnalysis(WithFields):
                     "Fraction of inhibitory cells.",
                     group="Composition"),
                 AdapterInterface=self.AdapterInterface,
-                reference_data={
-                    label: dataset.samples(20),
-                    for label, dataset in self.reference_data_inhibitory_cell_fraction.items()},
+                reference_data=self.sampled_reference_data(
+                    self.reference_data_inhibitory_cell_fraction),
                 measurement_parameters=self.parameters_regions_and_layers,
                 sample_measurement=self.sample_measurement_inhibitory_cell_fraction,
                 plotter=MultiPlot(
@@ -376,10 +423,85 @@ class CompositionAnalysis(WithFields):
                         gvar="dataset")),
                 report=CircuitAnalysisReport)
 
-    def analysis_mtype_cell_density(self):
+    def sample_measurement_mtype_cell_density(self,
+            circuit_model,
+            adapter,
+            methodology=terminology.circuit.sampling_methodology.random,
+            sample_size=None,
+            **spatial_query):
+        """..."""
+        if methodology == terminology.circuit.sampling_methodology.random:
+            cuboid_of_interest =\
+                self._get_random_region(
+                    circuit_model, adaper, spatial_query)
+            cells =\
+                adapter.get_cells(
+                    circuit_model, roi=cuboid_of_interest)
+            spatial_volume =\
+                cuboid_of_interest.volume
+        else:
+            cells =\
+                adapter.get_cells(
+                    circuit_model, **spatial_query)
+            spatial_volume\
+                adapter.get_spatial_volume(
+                    circuit_model, **spatial_query)
+        return\
+            cells.groupby("mtype")\
+                 .agg("size")\
+                 .rename("cell_density")\
+                 .apply(lambda density: 1.e9 * density / spatial_volume)\
+                 .reset_index()\
+                 .assign(**spatial_query)\
+                 .set_index(["mtype"] + list(spatial_query.keys()))
+
+    @lazyfield
+    def analysis_mtype_cell_density_by_layer(self):
         """
         Analysis of mtype cell density.
         """
+        return\
+            BrainCircuitAnalysis(
+                phenomenon=self.phenomenon_cell_density,
+                AdapterInterface=self.AdapterInterface,
+                reference_data=self.sampled_reference_data(
+                    self.reference_data_cell_density.items()),
+                measurement_parameters=self.parameters_regions_and_layers,
+                sample_measurement=self.sample_measurement_cell_density,
+                measurement_collection=measurement.collection.series_type,
+                plotter=MultiPlot(
+                    mvar="mtype",
+                    plotter=Bars(
+                        xvar="layer",
+                        xlabel="Layer",
+                        yvar="cell_density",
+                        ylabel="Cell Density",
+                        gvar="region")),
+                report=CircuitAnalysisReport)
+    @lazyfield
+    def analysis_mtype_cell_density_by_depth(self):
+        """
+        Analysis of mtype cell density.
+        """
+        return\
+            BrainCircuitAnalysis(
+                phenomenon=self.phenomenon_cell_density,
+                AdapterInterface=self.AdapterInterface,
+                reference_data=self.sampled_reference_data(
+                    self.reference_data_cell_density.items()),
+                measurement_parameters=self.parameters_regions_and_depths,
+                sample_measurement=self.sample_measurement_cell_density,
+                measurement_collection=measurement.collection.series_type,
+                plotter=MultiPlot(
+                    mvar="mtype",
+                    plotter=LinePlot(
+                        xvar="depth",
+                        xlabel="Cortical Depth",
+                        yvar="cell_density",
+                        ylabel="Cell Density",
+                        gvar="region")),
+                report=CircuitAnalysisReport)
+
 
     def __call__(self, circuit_model, adapter):
         """..."""
