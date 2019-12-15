@@ -16,6 +16,7 @@ from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
 from neuro_dmt import terminology
+from neuro_dmt.analysis.reporting import CircuitAnalysisReport
 
 class BrainCircuitAnalysis(
         Analysis):
@@ -50,6 +51,15 @@ class BrainCircuitAnalysis(
         model to analyze.
         """,
         __type__=InterfaceMeta)
+    sample_measurement = Field(
+        """
+        A callable that maps
+        (adapter, model, **parameters, **customizations) ==> measurement.
+        where
+        parameters : parameters for the measurement
+        customizations : that specify the method used to make a measurement.
+        """,
+        __required__=False)
     measurement_parameters = Field(
         """
         A collection of parameters to measure with.
@@ -81,7 +91,7 @@ class BrainCircuitAnalysis(
         A callable that will generate a report. The callable should be able to
         take arguments listed in `get_report(...)` method defined below.
         """,
-        __default_value__=Report)
+        __default_value__=CircuitAnalysisReport)
     reporter = Field(
         """
         A class or a module that will report the results of this analysis.
@@ -124,27 +134,66 @@ class BrainCircuitAnalysis(
                 _as_label(parameter_label) 
                 for parameter_label in self.names_measurement_parameters))
 
+    def _get_adapter_measurement_method(self, adapter):
+        """..."""
+        measurement_name =\
+            self.AdapterInterface.__measurement__
+        assert measurement_name[0] != '_'
+        assert measurement_name[0:4] != "get"
+        try:
+            return\
+                getattr(adapter, measurement_name)
+        except AttributeError as error:
+            try:
+                return\
+                    getattr(adapter, "get_{}".format(measurement_name))
+            except AttributeError as error_get:
+                raise AttributeError(
+                    """
+                    No adapter attribute (w/o prefix `get_`)to measure {}:
+                    \t{}
+                    \t{}.
+                    """.format(
+                        measurement_name,
+                        error,
+                        error_get))
+            raise RuntimeError(
+                "Unreachable point in code.")
+        raise RuntimeError(
+            "Unreachable point in code.")
+
     def _get_measurement_method(self, adapter=None):
         """
         Makes sense for analysis of a single phenomenon.
+
+        Some changes below provide backward compatibility.
         """
         adapter = self._resolve_adapter(adapter)
-        measurement_name =\
-            self.AdapterInterface.__measurement__
-        assert len(measurement_name) > 4
-        assert measurement_name[0] != '_'
-        measurement_name = "get_{}".format(measurement_name)
         try:
-            return getattr(adapter, measurement_name)
-        except AttributeError as error:
-            raise AttributeError(
+            def _adapter_measurement_method(
+                    circuit_model,
+                    **kwargs):
                 """
-                No adapter attribute to measure {}:
-                \t{}
-                """.format(
-                    measurement_name,
-                    error))
-        return RuntimeError(
+                Make sample measurement method behave as if it was defined on
+                the adapter.
+
+                Arguments
+                ===============
+                kwargs :  keyword arguments containing keywords providing the
+                parameter set to make the measurement, as well other arguments
+                that may affect how the measurement will be made (for example,
+                deterministic or stochastic, or the number of samples to
+                measure for a single set of parameters.)
+                """
+                return\
+                    self.sampled_measurement(
+                        adapter, circuit_model, **kwargs)
+
+            return _adapter_measurement_method
+        except AttributeError:
+            return self._get_adapter_measurement_method(adapter)
+
+        raise RuntimeError(
             "Unreachable point in code.")
 
     def get_measurement(self,

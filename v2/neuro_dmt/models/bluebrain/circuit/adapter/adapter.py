@@ -449,6 +449,7 @@ class BlueBrainCircuitAdapter(WithFields):
     )
     def get_cell_density(self,
             circuit_model=None,
+            *args,
             sampling_methodology=terminology.sampling_methodology.random,
             **kwargs):
         """
@@ -474,6 +475,7 @@ class BlueBrainCircuitAdapter(WithFields):
     @terminology.require(*terminology.circuit.terms)
     def get_inhibitory_cell_fraction(self,
             circuit_model=None,
+            *args, 
             sampling_methodology=terminology.sampling_methodology.random,
             **query):
         """

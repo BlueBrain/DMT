@@ -23,6 +23,96 @@ from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 
+class CompositionAnalysisInterface(Interface):
+    """
+    Document the methods that will be used by this analysis to measure a
+    circuit model. Users must adapt the functionality of their circuit model
+    to provide the methods defined in this `Interface`. They may implement
+    their adapter as a class or a module.
+    """
+
+    def get_provenance(self, circuit_model):
+        """
+        Provide a dictionary with following keys:
+        
+        1. label: that names the circuit model
+        2. authors: group that built the circuit model
+        3. release_date: when the circuit model was released in its final form
+        4. location: a URI from where the circuit model can be loaded
+        5. animal: whose brain was modeled
+        6  age: of the animal at which the brain was modeled
+        7. brain_region: name of the region in the brain modeled 
+        """
+        raise NotImplementedError
+
+    def get_brain_regions(self, circuit_model):
+        """
+        A list of named regions in the `circuit_model`.
+        """
+        raise NotImplementedError
+
+    def get_layers(self, circuit_model):
+        """
+        A list of layers in the `circuit_model`
+        """
+        raise NotImplementedError
+
+    def get_spatial_volume(self, circuit_model, **spatial_query):
+        """
+        Get total volume in circuit space that satisfies a spatial query.
+        """
+        raise NotImplementedError
+
+    def random_position(self,
+        circuit_model,
+        region=None,
+        layer=None,
+        depth=None,
+        height=None):
+        """
+        Get a random position in the circuit space that falls in the region
+        specified by the query arguments.
+
+        Arguments
+        ================
+        `circuit_model`: model of a brain circuit
+        `layer`: Cortical layer in which the cells should be counted.
+        `region`: Named brain region in which the random position should lie.
+
+        How this method's result will be used
+        =======================================
+        A cuboid ROI of specified size will be defined around the
+        random position returned by this method, and passed to the
+        adapter method `get_cell_count` to obtain the number of cells in
+        the ROI. Ratio of number of cells to the ROI volume will be 
+        cell density. Multiple values of cell density obtained this way,
+        for the same argument values will be constitute sample cell density
+        values that will be then be analyzed.
+        
+        Returns
+        ===============
+        A 3D np.ndarray providing the X, Y, and Z components of a position
+        in the circuit space.
+        """
+        raise NotImplementedError
+
+    def get_cells(self, circuit_model, properties=None, **query):
+        """
+        Get cells in a region of interest.
+
+        Arguments
+        ============
+        properties: Cell properties to load
+        roi: A cuboidal region of interest encoded as two diagonally opposite
+        ~    corners of the box.
+
+        Returns
+        =============
+        pandas.DataFrame containing all relevant cell properties as columns.
+        """
+        raise NotImplementedError
+
+
 class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
     """
     Analyze the composition of a brain circuit.
@@ -54,94 +144,7 @@ class BrainCircuitCompositionAnalysis(BrainCircuitAnalysis):
             "Fraction of inhibitory cells.",
             group="Composition")}
 
-    class AdapterInterface(Interface):
-        """
-        Document the methods that will be used by this analysis to measure a
-        circuit model. Users must adapt the functionality of their circuit model
-        to provide the methods defined in this `Interface`. They may implement
-        their adapter as a class or a module.
-        """
-
-        def get_provenance(self, circuit_model):
-            """
-            Provide a dictionary with following keys:
-
-            1. label: that names the circuit model
-            2. authors: group that built the circuit model
-            3. release_date: when the circuit model was released in its final form
-            4. location: a URI from where the circuit model can be loaded
-            5. animal: whose brain was modeled
-            6  age: of the animal at which the brain was modeled
-            7. brain_region: name of the region in the brain modeled 
-            """
-            raise NotImplementedError
-
-        def get_brain_regions(self, circuit_model):
-            """
-            A list of named regions in the `circuit_model`.
-            """
-            raise NotImplementedError
-
-        def get_layers(self, circuit_model):
-            """
-            A list of layers in the `circuit_model`
-            """
-            raise NotImplementedError
-
-        def get_spatial_volume(self, circuit_model, **spatial_query):
-            """
-            Get total volume in circuit space that satisfies a spatial query.
-            """
-            raise NotImplementedError
-
-        def random_position(self,
-                circuit_model,
-                region=None,
-                layer=None,
-                depth=None,
-                height=None):
-            """
-            Get a random position in the circuit space that falls in the region
-            specified by the query arguments.
-
-            Arguments
-            ================
-            `circuit_model`: model of a brain circuit
-            `layer`: Cortical layer in which the cells should be counted.
-            `region`: Named brain region in which the random position should lie.
-            
-            How this method's result will be used
-            =======================================
-            A cuboid ROI of specified size will be defined around the
-            random position returned by this method, and passed to the
-            adapter method `get_cell_count` to obtain the number of cells in
-            the ROI. Ratio of number of cells to the ROI volume will be 
-            cell density. Multiple values of cell density obtained this way,
-            for the same argument values will be constitute sample cell density
-            values that will be then be analyzed.
-            
-            Returns
-            ===============
-            A 3D np.ndarray providing the X, Y, and Z components of a position
-            in the circuit space.
-            """
-            raise NotImplementedError
-
-        def get_cells(self, circuit_model, properties=None, **query):
-            """
-            Get cells in a region of interest.
-
-            Arguments
-            ============
-            properties: Cell properties to load
-            roi: A cuboidal region of interest encoded as two diagonally opposite
-            ~    corners of the box.
-
-            Returns
-            =============
-            pandas.DataFrame containing all relevant cell properties as columns.
-            """
-            raise NotImplementedError
+    AdapterInterface = CompositionAnalysisInterface
 
     def _get_random_region(self, circuit_model, adapter, spatial_query):
         """
