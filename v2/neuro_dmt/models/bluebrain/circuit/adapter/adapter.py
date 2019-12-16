@@ -414,7 +414,7 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         circuit_model = self._resolve(circuit_model)
         count_voxels = circuit_model.atlas.get_voxel_count(**spatial_query)
-        return 1.e-9 * count_voxels * circuit_model.atlas.volume_voxel 
+        return count_voxels * circuit_model.atlas.volume_voxel 
 
     def _get_cell_density_overall(self,
             circuit_model=None,

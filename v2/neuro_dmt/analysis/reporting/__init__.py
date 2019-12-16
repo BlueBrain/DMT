@@ -160,7 +160,8 @@ class CheetahReporter(Reporter):
 
     def post(self,
             report,
-            output_uri=None,
+            path_output_folder=None,
+            output_subfolder=None,
             report_file_name="report.html",
             strict=False,
             *args, **kwargs):
@@ -174,7 +175,8 @@ class CheetahReporter(Reporter):
         output_uri =\
             self.get_output_location(
                 report,
-                output_uri)
+                path_output_folder=path_output_folder,
+                output_subfolder=output_subfolder)
         base_file_name =\
             get_file_name_base(report_file_name)
         path_report_file =\

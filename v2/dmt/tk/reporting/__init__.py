@@ -110,6 +110,7 @@ class Reporter(WithFields):
     def get_output_location(self,
             report,
             path_output_folder=None,
+            output_subfolder=None,
             with_time_stamp=True):
         """
         Where should the report be saved.
@@ -124,6 +125,11 @@ class Reporter(WithFields):
             os.path.join(
                 path_parent,
                 report.phenomenon)
+        if output_subfolder is not None:
+            path_report_folder =\
+                os.path.join(
+                    path_report_folder,
+                    output_subfolder)
         if with_time_stamp:
             daytime =\
                 timestamp()
@@ -162,7 +168,8 @@ class Reporter(WithFields):
 
     def _get_file_path(self, folder_files, label_file, format_file):
         """..."""
-        return 
+        raise NotImplementedError(
+            """Is this a stub leftover?""") 
 
     def _save_figures(self, report, output_folder, format_file=".png"):
         """..."""
@@ -178,7 +185,7 @@ class Reporter(WithFields):
             figure_locations[label] = location
 
         return (figures_folder, figure_locations)
-                
+
 
     def _save_text_report(self, report, output_folder, folder_figures):
         """..."""
@@ -216,14 +223,16 @@ class Reporter(WithFields):
 
     def save(self,
             report,
-            path_output_folder=None):
+            path_output_folder=None,
+            output_subfolder=None):
         """
         Save report at the path provided.
         """
         output_folder =\
                 self.get_output_location(
                     report,
-                    path_output_folder)
+                    path_output_folder=path_output_folder,
+                    output_subfolder=output_subfolder)
 
         folder_figures, _ =\
             self._save_figures(report, output_folder)

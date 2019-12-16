@@ -234,7 +234,7 @@ class SummaryMeasurement(Measurement):
         """
         columns = dataframe.columns.values
         if len(columns) != 2:
-            raise typeerror(
+            raise TypeError(
                 """
                 to load as a `summarymeasurement` a dataframe should have a
                 multi-indexed two level column. received dataframe columns: {}

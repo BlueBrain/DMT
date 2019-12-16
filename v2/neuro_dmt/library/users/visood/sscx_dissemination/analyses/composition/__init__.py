@@ -3,6 +3,7 @@ Analysis circuit composition.
 """
 
 import os
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
@@ -39,7 +40,7 @@ class CompositionAnalysis(WithFields):
         """
         Size of ROIs that composition phenomena will be computed in.
         """,
-        __default_value__ = np.array([100., 100., 100.]) )
+        __default_value__ = 50. * np.ones(3))
     path_reports = Field(
         """
         Location where the reports will be posted.
@@ -134,12 +135,12 @@ class CompositionAnalysis(WithFields):
             pandas.DataFrame containing all relevant cell properties as columns.
             """
             raise NotImplementedError
-        
 
-     def _get_random_region(self, circuit_model, adapter, spatial_query):
+
+    def _get_random_region(self, circuit_model, adapter, spatial_query):
         """
-        Get a random region in the circuit model space.
-        """
+            Get a random region in the circuit model space.
+            """
         position =\
             adapter.random_position(
                 circuit_model,
@@ -148,7 +149,7 @@ class CompositionAnalysis(WithFields):
             Cuboid(
                 position - self.size_roi / 2.,
                 position + self.size_roi / 2.)
-
+ 
     def _get_random_cells(self, circuit_model, adapter, spatial_query):
         """
         Get cell density in a region specified by query.
@@ -162,14 +163,42 @@ class CompositionAnalysis(WithFields):
                 circuit_model, adapter, spatial_query)
         return\
             adapter.get_cells(
-                circuit_model, roi=roi.bbox
-            )
-    @lazyfield
-    def reference_data_cell_density(self):
+                circuit_model, roi=roi.bbox)
+
+    def reference_data_cell_density(self, brain_regions=None):
+        """..."""
+        defelipe2017 =\
+            deepcopy(
+                rat.defelipe2017.summary_measurement)
+        defelipe2014 =\
+            deepcopy(
+                rat.defelipe2014.summary_measurement)
+        meyer2010 =\
+            deepcopy(
+                rat.meyer2010)
+        nsamples = 20
+        if brain_regions is not None:
+            defelipe2017.data =\
+                self._with_brain_regions(
+                    defelipe2017.samples(20), brain_regions)
+            defelipe2014.data =\
+                self._with_brain_regions(
+                    defelipe2014.samples(20), brain_regions)
+            meyer2010.data =\
+                self._with_brain_regions(
+                    meyer2010.samples(20), brain_regions)
+        else:
+            defelipe2017.data =\
+                defelipe2017.samples(20)
+            defelipe2014.data =\
+                defelipe2014.samples(20)
+            meyer2010.data =\
+                meyer2010.samples(20)
+
         return {
-            "DeFelipe2017": rat.defelipe2017.summary_measurement,
-            "DeFelipe2014": rat.defelipe2014.summary_measurement,
-            "Meyer2010": rat.meyer2010}
+            "DeFelipe2017": defelipe2017,
+            "DeFelipe2014": defelipe2014,
+            "Meyer2010": meyer2010}
 
     @lazyfield
     def reference_data_inhibitory_cell_fraction(self):
@@ -181,20 +210,19 @@ class CompositionAnalysis(WithFields):
     def sample_measurement_cell_density(self,
             circuit_model,
             adapter,
-            methodology=terminology.circuit.sampling_methodology.random,
-            sample_size=None,
+            sampling_methodology=terminology.sampling_methodology.random,
             **spatial_query):
         """
         Get cell density in `circuit_model` using the `adapter` that provides
         the methods defined in `AdapterInterface`.
         """
-        if methodology == terminology.circuit.sampling_methodology.random:
+        if sampling_methodology == terminology.sampling_methodology.random:
             cuboid_of_interest =\
                 self._get_random_region(
                     circuit_model, adapter, spatial_query)
             cell_count =\
                 adapter.get_cells(
-                    circuit_model, roi=cuboid_of_interest
+                    circuit_model, roi=cuboid_of_interest.bbox
                 ).shape[0]
             spatial_volume =\
                 cuboid_of_interest.volume   
@@ -207,7 +235,7 @@ class CompositionAnalysis(WithFields):
                 adapter.get_spatial_volume(
                     circuit_model, **spatial_query)
 
-        return cell_count / spatial_volume
+        return 1.e9 * cell_count / spatial_volume
 
     def get_mtype_cell_density_by_layer_measurement(self,
             circuit_model,
@@ -355,21 +383,21 @@ class CompositionAnalysis(WithFields):
                 "Number of cells in a unit volume (mm^3)",
                 group="Composition")
 
-    @staticmethod
-    def sampled_reference_data(reference_data):
+    def sampled_reference_data(self, reference_data):
         return {
-            label:dataset.samples(20)
+            label: dataset.samples(20)
             for label, dataset in reference_data.items()}
 
-    @lazyfield
-    def analysis_cell_density_by_layer(self):
+    def get_cell_density_analysis(self,
+            measurement_parameters,
+            reference_data):
         """..."""
-             BrainCircuitAnalysis(
+        return\
+            BrainCircuitAnalysis(
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
-                reference_data=self.sampled_reference_data(
-                    self.reference_data_cell_density.items()),
-                measurement_parameters=self.parameters_regions_and_layers,
+                reference_data=reference_data,
+                measurement_parameters=measurement_parameters,
                 sample_measurement=self.sample_measurement_cell_density,
                 plotter=MultiPlot(
                     mvar="region",
@@ -426,11 +454,11 @@ class CompositionAnalysis(WithFields):
     def sample_measurement_mtype_cell_density(self,
             circuit_model,
             adapter,
-            methodology=terminology.circuit.sampling_methodology.random,
+            methodology=terminology.sampling_methodology.random,
             sample_size=None,
             **spatial_query):
         """..."""
-        if methodology == terminology.circuit.sampling_methodology.random:
+        if methodology == terminology.sampling_methodology.random:
             cuboid_of_interest =\
                 self._get_random_region(
                     circuit_model, adaper, spatial_query)
@@ -443,7 +471,7 @@ class CompositionAnalysis(WithFields):
             cells =\
                 adapter.get_cells(
                     circuit_model, **spatial_query)
-            spatial_volume\
+            spatial_volume =\
                 adapter.get_spatial_volume(
                     circuit_model, **spatial_query)
         return\
@@ -478,6 +506,7 @@ class CompositionAnalysis(WithFields):
                         ylabel="Cell Density",
                         gvar="region")),
                 report=CircuitAnalysisReport)
+
     @lazyfield
     def analysis_mtype_cell_density_by_depth(self):
         """
@@ -502,7 +531,6 @@ class CompositionAnalysis(WithFields):
                         gvar="region")),
                 report=CircuitAnalysisReport)
 
-
     def __call__(self, circuit_model, adapter):
         """..."""
         adapter =\
@@ -513,14 +541,23 @@ class CompositionAnalysis(WithFields):
                 path_output_folder=os.path.join(
                     self.path_reports,
                     "analyses"))
-        sampled_cell_density_report =\
-            self.analysis_cell_density(
-                circuit_model,
-                adapter,
-                methodology=terminology.circuit.sampling_methodolgy.random)
+        brain_regions =\
+            adapter.get_brain_regions(circuit_model)
+        reference_data_cell_density =\
+            self.reference_data_cell_density(brain_regions)
+        analysis_cell_density =\
+            self.get_cell_density_analysis(
+                measurement_parameters=self.parameters_regions_and_layers,
+                reference_data=reference_data_cell_density)
         LOGGER.info(
             "Analyzing circuit {}".format(
                 adapter.get_label(circuit_model)))
+        sampled_cell_density_report =\
+            analysis_cell_density(
+                circuit_model,
+                adapter,
+                sampling_methodology=terminology.sampling_methodology.random,
+                sample_size=self.sample_size)
         LOGGER.info(
             "1. Analyze Cell Density.")
 
@@ -529,50 +566,54 @@ class CompositionAnalysis(WithFields):
         LOGGER.info(
             "Cell density analysis report generated at {}"\
             .format(
-                reporter.post(cell_density_report)))
+                reporter.post(
+                    sampled_cell_density_report,
+                    output_subfolder="sampled")))
 
         LOGGER.info(
             "2. Analyze Cell Density, overall without sampling regions.")
 
         overall_cell_density_report =\
-            self.analysis_cell_density(
+            analysis_cell_density(
                 circuit_model,
                 adapter,
-                methodology=terminology.circuit.sampling_methodology.exhaustive)
+                sampling_methodology=terminology.sampling_methodology.exhaustive)
         LOGGER.info(
             "\tPOST overall cell density report")
         LOGGER.info(
             "Overall Cell density analysis report generated at {}"\
             .format(
-                reporter.post(overall_cell_density_report)))
+                reporter.post(
+                    overall_cell_density_report,
+                    output_subfolder="overall")))
 
-        LOGGER.info(
-            "3. Analyze Inhibitory Cell Fraction.")
-        inhibitory_cell_fraction_report =\
-            self.inhibitory_cell_fraction_analysis(
-                circuit_model,
-                adapter,
-                methodology=terminology.circuit.sampling_methodology.exhaustive)
-        LOGGER.info(
-            "\tPOST inhibitory cell fraction report")
-        LOGGER.info(
-            "Inhibitory cell fraction analysis report generated at {}"\
-            .format(
-                reporter.post(inhibitory_cell_fraction_report)))
+        # LOGGER.info(
+        #     "3. Analyze Inhibitory Cell Fraction.")
+        # inhibitory_cell_fraction_report =\
+        #     self.inhibitory_cell_fraction_analysis(
+        #         circuit_model,
+        #         adapter,
+        #         methodology=terminology.sampling_methodology.exhaustive)
+        # LOGGER.info(
+        #     "\tPOST inhibitory cell fraction report")
+        # LOGGER.info(
+        #     "Inhibitory cell fraction analysis report generated at {}"\
+        #     .format(
+        #         reporter.post(inhibitory_cell_fraction_report)))
 
-        LOGGER.info(
-            "4. Analyze Mtype Cell Density by Layer.")
-        mtype_cell_density_by_layer_report =\
-            self.analysis_mtype_cell_density(
-                circuit_model,
-                adapter,
-                methodology=terminology.circuit.sampling_methodolgy.random)
-        LOGGER.info(
-            "\tPOST mtype cell density by layer report")
-        LOGGER.info(
-            "Mtype cell density by layer analysis report generated at {}"\
-            .format(
-                reporter.post(mtype_cell_density_by_layer_report)))
+        # LOGGER.info(
+        #     "4. Analyze Mtype Cell Density by Layer.")
+        # mtype_cell_density_by_layer_report =\
+        #     self.analysis_mtype_cell_density(
+        #         circuit_model,
+        #         adapter,
+        #         methodology=terminology.sampling_methodolgy.random)
+        # LOGGER.info(
+        #     "\tPOST mtype cell density by layer report")
+        # LOGGER.info(
+        #     "Mtype cell density by layer analysis report generated at {}"\
+        #     .format(
+        #         reporter.post(mtype_cell_density_by_layer_report)))
 
         LOGGER.info(
             "DONE")

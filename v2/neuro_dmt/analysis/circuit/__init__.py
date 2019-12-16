@@ -186,8 +186,8 @@ class BrainCircuitAnalysis(
                 measure for a single set of parameters.)
                 """
                 return\
-                    self.sampled_measurement(
-                        adapter, circuit_model, **kwargs)
+                    self.sample_measurement(
+                        circuit_model, adapter, **kwargs)
 
             return _adapter_measurement_method
         except AttributeError:
@@ -199,7 +199,8 @@ class BrainCircuitAnalysis(
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            sample_size=None,
+            sampling_methodology=terminology.sampling_methodology.random,
+            sample_size=20,
             *args, **kwargs):
         """
         Get a statistical measurement.
@@ -208,17 +209,21 @@ class BrainCircuitAnalysis(
             "Expected int, received {}".format(type(sample_size))
         adapter =\
             self._resolve_adapter(adapter)
+        using_random_samples=\
+            sampling_methodology == terminology.sampling_methodology.random
         parameter_values =\
             self.measurement_parameters\
                 .for_sampling(
                     adapter,
                     circuit_model,
-                    size=sample_size)
+                    size=sample_size if using_random_samples else 1)
         get_measurement =\
             self._get_measurement_method(adapter)
         measured_values = self\
             .measurement_collection(
-                (p, get_measurement(circuit_model, **p, **kwargs))
+                (p, get_measurement(circuit_model,
+                                    sampling_methodology=sampling_methodology,
+                                    **p, **kwargs))
                 for p in parameter_values)\
             .rename(columns={"value": self.phenomenon.label})
         measurement =\
@@ -241,6 +246,11 @@ class BrainCircuitAnalysis(
             reference_data={}):
         """
         Append reference datasets.
+
+        Arguments
+        ===========
+        reference_data :: dict mapping dataset label to an object with
+        attributes <data :: DataFrame, citation :: String>
         """
         reference_data =\
             reference_data\
@@ -249,7 +259,9 @@ class BrainCircuitAnalysis(
         measurement_dict = {
             dataset: measurement.xs(dataset, level="dataset")
             for dataset in measurement.reset_index().dataset.unique()}
-        measurement_dict.update(reference_data)
+        measurement_dict.update({
+            label: dataset.data
+            for label, dataset in reference_data.items()})
         return measurement_dict
 
     @property
@@ -304,7 +316,7 @@ class BrainCircuitAnalysis(
             measurement,
             figures=None,
             reference_data=None,
-            provenance={}):
+            **provenance):
         """
         Get a report for the given `measurement`.
         """
@@ -403,7 +415,9 @@ class BrainCircuitAnalysis(
                 *args, **kwargs)
 
     def __call__(self,
-            *args, **kwargs):
+            *args,
+            sampling_methodology=terminology.sampling_methodology.random,
+            **kwargs):
         """
         Make this `Analysis` masquerade as a function.
 
@@ -413,9 +427,7 @@ class BrainCircuitAnalysis(
             self.get_measurement(
                 circuit_model,
                 adapter=adapter,
-                sampling_methodology=kwargs.get(
-                    "sampling_methodology",
-                    terminology.sampling_methodology.random),
+                sampling_methodology=sampling_methodology,
                 **kwargs)
         reference_data =\
             kwargs.get(
