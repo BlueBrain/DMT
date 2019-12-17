@@ -12,6 +12,7 @@ from dmt.model.interface import InterfaceMeta
 from dmt.data.observation.measurement.collection import\
     primitive_type as primitive_type_measurement_collection
 from dmt.tk.field import Field, LambdaField, lazyfield
+from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
@@ -169,7 +170,7 @@ class BrainCircuitAnalysis(
         Some changes below provide backward compatibility.
         """
         adapter = self._resolve_adapter(adapter)
-        try:
+        if hasattr(self, "sample_measurement"):
             def _adapter_measurement_method(
                     circuit_model,
                     **kwargs):
@@ -189,8 +190,15 @@ class BrainCircuitAnalysis(
                     self.sample_measurement(
                         circuit_model, adapter, **kwargs)
 
+            try:
+                _adapter_measurement_method.__method__ =\
+                    self.sample_measurement.__method__
+            except AttributeError:
+                _adapter_measurement_method.__method__ =\
+                    "Not provided in the sample measurement method."
+
             return _adapter_measurement_method
-        except AttributeError:
+        else:
             return self._get_adapter_measurement_method(adapter)
 
         raise RuntimeError(
@@ -314,9 +322,10 @@ class BrainCircuitAnalysis(
 
     def get_report(self,
             measurement,
+            author=Author.anonymous,
             figures=None,
             reference_data=None,
-            **provenance):
+            **provenance_circuit):
         """
         Get a report for the given `measurement`.
         """
@@ -324,10 +333,13 @@ class BrainCircuitAnalysis(
             reference_data if reference_data is not None\
             else self.reference_data
 
+        provenance_circuit["authors_circuit"] =\
+            provenance_circuit.pop("authors", ["Not Available"])
         return self.report(
+            author=author,
             phenomenon=self.phenomenon.label,
             abstract=self.abstract,
-            introduction=self.introduction,
+            introduction=self.introduction.format(**provenance_circuit),
             methods=self.methods,
             measurement=measurement,
             figures=figures,
@@ -336,7 +348,7 @@ class BrainCircuitAnalysis(
             references={
                 label: reference.citation
                 for label, reference in self.reference_data.items()},
-            **provenance)
+            **provenance_circuit)
 
     def _resolve_adapter_and_model(self,  *args):
         """
@@ -417,6 +429,7 @@ class BrainCircuitAnalysis(
     def __call__(self,
             *args,
             sampling_methodology=terminology.sampling_methodology.random,
+            author=Author.anonymous,
             **kwargs):
         """
         Make this `Analysis` masquerade as a function.
@@ -436,6 +449,7 @@ class BrainCircuitAnalysis(
         report =\
             self.get_report(
                 measurement["data"],
+                author=author,
                 figures=self.get_figures(
                     data=self._with_reference_data(
                         measurement["data"],

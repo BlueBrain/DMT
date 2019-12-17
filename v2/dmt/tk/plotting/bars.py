@@ -107,6 +107,7 @@ class Bars(WithFields):
                 data=self.get_dataframe(data),
                 x=self.xvar,
                 y=self.yvar,
+                ci=self.confidence_interval,
                 kind="bar",
                 hue=self.gvar if self.gvar else None,
                 height=self.height_figure,

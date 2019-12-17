@@ -53,7 +53,7 @@ class CircuitProvenance(WithFields):
         """
         When the circuit model was released in its final form.
         """)
-    location = Field(
+    uri = Field(
         """
         URI from where the circuit model can be loaded.
         """)
@@ -82,7 +82,7 @@ class BlueBrainCircuitModel(WithFields):
             label="BlueBrainCircuitModel",
             authors=["BBP Team"],
             release_date="Not Available",
-            location="Not Available",
+            uri="Not Available",
             animal="Not Available",
             age="Not Available",
             brain_region="Not Available"))

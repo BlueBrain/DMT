@@ -35,6 +35,11 @@ class CircuitAnalysisReport(Report):
         Location of the circuit.
         """,
         __default_value__="Not Available")
+    authors_circuit = Field(
+        """
+        Authors who built the circuit
+        """,
+        __default_value__=["Not Available"])
 
     @lazyfield
     def field_values(self):
@@ -45,7 +50,8 @@ class CircuitAnalysisReport(Report):
             age=self.age,
             brain_region=self.brain_region,
             uri=self.uri,
-            references=self.references
+            references=self.references,
+            authors_circuit=self.authors_circuit
         ))
         return fields
 
@@ -73,6 +79,7 @@ class CheetahReporter(Reporter):
         <p>Age: $age</p>
         <p>Brain Region: $brain_region</p>
         <p>URI: $uri</p>
+        <p>Author: $authors_circuit</p>
         <p>$(70 * '=')</p>
 
     <h2>Introduction</h2>
