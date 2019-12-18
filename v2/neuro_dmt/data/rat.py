@@ -181,3 +181,17 @@ beaulieu1992 =\
             ("inhibitory_cell_fraction", "std"): __beaulieu1992_dataset["ratio_stds"]
         }).assign(
             layer=layers))
+
+input_constraint_inhibitory_fraction =\
+    ByLayerInhibitoryCellFractionMeasurement.SummaryType()(
+        label="input_constraint",
+        object_of_observation="Wistar Rat.",
+        procedure="Cell density profiles computed from marker stains.",
+        provenance="Computed for 2017 SSCx release",
+        citation="Dan Keller et. al.",
+        uri="Not Available",
+        data=pandas.DataFrame({
+            ("inhibitory_cell_fraction", "mean"): numpy.array([1., 0.167, 0.093, 0.060, 0.137, 0.091]),
+            ("inhibitory_cell_fraction", "std"):  numpy.array([0., 0., 0., 0., 0., 0.])
+        }).assign(
+            layer=layers))

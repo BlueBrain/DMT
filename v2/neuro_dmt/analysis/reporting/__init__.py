@@ -71,7 +71,6 @@ class CheetahReporter(Reporter):
     <h2> Author </h2>
     <h3> $author_name </h3>
     <h3> Affiliation: $author_affiliation </h3>
-    <p>$(70 * '=')</p>
 
     <h2>Circuit Analyzed</h2>
         <p>$(70 * '=')</p>
@@ -80,52 +79,45 @@ class CheetahReporter(Reporter):
         <p>Brain Region: $brain_region</p>
         <p>URI: $uri</p>
         <p>Author: $authors_circuit</p>
-        <p>$(70 * '=')</p>
 
     <h2>Introduction</h2>
         <p>$(70 * '=')</p>
         #for $line in $introduction
-        <p>$line</p>
+          <p>$line</p>
         #end for
-        <p>$(70 * '=')</p>
 
     <h2>Methods</h2>
         <p>$(70 * '=')</p>
         #for $line in $methods
         <p>$line</p>
         #end for
-        <p>$(70 * '=')</p>
 
     <h2>Results</h2>
         <p>$(70 * '=')</p>
         #for $line in $results
-        <p>$line</p>
+          <p>$line</p>
         #end for
-        <p>$(70 * '=')</p>
     <br>
     <h3> Figures </h3>
     #for $label_image, $location_image in $images.items()
         <img src=$location_image alt="apologies.png"/>
-        #for $line in $captions[$label_image].splitlines()
-        <br><strong>$line</strong></br>
+        #for $line in $captions[$label_image]
+          <br><strong>$line</strong></br>
         #end for
-    <p>$(140 * '-')</p>
     #end for
     </br>
 
     <h2>Discussion</h2>
         <p>$(70 * '=')</p>
         #for $line in $discussion
-        <p>$line</p>
+          <p>$line</p>
         #end for
-        <p>$(70 * '=')</p>
 
     <h2>References</h2>
         <p>$(70 * '=')</p>
         #for $label, $citation in $references.items()
-        <p><strong>$label</strong>: $citation</p>
+          <p><strong>$label</strong>: $citation</p>
         #end for
-        <p>$(70 * '=')</p>
 
   </body>
 

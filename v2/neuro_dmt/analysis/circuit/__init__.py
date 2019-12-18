@@ -5,6 +5,7 @@ Brain circuit analyses and validations.
 from abc import abstractmethod
 import os
 import pandas        
+from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
 from dmt.analysis import Analysis
@@ -16,8 +17,11 @@ from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.args import require_only_one_of
+from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
 from neuro_dmt.analysis.reporting import CircuitAnalysisReport
+
+LOGGER = Logger(client=__file__, level="DEBUG")
 
 class BrainCircuitAnalysis(
         Analysis):
@@ -192,14 +196,17 @@ class BrainCircuitAnalysis(
 
             try:
                 _adapter_measurement_method.__method__ =\
-                    self.sample_measurement.__method__
+                    paragraphs(
+                        self.sample_measurement.__method__)
             except AttributeError:
                 _adapter_measurement_method.__method__ =\
                     "Not provided in the sample measurement method."
 
             return _adapter_measurement_method
         else:
-            return self._get_adapter_measurement_method(adapter)
+            return\
+                paragraphs(
+                    self._get_adapter_measurement_method(adapter))
 
         raise RuntimeError(
             "Unreachable point in code.")
@@ -347,7 +354,7 @@ class BrainCircuitAnalysis(
             discussion="To be provided after a review of the results",
             references={
                 label: reference.citation
-                for label, reference in self.reference_data.items()},
+                for label, reference in reference_data.items()},
             **provenance_circuit)
 
     def _resolve_adapter_and_model(self,  *args):
@@ -443,7 +450,7 @@ class BrainCircuitAnalysis(
                 sampling_methodology=sampling_methodology,
                 **kwargs)
         reference_data =\
-            kwargs.get(
+            kwargs.pop(
                 "reference_data",
                 self.reference_data)
         report =\
