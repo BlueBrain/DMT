@@ -76,7 +76,7 @@ class ArithmeticAnalysis(Analysis):
         Value for the threshold p-value.
         """,
         __default_value__=0.05)
-    observation = Field(
+    measurement_parameters = Field(
         """
         A pandas dataframe
         """)
@@ -89,8 +89,8 @@ class ArithmeticAnalysis(Analysis):
         -----------
 
         """
-        xs = self.observation.x.values
-        ys = self.observation.y.values
+        xs = self.measurement_parameters.x.values
+        ys = self.measurement_parameters.y.values
         return pd.DataFrame(dict(
             x = xs,
             y = ys,
@@ -211,6 +211,7 @@ class AdaptedModel(WithFields):
 def test():
     xs = np.random.uniform(1.e-9, 1., size=20)
     ys = np.random.uniform(1.e-9, 1., size=20)
+    measurement_parameters = pd.DataFrame(dict(x=xs, y=ys))
     observation = pd.DataFrame(dict(
         x = xs,
         y = ys,
@@ -218,7 +219,7 @@ def test():
         subtraction = xs - ys,
         multiplication = xs * ys,
         division = xs / ys))
-    analysis = ArithmeticAnalysis(observation=observation)
+    analysis = ArithmeticAnalysis(measurement_parameters=measurement_parameters)
     adapter = ArithmenticModelAdapter()
     test = SciUnitValidationTest(
         analysis,
