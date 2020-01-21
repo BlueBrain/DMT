@@ -55,10 +55,13 @@ class SciUnitValidationTest(sciunit.Test):
         """
         Compute a score comparing model prediction to experimental observation.
         """
-        statistical_test_result =\
-            self._analysis.statistical_test(observation, prediction)
-        if statistical_test_result.pvalue < self._pstar:
-            return BooleanScore(False)
+        try:
+            statistical_test_result =\
+                self._analysis.statistical_test(observation, prediction)
+            if statistical_test_result.pvalue < self._pstar:
+                return BooleanScore(False)
+        except:
+            pass
         return BooleanScore(True)
 
     def validate_observation(self, observation):
