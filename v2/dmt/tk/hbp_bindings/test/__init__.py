@@ -175,7 +175,7 @@ class GoodArithmeticModel:
         return x / y
 
 
-class ArithmenticModelAdapter:
+class ArithmeticModelAdapter:
     """
     Adapt a model that implements arithmetic to the requirements of
     analysis' interface.
@@ -220,15 +220,17 @@ def test():
         multiplication = xs * ys,
         division = xs / ys))
     analysis = ArithmeticAnalysis(measurement_parameters=measurement_parameters)
-    adapter = ArithmenticModelAdapter()
+    adapter = ArithmeticModelAdapter()
     test = SciUnitValidationTest(
         analysis,
         adapter,
         observation = observation )
-    BadModel = SciUnitModel(BadArithmeticModel, ArithmeticInterface)
+    assert test.judge(BadArithmeticModel())
+    BadModel = SciUnitModel(ArithmeticInterface, BadArithmeticModel)
     assert test.judge(BadModel())
 
-    GoodModel = SciUnitModel(GoodArithmeticModel, ArithmeticInterface)
+
+    GoodModel = SciUnitModel(ArithmeticInterface, GoodArithmeticModel)
     assert test.judge(GoodModel())
 
 
