@@ -28,7 +28,7 @@ from neuro_dmt.models.bluebrain.circuit.adapter.adapter import measurement_metho
 LOGGER = Logger(client=__file__, level="DEBUG")
 
 
-class CompositionAnalysis(WithFields):
+class CompositionAnalysesSuite(WithFields):
     """
     Analyze the composition of a brain circuit model.
     """
@@ -167,190 +167,6 @@ class CompositionAnalysis(WithFields):
             adapter.get_cells(
                 circuit_model, roi=roi.bbox)
 
-    def reference_data_cell_density(self, brain_regions=None):
-        """..."""
-        defelipe2017 =\
-            deepcopy(
-                rat.defelipe2017.summary_measurement)
-        defelipe2014 =\
-            deepcopy(
-                rat.defelipe2014.summary_measurement)
-        meyer2010 =\
-            deepcopy(
-                rat.meyer2010)
-        nsamples = 1000
-        if brain_regions is not None:
-            defelipe2017.data =\
-                self._with_brain_regions(
-                    defelipe2017.samples(nsamples), brain_regions)
-            defelipe2014.data =\
-                self._with_brain_regions(
-                    defelipe2014.samples(nsamples), brain_regions)
-            meyer2010.data =\
-                self._with_brain_regions(
-                    meyer2010.samples(nsamples), brain_regions)
-        else:
-            defelipe2017.data =\
-                defelipe2017.samples(nsamples)
-            defelipe2014.data =\
-                defelipe2014.samples(nsamples)
-            meyer2010.data =\
-                meyer2010.samples(nsamples)
-
-        return {
-            "InputConstraintDeFelipe2017": defelipe2017,
-            "DeFelipe2014": defelipe2014,
-            "Meyer2010": meyer2010}
-
-    def reference_data_inhibitory_cell_fraction(self, brain_regions=None):
-        """..."""
-        ghobril2012 =\
-            deepcopy(rat.ghobril2012)
-        lefort2009 =\
-            deepcopy(rat.lefort2009)
-        beaulieu1992 =\
-            deepcopy(rat.beaulieu1992)
-        input_constraint =\
-            deepcopy(rat.input_constraint_inhibitory_fraction)
-        nsamples = 1000
-        if brain_regions is not None:
-            ghobril2012.data =\
-                self._with_brain_regions(
-                    ghobril2012.samples(nsamples), brain_regions)
-            lefort2009.data =\
-                self._with_brain_regions(
-                    lefort2009.samples(nsamples), brain_regions)
-            beaulieu1992.data =\
-                self._with_brain_regions(
-                    beaulieu1992.samples(nsamples), brain_regions)
-            input_constraint.data =\
-                self._with_brain_regions(
-                    input_constraint.samples(nsamples), brain_regions)
-        else:
-            ghobril2012.data =\
-                ghobril2012.samples(nsamples)
-            lefort2009.data =\
-                lefort2009.samples(nsamples)
-            beaulieu1992.data =\
-                beaulieu1992.samples(nsamples)
-            input_constraint.data =\
-                input_constraint.samples(nsamples)
-        return {
-            "InputConstraint": input_constraint,
-            "Ghobril2012": ghobril2012,
-            "LeFort2009": lefort2009,
-            "Beaulieu1992": beaulieu1992}
-
-    @measurement_method("""
-    Cells were counted, by their mtype, in randomly sampled cubes (see Methods
-    for dimensions), that was required to be centered in the location specified
-    by a spatial query.
-    """)
-    def measurement_mtype_cell_density_by_sampling(self,
-            circuit_model,
-            adapter,
-            **query):
-        """..."""
-        spatial_query =\
-            terminology.circuit.get_spatial_query(query)
-        cuboid =\
-            self._get_random_region(
-                circuit_model, adapter, spatial_query)
-        cells =\
-            adapter.get_cells(
-                circuit_model, roi=cuboid)
-        return cells.groupby("mtype")\
-                    .agg("size")\
-                    .rename("cell_density")\
-                    .apply(lambda density: 1.e9 * density / cuboid.volume)\
-                    .reset_index()\
-                    .assign(**spatial_query)\
-                    .set_index(
-                        ["mtype"] + list(spatial_query.keys()))
-
-
-    @measurement_method("""
-    Cells were counted in a randomly sampled cube (see Methods for dimensions),
-    that was required to be centered in the location specified by a spatial
-    query.
-    """)
-    def measurement_cell_density_by_sampling(self,
-            circuit_model,
-            adapter,
-            **query):
-        """
-        Get cell density in circuit model using an adapter that provides
-        the methods defined in `AdapterInterface`, by sampling random regions
-        in circuit space specified by a query.
-        """
-        spatial_query =\
-            terminology.circuit.get_spatial_query(query)
-        cuboid_to_measure =\
-            self._get_random_region(
-                circuit_model, adapter, spatial_query)
-        cell_count =\
-            adapter.get_cells(
-                circuit_model, roi=cuboid_to_measure
-            ).shape[0]
-        spatial_volume =\
-            cuboid_to_measure.volume
-        return 1.e9 * cell_count / spatial_volume
-
-    @measurement_method("""
-    Cells were counted in circuit space specified by a spatial query.
-    """)
-    def measurement_cell_density_overall(self,
-            circuit_model,
-            adapter,
-            **query):
-        """
-        Get cell density in circuit model using an adapter that provides
-        the methods defined in `AdapterInterface`,  in circuit space specified
-        by a query.
-        """
-        spatial_query =\
-            terminology.circuit.get_spatial_query(query)
-        cell_count =\
-            adapter.get_cells(
-                circuit_model, **spatial_query
-            ).shape[0]
-        spatial_volume =\
-            adapter.get_spatial_volume(
-                circuit_model, **spatial_query)
-        return 1.e9 * cell_count / spatial_volume
-
-    def get_mtype_cell_density_by_layer_measurement(self,
-            circuit_model,
-            adapter):
-        """..."""
-        regions = adapter.get_brain_regions(circuit_model)
-        layers = adapter.get_layers(circuit_model)
-        measurement_parameters =\
-            pd.DataFrame({
-                "region": [r for r in regions for _ in layers],
-                "layer":  [l for _ in regions for l in layers]})
-
-        def _retrieve(query):
-            cuboid =\
-                self._get_random_region(
-                    circuit_model, adapter, query)
-            cells =\
-                adapter.get_cells(
-                    circuit_model, roi=cuboid)
-            return\
-                cells.groupby("mtype")\
-                     .agg("size")\
-                     .rename("cell_density")\
-                     .apply(lambda density: 1.e9 * density / cuboid.volume)\
-                     .reset_index()\
-                     .assign(**query)\
-                     .set_index(
-                         ["mtype"] + list(query.keys()))
-
-        return pd.concat([
-            _retrieve(query)
-            for _, query in measurement_parameters.iterrows()
-            for _ in range(self.sample_size)])
 
     @staticmethod
     def _with_brain_regions(dataframe, brain_regions):
@@ -425,6 +241,109 @@ class CompositionAnalysis(WithFields):
             label: dataset.samples(20)
             for label, dataset in reference_data.items()}
 
+
+    def reference_data_cell_density(self, brain_regions=None):
+        """..."""
+        defelipe2017 =\
+            deepcopy(
+                rat.defelipe2017.summary_measurement)
+        defelipe2014 =\
+            deepcopy(
+                rat.defelipe2014.summary_measurement)
+        meyer2010 =\
+            deepcopy(
+                rat.meyer2010)
+        nsamples = 1000
+        if brain_regions is not None:
+            defelipe2017.data =\
+                self._with_brain_regions(
+                    defelipe2017.samples(nsamples), brain_regions)
+            defelipe2014.data =\
+                self._with_brain_regions(
+                    defelipe2014.samples(nsamples), brain_regions)
+            meyer2010.data =\
+                self._with_brain_regions(
+                    meyer2010.samples(nsamples), brain_regions)
+        else:
+            defelipe2017.data =\
+                defelipe2017.samples(nsamples)
+            defelipe2014.data =\
+                defelipe2014.samples(nsamples)
+            meyer2010.data =\
+                meyer2010.samples(nsamples)
+
+        return {
+            "InputConstraintDeFelipe2017": defelipe2017,
+            "DeFelipe2014": defelipe2014,
+            "Meyer2010": meyer2010}
+
+    def reference_data_inhibitory_cell_fraction(self, brain_regions=None):
+        """..."""
+        ghobril2012 =\
+            deepcopy(rat.ghobril2012)
+        lefort2009 =\
+            deepcopy(rat.lefort2009)
+        beaulieu1992 =\
+            deepcopy(rat.beaulieu1992)
+        input_constraint =\
+            deepcopy(rat.input_constraint_inhibitory_fraction)
+        nsamples = 1000
+        if brain_regions is not None:
+            ghobril2012.data =\
+                self._with_brain_regions(
+                    ghobril2012.samples(nsamples), brain_regions)
+            lefort2009.data =\
+                self._with_brain_regions(
+                    lefort2009.samples(nsamples), brain_regions)
+            beaulieu1992.data =\
+                self._with_brain_regions(
+                    beaulieu1992.samples(nsamples), brain_regions)
+            input_constraint.data =\
+                self._with_brain_regions(
+                    input_constraint.samples(nsamples), brain_regions)
+        else:
+            ghobril2012.data =\
+                ghobril2012.samples(nsamples)
+            lefort2009.data =\
+                lefort2009.samples(nsamples)
+            beaulieu1992.data =\
+                beaulieu1992.samples(nsamples)
+            input_constraint.data =\
+                input_constraint.samples(nsamples)
+        return {
+            "InputConstraint": input_constraint,
+            "Ghobril2012": ghobril2012,
+            "LeFort2009": lefort2009,
+            "Beaulieu1992": beaulieu1992}
+
+
+    @measurement_method("""
+    Cells were counted in a randomly sampled cube (see Methods for dimensions),
+    that was required to be centered in the location specified by a spatial
+    query.
+    """)
+    def measurement_cell_density_by_sampling(self,
+            circuit_model,
+            adapter,
+            **query):
+        """
+        Get cell density in circuit model using an adapter that provides
+        the methods defined in `AdapterInterface`, by sampling random regions
+        in circuit space specified by a query.
+        """
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cuboid_to_measure =\
+            self._get_random_region(
+                circuit_model, adapter, spatial_query)
+        cell_count =\
+            adapter.get_cells(
+                circuit_model, roi=cuboid_to_measure
+            ).shape[0]
+        spatial_volume =\
+            cuboid_to_measure.volume
+        return 1.e9 * cell_count / spatial_volume
+
     @lazyfield
     def analysis_cell_density_by_layer_using_sampling(self):
         """..."""
@@ -452,41 +371,6 @@ class CompositionAnalysis(WithFields):
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
                 sample_measurement=self.measurement_cell_density_by_sampling,
-                plotter=MultiPlot(
-                    mvar="region",
-                    plotter=Bars(
-                        xvar="layer",
-                        xlabel="Layer",
-                        yvar="cell_density",
-                        ylabel="Cell Density",
-                        gvar="dataset")),
-                report=CircuitAnalysisReport)
-
-    @lazyfield
-    def analysis_cell_density_by_layer_overall(self):
-        """..."""
-        return\
-            BrainCircuitAnalysis(
-                introduction="""
-                A circuit model should reproduce experimentally measured cell 
-                densities. For the mammalian cerebral cortex, the simplest 
-                measurement to validate against is the cell density of each 
-                layer. In this analysis we use three experimentally measured 
-                reference datasets (see References section) to validate layer 
-                cell densities of the circuit model {label}.
-                """,
-                methods="""
-                Cell density was measured as the total number of cells in
-                the circuit's spatial region specified by brain-region and
-                layer divided by the volume of the spatial region.
-                Specific sub-region for the
-                reference data is not known. All sub-regions in these plots
-                show the same reference data.
-                """,
-                phenomenon=self.phenomenon_cell_density,
-                AdapterInterface=self.AdapterInterface,
-                measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_cell_density_overall,
                 plotter=MultiPlot(
                     mvar="region",
                     plotter=Bars(
@@ -529,41 +413,88 @@ class CompositionAnalysis(WithFields):
                     gvar="region"))
 
     @lazyfield
-    def analysis_mtype_cell_density_by_layer_using_sampling(self):
+    def analysis_cell_density_by_depth_using_sampling(self):
+        """..."""
+        return\
+            BrainCircuitAnalysis(
+                phenomenon=self.phenomenon_cell_density,
+                AdapterInterface=self.AdapterInterface,
+                measurement_parameters=self.parameters_regions_and_depths,
+                sample_measurement=self.measurement_cell_density_by_sampling,
+                plotter=LinePlot(
+                    xvar="depth",
+                    xlabel="Cortical Depth",
+                    yvar="cell_density",
+                    ylabel="Cell Density",
+                    gvar="region"),
+                report=CircuitAnalysisReport)
+
+
+    @measurement_method("""
+    Cells were counted in circuit space specified by a spatial query.
+    """)
+    def measurement_cell_density_exhaustively(self,
+            circuit_model,
+            adapter,
+            **query):
+        """
+        Get cell density in circuit model using an adapter that provides
+        the methods defined in `AdapterInterface`,  in circuit space specified
+        by a query.
+        """
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cell_count =\
+            adapter.get_cells(
+                circuit_model, **spatial_query
+            ).shape[0]
+        spatial_volume =\
+            adapter.get_spatial_volume(
+                circuit_model, **spatial_query)
+        return 1.e9 * cell_count / spatial_volume
+
+    @lazyfield
+    def analysis_cell_density_by_layer_exhaustively(self):
         """..."""
         return\
             BrainCircuitAnalysis(
                 introduction="""
-                A circuit model should reproduce experimentally measured cell
-                densities. Here we compare layer mtype cell densities across
-                regions modeled in a brain circuit model.
+                A circuit model should reproduce experimentally measured cell 
+                densities. For the mammalian cerebral cortex, the simplest 
+                measurement to validate against is the cell density of each 
+                layer. In this analysis we use three experimentally measured 
+                reference datasets (see References section) to validate layer 
+                cell densities of the circuit model {label}.
                 """,
                 methods="""
-                Cell density was measured by mtype in randomly sampled boxes of
-                dimension {}. Each sampled box was conditioned to lie in a
-                spatial location of the brain specified by its
-                brain-region and layer.
-                """.format(self.size_roi),
+                Cell density was measured as the total number of cells in
+                the circuit's spatial region specified by brain-region and
+                layer divided by the volume of the spatial region.
+                Specific sub-region for the
+                reference data is not known. All sub-regions in these plots
+                show the same reference data.
+                """,
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_mtype_cell_density_by_sampling,
-                measurement_collection=measurement.collection.series_type,
+                sample_measurement=self.measurement_cell_density_overall,
                 plotter=MultiPlot(
-                    mvar="mtype",
+                    mvar="region",
                     plotter=Bars(
                         xvar="layer",
                         xlabel="Layer",
                         yvar="cell_density",
                         ylabel="Cell Density",
-                        gvar="region")))
+                        gvar="dataset")),
+                report=CircuitAnalysisReport)
+
 
     @measurement_method("""
     Inhibitory and excitatory cells in circuit region specified by a spatial
     query. Number of inhibitory cells was divided by the total number of cells
     to obtain the fraction of inhibitory cells.
     """)
-    def measurement_inhibitory_cell_fraction_overall(self,
+    def measurement_inhibitory_cell_fraction_exhaustively(self,
             circuit_model,
             adapter,
             **query):
@@ -583,7 +514,7 @@ class CompositionAnalysis(WithFields):
         return 0.
 
     @lazyfield
-    def analysis_inihibitory_cell_fraction_by_layer_overall(self):
+    def analysis_inhibitory_cell_fraction_by_layer_exhaustively(self):
         """..."""
         return\
             BrainCircuitAnalysis(
@@ -607,7 +538,7 @@ class CompositionAnalysis(WithFields):
                 phenomenon=self.phenomenon_inhibitory_cell_fraction,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_inhibitory_cell_fraction_overall,
+                sample_measurement=self.measurement_inhibitory_cell_fraction_exhaustively,
                 plotter=MultiPlot(
                     mvar="region",
                     plotter=Bars(
@@ -618,46 +549,39 @@ class CompositionAnalysis(WithFields):
                         gvar="dataset")),
                 report=CircuitAnalysisReport)
 
-    @lazyfield
-    def analysis_cell_density_by_depth_using_sampling(self):
-        """..."""
-        return\
-            BrainCircuitAnalysis(
-                phenomenon=self.phenomenon_cell_density,
-                AdapterInterface=self.AdapterInterface,
-                measurement_parameters=self.parameters_regions_and_depths,
-                sample_measurement=self.measurement_cell_density_by_sampling,
-                plotter=LinePlot(
-                    xvar="depth",
-                    xlabel="Cortical Depth",
-                    yvar="cell_density",
-                    ylabel="Cell Density",
-                    gvar="region"),
-                report=CircuitAnalysisReport)
 
-    @lazyfield
-    def analysis_inhibitory_cell_fraction_by_layer(self):
+    def measurement_mtype_cell_density_by_layer(self,
+            circuit_model,
+            adapter):
         """..."""
-        return\
-            BrainCircuitAnalysis(
-                phenomenon=Phenomenon(
-                    "Inhibitory Cell Fraction",
-                    "Fraction of inhibitory cells.",
-                    group="Composition"),
-                AdapterInterface=self.AdapterInterface,
-                reference_data=self.sampled_reference_data(
-                    self.reference_data_inhibitory_cell_fraction),
-                measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.sample_measurement_inhibitory_cell_fraction,
-                plotter=MultiPlot(
-                    mvar="region",
-                    plotter=Bars(
-                        xvar="layer",
-                        xlabel="Layer",
-                        yvar="inhibitory_cell_fraction",
-                        ylabel="Inhibitory Cell Fraction",
-                        gvar="dataset")),
-                report=CircuitAnalysisReport)
+        regions = adapter.get_brain_regions(circuit_model)
+        layers = adapter.get_layers(circuit_model)
+        measurement_parameters =\
+            pd.DataFrame({
+                "region": [r for r in regions for _ in layers],
+                "layer":  [l for _ in regions for l in layers]})
+
+        def _retrieve(query):
+            cuboid =\
+                self._get_random_region(
+                    circuit_model, adapter, query)
+            cells =\
+                adapter.get_cells(
+                    circuit_model, roi=cuboid)
+            return\
+                cells.groupby("mtype")\
+                     .agg("size")\
+                     .rename("cell_density")\
+                     .apply(lambda density: 1.e9 * density / cuboid.volume)\
+                     .reset_index()\
+                     .assign(**query)\
+                     .set_index(
+                         ["mtype"] + list(query.keys()))
+
+        return pd.concat([
+            _retrieve(query)
+            for _, query in measurement_parameters.iterrows()
+            for _ in range(self.sample_size)])
 
     def sample_measurement_mtype_cell_density(self,
             circuit_model,
@@ -691,19 +615,60 @@ class CompositionAnalysis(WithFields):
                  .assign(**spatial_query)\
                  .set_index(["mtype"] + list(spatial_query.keys()))
 
+
+    @staticmethod
+    def _get_mtype_cell_density(cells, volume, spatial_query):
+        """..."""
+        return cells.groupby("mtype")\
+                    .agg("size")\
+                    .rename("cell_density")\
+                    .apply(lambda density: 1.e9 * density / volume)
+                    #.reset_index()\
+                    #.assign(**spatial_query)\
+                    #.set_index(
+                        #["mtype"] + list(spatial_query.keys()))
+
+    @measurement_method("""
+    Cells were counted, by their mtype, in randomly sampled cubes (see Methods
+    for dimensions), that was centered in the location specified by a spatial 
+    query.
+    """)
+    def measurement_mtype_cell_density_using_sampling(self,
+            circuit_model,
+            adapter,
+            **query):
+        """..."""
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cuboid =\
+            self._get_random_region(
+                circuit_model, adapter, spatial_query)
+        cells =\
+            adapter.get_cells(
+                circuit_model, roi=cuboid)
+        return self._get_mtype_cell_density(
+            cells, cuboid.volume, spatial_query)
+
     @lazyfield
-    def analysis_mtype_cell_density_by_layer(self):
-        """
-        Analysis of mtype cell density.
-        """
+    def analysis_mtype_cell_density_by_layer_using_sampling(self):
+        """..."""
         return\
             BrainCircuitAnalysis(
+                introduction="""
+                A circuit model should reproduce experimentally measured cell
+                densities. Here we compare layer mtype cell densities across
+                regions modeled in a brain circuit model.
+                """,
+                methods="""
+                Cell density was measured by mtype in randomly sampled boxes of
+                dimension {}. Each sampled box was conditioned to lie in a
+                spatial location of the brain specified by its
+                brain-region and layer.
+                """.format(self.size_roi),
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
-                reference_data=self.sampled_reference_data(
-                    self.reference_data_cell_density.items()),
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.sample_measurement_cell_density,
+                sample_measurement=self.measurement_mtype_cell_density_using_sampling,
                 measurement_collection=measurement.collection.series_type,
                 plotter=MultiPlot(
                     mvar="mtype",
@@ -712,8 +677,55 @@ class CompositionAnalysis(WithFields):
                         xlabel="Layer",
                         yvar="cell_density",
                         ylabel="Cell Density",
-                        gvar="region")),
-                report=CircuitAnalysisReport)
+                        gvar="region")))
+
+    @measurement_method("""
+    Cells of each mtype were counted in the entire region specified by a query. 
+    """)
+    def measurement_mtype_cell_density_exhaustively(self,
+            circuit_model,
+            adapter,
+            **query):
+        """..."""
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cells =\
+            adapter.get_cells(
+                circuit_model, **spatial_query)
+        spatial_volume =\
+            adapter.get_spatial_volume(
+                circuit_model, **spatial_query)
+        return self._get_mtype_cell_density(
+            cells, spatial_volume, spatial_query)
+
+    @lazyfield
+    def analysis_mtype_cell_density_by_layer_exhaustively(self):
+        """..."""
+        return\
+            BrainCircuitAnalysis(
+                introduction="""
+                A circuit model should reproduce experimentally measured cell
+                densities. Here we compare layer mtype cell densities across
+                regions modeled in a brain circuit model.
+                """,
+                methods="""
+                Cell density for each mtype was measured by mtype in regions of 
+                the circuit specified by a spatial query.
+                """.format(self.size_roi),
+                phenomenon=self.phenomenon_cell_density,
+                AdapterInterface=self.AdapterInterface,
+                measurement_parameters=self.parameters_regions_and_layers,
+                sample_measurement=self.measurement_mtype_cell_density_exhaustively,
+                measurement_collection=measurement.collection.series_type,
+                plotter=MultiPlot(
+                    mvar="mtype",
+                    plotter=Bars(
+                        xvar="layer",
+                        xlabel="Layer",
+                        yvar="cell_density",
+                        ylabel="Cell Density",
+                        gvar="region")))
+
 
     @lazyfield
     def analysis_mtype_cell_density_by_depth(self):
@@ -779,24 +791,24 @@ class CompositionAnalysis(WithFields):
                         "validation", "sampled"))))
 
         LOGGER.info(
-            "2. Analyze Cell Density, overall without sampling regions.")
+            "2. Analyze Cell Density, exhaustively without sampling regions.")
 
-        overall_cell_density_validation_report =\
-            self.analysis_cell_density_by_layer_overall(
+        exhaustive_cell_density_validation_report =\
+            self.analysis_cell_density_by_layer_exhaustively(
                 circuit_model,
                 adapter,
                 reference_data=reference_data_cell_density,
                 sampling_methodology=terminology.sampling_methodology.exhaustive,
                 author=Author.zero)
         LOGGER.info(
-            "\tPOST overall cell density validation report")
+            "\tPOST exhaustively cell density validation report")
         LOGGER.info(
-            "Overall Cell density validation report generated at {}"\
+            "exhaustively Cell density validation report generated at {}"\
             .format(
                 reporter_analyses.post(
-                    overall_cell_density_validation_report,
+                    exhaustive_cell_density_validation_report,
                     output_subfolder=os.path.join(
-                        "validation", "overall"))))
+                        "validation", "exhaustive"))))
 
         sampled_cell_density_analysis_report =\
             self.analysis_region_cell_density_by_layer_using_sampling(
@@ -806,14 +818,14 @@ class CompositionAnalysis(WithFields):
                 sample_size=self.sample_size,
                 author=Author.zero)
         LOGGER.info(
-            "\tPOST overall cell density analysis report")
+            "\tPOST exhaustive cell density analysis report")
         LOGGER.info(
-            "Overall Cell density analysis report generated at {}"\
+            "exhaustive Cell density analysis report generated at {}"\
             .format(
                 reporter_analyses.post(
                     sampled_cell_density_analysis_report,
                     output_subfolder=os.path.join(
-                        "overall", "by-layer"))))
+                        "exhaustive", "by-layer"))))
 
 
         LOGGER.info(
@@ -821,7 +833,7 @@ class CompositionAnalysis(WithFields):
         reference_data_inhibitory_cell_fraction =\
             self.reference_data_inhibitory_cell_fraction(brain_regions)
         inhibitory_cell_fraction_validation_report =\
-            self.analysis_inihibitory_cell_fraction_by_layer_overall(
+            self.analysis_inhibitory_cell_fraction_by_layer_exhaustively(
                 circuit_model,
                 adapter,
                 reference_data=reference_data_inhibitory_cell_fraction,
@@ -835,7 +847,7 @@ class CompositionAnalysis(WithFields):
                 reporter_analyses.post(
                     inhibitory_cell_fraction_validation_report,
                     output_subfolder=os.path.join(
-                        "validation", "overall"))))
+                        "validation", "exhaustive"))))
 
         # LOGGER.info(
         #     "4. Analyze Mtype Cell Density by Layer.")
