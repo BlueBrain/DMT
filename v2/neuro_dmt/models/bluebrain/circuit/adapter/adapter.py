@@ -24,7 +24,9 @@ from ..model.cell_type import CellType
 from ..model.pathway import PathwaySummary
 from .query import QueryDB, SpatialQueryData
 
-logger = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
+
+XYZ = ["x", "y", "z"]
 
 def measurement_method(description):
     """
@@ -62,11 +64,6 @@ class BlueBrainCircuitAdapter(WithFields):
         the circuit.
         """,
         __default_value__=50. * np.ones(3))
-    logger = Field(
-        """
-        A logger to be used to log the activity of this code.
-        """,
-        __default_value__=Logger(client="BlueBrainCircuitAdapter"))
 
     # @lazyfield
     # def _random_position_generator_cache(self):
@@ -126,8 +123,8 @@ class BlueBrainCircuitAdapter(WithFields):
             sampling_methodology=sampling_methodology,
             resample=resample,
             number=number)
-        logger.study(
-            logger.get_source_info(),
+        LOGGER.study(
+            LOGGER.get_source_info(),
             """
             resolve cell group {}
             given that {}
@@ -158,8 +155,8 @@ class BlueBrainCircuitAdapter(WithFields):
                     cell_group.sample(n=number)\
                     if number < cell_group.shape[0]\
                     else cell_group)
-            logger.study(
-                logger.get_source_info(),
+            LOGGER.study(
+                LOGGER.get_source_info(),
                 """
                 Final result for cell group, dataframe with shape {}
                 """.format(
@@ -205,7 +202,7 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model.get_cells(**cell_type)
         return\
             cells_all.sample(n=np.minimum(sample_size, cells_all.shape[0]))\
-            if sampling_methodology==terminology.sampling_methodology.random\
+            if sampling_methodology == terminology.sampling_methodology.random\
             else cells_all
 
 
@@ -246,14 +243,25 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_pathways(self,
             circuit_model=None,
-            cell_group=None):
+            pre_synaptic_cell_type=None,
+            post_synaptic_cell_type=None):
         """
         Arguments
-        ---------------
-        cell_group : An object that specifies cell groups.
-        ~   This may be 
-        ~   1. Either a frozen-set of strings that represent cell properties.
-        ~   2. Or, a mapping from cell properties to their values.
+        ------------
+        pre_synaptic_cell_type ::  An object describing the group of
+        ~  pre-synaptic cells to be investigated in these analyses.
+        ~  This object must be a `Mappable` with cell properties such as
+        ~  region, layer, mtype, and etype defined as keys or columns.
+        ~  Each key may be given either a single value or an iterable of
+        ~  values. Phenomena must be evaluated for each of these values and
+        ~  collected as a pandas.DataFrame.
+        post_synaptic_cell_type :: An object describing the group of
+        ~  post-synaptic cells to be investigated in these analyses.
+        ~  This object must be a `Mappable` with cell properties such as
+        ~  region, layer, mtype, and etype defined as keys or columns.
+        ~  Each key may be given either a single value or an iterable of
+        ~  values. Phenomena must be evaluated for each of these values and
+        ~  collected as a pandas.DataFrame.
 
         Returns
         ------------
@@ -400,12 +408,12 @@ class BlueBrainCircuitAdapter(WithFields):
             properties=None,
             **query):
         """..."""
-        return self._resolve(
-            circuit_model
-        ).get_cells(
-            properties=properties,
-            with_gid_column=True,
-            **query)
+        return\
+            self._resolve(circuit_model)\
+                .get_cells(
+                    properties=properties,
+                    with_gid_column=True,
+                       **query)
 
     def get_spatial_volume(self, circuit_model=None, **spatial_query):
         """
@@ -517,8 +525,8 @@ class BlueBrainCircuitAdapter(WithFields):
                     circuit_model,
                     **query))
         except StopIteration:
-            self.logger.warn(
-                self.logger.get_source_info(),
+            LOGGER.warn(
+                LOGGER.get_source_info(),
                 """
                 No more random regions of interest for query:
                 \t{}
@@ -572,6 +580,44 @@ class BlueBrainCircuitAdapter(WithFields):
     def _soma_distance_mid_point(self):
         return lambda df: df.soma_distance.apply(np.mean)
 
+
+    def are_afferently_connected(self,
+            circuit_model,
+            pre_synaptic_cells,
+            post_synaptic_cell):
+        """
+        Which of the pre-synaptic cells are afferent connections of a
+        post_synaptic_cell?
+
+        Arguments
+        ------------
+        pre_synaptic_cells :: pandas.DataFrame with columns that contain
+        ~                     cell properties, with `gid` each cells unique id.
+        post_synaptic_cell :: pandas.Series containing cell property,
+        ~                     with `gid` the cell's unique id.
+        """
+        return np.in1d(
+            pre_synaptic_cells.gid.values,
+            circuit_model.connectome.afferent_gids(post_synaptic_cell.gid))
+
+    def soma_distance(self,
+            circuit_model,
+            cell_group_1,
+            cell_group_2,
+            bin_size=100.):
+        """
+        Arguments
+        ---------------
+        cell_1/cell_2 :: A `pandas.Series` or `pandas.DataFrame` containing
+        ~              entries for cell's position <X, Y, Z>.
+        """
+        distance = np.linalg.norm(cell_group_1[XYZ] - cell_group_2[XYZ], axis=1)
+        bin_starts = bin_size * np.floor(distance / bin_size)
+        return [
+            (bin_start, bin_start + bin_size)
+            for bin_start in bin_starts]
+
+
     def get_connection_probability_by_soma_distance(self,
             circuit_model=None,
             pre_synaptic={},
@@ -619,36 +665,54 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_number_connections_afferent(self,
             circuit_model=None,
-            pre_synaptic={},
-            post_synaptic={},
+            pre_synaptic_cell_type={},
+            post_synaptic_cell_type={},
             soma_distance_bins=None,
             sampling_methodology=terminology.sampling_methodology.random,
             sample_size_post_synaptic_cells=20,
             **kwargs):
-        """..."""
+        """
+        Number of afferent connections incident upon a cell is the same as
+        its in-degree. Thus this method computes in-degree for cells in a group
+        defined by `post_synaptic_cell_type`. If the methodology is random, a
+        subset of cells in this group will be sampled. The connections incident
+        upon these post-synaptic cells must originate from pre-synaptic cells.
+        The pre-synaptic cell group is defined by `pre_synaptic_cell_type`, and
+        all cells in this group must be considered to compute each sampled
+        post-synaptic cell's in-degree.
+
+        Arguments
+        -----------
+        `pre_synaptic_cell_type` : Mappable or pandas.Series specifying the
+        ~                          type of the cells on the pre-synaptic side.
+        `post_synaptic_cell_type`: Mappable or pandas.Series specifying the
+        ~                           type of the cells on the post-synaptic side. 
+        """
         if soma_distance_bins is not None:
             raise NotImplementedError(
                 """
                 Not yet implemented for custom values of `soma_distance_bins`.
                 """)
         circuit_model =\
-            self._resolve(circuit_model)
+            self._resolve(
+                circuit_model)
         pre_synaptic_cells =\
-            circuit_model.get_cells(**pre_synaptic)
+            circuit_model.get_cells(
+                **pre_synaptic_cell_type)
         post_synaptic_cells =\
             self._resolve_sample_cells(
                 circuit_model,
-                post_synaptic,
+                post_synaptic_cell_type,
                 sampling_methodology,
                 sample_size_post_synaptic_cells)
         return\
-            circuit_model.pathway_summary.number_connections_afferent(
-                pre_synaptic_cells,
-                post_synaptic_cells,
-                with_soma_distance=False
-            ).number_connections_afferent[
-                "mean"
-            ]
+            circuit_model.pathway_summary\
+                         .number_connections_afferent(
+                             pre_synaptic_cells,
+                             post_synaptic_cells,
+                             with_soma_distance=False)\
+                         .number_connections_afferent["mean"]
+
     def get_number_connections_afferent_by_soma_distance(self,
             circuit_model=None,
             pre_synaptic={},

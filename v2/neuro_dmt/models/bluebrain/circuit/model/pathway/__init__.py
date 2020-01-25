@@ -14,7 +14,7 @@ from neuro_dmt import terminology
 from ..cell_type import CellType
 
 
-logger = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
 
 class Pathway:
     """
@@ -97,7 +97,7 @@ class ConnectomeSummary(WithFields):
         """
         return{
             variable
-            for variable in summary.index.names
+            for variable in self.value.index.names
             if variable.startswith("pre_synaptic")}
 
     @lazyfield
@@ -108,7 +108,7 @@ class ConnectomeSummary(WithFields):
         """
         return{
             variable
-            for variable in summary.index.names
+            for variable in self.value.index.names
             if variable.startswith("post_synaptic")}
     
     @lazyfield
@@ -211,7 +211,7 @@ def efferent_summary(pairs):
 
 def connectome_summary(
         summary_with_numbers,
-        type_summary=pd.Series):
+        as_type=pd.Series):
     """
     Get a connectome summary,
     as a `pandas.Series` by default.
@@ -220,12 +220,8 @@ def connectome_summary(
     -------------
     summary_with_numbers : pandas.Series
     """
-    summary =\
-        ConnectomeSummary(
-            summary_with_numbers)
-    return summary.pandas_series\
-        if type_summary==pd.Series\
-           else summary
+    summary = ConnectomeSummary(summary_with_numbers)
+    return summary.pandas_series if as_type == pd.Series else summary
 
 
 GroupByVariables = namedtuple(
@@ -252,6 +248,16 @@ class PathwaySummary(WithFields):
         Set to true if measured values should be cached, when possible to do so.
         """,
         __default_value__=True)
+
+    @lazyfield
+    def circuit_cells(self):
+        """..."""
+        return self.circuit_model.cells
+
+    @lazyfield
+    def circuit_connectome(self):
+        """..."""
+        return self.circuit_model.connectome
 
     @lazyfield
     def store(self):
@@ -311,8 +317,8 @@ class PathwaySummary(WithFields):
             and len(post_synaptic_cell_type_specifier) < max_specifier_length
         ), post_synaptic_cell_type_specifier
 
-        logger.study(
-            logger.get_source_info(),
+        LOGGER.study(
+            LOGGER.get_source_info(),
             """
             cache result for specifiers:
             \tpre_synaptic: {}
@@ -461,7 +467,7 @@ class PathwaySummary(WithFields):
 
         def _probability_connection(summary):
             return summary.number_pairs_connected / summary.number_pairs_total
-       
+
         summary = pd.concat([
             pairs[
                 variables_measured
@@ -510,16 +516,12 @@ class PathwaySummary(WithFields):
         post_synaptic_cells: pandas.DataFrame of cells on the post-synaptic side.
 
         """
-        pairs_measured = self.get_pairs(
-            pre_synaptic_cells.rename(
-                columns=self._at("pre_synaptic")
-            ),
-            post_synaptic_cells.rename(
-                columns=self._at("post_synaptic")
-            ),
-            upper_bound_soma_distance=upper_bound_soma_distance,
-            with_soma_distance=with_soma_distance
-        )
+        pairs_measured =\
+            self.get_pairs(
+                pre_synaptic_cells.rename(columns=self._at("pre_synaptic")),
+                post_synaptic_cells.rename(columns=self._at("post_synaptic")),
+                upper_bound_soma_distance=upper_bound_soma_distance,
+                with_soma_distance=with_soma_distance)
         variables_measured =\
             ["number_pairs_total", "number_pairs_connected", "soma_distance"]\
             if with_soma_distance else\
@@ -528,24 +530,16 @@ class PathwaySummary(WithFields):
             ["dummy_variable", "soma_distance"]\
             if with_soma_distance else\
                ["dummy_variable"]
-
-        summary = pd.concat([
-            pairs[
-                variables_measured
-            ].reset_index(
-                drop=True
-            ).assign(
-                dummy_variable=0
-            ).groupby(
-                variables_groupby
-            ).agg(
-                "sum"
-            ) for pairs in pairs_measured
-        ]).groupby(
-            variables_groupby
-        ).agg(
-            ["mean", "std"]
-        )
+        summary =\
+            pd.concat([
+                pairs[variables_measured]\
+                .reset_index(drop=True)\
+                .assign(dummy_variable=0)\
+                .groupby(variables_groupby)\
+                .agg("sum")
+                for pairs in pairs_measured])\
+              .groupby(variables_groupby)\
+              .agg(["mean", "std"])
         if summary.empty:
             if with_soma_distance:
                 return pd.DataFrame(
@@ -640,8 +634,8 @@ class PathwaySummary(WithFields):
         A generator of data-frames that provides values for individual
         pairs `(pre_synaptic_cell, post_synaptic_cell)`.
         """
-        logger.study(
-            logger.get_source_info(),
+        LOGGER.study(
+            LOGGER.get_source_info(),
             """
             Get connection probability for
             {} pre synaptic cells
@@ -650,47 +644,43 @@ class PathwaySummary(WithFields):
                 pre_synaptic_cells.shape[0],
                 post_synaptic_cells.shape[0]))
         for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
-            logger.info(
-                logger.get_source_info(),
+            LOGGER.info(
+                LOGGER.get_source_info(),
                 """
                 Get all pairs for post cell {} / {} ({})
                 """.format(
                     post_cell,
                     post_synaptic_cells.shape[0],
-                  count / post_synaptic_cells.shape[0]))
-            pairs = pre_synaptic_cells\
-                .reset_index(
-                    drop=True
-                ).assign(
+                    count / post_synaptic_cells.shape[0]))
+            pairs =\
+                pre_synaptic_cells\
+                .reset_index(drop=True)\
+                .assign(
                     number_pairs_connected=np.in1d(
                         pre_synaptic_cells.gid.values,
-                        self.circuit_model.connectome.afferent_gids(
-                            post_cell.gid)),
+                        self.circuit_connectome.afferent_gids(post_cell.gid)),
                     number_pairs_total=1.)
             if upper_bound_soma_distance is not None:
-                soma_distance = self\
-                    .soma_distance(
+                soma_distance =\
+                    self.soma_distance(
                         pre_synaptic_cells,
                         post_cell)
-                pairs = pairs[
-                    soma_distance < upper_bound_soma_distance
-                ].reset_index(
-                    drop=True)
+                pairs =\
+                    pairs[
+                        soma_distance < upper_bound_soma_distance
+                    ].reset_index(drop=True)
             if with_soma_distance:
-                pairs = pairs.assign(
-                    soma_distance=self.soma_distance(
-                        pre_synaptic_cells,
-                        post_cell))
-            post_cell_info = pd.DataFrame(
-                pairs.shape[0] * [post_cell.drop("gid")]
-            ).reset_index(
-                drop=True
-            )
-            yield pd.concat(
-                [pairs, post_cell_info],
-                axis=1
-            ).reset_index(
-                drop=True)
+                pairs =\
+                    pairs.assign(
+                        soma_distance=self.soma_distance(
+                            pre_synaptic_cells,
+                            post_cell))
+            post_cell_info =\
+                pd.DataFrame(pairs.shape[0] * [post_cell.drop("gid")])\
+                  .reset_index(drop=True)
+            yield\
+                pd.concat([pairs, post_cell_info], axis=1)\
+                  .reset_index(drop=True)
 
     def __call__(self,
             pre_synaptic_cells,
@@ -716,8 +706,8 @@ class PathwaySummary(WithFields):
                 `upper_bound_soma_distance`.
                 """)
 
-        logger.study(
-            logger.get_source_info(),
+        LOGGER.study(
+            LOGGER.get_source_info(),
             """
             Compute pathway property for 
             pre_synaptic_cells:

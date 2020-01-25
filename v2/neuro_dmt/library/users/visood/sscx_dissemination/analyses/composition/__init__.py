@@ -49,6 +49,7 @@ class CompositionAnalysesSuite(WithFields):
         """,
         __default_value__=os.path.join(os.getcwd(), "reports"))
 
+
     class AdapterInterface(Interface):
         """
         Document the methods that will be used by this analysis to measure a
@@ -90,11 +91,11 @@ class CompositionAnalysesSuite(WithFields):
             raise NotImplementedError
         
         def random_position(self,
-                            circuit_model,
-                            region=None,
-                            layer=None,
-                            depth=None,
-                            height=None):
+                circuit_model,
+                region=None,
+                layer=None,
+                depth=None,
+                height=None):
             """
             Get a random position in the circuit space that falls in the region
             specified by the query arguments.

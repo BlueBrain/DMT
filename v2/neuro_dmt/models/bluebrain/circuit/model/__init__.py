@@ -377,7 +377,9 @@ class BlueBrainCircuitModel(WithFields):
 
         return cell_query
 
-    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    @terminology.use(*(
+        terminology.circuit.terms +
+        terminology.cell.terms))
     def get_cells(self, properties=None, with_gid_column=True, **query):
         """
         Get cells in a region, with requested properties.
@@ -397,7 +399,9 @@ class BlueBrainCircuitModel(WithFields):
             if with_gid_column\
                else cells
 
-    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    @terminology.use(*(
+        terminology.circuit.terms +
+        terminology.cell.terms))
     def get_cell_count(self, **query):
         """..."""
         return self.get_cells(**query).shape[0]
@@ -520,10 +524,20 @@ class BlueBrainCircuitModel(WithFields):
         will return a Pandas Series or a single column DataFrame containing
         all values of `mtype` in the circuit.
         """
-        cell_properties_values ={
-            variable: getattr(
-                self, "{}s".format(variable))
-                for variable in cell_type_specifier}
+        def __values(variable):
+            try:
+                return getattr(self, "{}s".format(variable))
+            except AttributeError as error:
+                raise TypeError(
+                    """{} does not seem to be a property specifying
+                    model {}'s cell types:
+                    \t {}.
+                    """.format(
+                        variable,
+                        self.__class__.__name__,
+                        error))
+            raise RuntimeError(
+                """Computation should not reach here.""")
 
         def _get_tuple_values(params):
             """..."""
@@ -531,7 +545,7 @@ class BlueBrainCircuitModel(WithFields):
                 return [[]]
             head_tuples =[
                 [(params[0], value)]
-                 for value in cell_properties_values[params[0]]]
+                 for value in __values(params[0])]
             tail_tuples =\
                 _get_tuple_values(params[1:])
             return [
@@ -574,6 +588,8 @@ class BlueBrainCircuitModel(WithFields):
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
+    
+
     def get_connection_probability(self,
             pre_cell_type_specifier,
             post_cell_type_specifier):
@@ -589,11 +605,12 @@ class BlueBrainCircuitModel(WithFields):
             "post_synaptic_{}".format(c)
             for c in post_cell_type_specifier]
         cells = self.cells
+
         def _get_summary_connections(post_cell):
             return cells[
                 list(pre_cell_type_specifier)
             ].rename(
-                columns=lambda c: "pre_synaptic_{}".format(c)
+                columns="pre_synaptic_{}".format
             ).assign(
                 number_pairs=np.in1d(
                     self.cells.index.values,
