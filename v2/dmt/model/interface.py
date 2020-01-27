@@ -107,7 +107,7 @@ class Interface(
                Initialization of {}, which is an Interface.
                An Interface may not be initialized
                """.format(self.__class__.__name__))
-     
+
      __implementation_registry__ = []
 
      @classmethod
@@ -118,7 +118,7 @@ class Interface(
           return [
                method for method in cls.__interfacemethods__
                if not hasattr(implementation, method)]
-     
+
      @classmethod
      def register(cls, implementation):
           """
@@ -127,10 +127,10 @@ class Interface(
           type_implementation = implementation\
                if isinstance(implementation, type)\
                   else type(implementation)
-          
+
           methods_unimplemented=\
                cls.__unimplemented_methods(implementation)
-          
+
           if len(methods_unimplemented) > 0:
                suggestion =\
                     Suggestion(

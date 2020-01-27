@@ -300,7 +300,9 @@ class BlueBrainCircuitModel(WithFields):
         raise RuntimeError(
             "Unknown / NotYetImplemented query parameter {}".format(key))
 
-    @terminology.use(*(terminology.circuit.terms + terminology.cell.terms))
+    @terminology.use(*(
+        terminology.circuit.terms +
+        terminology.cell.terms))
     def _resolve_query_region(self, **query):
         """
         Resolve region in query.

@@ -623,15 +623,15 @@ class PathwaySummary(WithFields):
             with_soma_distance=False,
             *args, **kwargs):
         """
-        Arguments
+        arguments
         --------------
-        pre_synaptic_cells : pandas.DataFrame
-        post_synaptic_cells : pandas.DataFrame
-        *args, **kwargs : Accommodate super's call to `get`.
+        pre_synaptic_cells : pandas.dataframe
+        post_synaptic_cells : pandas.dataframe
+        *args, **kwargs : accommodate super's call to `get`.
 
-        Returns
+        returns
         --------------
-        A generator of data-frames that provides values for individual
+        a generator of data-frames that provides values for individual
         pairs `(pre_synaptic_cell, post_synaptic_cell)`.
         """
         LOGGER.study(
@@ -709,7 +709,7 @@ class PathwaySummary(WithFields):
         LOGGER.study(
             LOGGER.get_source_info(),
             """
-            Compute pathway property for 
+            Compute pathway property for
             pre_synaptic_cells:
             \t{}
             post_synaptic_cells:
@@ -731,11 +731,9 @@ class PathwaySummary(WithFields):
             self._full_summary(
                 measurement_pairs,
                 with_soma_distance=with_soma_distance)
-        summary.at[
-            "number_cells_pre_synaptic"] =\
+        summary.at["number_cells_pre_synaptic"] =\
                 pre_synaptic_cells.shape[0]
-        summary.at[
-            "number_cells_post_synaptic"] =\
+        summary.at["number_cells_post_synaptic"] =\
                 post_synaptic_cells.shape[0]
         return connectome_summary(summary)
 

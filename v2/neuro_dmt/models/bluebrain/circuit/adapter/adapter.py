@@ -538,6 +538,98 @@ class BlueBrainCircuitAdapter(WithFields):
                 region=region_of_interest)
         return number_segments / (1.e-9 * region_of_interest.volume)
 
+
+    def get_soma_distance(self,
+            circuit_model,
+            cell,
+            cell_group,
+            bin_size=100.):
+        """
+        Soma distance of a cell from each other cell in a group.
+        Arguments
+        ---------------
+        cell :: a `pandas.Series` defining a cell in the circuit
+        cell_group :: A `pandas.DataFrame` containing entries for cell's
+        ~             position <X, Y, Z>.
+        """
+        distance = np.linalg.norm(cell_group[XYZ] - cell[XYZ], axis=1)
+        bin_starts = bin_size * np.floor(distance / bin_size)
+        return np.array([
+            bin_start + bin_size / 2. for bin_start in bin_starts])
+
+    def get_adjacency_list(self,
+            circuit_model=None,
+            pre_synaptic_cells=None,
+            post_synaptic_cells=None,
+            upper_bound_soma_distance=None,
+            with_soma_distance=False,
+            *args, **kwargs):
+        """...
+        Arguments
+        ----------
+        pre_synaptic_cells :: pandas.DataFrame
+        post_synaptic_cells :: pandas.DataFrame
+        *args, **kwargs :: accommodate super's call
+        """
+        circuit_model = self._resolve(circuit_model)
+        LOGGER.study(
+            LOGGER.get_source_info(),
+            """
+            Get connection probability for
+            {} pre synaptic cells
+            {} post synaptic cells
+            """.format(
+                pre_synaptic_cells.shape[0],
+                post_synaptic_cells.shape[0]))
+        for count, (_, post_cell) in enumerate(post_synaptic_cells.iterrows()):
+            LOGGER.info(
+                LOGGER.get_source_info(),
+                """
+                Get all pairs for post cell {} / {} ({})
+                """.format(
+                    post_cell,
+                    post_synaptic_cells.shape[0],
+                    count / post_synaptic_cells.shape[0]))
+            pairs =\
+                pre_synaptic_cells\
+                .reset_index(drop=True)\
+                .assign(
+                    number_pairs_connected=np.in1d(
+                        pre_synaptic_cells.gid.values,
+                        circuit_model.connectome.afferent_gids(post_cell.gid)),
+                    number_pairs_total=1.)
+            if upper_bound_soma_distance is not None:
+                soma_distance =\
+                    self.soma_distance(
+                        pre_synaptic_cells,
+                        post_cell)
+                pairs =\
+                    pairs[
+                        soma_distance < upper_bound_soma_distance
+                    ].reset_index(drop=True)
+            if with_soma_distance:
+                pairs =\
+                    pairs.assign(
+                        soma_distance=self.soma_distance(
+                            pre_synaptic_cells,
+                            post_cell))
+            post_cell_info =\
+                pd.DataFrame(pairs.shape[0] * [post_cell.drop("gid")])\
+                  .reset_index(drop=True)
+            yield\
+                pd.concat([pairs, post_cell_info], axis=1)\
+                  .reset_index(drop=True)
+
+    def get_afferent_gids(self,
+            circuit_model,
+            post_synaptic_cell):
+        """
+        Ids of the cells afferently connected to a post-synaptic cell.
+        These ids (gids) are used to index the circuit's cells.
+        """
+        return circuit_model.connectome.afferent_gids(post_synaptic_cell.gid)
+
+
     def get_connection_probability(self,
             circuit_model=None,
             pre_synaptic={},
@@ -575,47 +667,6 @@ class BlueBrainCircuitAdapter(WithFields):
                 post_synaptic_cells,
                 with_soma_distance=False
             ).probability_connection
-
-    @property
-    def _soma_distance_mid_point(self):
-        return lambda df: df.soma_distance.apply(np.mean)
-
-
-    def are_afferently_connected(self,
-            circuit_model,
-            pre_synaptic_cells,
-            post_synaptic_cell):
-        """
-        Which of the pre-synaptic cells are afferent connections of a
-        post_synaptic_cell?
-
-        Arguments
-        ------------
-        pre_synaptic_cells :: pandas.DataFrame with columns that contain
-        ~                     cell properties, with `gid` each cells unique id.
-        post_synaptic_cell :: pandas.Series containing cell property,
-        ~                     with `gid` the cell's unique id.
-        """
-        return np.in1d(
-            pre_synaptic_cells.gid.values,
-            circuit_model.connectome.afferent_gids(post_synaptic_cell.gid))
-
-    def soma_distance(self,
-            circuit_model,
-            cell_group_1,
-            cell_group_2,
-            bin_size=100.):
-        """
-        Arguments
-        ---------------
-        cell_1/cell_2 :: A `pandas.Series` or `pandas.DataFrame` containing
-        ~              entries for cell's position <X, Y, Z>.
-        """
-        distance = np.linalg.norm(cell_group_1[XYZ] - cell_group_2[XYZ], axis=1)
-        bin_starts = bin_size * np.floor(distance / bin_size)
-        return [
-            (bin_start, bin_start + bin_size)
-            for bin_start in bin_starts]
 
 
     def get_connection_probability_by_soma_distance(self,
@@ -658,7 +709,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 with_soma_distance=True
             ).reset_index(
             ).assign(
-                soma_distance=self._soma_distance_mid_point
+                soma_distance=lambda df: df.soma_distance.apply(np.mean)
             ).set_index(
                 "soma_distance"
             ).probability_connection
@@ -686,7 +737,7 @@ class BlueBrainCircuitAdapter(WithFields):
         `pre_synaptic_cell_type` : Mappable or pandas.Series specifying the
         ~                          type of the cells on the pre-synaptic side.
         `post_synaptic_cell_type`: Mappable or pandas.Series specifying the
-        ~                           type of the cells on the post-synaptic side. 
+        ~                           type of the cells on the post-synaptic side.
         """
         if soma_distance_bins is not None:
             raise NotImplementedError(
@@ -744,7 +795,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 with_soma_distance=True
             ).reset_index(
             ).assign(
-                soma_distance=self._soma_distance_mid_point
+                soma_distance=lambda df: df.soma_distance.apply(np.mean)
             ).set_index(
                 "soma_distance"
             ).number_connections_afferent[

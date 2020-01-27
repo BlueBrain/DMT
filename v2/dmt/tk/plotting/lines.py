@@ -91,7 +91,8 @@ class LinePlot(WithFields):
             data,
             *args,
             dataset=None,
-            caption="Caption not provided"):
+            caption="Caption not provided",
+            **kwargs):
         """
         Plot the data.
 
@@ -127,7 +128,8 @@ class LinePlot(WithFields):
         return Figure(
             grid.set(
                 xlabel=self.xlabel,
-                ylabel=self.ylabel),
+                ylabel=self.ylabel,
+                title=kwargs.pop("title", "")),
             caption=caption)
 
     def plot(self,
