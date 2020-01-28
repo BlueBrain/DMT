@@ -67,12 +67,12 @@ class ConnectomeAnalysesSuite(WithFields):
         __default_value__=[])
     pre_synaptic_mtypes = LambdaField(
         """
-        Cell type for which pathways will be analyzed.
+        Pre synaptic cell type for which pathways will be analyzed.
         """,
         lambda self: self.cell_mtypes)
     post_synaptic_mtypes = LambdaField(
         """
-        Cell type for which pathways will be analyzed.
+        Post synaptic cell type for which pathways will be analyzed.
         """,
         lambda self: self.cell_mtypes)
 
@@ -259,7 +259,7 @@ class ConnectomeAnalysesSuite(WithFields):
             adapter,
             cell,
             cell_group,
-            bin_size=100,
+            bin_size=100.,
             bin_mids=True):
         """
         Get binned distance of `cell`'s soma from soma of all the cells in
@@ -270,7 +270,7 @@ class ConnectomeAnalysesSuite(WithFields):
                 circuit_model,
                 cell, cell_group)
         bin_starts =\
-            bin_size + np.floor(distance / bin_size)
+            bin_size * np.floor(distance / bin_size)
         return\
             [bin_start + bin_size / 2. for bin_start in bin_starts]\
             if bin_mids else\
@@ -346,7 +346,7 @@ class ConnectomeAnalysesSuite(WithFields):
         ~    value or an iterable of values. Phenomena must be evaluated for 
         ~    each of these values and collected as a pandas.DataFrame.
         """
-        LOGGER.info(
+        LOGGER.debug(
             """
             Number afferent connections for post-synaptic cell type: {}
             """.format(post_synaptic_cell_type))
