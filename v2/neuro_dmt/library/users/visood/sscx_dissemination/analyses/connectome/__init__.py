@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.model.interface import Interface
-from dmt.tk.field import WithFields, Field, lazyfield
+from dmt.tk.field import WithFields, Field, LambdaField, lazyfield
 from dmt.tk.author import Author
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.plotting import Bars, LinePlot
@@ -25,27 +25,25 @@ from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from neuro_dmt.models.bluebrain.circuit.adapter.adapter import measurement_method
 from .pathway import PathwaySummary
 
-
 LOGGER = Logger(client=__file__, level="DEBUG")
+COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
 
-def add_counter(log_after=100):
+def add_counter(method):
     """decorate..."""
-    def _decorator(method):
-        method.n_calls = 0
+            
+    method.n_calls = 0
+    def _decorated(*args, **kwargs):
+        result = method(*args, **kwargs)
+        method.n_calls += 1
+        if method.n_calls % COUNTERBASE == 0:
+            LOGGER.info(
+                """{} call count : {}""".format(
+                    method.__name__,
+                    method.n_calls))
+        return result
+        
+    return _decorated
 
-        def _decorated(*args, **kwargs):
-            result = method(*args, **kwargs)
-            method.n_calls += 1
-            if method.n_calls % log_after == 0:
-                LOGGER.info(
-                    """{} call count : {}""".format(
-                        method.__name__,
-                        method.n_calls))
-            return result
-
-        return _decorated
-
-    return _decorator
 
 class ConnectomeAnalysesSuite(WithFields):
     """
@@ -67,16 +65,16 @@ class ConnectomeAnalysesSuite(WithFields):
         Cell type for which pathways will be analyzed.
         """,
         __default_value__=[])
-    pre_synaptic_mtypes = Field(
+    pre_synaptic_mtypes = LambdaField(
         """
         Cell type for which pathways will be analyzed.
         """,
-        __default_value__=[])
-    post_synaptic_mtypes = Field(
+        lambda self: self.cell_mtypes)
+    post_synaptic_mtypes = LambdaField(
         """
         Cell type for which pathways will be analyzed.
         """,
-        __default_value__=[])
+        lambda self: self.cell_mtypes)
 
     class AdapterInterface(Interface):
         """
@@ -95,16 +93,16 @@ class ConnectomeAnalysesSuite(WithFields):
             4. location: a URI from where the circuit model can be loaded
             5. animal: whose brain was modeled
             6  age: of the animal at which the brain was modeled
-            7. brain_region: name of the region in the brain modeled 
+            7. brain_region: name of the region in the brain modeled
             """
             raise NotImplementedError
-        
+
         def get_brain_regions(self, circuit_model):
             """
             A list of named regions in the `circuit_model`.
             """
             raise NotImplementedError
-        
+
         def get_layers(self, circuit_model):
             """
             A list of layers in the `circuit_model`
@@ -221,11 +219,11 @@ class ConnectomeAnalysesSuite(WithFields):
         """..."""
         def _mtypes(adapter, circuit_model):
             mtypes =\
-                self.cell_mtypes\
-                if len(self.cell_mtypes) > 0 else\
+                self.pre_synaptic_mtypes\
+                if len(self.pre_synaptic_mtypes) > 0 else\
                    adapter.get_mtypes(circuit_model)
             return pd.DataFrame({
-                ("pre_synaptic_cell", "mtype"): mtypes})
+                ("pre_synaptic_cell_type", "mtype"): mtypes})
         return\
             Parameters(_mtypes)
 
@@ -235,20 +233,82 @@ class ConnectomeAnalysesSuite(WithFields):
         def _mtypes(adapter, circuit_model):
             """..."""
             mtypes =\
-                self.cell_mtypes\
-                if len(self.cell_mtypes) > 0 else\
+                self.post_synaptic_mtypes\
+                if len(self.post_synaptic_mtypes) > 0 else\
                    adapter.get_mtypes(circuit_model)
             return pd.DataFrame({
-                ("post_synaptic_cell", "mtype"): mtypes})
+                ("post_synaptic_cell_type", "mtype"): mtypes})
         return\
             Parameters(_mtypes)
 
     @staticmethod
-    def _at(role_synaptic):
+    def _at(role_synaptic, as_tuple=True):
         """..."""
-        def _rename_column(variable):
-            return "{}_{}".format(role_synaptic, variable)
-        return _rename_column
+        def _rename(variable):
+            return\
+                "{}_{}".format(role_synaptic, variable)\
+                if not as_tuple else\
+                   (role_synaptic, variable)
+
+        return _rename
+
+
+    @staticmethod
+    def get_soma_distance_bins(
+            circuit_model,
+            adapter,
+            cell,
+            cell_group,
+            bin_size=100,
+            bin_mids=True):
+        """
+        Get binned distance of `cell`'s soma from soma of all the cells in
+        `cell_group`.
+        """
+        distance =\
+            adapter.get_soma_distance(
+                circuit_model,
+                cell, cell_group)
+        bin_starts =\
+            bin_size + np.floor(distance / bin_size)
+        return\
+            [bin_start + bin_size / 2. for bin_start in bin_starts]\
+            if bin_mids else\
+               [[bin_start, bin_size] for bin_start in bin_starts]
+
+    @staticmethod
+    def get_random_cells(
+            circuit_model,
+            adapter,
+            cell_type,
+            number=1):
+        """
+        Get a random cell with the given `cell_type`.
+
+        Arguments
+        ------------
+        cell_type :: pandas.Series<CellProperty>
+        """
+        group_cells =\
+            adapter.get_cells(circuit_model, **cell_type)
+        return\
+            group_cells if group_cells.shape[0] < number\
+            else group_cells.sample(n=number)
+
+    @staticmethod
+    def random_cell(
+            circuit_model,
+            adapter,
+            cell_type):
+        """Only one random cell"""
+        return\
+            ConnectomeAnalysesSuite\
+            .get_random_cells(
+                circuit_model,
+                adapter,
+                cell_type,
+                number=1)\
+            .iloc[0]
 
     @measurement_method("""
     Number of afferent connections are computed as a function of the
@@ -258,14 +318,14 @@ class ConnectomeAnalysesSuite(WithFields):
     these post-synaptic cells, incoming connections from all other neurons are
     grouped by cell type of the neuron where they start (i.e. their pre-synaptic
     cell-type) and their soma-dstiance from the post-synaptic cell under .
-    consideration Afferent connection count or in-degree of a post-synaptic 
+    consideration Afferent connection count or in-degree of a post-synaptic
     cell is defined as the number of pre-synaptic cells in each of these groups.
     """)
-    @add_counter(1)
+    @add_counter
     def number_afferent_connections(self,
             circuit_model,
             adapter,
-            post_synaptic_cell,
+            post_synaptic_cell_type,
             pre_synaptic_cell_type_specifier=None,
             by_soma_distance=True,
             bin_size=100,
@@ -276,7 +336,7 @@ class ConnectomeAnalysesSuite(WithFields):
 
         Arugments
         --------------
-        post_synaptic_cell :: An object describing the group of
+        post_synaptic_cell_type :: An object describing the group of
         ~   post-synaptic cells to be investigated in these analyses.
         ~   Interpretation of the data in this object will be 
         ~   delegated to the adapter used for the model analyzed.
@@ -286,9 +346,87 @@ class ConnectomeAnalysesSuite(WithFields):
         ~    value or an iterable of values. Phenomena must be evaluated for 
         ~    each of these values and collected as a pandas.DataFrame.
         """
+        LOGGER.info(
+            """
+            Number afferent connections for post-synaptic cell type: {}
+            """.format(post_synaptic_cell_type))
         if pre_synaptic_cell_type_specifier is None:
             pre_synaptic_cell_type_specifier =\
-                frozenset(post_synaptic_cell.keys())
+                list(post_synaptic_cell_type.keys())
+
+        def _prefix_pre_synaptic(variable):
+            return\
+                self._at("pre_synaptic_cell_type", as_tuple=True)(variable)\
+                if variable in pre_synaptic_cell_type_specifier\
+                   else variable
+
+        variables_groupby =[
+            _prefix_pre_synaptic(variable)
+            for variable in pre_synaptic_cell_type_specifier]
+        if by_soma_distance:
+            variables_groupby.append("soma_distance")
+
+        post_synaptic_cell =\
+            self.random_cell(
+                circuit_model,
+                adapter,
+                post_synaptic_cell_type)
+        def _soma_distance(pre_cells):
+            return\
+                self.get_soma_distance_bins(
+                    circuit_model, adapter,
+                    post_synaptic_cell, pre_cells)
+        gids_afferent =\
+            adapter.get_afferent_gids(
+                circuit_model,
+                post_synaptic_cell)
+        variables_measurement =\
+            dict(number_connections_afferent=1., soma_distance=_soma_distance)\
+            if by_soma_distance else\
+               dict(number_connections_afferent=1.)
+
+        return\
+            adapter.get_cells(circuit_model)\
+                   .loc[gids_afferent]\
+                   .assign(**variables_measurement)\
+                   .rename(columns=_prefix_pre_synaptic)\
+                   [variables_groupby + ["number_connections_afferent"]]\
+                   .groupby(variables_groupby)\
+                   .agg("sum")\
+                   .number_connections_afferent
+
+    @add_counter
+    def number_afferent_connections_deprecated(self,
+            circuit_model,
+            adapter,
+            post_synaptic_cell_type,
+            pre_synaptic_cell_type_specifier=None,
+            by_soma_distance=True,
+            bin_size=100,
+            sampling_methodology=terminology.sampling_methodology.random):
+        """
+        Number of afferent connections incident on the post-synaptic cells,
+        originating from the pre-synaptic cells.
+
+        Arugments
+        --------------
+        post_synaptic_cell_type :: An object describing the group of
+        ~   post-synaptic cells to be investigated in these analyses.
+        ~   Interpretation of the data in this object will be 
+        ~   delegated to the adapter used for the model analyzed.
+        ~   Here are some guidelines when this object may is a dictionary. 
+        ~    Such a dictionary will have cell properties such as region, layer,
+        ~    mtype,  and etype as keys. Each key may be given either a single 
+        ~    value or an iterable of values. Phenomena must be evaluated for 
+        ~    each of these values and collected as a pandas.DataFrame.
+        """
+        LOGGER.info(
+            """
+            Number afferent connections for post-synaptic cell type: {}
+            """.format(post_synaptic_cell_type))
+        if pre_synaptic_cell_type_specifier is None:
+            pre_synaptic_cell_type_specifier =\
+                frozenset(post_synaptic_cell_type.keys())
 
         def _prefix_pre_synaptic(variable):
             return\
@@ -308,15 +446,11 @@ class ConnectomeAnalysesSuite(WithFields):
         def _summary_afferent(post_synaptic_cell):
             """..."""
             def _soma_distance(pre_cells):
-                distance =\
-                    adapter.get_soma_distance(
-                        circuit_model,
-                        pre_cells,
-                        post_synaptic_cell)
-                bin_starts =\
-                    bin_size * np.floor(distance / bin_size)
-                return [
-                    bin_start + bin_size / 2. for bin_start in bin_starts]
+                return\
+                    self.get_soma_distance_bins(
+                        circuit_model, adapter,
+                        post_synaptic_cell, pre_cells,
+                        bin_mids=True)
 
             gids_afferent =\
                 adapter.get_afferent_gids(
@@ -334,14 +468,12 @@ class ConnectomeAnalysesSuite(WithFields):
                              [variables_groupby + ["number_connections_afferent"]]\
                              .groupby(variables_groupby)\
                              .agg("sum")
-        post_synaptic_cells =\
-            adapter.get_cells(
-                circuit_model,
-                **post_synaptic_cell)
         sample_post_synaptic_cells =\
-            post_synaptic_cells.sample(n=self.sample_size)\
-            if sampling_methodology == terminology.sampling_methodology.random\
-               else post_synaptic_cells
+            self.get_random_cells(
+                circuit_model,
+                adapter,
+                post_synaptic_cell_type,
+                number=self.sample_size)
         dataframe =\
             pd.concat([
                 _summary_afferent(cell)
@@ -390,13 +522,14 @@ class ConnectomeAnalysesSuite(WithFields):
             measurement_parameters=self.parameters_post_synaptic_cell_mtypes,
             sample_measurement=self.number_afferent_connections,
             measurement_collection=measurement.collection.series_type,
-            plotter=LinePlot(
-                xvar="soma_distance",
-                xlabel="Soma Distance",
-                yvar="number_afferent_connections",
-                ylabel="Mean number of afferent connections",
-                gvar=("pre_synaptic_cell", "mtype"),
-                fvar=("post_synaptic_cell", "mtype"),
-                drawstyle="steps-mid"),
+            plotter=MultiPlot(
+                mvar=("post_synaptic_cell_type", "mtype"),
+                plotter=LinePlot(
+                    xvar="soma_distance",
+                    xlabel="Soma Distance",
+                    yvar="number_afferent_connections",
+                    ylabel="Mean number of afferent connections",
+                    gvar=("pre_synaptic_cell_type", "mtype"),
+                    drawstyle="steps-mid")),
             report=CircuitAnalysisReport)
 
