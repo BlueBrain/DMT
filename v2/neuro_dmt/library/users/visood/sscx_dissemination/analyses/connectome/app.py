@@ -35,11 +35,24 @@ if __name__ == "__main__":
         sys.argv[index_argv]
     index_argv += 1
 
-    path_source_pre_mtypes = sys.argv[index_argv]
-    index_argv += 1
-    path_source_post_mtypes = sys.argv[index_argv]
-    index_argv += 1
-
+    try:
+        path_source_pre_mtypes = sys.argv[index_argv]
+        index_argv += 1
+    except IndexError:
+        raise Exception(
+            """
+            Missing path to yaml file containing pre mtypes.
+            Please enter 'None' to analyze all mtypes in the circuit.
+            """)
+    try:
+        path_source_post_mtypes = sys.argv[index_argv]
+        index_argv += 1
+    except IndexError:
+        raise Exception(
+            """
+            Missing path to yaml file containing post mtypes.
+            Please enter 'None' to analyze all mtypes in the circuit.
+            """)
     try:
         sample_size = int(sys.argv[index_argv])
         index_argv += 1
