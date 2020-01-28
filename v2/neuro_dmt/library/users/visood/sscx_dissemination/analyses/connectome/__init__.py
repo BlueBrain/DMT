@@ -20,7 +20,6 @@ from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.reporting import\
     CircuitAnalysisReport,\
     CheetahReporter
-from neuro_dmt.data import rat
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from neuro_dmt.models.bluebrain.circuit.adapter.adapter import measurement_method
 from .pathway import PathwaySummary
