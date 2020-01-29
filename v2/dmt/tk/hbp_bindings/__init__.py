@@ -6,7 +6,7 @@ import pandas as pd
 import sciunit
 from sciunit.errors import ObservationError
 from sciunit.scores import BooleanScore
-from dmt.tk.field import Field, lazyfield
+from dmt.tk.field import Field, lazyfield, WithFields
 
 def SciUnitCapability(interface):
     """
@@ -14,6 +14,34 @@ def SciUnitCapability(interface):
     """
     name = interface.__name__.replace("Interface", "Capability")
     return type(name, (sciunit.Capability, ), dict(interface.__dict__))
+
+
+class AdaptedModel:
+    """
+    Wrap an adapter around a model.
+    """
+    def __init__(self, model, adapter):
+        self.model = model
+        self.adapter = adapter
+
+    def __getattr__(self, method):
+        """..."""
+        try:
+            return getattr(self.model, method)
+        except AttributeError as error_model:
+            try:
+                adapter_method = getattr(self.adapter, method)
+                def adapted_method(*args, **kwargs):
+                    return adapter_method(self.model, *args, **kwargs)
+                return adapted_method
+            except AttributeError as error_adapter:
+                pass
+
+        raise AttributeError(
+            """
+            Attribute {} not available on the model or its adapter.
+            """.format(method))
+
 
 def SciUnitModel(interface, Model):
     """
@@ -25,10 +53,39 @@ def SciUnitModel(interface, Model):
     Model :: A model type (i.e. class object) to be analyzed by an `Analysis`,
     ~        whose required methods are specified in `interface`.
     """
-    return type(
-        Model.__name__,
+    WrappedModel = type(
+        "{}{}".format("SciUnit", Model.__name__),
         (Model, sciunit.Model, SciUnitCapability(interface)),
         {})
+    if issubclass(Model, AdaptedModel):
+        return WrappedModel
+
+    def __getattr__(self, method):
+        """
+        Try to call the method on the model or the adapter.
+        """
+        try:
+            def method_adapted(*args, **kwargs):
+                """delegate to adapter"""
+                return getattr(self._adapter, method)(self, *args, **kwargs)
+            return method_adapted
+        except AttributeError as error_adapter:
+            raise AttributeError(
+                """
+                {} not defined for the model {} or it's adapter {}
+                """.format(
+                    method,
+                    self.__class__.__name__,
+                    self._adapter.__class__.__name__))
+
+    def __init__(self, adapter, *args, **kwargs):
+        """..."""
+        self.adapter = adapter
+        super(WrappedModel, self).__init__(*args, **kwargs)
+
+    WrappedModel.__getattr__ = __getattr__
+    WrappedModel.__init__ = __init__
+    return WrappedModel
 
 
 class SciUnitValidationTest(sciunit.Test):
@@ -36,7 +93,7 @@ class SciUnitValidationTest(sciunit.Test):
     Common code for HBP Validation Framework friendly tests.
     """
 
-    def __init__(self, analysis, adapter, observation,
+    def __init__(self, analysis, observation,
                  name=None,
                  pstar = 0.05,
                  **params) :
@@ -44,30 +101,19 @@ class SciUnitValidationTest(sciunit.Test):
         Initialize...
         """
         self._analysis = analysis
-        self._adapter = adapter
         self._pstar = pstar
         super().__init__(observation, name=name, **params)
-
-    def validate_observation(self, observation):
-        """
-        Validate an observation
-        """
-        if not isinstance(observation, pd.DataFrame):
-            raise ObservationError("Observation was not a pandas.DataFrame")
-        return None
 
     def compute_score(self, observation, prediction):
         """
         Compute a score comparing model prediction to experimental observation.
         """
-        try:
-            statistical_test_result =\
-                self._analysis.statistical_test(observation, prediction)
-            if statistical_test_result.pvalue < self._pstar:
-                return BooleanScore(False)
-        except:
-            pass
-        return BooleanScore(True)
+        if not hasattr(self._analysis, "statistical_test"):
+            return BooleanScore(True)
+
+        statistical_test_result =\
+            self._analysis.statistical_test(observation, prediction)
+        return BooleanScore(statistical_test_result["pass"])
 
     def validate_observation(self, observation):
         """
@@ -79,12 +125,13 @@ class SciUnitValidationTest(sciunit.Test):
                 .format(type(observation)))
         return None
 
-    def generate_prediction(self, model):
+    def generate_prediction(self, adapted_model):
         """
         Generate a prediction on the model.
         This method is required by sciunit.Test to do its job.
         """
-        measurement = self._analysis.get_measurement(model, self._adapter)
+        measurement = self._analysis.get_measurement(adapted_model,
+                                                     adapted_model.adapter)
         return self._analysis.statistical_summary(measurement)
 
     def _as_sciunit_model(self, model):
@@ -93,16 +140,20 @@ class SciUnitValidationTest(sciunit.Test):
         """
         if isinstance(model, sciunit.Model):
             return model
-        try:
-            interface = self._analysis.AdapterInterface
-        except AttributeError as error:
+
+        interface = getattr(self._analysis, "AdapterInterface", None)
+        if interface is None:
             raise TypeError("""
             This {} instance's analysis ({} instance) does not have
-            an `AdapterInterface`:
+            an `AdapterInterface`.
             \t {}""".format(
                 self.__class__.__name__,
-                self._analysis.__class__.__name__,
-                error))
+                self._analysis.__class__.__name__))
+        if not hasattr(model, "adapter"):
+            raise TypeError("""
+            No adapter attribute in model {}.
+            """.format(model.__class__.__name__))
+
         model.__class__ = SciUnitModel(interface, model.__class__)
         return model
 

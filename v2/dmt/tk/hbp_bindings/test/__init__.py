@@ -2,7 +2,7 @@
 Test develop HBP bindings for DMT.
 """
 import numpy as np
-import numpy.testing as npt
+from numpy import testing as npt
 import pandas as pd
 from scipy import stats
 import sciunit
@@ -110,26 +110,18 @@ class ArithmeticAnalysis(Analysis):
         Compute a statistical score that matches
         a model prediction against an experimental observation.
         """
-        pvalues = np.array([
-            stats.ttest_ind(
-                observation.addition.values,
-                prediction.addition.values).pvalue,
-            stats.ttest_ind(
-                observation.subtraction.values,
-                prediction.subtraction.values).pvalue,
-            stats.ttest_ind(
-                observation.multiplication.values,
-                prediction.multiplication.values).pvalue,
-            stats.ttest_ind(
-                observation.division.values,
-                prediction.division.values).pvalue
-            ])
-        log_pvalues = np.log(pvalues)
-        chisq = -2 * np.sum(log_pvalues)
-        pooled_pvalue = 1. - stats.chi2.cdf(chisq, 2 * len(pvalues))
+        def is_close(xs, ys):
+            return np.all(np.isclose(xs, ys))
+        is_pass =\
+            all([
+                is_close(prediction.addition, observation.addition),
+                is_close(prediction.subtraction, observation.subtraction),
+                is_close(prediction.multiplication, observation.multiplication),
+                is_close(prediction.division, observation.division)])
+
         return pd.Series({
-            "pvalue": pooled_pvalue,
-            "description": "Chi-square for pooled p-values"})
+            "pass": is_pass,
+            "description": "Some sort of comparison..."})
 
     def __call__(self, model, adapter):
         """
@@ -193,21 +185,6 @@ class ArithmeticModelAdapter:
         return model.by(x, y)
 
 
-class AdaptedModel(WithFields):
-    """
-    A model adapted by an adapter.
-    """
-    model = Field(
-        """
-        The model to be adapted.
-        """)
-    adapter = Field(
-        """
-        The adapter for the model.
-        """)
-
-
-
 def test():
     xs = np.random.uniform(1.e-9, 1., size=20)
     ys = np.random.uniform(1.e-9, 1., size=20)
@@ -223,14 +200,16 @@ def test():
     adapter = ArithmeticModelAdapter()
     test = SciUnitValidationTest(
         analysis,
-        adapter,
         observation = observation )
-    assert test.judge(BadArithmeticModel())
-    BadModel = SciUnitModel(ArithmeticInterface, BadArithmeticModel)
-    assert test.judge(BadModel())
 
+    abam = AdaptedModel(BadArithmeticModel(), adapter)
+    assert not test.judge(abam).get_raw()
+    BadModel = SciUnitModel(analysis.AdapterInterface, BadArithmeticModel)
+    assert not test.judge(BadModel(adapter)).get_raw()
 
-    GoodModel = SciUnitModel(ArithmeticInterface, GoodArithmeticModel)
-    assert test.judge(GoodModel())
+    agam = AdaptedModel(GoodArithmeticModel(), adapter)
+    assert test.judge(agam).get_raw()
+    GoodModel = SciUnitModel(analysis.AdapterInterface, GoodArithmeticModel)
+    assert test.judge(GoodModel(adapter)).get_raw()
 
 
