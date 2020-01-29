@@ -404,7 +404,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 .values
         #What happens if some visible cell gid is not in cell index.
         return\
-            cells.loc[visible_cell_gids]
+            cells.reindex(visible_cell_gids).dropna()
 
 
     def get_spatial_volume(self,

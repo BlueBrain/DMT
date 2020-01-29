@@ -17,6 +17,7 @@ def as_nested_dict(row):
         \t1. strings, or
         \t2. non-empty same length tuples of strings. 
         """)
+
     def _validate(key):
         if not isinstance(key, tuple) and not isinstance(key, str):
             raise type_error
@@ -25,6 +26,7 @@ def as_nested_dict(row):
            and not all(isinstance(k, str) for k in key):
             raise type_error
         return True
+
     def _get_key_length(key):
         _validate(key)
         return len(key) if isinstance(key, tuple) else None

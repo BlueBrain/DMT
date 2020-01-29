@@ -233,9 +233,9 @@ class CompositionAnalysesSuite(WithFields):
                     self.number_cortical_thickness_bins)
             return\
                 pd.DataFrame({
-                    "region": [r for r in regions for _ in depths],
-                    "depth_begin": [d for _ in regions for d in depths],
-                    "depth_end": [d + self.bin_size_cortical_thickness
+                    ("region", ""): [r for r in regions for _ in depths],
+                    ("depth", "begin"): [d for _ in regions for d in depths],
+                    ("depth", "end"): [d + self.bin_size_cortical_thickness
                                   for _ in regions for d in depths]})
 
         return\
@@ -453,11 +453,12 @@ class CompositionAnalysesSuite(WithFields):
                 measurement_parameters=self.parameters_regions_and_depths,
                 sample_measurement=self.measurement_cell_density_using_sampling,
                 plotter=LinePlot(
-                    xvar="depth",
+                    xvar=("depth", "begin"),
                     xlabel="Cortical Depth",
                     yvar="cell_density",
                     ylabel="Cell Density",
-                    gvar="region"),
+                    gvar="region",
+                    drawstyle="steps-mid"),
                 report=CircuitAnalysisReport)
 
 
