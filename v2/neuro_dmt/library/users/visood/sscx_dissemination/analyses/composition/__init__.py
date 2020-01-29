@@ -48,7 +48,25 @@ class CompositionAnalysesSuite(WithFields):
         Location where the reports will be posted.
         """,
         __default_value__=os.path.join(os.getcwd(), "reports"))
+    bin_size_cortical_thickness = Field(
+        """
+        Size of bins in um to be used to bin depth / height.
+        """,
+        __default_value__=100)
+    maximum_cortical_thickness = Field(
+        """
+        Maximum cortical thickness will be used to measure phenomena by depth
+        or height.
+        """,
+        __default_value__=2500.)
 
+
+    @lazyfield
+    def number_cortical_thickness_bins(self):
+        """..."""
+        return\
+            1 + np.floor(
+                self.maximum_cortical_thickness / self.bin_size_cortical_thickness)
 
     class AdapterInterface(Interface):
         """
@@ -209,12 +227,16 @@ class CompositionAnalysesSuite(WithFields):
             regions =\
                 adapter.get_brain_regions(circuit_model)
             depths =\
-                np.linspace(0., 2500., 51)
+                np.linspace(
+                    0.,
+                    self.maximum_cortical_thickness,
+                    self.number_cortical_thickness_bins)
             return\
                 pd.DataFrame({
-                    "region": [r for r in region for _ in depths],
-                    "depth_begin": [d for _ in region for d in depths],
-                    "depth_end": [d + 50. for _ in region for d in depths]})
+                    "region": [r for r in regions for _ in depths],
+                    "depth_begin": [d for _ in regions for d in depths],
+                    "depth_end": [d + self.bin_size_cortical_thickness
+                                  for _ in regions for d in depths]})
 
         return\
             Parameters(
@@ -418,6 +440,14 @@ class CompositionAnalysesSuite(WithFields):
         """..."""
         return\
             BrainCircuitAnalysis(
+                introduction="""
+                Dependence of cell density on cortical depth is analyzed.
+                """,
+                methods="""
+                A random region of interest (roi) in the shape of a cube was
+                sampled at a given depth in the circuit. Number of cells in this
+                cube was divided by its volume to obtain the cell density.
+                """,
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_depths,
@@ -558,6 +588,7 @@ class CompositionAnalysesSuite(WithFields):
                     .agg("size")\
                     .rename("cell_density")\
                     .apply(lambda density: 1.e9 * density / volume)
+                        #["mtype"] + list(spatial_query.keys()))
 
     @measurement_method("""
     Cells were counted, by their mtype, in randomly sampled cubes (see Methods
