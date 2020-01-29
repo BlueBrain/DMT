@@ -323,7 +323,7 @@ class CompositionAnalysesSuite(WithFields):
     that was required to be centered in the location specified by a spatial
     query.
     """)
-    def measurement_cell_density_by_sampling(self,
+    def measurement_cell_density_using_sampling(self,
             circuit_model,
             adapter,
             **query):
@@ -371,7 +371,7 @@ class CompositionAnalysesSuite(WithFields):
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_cell_density_by_sampling,
+                sample_measurement=self.measurement_cell_density_using_sampling,
                 plotter=MultiPlot(
                     mvar="region",
                     plotter=Bars(
@@ -405,7 +405,7 @@ class CompositionAnalysesSuite(WithFields):
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_cell_density_by_sampling,
+                sample_measurement=self.measurement_cell_density_using_sampling,
                 plotter=Bars(
                     xvar="layer",
                     xlabel="Layer",
@@ -421,7 +421,7 @@ class CompositionAnalysesSuite(WithFields):
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_depths,
-                sample_measurement=self.measurement_cell_density_by_sampling,
+                sample_measurement=self.measurement_cell_density_using_sampling,
                 plotter=LinePlot(
                     xvar="depth",
                     xlabel="Cortical Depth",
@@ -551,83 +551,13 @@ class CompositionAnalysesSuite(WithFields):
                 report=CircuitAnalysisReport)
 
 
-    def measurement_mtype_cell_density_by_layer(self,
-            circuit_model,
-            adapter):
-        """..."""
-        regions = adapter.get_brain_regions(circuit_model)
-        layers = adapter.get_layers(circuit_model)
-        measurement_parameters =\
-            pd.DataFrame({
-                "region": [r for r in regions for _ in layers],
-                "layer":  [l for _ in regions for l in layers]})
-
-        def _retrieve(query):
-            cuboid =\
-                self._get_random_region(
-                    circuit_model, adapter, query)
-            cells =\
-                adapter.get_cells(
-                    circuit_model, roi=cuboid)
-            return\
-                cells.groupby("mtype")\
-                     .agg("size")\
-                     .rename("cell_density")\
-                     .apply(lambda density: 1.e9 * density / cuboid.volume)\
-                     .reset_index()\
-                     .assign(**query)\
-                     .set_index(
-                         ["mtype"] + list(query.keys()))
-
-        return pd.concat([
-            _retrieve(query)
-            for _, query in measurement_parameters.iterrows()
-            for _ in range(self.sample_size)])
-
-    def sample_measurement_mtype_cell_density(self,
-            circuit_model,
-            adapter,
-            methodology=terminology.sampling_methodology.random,
-            sample_size=None,
-            **spatial_query):
-        """..."""
-        if methodology == terminology.sampling_methodology.random:
-            cuboid_of_interest =\
-                self._get_random_region(
-                    circuit_model, adaper, spatial_query)
-            cells =\
-                adapter.get_cells(
-                    circuit_model, roi=cuboid_of_interest)
-            spatial_volume =\
-                cuboid_of_interest.volume
-        else:
-            cells =\
-                adapter.get_cells(
-                    circuit_model, **spatial_query)
-            spatial_volume =\
-                adapter.get_spatial_volume(
-                    circuit_model, **spatial_query)
-        return\
-            cells.groupby("mtype")\
-                 .agg("size")\
-                 .rename("cell_density")\
-                 .apply(lambda density: 1.e9 * density / spatial_volume)\
-                 .reset_index()\
-                 .assign(**spatial_query)\
-                 .set_index(["mtype"] + list(spatial_query.keys()))
-
-
     @staticmethod
-    def _get_mtype_cell_density(cells, volume, spatial_query):
+    def _get_mtype_cell_density(cells, volume):
         """..."""
         return cells.groupby("mtype")\
                     .agg("size")\
                     .rename("cell_density")\
                     .apply(lambda density: 1.e9 * density / volume)
-                    #.reset_index()\
-                    #.assign(**spatial_query)\
-                    #.set_index(
-                        #["mtype"] + list(spatial_query.keys()))
 
     @measurement_method("""
     Cells were counted, by their mtype, in randomly sampled cubes (see Methods
@@ -696,8 +626,8 @@ class CompositionAnalysesSuite(WithFields):
         spatial_volume =\
             adapter.get_spatial_volume(
                 circuit_model, **spatial_query)
-        return self._get_mtype_cell_density(
-            cells, spatial_volume, spatial_query)
+        return\
+            self._get_mtype_cell_density(cells, spatial_volume)
 
     @lazyfield
     def analysis_mtype_cell_density_by_layer_exhaustively(self):

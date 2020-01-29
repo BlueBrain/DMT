@@ -81,7 +81,7 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
                 label=label,
                 authors=["Vishal Sood"],
                 release_date="Not Applicable",
-                location="$DMTPATH/neuro_dmt/models/bluebrain/circuits/mock",
+                uri="$DMTPATH/neuro_dmt/models/bluebrain/circuits/mock",
                 animal="Wistar Rat",
                 age="P14",
                 brain_region="SSCx"))
@@ -144,6 +144,7 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
                 [CellProperty.X, CellProperty.Y, CellProperty.Z]
             ]).values
         ) + 1
+
     @lazyfield
     def voxel_cell_count(self):
         """
@@ -205,5 +206,4 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
             columns=[CellProperty.X, CellProperty.Y, CellProperty.Z],
             index=pd.MultiIndex.from_arrays(
                 [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
-                names=["i", "j", "k"])
-        )
+                names=["i", "j", "k"]))

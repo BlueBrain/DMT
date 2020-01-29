@@ -29,7 +29,8 @@ class TermCollection(Singleton):
         return {
             label: value
             for label, value in query.items()
-            if label not in cls.terms or value is not None}
+            if label in cls.terms and value is not None}
+
 
 class circuit(TermCollection):
     """
@@ -91,8 +92,8 @@ class circuit(TermCollection):
         return {
             parameter: value
             for parameter, value in query_dict.items()
-            if parameter in cls.spatial_terms and value is not None
-        }
+            if parameter in cls.spatial_terms and value is not None}
+
 
 class cell(TermCollection):
     """
@@ -193,7 +194,7 @@ class sampling_methodology(TermCollection):
         """)
 
 
-class direction(Singleton):
+class direction(TermCollection):
     """
     Direction of transmission across a synapse (for-example).
     """
@@ -206,3 +207,68 @@ class direction(Singleton):
 
     random = 1
     exhaustive = 2
+
+
+class bluepy(Singleton):
+    """
+    Terms defined in BluePy enums
+    """
+    class cell_columns(TermCollection):
+        """Terms found in bluepy.enums.Cell"""
+        morphology = Term(
+            "morphology",
+            "Morphology of the cell.")
+        me_combo = Term(
+            "me_combo",
+            "Mtype, etype combination of the cell.")
+        mtype = Term(
+            "mtype",
+            "Label for the cell morphology.")
+        etype = Term(
+            "etype",
+            "Label for the cell electrophisiology type.")
+        layer = Term(
+            "layer",
+            "Layer where the cell is located.")
+        region = Term(
+            "region",
+            "Brain region where the cell is located")
+        hypercolumn = Term(
+            "hypercolumn",
+            "In O1 circuits hypercolumn in which the cell is located.")
+        minicolumn = Term(
+            "minicolumn",
+            "In O1 circuits minicolumn in which is the cell is located")
+        morph_class = Term(
+            "morph_class",
+            "Class of the cell's morphology type.")
+        synapse_class = Term(
+            "synapse_class",
+            "Class of the cell's synapses.")
+        x = Term(
+            "x",
+            "X component of the cell's position.")
+        y = Term(
+            "y",
+            "Y component of the cell's position.")
+        z = Term(
+            "z",
+            "Z component of the cell's position.")
+        orientation = Term(
+            "orientation",
+            "A matrix representing the cell's orientation.")
+
+
+        terms =(
+            morphology,
+            me_combo,
+            mtype,
+            etype,
+            layer,
+            region,
+            hypercolumn,
+            minicolumn,
+            morph_class,
+            synapse_class,
+            x, y, z,
+            orientation)

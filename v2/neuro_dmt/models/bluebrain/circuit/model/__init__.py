@@ -110,7 +110,6 @@ class BlueBrainCircuitModel(WithFields):
         a basic circuit config file is created in the circuit directory.
         """,
         __default_value__="CircuitConfig_base")
-
     cell_sample_size = Field(
         """
         Number of cells to sample for measurements.
@@ -262,15 +261,16 @@ class BlueBrainCircuitModel(WithFields):
         """
         A pandas series mapping a cell's gid to it's voxel index.
         """
-        return pd.Series(
-            self.cells.index.values,
-            index=pd.Series(
-                list(
-                    self.atlas.voxel_data.positions_to_indices(
-                        self.cells[[Cell.X, Cell.Y, Cell.Z]].values)
-                )
-            ).apply(tuple)
-        )
+        positions_cells =\
+            self.cells[[Cell.X, Cell.Y, Cell.Z]].values
+        index =\
+            pd.Series(list(self.atlas.positions_to_indices(positions_cells)))\
+              .apply(tuple)
+        return\
+            pd.Series(
+                self.cells.index.values,
+                index=index)
+
     def get_voxel_positions(self, voxel_ids):
         """
         Get positions of voxels from the atlas.
@@ -284,8 +284,8 @@ class BlueBrainCircuitModel(WithFields):
             columns=[Cell.X, Cell.Y, Cell.Z],
             index=pd.MultiIndex.from_arrays(
                 [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
-                names=["i", "j", "k"])
-        )
+                names=["i", "j", "k"]))
+
     def _atlas_value(self,
             key, value):
         """
@@ -312,10 +312,8 @@ class BlueBrainCircuitModel(WithFields):
         query : a dict providing parameters for a circuit query.
         """
         if not (terminology.circuit.roi in query
-            or (terminology.circuit.region in query
-                 and not isinstance(query[terminology.circuit.region], str)
-            )
-        ):
+                or (terminology.circuit.region in query
+                    and not isinstance(query[terminology.circuit.region], str))):
             return query
 
         for axis in XYZ:
@@ -338,8 +336,7 @@ class BlueBrainCircuitModel(WithFields):
                     and {}: {}
                     """.format(
                         terminology.circuit.roi, roi,
-                        terminology.circuit.region, region)
-                )
+                        terminology.circuit.region, region))
         else:
             roi = query.pop(terminology.circuit.region)
 
@@ -350,7 +347,7 @@ class BlueBrainCircuitModel(WithFields):
             Cell.Z: (corner_0[2], corner_1[2])})
         return query
 
-    def _get_cell_query(self, **query):
+    def _get_bluepy_cell_query(self, **query):
         """
         Convert `query` that will be accepted by a `BluePyCircuit`.
         """
@@ -370,12 +367,17 @@ class BlueBrainCircuitModel(WithFields):
                 return int(layer[1])
             return None
 
-        cell_query = terminology.circuit.filter(
-            **terminology.cell.filter(**query))
+        cell_query =\
+            terminology.bluepy.cell_columns.filter(**query)
 
-        if terminology.circuit.layer in cell_query:
-            cell_query[terminology.circuit.layer] =\
-                _get_query_layer(cell_query[terminology.circuit.layer])
+        # cell_query =\
+        #     terminology.circuit.filter(
+        #         **terminology.cell.filter(**query))
+
+        if terminology.bluepy.cell_columns.layer in cell_query:
+            cell_query[terminology.bluepy.cell_columns.layer] =\
+                _get_query_layer(
+                    cell_query[terminology.bluepy.cell_columns.layer])
 
         return cell_query
 
@@ -392,12 +394,15 @@ class BlueBrainCircuitModel(WithFields):
         query : sequence of keyword arguments providing query parameters.
         with_gid_column : if True add a column for cell gids.
         """
-        cell_query = self._get_cell_query(
-            **self._resolve_query_region(**query))
-        cells = self.cell_collection.get(
-            group=cell_query,
-            properties=properties)
-        return cells.assign(gid=cells.index.values)\
+        cell_query =\
+            self._get_bluepy_cell_query(
+                **self._resolve_query_region(**query))
+        cells =\
+            self.cell_collection.get(
+                group=cell_query,
+                properties=properties)
+        return\
+            cells.assign(gid=cells.index.values)\
             if with_gid_column\
                else cells
 
@@ -414,6 +419,14 @@ class BlueBrainCircuitModel(WithFields):
         """
         return self.atlas.get_mask(
             **terminology.circuit.get_spatial_query(query))
+
+    def get_voxel_count(self, **spatial_query):
+        """..."""
+        return self.atlas.get_voxel_count(**spatial_query)
+
+    @lazyfield
+    def voxel_volume(self):
+        return self.atlas.voxel_volume
 
     @terminology.use(
         terminology.circuit.region,
@@ -590,7 +603,7 @@ class BlueBrainCircuitModel(WithFields):
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
 
-    
+
 
     def get_connection_probability(self,
             pre_cell_type_specifier,

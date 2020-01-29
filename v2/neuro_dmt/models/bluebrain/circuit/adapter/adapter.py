@@ -301,19 +301,21 @@ class BlueBrainCircuitAdapter(WithFields):
                 tuple(ijk) for ijk in zip(*np.where( 
                     circuit_model.get_mask(
                         terminology.circuit.get_spatial_query(query))))}
-            return SpatialQueryData(
-                ids=pd.Series(
-                    list(visible_voxel_ids), name="voxel_id"),
-                positions=circuit_model.get_voxel_positions(
-                    np.array(list(visible_voxel_ids))),
-                cell_gids=pd.Series(
-                    circuit_model.voxel_indexed_cell_gids.loc[
-                        list(visible_voxel_ids.intersection(
-                            circuit_model.voxel_indexed_cell_gids.index.values
-                        ))
-                    ]
-                )
-            )
+            visible_cell_voxel_ids = list(
+                visible_voxel_ids.intersection(
+                    circuit_model.voxel_indexed_cell_gids.index.values))
+            visible_cell_gids =\
+                circuit_model.voxel_indexed_cell_gids\
+                             .loc[visible_cell_voxel_ids]
+            voxel_positions =\
+                circuit_model.get_voxel_positions(
+                    np.array(list(visible_voxel_ids)))
+            return\
+                SpatialQueryData(
+                    ids=pd.Series(list(visible_voxel_ids), name="voxel_id"),
+                    positions=voxel_positions,
+                    cell_gids=pd.Series(visible_cell_gids, name="cell_gid"))
+
         return QueryDB(_get_visible_voxel_data)
 
     def random_position(self,
@@ -322,31 +324,14 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         Get a generator for random positions for given spatial parameters.
         """
-        positions = self.visible_voxels(circuit_model, query).positions
-        return positions.sample(n=1).iloc[0] if not positions.empty else None
+        positions =\
+            self.visible_voxels(circuit_model, query)\
+                .positions
+        return\
+            positions.sample(n=1).iloc[0]\
+            if not positions.empty\
+               else None
             
-        # spatial_query =\
-        #     terminology.circuit.get_spatial_query(query)
-        # voxel_mask =\
-        #     circuit_model.atlas.get_mask(spatial_query)
-        # if np.nansum(voxel_mask) == 0:
-        #     raise StopIteration(
-        #         """
-        #         No valid voxels that satisfy spatial query: {}
-        #         """.format(spatial_query))
-        # voxel_indices = list(zip(*np.where(voxel_mask)))
-        # while True:
-        #     yield circuit_model.atlas.voxel_data.indices_to_positions(
-        #         voxel_indices[np.random.randint(len(voxel_indices))])
-        # if circuit_model not in self._random_position_generator_cache:
-        #     self._random_position_generator_cache[circuit_model] = {}
-
-        # if query_hash not in self._random_position_generator_cache[circuit_model]:
-        #     self.random_position_generator_cache[circuit_model][query_hash] =\
-        #         self._get_random_positions(circuit_model, **spatial_parameters)
-
-        # return self._random_position_generator_cache[circuit_model][query_hash]
-
     def random_region_of_interest(self,
             circuit_model,
             query_dict):
@@ -408,21 +393,33 @@ class BlueBrainCircuitAdapter(WithFields):
             properties=None,
             **query):
         """..."""
-        return\
+        cells =\
             self._resolve(circuit_model)\
-                .get_cells(
-                    properties=properties,
-                    with_gid_column=True,
-                       **query)
+                .get_cells(properties=properties,
+                           with_gid_column=True,
+                           **query)
+        visible_cell_gids =\
+            self.visible_voxels(circuit_model, query)\
+                .cell_gids\
+                .values
+        #What happens if some visible cell gid is not in cell index.
+        return\
+            cells.loc[visible_cell_gids]
 
-    def get_spatial_volume(self, circuit_model=None, **spatial_query):
+
+    def get_spatial_volume(self,
+            circuit_model=None,
+            **spatial_query):
         """
         Get total spatial volume of the circuit space that satisfies a
         spatial query.
         """
-        circuit_model = self._resolve(circuit_model)
-        count_voxels = circuit_model.atlas.get_voxel_count(**spatial_query)
-        return count_voxels * circuit_model.atlas.volume_voxel 
+        circuit_model =\
+            self._resolve(circuit_model)
+        count_voxels =\
+            circuit_model.get_voxel_count(**spatial_query)
+        return\
+            count_voxels * circuit_model.volume_voxel
 
     def _get_cell_density_overall(self,
             circuit_model=None,
@@ -439,8 +436,8 @@ class BlueBrainCircuitAdapter(WithFields):
             if key in query_parameters}
         circuit_model = self._resolve(circuit_model)
         count_cells = circuit_model.get_cell_count(**query_spatial)
-        count_voxels = circuit_model.atlas.get_voxel_count(**query_spatial)
-        return count_cells/(count_voxels*1.e-9*circuit_model.atlas.volume_voxel)
+        count_voxels = circuit_model.get_voxel_count(**query_spatial)
+        return count_cells/(count_voxels*1.e-9*circuit_model.volume_voxel)
 
     @measurement_method("""
     =============================

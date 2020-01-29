@@ -151,6 +151,10 @@ class BlueBrainCircuitAtlas(WithFields):
         """..."""
         return self.voxel_data.indices_to_positions(voxel_ids)
 
+    def positions_to_indices(self, positions):
+        """..."""
+        return self.voxel_data(positions)
+
     def get_bin_counts(self,
             positions):
         """

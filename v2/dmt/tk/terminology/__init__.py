@@ -197,8 +197,8 @@ def _require_if(head, *tail, with_required_kwargs=True):
         wrapped_method.__doc__ = _terms_decorated_doc_string(
             terms,
             method.__doc__)
-            
-        return wrapped_method	
+
+        return wrapped_method
 
     return decorator
 
@@ -227,7 +227,7 @@ def where(**term_dict):
         except AssertionError:
             pass
 
-        signature = inspect.signature(method)	
+        signature = inspect.signature(method)
         signature_has_varargs = any(
             p.kind == p.VAR_POSITIONAL for p in signature.parameters.values())
         signature_has_varkwargs = any(
@@ -236,7 +236,7 @@ def where(**term_dict):
             raise TypeError(
                 "terminology.where does not support var-args or var-kwargs")
 
-        @functools.wraps(method)	
+        @functools.wraps(method)
         def wrapped_method(*args, **kwargs):
             """
             The decorated method.
