@@ -45,12 +45,6 @@ class circuit(TermCollection):
     layer = Term(
         "layer",
         "A structure in certain brain areas, such as the cortex")
-    depth = Term(
-        "depth",
-        "Depth into a brain region, measured absolutely.")
-    height = Term(
-        "height",
-        "Height into a brain region, measured absolutely.")
     mesocolumn  = Term(
         "mesocolumn",
         """
@@ -68,6 +62,26 @@ class circuit(TermCollection):
         Region of interest packaged as a bounding-box or a type
         that will return a bounding-box on invocation of `.bbox`.
         """)
+    class atlas(TermCollection):
+        """
+        Terminology relevant to, specific to, or to be used with
+        a circuit atlas.
+        """
+        depth = Term(
+            "depth",
+            "Depth into a brain region, measured absolutely.")
+        height = Term(
+            "height",
+            "Height into a brain region, measured absolutely.")
+        
+        terms = (
+            depth,
+            height)
+
+
+    depth = atlas.depth
+    height = atlas.height
+
     spatial_terms =(
         region,
         layer,

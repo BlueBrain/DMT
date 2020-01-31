@@ -7,6 +7,7 @@ with the principal axis.
 
 import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
+from collections.abc import Mapping
 from dmt.tk.field import WithFields, Field, lazyfield
 from dmt.tk.collections import get_list
 from neuro_dmt.utils.geometry import Interval
@@ -92,15 +93,21 @@ class PrincipalAxis(WithFields):
         Get a mask at given depth or height.
 
         Arguments
-        depth / height: A single tuple of floats or a list of such tuples,
+        depth / height: A single two-tuple of floats or a list of such tuples,
         with each tuple representing a bin.
         """
         def _get_list(item):
             """..."""
             if (
                     isinstance(item, tuple)
-                    and len(item) > 0
+                    and len(item) == 2
                     and isinstance(item[0], (int, np.integer, float, np.float))
+            ):
+                return [item]
+            if (
+                    isinstance(item, Mapping)
+                    and len(item) == 2
+                    and "begin" in item and "end" in item
             ):
                 return [item]
             return get_list(item)
@@ -153,5 +160,5 @@ class PrincipalAxis(WithFields):
         return np.logical_and(
             self.valid_voxels,
             np.any([_get_one(_bin) for _bin in _get_list(height)], axis=0))
-                
+
 

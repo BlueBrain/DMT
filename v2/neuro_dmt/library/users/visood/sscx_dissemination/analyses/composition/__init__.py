@@ -52,7 +52,7 @@ class CompositionAnalysesSuite(WithFields):
         """
         Size of bins in um to be used to bin depth / height.
         """,
-        __default_value__=100)
+        __default_value__=100.)
     maximum_cortical_thickness = Field(
         """
         Maximum cortical thickness will be used to measure phenomena by depth
@@ -166,6 +166,8 @@ class CompositionAnalysesSuite(WithFields):
             adapter.random_position(
                 circuit_model,
                 **spatial_query)
+        if position is None:
+            return None
         return\
             Cuboid(
                 position - self.size_roi / 2.,
@@ -182,6 +184,8 @@ class CompositionAnalysesSuite(WithFields):
         roi =\
             self._get_random_region(
                 circuit_model, adapter, spatial_query)
+        if roi is None:
+            return None
         return\
             adapter.get_cells(
                 circuit_model, roi=roi.bbox)
@@ -359,6 +363,10 @@ class CompositionAnalysesSuite(WithFields):
         cuboid_to_measure =\
             self._get_random_region(
                 circuit_model, adapter, spatial_query)
+
+        if cuboid_to_measure is None:
+            return 0.
+
         cell_count =\
             adapter.get_cells(
                 circuit_model, roi=cuboid_to_measure
@@ -457,8 +465,7 @@ class CompositionAnalysesSuite(WithFields):
                     xlabel="Cortical Depth",
                     yvar="cell_density",
                     ylabel="Cell Density",
-                    gvar="region",
-                    drawstyle="steps-mid"),
+                    gvar="region"),
                 report=CircuitAnalysisReport)
 
 

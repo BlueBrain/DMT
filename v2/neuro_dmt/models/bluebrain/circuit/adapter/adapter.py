@@ -295,8 +295,24 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         If it is not masked, a voxel is visible.
         """
+        def _spatial_query_data(
+                voxel_ids,
+                voxel_positions,
+                cell_gids):
+            """..."""
+            return SpatialQueryData(
+                ids=pd.Series(list(voxel_ids), name="voxel_id"),
+                positions=voxel_positions,
+                cell_gids=pd.Series(cell_gids, name="cell_gid"))
+
+
         def _get_visible_voxel_data(circuit_model, query):
             """..."""
+            LOGGER.debug(
+                """
+                Compute visible voxel data for query
+                \t {}.
+                """.format(query))
             visible_voxel_ids ={
                 tuple(ijk) for ijk in zip(*np.where( 
                     circuit_model.get_mask(
@@ -307,14 +323,14 @@ class BlueBrainCircuitAdapter(WithFields):
             visible_cell_gids =\
                 circuit_model.voxel_indexed_cell_gids\
                              .loc[visible_cell_voxel_ids]
-            voxel_positions =\
+            visible_voxel_positions =\
                 circuit_model.get_voxel_positions(
                     np.array(list(visible_voxel_ids)))
             return\
-                SpatialQueryData(
-                    ids=pd.Series(list(visible_voxel_ids), name="voxel_id"),
-                    positions=voxel_positions,
-                    cell_gids=pd.Series(visible_cell_gids, name="cell_gid"))
+                _spatial_query_data(
+                    visible_voxel_ids,
+                    visible_voxel_positions,
+                    visible_cell_gids)
 
         return QueryDB(_get_visible_voxel_data)
 
@@ -398,14 +414,19 @@ class BlueBrainCircuitAdapter(WithFields):
                 .get_cells(properties=properties,
                            with_gid_column=True,
                            **query)
+        query_atlas =\
+            terminology.circuit.atlas.filter(**query)
+
+        if not query_atlas:
+            return cells
+
         visible_cell_gids =\
-            self.visible_voxels(circuit_model, query)\
+            self.visible_voxels(circuit_model, query_atlas)\
                 .cell_gids\
                 .values
-        #What happens if some visible cell gid is not in cell index.
         return\
-            cells.reindex(visible_cell_gids).dropna()
-
+            cells.reindex(visible_cell_gids)\
+                 .dropna()
 
     def get_spatial_volume(self,
             circuit_model=None,

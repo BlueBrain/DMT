@@ -23,7 +23,8 @@ from .pathway import PathwaySummary
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
-logger = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
+
 NA = "not-available"
 
 def _get_bounding_box(region_of_interest):
@@ -187,8 +188,8 @@ class BlueBrainCircuitModel(WithFields):
             bp = self.bluepy_circuit
             return bp.cells
         except BluePyError as error:
-            logger.warn(
-                logger.get_source_info(),
+            LOGGER.warn(
+                LOGGER.get_source_info(),
                 "Circuit does not have cells.",
                 "BluePy complained:\n\t {}".format(error))
         return None
@@ -210,8 +211,8 @@ class BlueBrainCircuitModel(WithFields):
             bp = self.bluepy_circuit
             return bp.connectome
         except BluePyError as error:
-            logger.warn(
-                logger.get_source_info(),
+            LOGGER.warn(
+                LOGGER.get_source_info(),
                 "Circuit does not have a connectome.",
                 "BluePy complained: \n\t {}".format(error))
         return None
@@ -262,7 +263,7 @@ class BlueBrainCircuitModel(WithFields):
         A pandas series mapping a cell's gid to it's voxel index.
         """
         positions_cells =\
-            self.cells[[Cell.X, Cell.Y, Cell.Z]].values
+            self.cells[XYZ].values
         index =\
             pd.Series(list(self.atlas.positions_to_indices(positions_cells)))\
               .apply(tuple)
@@ -279,9 +280,22 @@ class BlueBrainCircuitModel(WithFields):
         -----------
         voxel_ids : Iterable of voxel indices as tuples (i, j, k)
         """
+        LOGGER.debug(
+            """
+            get_voxel_positions for voxel_ids of shape {}
+            """.format(voxel_ids.shape))
+
+        if voxel_ids.shape[0] == 0:
+            return pd.DataFrame(
+                [],
+                columns=XYZ,
+                index=pd.MultiIndex.from_arrays(
+                    [[], [], []],
+                    names=["i", "j", "k"]))
+
         return pd.DataFrame(
             self.atlas.indices_to_positions(voxel_ids),
-            columns=[Cell.X, Cell.Y, Cell.Z],
+            columns=XYZ,
             index=pd.MultiIndex.from_arrays(
                 [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
                 names=["i", "j", "k"]))
