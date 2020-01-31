@@ -59,6 +59,11 @@ class CompositionAnalysesSuite(WithFields):
         or height.
         """,
         __default_value__=2500.)
+    morphologies_interneurons = Field(
+        """
+        Interneuron morphologies that are stained by markers",
+        """,
+        __default_value__=["BP", "BTC", "CHC", "DB", "LBC", "NBC", "MC", "SBC", "SSC"])
 
 
     @lazyfield
@@ -261,6 +266,14 @@ class CompositionAnalysesSuite(WithFields):
             Phenomenon(
                 "Inhibitory Cell Fraction",
                 "Fraction of inhibitory cells",
+                group="Composition")
+
+    @lazyfield
+    def phenomenon_marker_stain_density(self):
+        return\
+            Phenomenon(
+                "Marker Density",
+                "Density of cells in a unit volume [mm^3] that are stained",
                 group="Composition")
 
     def sampled_reference_data(self, reference_data):
@@ -516,7 +529,7 @@ class CompositionAnalysesSuite(WithFields):
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_layers,
-                sample_measurement=self.measurement_cell_density_overall,
+                sample_measurement=self.measurement_cell_density_exhaustively,
                 plotter=MultiPlot(
                     mvar="region",
                     plotter=Bars(
@@ -588,6 +601,109 @@ class CompositionAnalysesSuite(WithFields):
                         gvar="dataset")),
                 report=CircuitAnalysisReport)
 
+
+    @lazyfield
+    def gtypes(self):
+        """..."""
+        return\
+            pd.concat([
+                pd.DataFrame(
+                    pd.read_table(
+                        os.path.join(
+                            os.path.dirname(os.path.abspath(__file__)),
+                            "data/marker_stains",
+                            "{}.txt".format(morphology.lower())),
+                        header=None).values,
+                    columns=pd.Index(
+                        ["CALB", "PVALB", "CR", "NPY", "SST", "CCK", "VIP"],
+                        name="marker")
+                ).assign(morphology=morphology)
+                for morphology in self.morphologies_interneurons])\
+              .set_index(["morphology"])
+
+    @measurement_method("""
+    Cell density was measured as a function of cortical depth for each
+    of the inter-neuron morphologies BPC, BTC, CHC, DBC, LBC, NBC, MC,
+    SBC, and SSC. Inter-neuron densities were then converted to marker
+    stain densities.
+    """)
+    def measurement_marker_density_exhaustively(self,
+            circuit_model,
+            adapter,
+            aggregate_gtypes_by="mean",
+            **query):
+        """
+        Arguments
+        --------------
+        aggregate_gtypes_by :: an object that can be passed to pd.DataFrame.apply
+        """
+
+        #read data to convert cell density to marker density
+        gtypes_aggregated =\
+            self.gtypes.groupby("morphology")\
+                       .agg(aggregate_gtypes_by)
+
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cells =\
+            adapter.get_cells(
+                circuit_model, **spatial_query)
+        spatial_volume =\
+            adapter.get_spatial_volume(
+                circuit_model, **spatial_query)
+        count_cells_by_mtype =\
+            cells.groupby("mtype")\
+                 .agg("size")\
+                 .rename("cell_count")
+        count_cells_by_morphology =\
+            pd.Series(
+                count_cells_by_mtype.values,
+                index=pd.Index(
+                    adapter.mtype_to_morphology(
+                        circuit_model,
+                        count_cells_by_mtype.index.values.to_list()),
+                    name="morphology"),
+                name="cell_count")\
+              .groupby("morphology")\
+              .agg("sum")\
+              .reindex(self.morphologies_interneurons)\
+              .fillna(0.)
+
+        return\
+            gtypes_aggregated.apply(
+                lambda marker_stain_density: np.sum(
+                    count_cells_by_morphology * marker_stain_density))
+
+                  
+    @lazyfield
+    def analysis_marker_stains_by_depth_exhaustively(self):
+        return BrainCircuitAnalysis(
+            introduction="""
+            A circuit model should reproduce experimentally measured
+            marker-stain densities. Inhibitory neurons placed in the circuit
+            must match marker densities for immunohistochemical stainings.
+            Here we analyze seven marker-stains for CB, PVALB, CCK, NPY, VIP,
+            CR, and SST.
+            """,
+            methods="""
+            Cell density was measured as a function of cortical depth for each
+            of the inter-neuron morphologies BPC, BTC, CHC, DBC, LBC, NBC, MC,
+            SBC, and SSC. Inter-neuron densities were then converted to marker
+            stain densities.
+            """,
+            phenomenon=self.phenomenon_marker_stain_density,
+            measurement_parameters=self.parameters_regions_and_depths,
+            sample_measurement=self.measurement_marker_density_exhaustively,
+            measurement_collection=measurement.collection.series_type,
+            plotter=MultiPlot(
+                mvar="marker",
+                plotter=LinePlot(
+                    xvar=("depth", "begin"),
+                    xlabel="Cortical Depth",
+                    yvar="marker_density",
+                    ylabel="Marker Density",
+                    gvar="region")),
+            report=CircuitAnalysisReport)
 
     @staticmethod
     def _get_mtype_cell_density(cells, volume):

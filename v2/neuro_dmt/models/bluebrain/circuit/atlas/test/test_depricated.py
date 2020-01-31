@@ -582,4 +582,4 @@ class Test_CircuitAtlas:
     def test_gets_voxel_volume(self):
         circuit_atlas = CircuitAtlas(
             "/gpfs/bbp.cscs.ch/project/proj66/entities/dev/atlas/O1-152/")
-        assert circuit_atlas.voxel_volume == 125.0
+        assert circuit_atlas.volume_voxel == 125.0

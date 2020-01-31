@@ -439,8 +439,8 @@ class BlueBrainCircuitModel(WithFields):
         return self.atlas.get_voxel_count(**spatial_query)
 
     @lazyfield
-    def voxel_volume(self):
-        return self.atlas.voxel_volume
+    def volume_voxel(self):
+        return self.atlas.volume_voxel
 
     @terminology.use(
         terminology.circuit.region,

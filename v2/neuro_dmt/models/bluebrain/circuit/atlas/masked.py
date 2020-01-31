@@ -664,6 +664,8 @@ class CircuitAtlas():
         self._masks = _AtlasMasks(self._atlas,
                                   represented_region=represented_region)
         self._cell_density = _CellDensity(self._atlas)
+        self.volume_voxel =\
+            self._atlas.load_data("brain_regions").voxel_volume
         self.voxel_volume =\
             self._atlas.load_data("brain_regions").voxel_volume
 

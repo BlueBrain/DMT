@@ -241,6 +241,12 @@ class BlueBrainCircuitAdapter(WithFields):
         circuit_model = self._resolve(circuit_model)
         return circuit_model.mtypes
 
+    def mtype_to_morphology(self,
+            circuit_model=None,
+            mtypes=[]):
+        """..."""
+        return [mtype.split('_')[-1] for mtype in mtypes]
+
     def get_pathways(self,
             circuit_model=None,
             pre_synaptic_cell_type=None,
