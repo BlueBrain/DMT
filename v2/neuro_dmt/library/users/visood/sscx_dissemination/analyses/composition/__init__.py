@@ -106,6 +106,21 @@ class CompositionAnalysesSuite(WithFields):
             A list of layers in the `circuit_model`
             """
             raise NotImplementedError
+
+        def mtype_to_morphologies(self,
+                circuit_model,
+                mtypes):
+            """
+            Admitting that the term `mtype` is meant to be a label,
+            the actual morphology class such as MC, ChC, TPC,
+            of the cell may be different than the label `mtype`.
+            The adapter must obtain this translation from the circuit model.
+
+            Arguments
+            -----------
+            mtypes :: Either a single `mtype` or a list of, to translate.
+            """
+            raise NotImplementedError
         
         def get_spatial_volume(self, circuit_model, **spatial_query):
             """
@@ -692,6 +707,7 @@ class CompositionAnalysesSuite(WithFields):
             stain densities.
             """,
             phenomenon=self.phenomenon_marker_stain_density,
+            AdapterInterface=self.AdapterInterface,
             measurement_parameters=self.parameters_regions_and_depths,
             sample_measurement=self.measurement_marker_density_exhaustively,
             measurement_collection=measurement.collection.series_type,
@@ -766,7 +782,7 @@ class CompositionAnalysesSuite(WithFields):
                         gvar="region")))
 
     @measurement_method("""
-    Cells of each mtype were counted in the entire region specified by a query. 
+    Cells of each mtype were counted in the entire region specified by a query.
     """)
     def measurement_mtype_cell_density_exhaustively(self,
             circuit_model,
