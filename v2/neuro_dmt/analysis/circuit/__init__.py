@@ -56,6 +56,19 @@ class BrainCircuitAnalysis(
         model to analyze.
         """,
         __type__=InterfaceMeta)
+    sampling_methodology = Field(
+        """
+        Is measurement on the model going to be made on a random sample (from
+        a relevant population), or will it be made exhaustively?
+        """,
+        __default_value__=terminology.sampling_methodology.random)
+    sample_size = Field(
+        """
+        Number of samples to measure for each set of the measurement parameters.
+        This field will be relevant when the measurement is made on random
+        samples, and not made exhaustively.
+        """,
+        __default_value__=20)
     sample_measurement = Field(
         """
         A callable that maps
@@ -214,30 +227,26 @@ class BrainCircuitAnalysis(
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            sampling_methodology=terminology.sampling_methodology.random,
-            sample_size=20,
             *args, **kwargs):
         """
         Get a statistical measurement.
         """
-        assert not sample_size or isinstance(sample_size, int),\
-            "Expected int, received {}".format(type(sample_size))
         adapter =\
             self._resolve_adapter(adapter)
         using_random_samples=\
-            sampling_methodology == terminology.sampling_methodology.random
+            self.sampling_methodology == terminology.sampling_methodology.random
         parameter_values =\
             self.measurement_parameters\
                 .for_sampling(
                     adapter,
                     circuit_model,
-                    size=sample_size if using_random_samples else 1)
+                    size=self.sample_size if using_random_samples else 1)
         get_measurement =\
             self._get_measurement_method(adapter)
         measured_values = self\
             .measurement_collection(
                 (p, get_measurement(circuit_model,
-                                    sampling_methodology=sampling_methodology,
+                                    sampling_methodology=self.sampling_methodology,
                                     **p, **kwargs))
                 for p in parameter_values)\
             .rename(columns={"value": self.phenomenon.label})
@@ -435,7 +444,6 @@ class BrainCircuitAnalysis(
 
     def __call__(self,
             *args,
-            sampling_methodology=terminology.sampling_methodology.random,
             author=Author.anonymous,
             **kwargs):
         """
@@ -447,7 +455,6 @@ class BrainCircuitAnalysis(
             self.get_measurement(
                 circuit_model,
                 adapter=adapter,
-                sampling_methodology=sampling_methodology,
                 **kwargs)
         reference_data =\
             kwargs.pop(

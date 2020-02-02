@@ -689,7 +689,7 @@ class CompositionAnalysesSuite(WithFields):
                 lambda marker_stain_density: np.sum(
                     count_cells_by_morphology * marker_stain_density))
 
-                  
+
     @lazyfield
     def analysis_marker_stains_by_depth_exhaustively(self):
         return BrainCircuitAnalysis(
@@ -709,6 +709,8 @@ class CompositionAnalysesSuite(WithFields):
             phenomenon=self.phenomenon_marker_stain_density,
             AdapterInterface=self.AdapterInterface,
             measurement_parameters=self.parameters_regions_and_depths,
+            sampling_methodology=terminology.sampling_methodology.exhaustive,
+            sample_size=1,
             sample_measurement=self.measurement_marker_density_exhaustively,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
