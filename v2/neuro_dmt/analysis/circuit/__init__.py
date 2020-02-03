@@ -2,131 +2,27 @@
 Brain circuit analyses and validations.
 """
 
-from abc import abstractmethod
 import os
-import pandas        
 from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
-from dmt.analysis import Analysis
+from dmt.analysis.structured import StructuredAnalysis
 from dmt.model.interface import InterfaceMeta
-from dmt.data.observation.measurement.collection import\
-    primitive_type as primitive_type_measurement_collection
 from dmt.tk.field import Field, LambdaField, lazyfield
 from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
-from dmt.tk.reporting import Report, Reporter
-from dmt.tk.utils.args import require_only_one_of
+from dmt.tk.reporting import Reporter
 from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
-from neuro_dmt.analysis.reporting import CircuitAnalysisReport
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 
 class BrainCircuitAnalysis(
-        Analysis):
+        StructuredAnalysis):
     """
     A base class for all circuit analyses.
     """
-    phenomenon = Field(
-        """
-        An object whose `.label` is a single word name for the phenomenon 
-        analyzed by this `BrainCircuitAnalysis`.
-        """)
-    abstract = LambdaField(
-        """
-        A short description of the analysis.
-        """,
-        lambda self: self.phenomenon.description)
-    introduction = Field(
-        """
-        A scientific introduction to this analysis, that will be used to
-        produce a report. 
-        """,
-        __default_value__="Not provided.")
-    methods = Field(
-        """
-        Describe the algorithm / procedure used to computer the results or
-        the experimental measurement presented in this analysis.
-        """,
-        __default_value__="Not provided.")
-    AdapterInterface  = Field(
-        """
-        The interface that will be used to get measurements for the circuit
-        model to analyze.
-        """,
-        __type__=InterfaceMeta)
-    sampling_methodology = Field(
-        """
-        Is measurement on the model going to be made on a random sample (from
-        a relevant population), or will it be made exhaustively?
-        """,
-        __default_value__=terminology.sampling_methodology.random)
-    sample_size = Field(
-        """
-        Number of samples to measure for each set of the measurement parameters.
-        This field will be relevant when the measurement is made on random
-        samples, and not made exhaustively.
-        """,
-        __default_value__=20)
-    sample_measurement = Field(
-        """
-        A callable that maps
-        (adapter, model, **parameters, **customizations) ==> measurement.
-        where
-        parameters : parameters for the measurement
-        customizations : that specify the method used to make a measurement.
-        """,
-        __required__=False)
-    measurement_parameters = Field(
-        """
-        A collection of parameters to measure with.
-        This object should have the following methods:
-        ~   1. `for_sampling`, returning an iterable of dict like parameters
-        ~       to pass to a measurement method as keyword arguments.
-        ~   2. `index`, returning a pandas.Index object to be used as an
-        ~       index on the measurement.
-        """,
-        __as__=Parameters,
-        __required__=False)
-    measurement_collection = Field(
-        """
-        A callable that will collect measurements passed as an iterable.
-        """,
-        __default_value__=primitive_type_measurement_collection)
-    plotter = Field(
-        """
-        A class instance or a module that has `plot` method that will be used to
-        plot the results of this analysis. The plotter should know how to 
-        interpret the data provided. For example, the plotter will have to know
-        which columns are the x-axis, and which the y-axis. The `Plotter`
-        instance used by this `BrainCircuitAnalysis` instance should have those
-        set as instance attributes.
-        """,
-        __required__=False)
-    report = Field(
-        """
-        A callable that will generate a report. The callable should be able to
-        take arguments listed in `get_report(...)` method defined below.
-        """,
-        __default_value__=CircuitAnalysisReport)
-    reporter = Field(
-        """
-        A class or a module that will report the results of this analysis.
-        It is up to the reporter what kind of report to generate. For example,
-        the report can be a (interactive) webpage, or a static PDF.
-        """,
-        __required__=False,
-        __examples__=[
-            Reporter(path_output_folder=os.getcwd())])
-    reference_data = Field(
-        """
-        A pandas.DataFrame containing reference data to compare with the
-        measurement made on a circuit model.
-        Each dataset in the dataframe must be annotated with index level
-        'dataset', in addition to levels that make sense for the measurements.
-        """,
-        __default_value__={})
+
 
     @property
     def _has_reference_data(self):

@@ -220,7 +220,6 @@ class WithFields:
             field for field in fields
             if cls.is_required(field)]
 
-
     @property
     def field_dict(self):
         """
@@ -240,6 +239,16 @@ class WithFields:
             field: value
             for field, value in field_values
             if not isinstance(field, Field)}
+
+    def with_field_values(self, **field_values):
+        """
+        Instance of (`WithFields` subclass) classs `cls` with new values
+        for fields.
+        """
+        return\
+            self.__class__(**{
+                field: field_values.get(field, value)
+                for field, value in self.field_dict.items()})
 
 
 ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})

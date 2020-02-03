@@ -81,3 +81,5 @@ class Suite(WithFields):
         return {
             label: analysis(circuit_model, *args, **kwargs)
             for label, analysis in self._analyses.items()}
+
+from .structured import StructuredAnalysis
