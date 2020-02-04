@@ -8,50 +8,75 @@ from dmt.tk.field import Field, lazyfield
 from dmt.tk.journal import Logger
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import string_utils, get_file_name_base
+from dmt.tk.field import Field, WithFields
 
-logger = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
+
+
+class CircuitProvenance(WithFields):
+    """
+    Provenance of a circuit.
+    """
+    label = Field(
+        """
+        A label that names the circuit model.
+        """,
+        __default_value__="")
+    authors = Field(
+        """
+        A list of authors who built the circuit model.
+        """,
+        __default_value__=["Not Available"])
+    date_release = Field(
+        """
+        When the circuit model was released in its final form.
+        """,
+        __default_value__="YYYYMMDD")
+    uri = Field(
+        """
+        URI from where the circuit model can be loaded.
+        """,
+        __default_value__="https://www.example.com")
+    animal = Field(
+        """
+        The animal whose brain was modeled.
+        """,
+        __default_value__="Not Available")
+    age = Field(
+        """
+        Age of the animal at which its brain was modeled.
+        """,
+        __default_value__="XYZ Weeks")
+    brain_region = Field(
+        """
+        Brain region that was modeled.
+        """,
+        __default_value__="Somatosensory Cortex (SSCx)")
+
 
 class CircuitAnalysisReport(Report):
     """
     Add some circuit analysis specific attributes to `Report`
     """
-    animal = Field(
+    model = Field(
         """
-        Animal species whose brain was modeled.
+        Either a `class CircuitProvenance` instance or a dict providing values
+        for the fields of `class CircuitProvenance`.
         """,
-        __default_value__="Not Available")
-    age = Field(
-        """
-        Age of the animal.
-        """,
-        __default_value__="Not Available")
-    brain_region = Field(
-        """
-        Name of the region in the brain that the circuit models.
-        """,
-        __default_value__="Not Available")
-    uri = Field(
-        """
-        Location of the circuit.
-        """,
-        __default_value__="Not Available")
-    authors_circuit = Field(
-        """
-        Authors who built the circuit
-        """,
-        __default_value__=["Not Available"])
+        __default_value__=CircuitProvenance())
 
     @lazyfield
     def field_values(self):
         """..."""
         fields = super().field_values
         fields.update(dict(
-            animal=self.animal,
-            age=self.age,
-            brain_region=self.brain_region,
-            uri=self.uri,
-            references=self.references,
-            authors_circuit=self.authors_circuit
+            animal=self.model.animal,
+            age=self.model.age,
+            brain_region=self.model.brain_region,
+            uri=self.model.uri,
+            references=self.model.references,
+            date_release=self.model.date_release,
+            authors_circuit=self.modelauthors
         ))
         return fields
 
@@ -208,8 +233,8 @@ class CheetahReporter(Reporter):
         except Exception as template_fill_error:
             if strict:
                 raise template_fill_error
-            logger.warning(
-                logger.get_source_info(),
+            LOGGER.warning(
+                LOGGER.get_source_info(),
                 "Error during filling the report template: \n\t{}".format(
                     template_fill_error))
 

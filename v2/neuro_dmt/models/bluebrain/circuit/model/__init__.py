@@ -17,6 +17,7 @@ from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
+from neuro_dmt.analysis.reporting import CircuitProvenance
 from ..atlas import BlueBrainCircuitAtlas
 from .cell_type import CellType
 from .pathway import PathwaySummary
@@ -38,39 +39,6 @@ def _get_bounding_box(region_of_interest):
 
 XYZ = [Cell.X, Cell.Y, Cell.Z]
 
-class CircuitProvenance(WithFields):
-    """
-    Provenance of a circuit.
-    """
-    label = Field(
-        """
-        A label that names the circuit model.
-        """)
-    authors = Field(
-        """
-        A list of authors who built the circuit model.
-        """)
-    release_date = Field(
-        """
-        When the circuit model was released in its final form.
-        """)
-    uri = Field(
-        """
-        URI from where the circuit model can be loaded.
-        """)
-    animal = Field(
-        """
-        The animal whose brain was modeled.
-        """)
-    age = Field(
-        """
-        Age of the animal at which its brain was modeled.
-        """)
-    brain_region = Field(
-        """
-        Brain region that was modeled.
-        """)
-
 class BlueBrainCircuitModel(WithFields):
     """
     A circuit model developed at the Blue Brain Project.
@@ -82,7 +50,7 @@ class BlueBrainCircuitModel(WithFields):
         __default_value__=CircuitProvenance(
             label="BlueBrainCircuitModel",
             authors=["BBP Team"],
-            release_date="Not Available",
+            date_release="Not Available",
             uri="Not Available",
             animal="Not Available",
             age="Not Available",
