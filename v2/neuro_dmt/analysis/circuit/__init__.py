@@ -5,7 +5,7 @@ Brain circuit analyses and validations.
 from abc import abstractmethod
 import os
 import pandas        
-from dmt.analysis import Analysis
+from dmt.analysis.structured import Analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.reporting import Report, Reporter
