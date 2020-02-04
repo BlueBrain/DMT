@@ -75,27 +75,69 @@ class PrincipalAxis(WithFields):
     @lazyfield
     def height(self):
         """
-        ...
+        Distance from the bottom, according to each voxcell.
         """
         return self.position - self.bottom
 
     @lazyfield
     def depth(self):
         """
-        ...
+        Distance from the top, according to each voxcell.
         """
         return self.top - self.position
 
+    @lazyfield
+    def thickness(self):
+        """
+        Thickness, according to each voxcell.
+        """
+        return self.top - self.bottom
+
+    @lazyfield
+    def relative_height(self):
+        """
+        Fraction of cortical thickness, according to each voxcell.
+        """
+        return self.height / self.thickness
+
+    @lazyfield
+    def relative_depth(self):
+        """
+        Fraction of cortical thickness, according to each voxcell.
+        """
+        return self.depth / self.thickness
+
     def get_mask(self,
             depth=None,
-            height=None):
+            height=None,
+            as_fraction=True):
         """
         Get a mask at given depth or height.
 
         Arguments
         depth / height: A single two-tuple of floats or a list of such tuples,
-        with each tuple representing a bin.
+        ~               with each tuple representing a bin.
+        as_fraction:  Boolean indicating if the depth / height is
+        ~              fraction of total (local) thickness per voxcell.
         """
+        if (depth is not None) and (height is not None):
+            raise TypeError(
+                """
+                Cannot define a principal axis mask at given depth
+                as well as height.
+                """)
+        if (depth is None) and (height is None):
+            raise TypeError(
+                """
+                Need at least a value for depth or height to define a
+                principal axis mask.
+                """)
+
+        values =\
+            (self.depth if depth is not None else self.height)\
+            if not as_fraction else\
+               (self.relative_depth if depth is not None else self.relative_height)
+
         def _get_list(item):
             """..."""
             if (
@@ -112,11 +154,20 @@ class PrincipalAxis(WithFields):
                 return [item]
             return get_list(item)
 
+        def _check_arguments(begin, end):
+            """..."""
+            if as_fraction:
+                if (begin < 0. or begin > 1.) or (end < 0. or end > 1.):
+                    raise ValueError(
+                        """
+                        Invalid bin begin or end for relative values:
+                        \t depth : {}, height : {}, as_fraction : {}
+                        """.format(depth, height, as_fraction))
+
         def _get_one(_bin):
             """
             Mask for one bin
             """
-            values = self.depth if depth is not None else self.height
             try:
                 begin = _bin[0]
                 end   = _bin[1]
@@ -138,25 +189,14 @@ class PrincipalAxis(WithFields):
                             key_error_0_1,
                             key_error_begin_end)
                     )
+            #_check_arguments(begin, end)
             return np.logical_and(begin <= values, values < end)
 
         if depth is not None:
-            if height is not None:
-                raise TypeError(
-                    """
-                    Cannot define a principal axis mask at given depth
-                    as well as height.
-                    """)
             return np.logical_and(
                 self.valid_voxels,
                 np.any([_get_one(_bin) for _bin in _get_list(depth)], axis=0))
 
-        if height is None:
-            raise TypeError(
-                """
-                Need at least a value for depth or height to define a
-                principal axis mask.
-                """)
         return np.logical_and(
             self.valid_voxels,
             np.any([_get_one(_bin) for _bin in _get_list(height)], axis=0))
