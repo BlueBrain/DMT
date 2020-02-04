@@ -5,6 +5,8 @@ import pytest as pyt
 import numpy as np
 from .. import LambdaField, Field, WithFields
 from ..class_field import ClassField, class_field
+import numpy as np
+from .. import LambdaField, Field, WithFields
 
 def test_lambda_field():
     """
