@@ -37,10 +37,6 @@ class StructuredAnalysis(Analysis):
     An analysis structured as individual components that each handle an
     independent responsibility.
     """
-    phenomenon = Field(
-        """
-        An object providing the phenomenon analyzed.
-        """)
     author = Field(
         """
         An object describing the author.
@@ -74,7 +70,7 @@ class StructuredAnalysis(Analysis):
         or on the entire population. The circuit constituents population to be
         measured will be determined by a query.
         """,
-        __default_value__=WithFields.NotProvided)
+        __default_value__="Not Provided")
     sample_size = Field(
         """
         Number of samples to measure for each set of the measurement parameters.
