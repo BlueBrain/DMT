@@ -11,6 +11,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 
 from sys import stdout
 from abc import ABC
+from collections.abc import Mapping
 from .field import Field, LambdaField
 from .prop import Property
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
@@ -58,6 +59,8 @@ class WithFields:
         """
         Initialize Me
         """
+        if len(args) == 1 and isinstance(args[0], Mapping):
+            kwargs.update(args[0])
 
         def __check_validity(field, value):
             """..."""
