@@ -14,6 +14,9 @@ from dmt.tk.parameters import Parameters
 from dmt.tk.reporting import Reporter
 from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
+from neuro_dmt.analysis.reporting import\
+    CircuitAnalysisReport,\
+    CircuitProvenance
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 
@@ -237,7 +240,7 @@ class BrainCircuitAnalysis(
             author=Author.anonymous,
             figures=None,
             reference_data=None,
-            **provenance_circuit):
+            provenance_circuit=CircuitProvenance()):
         """
         Get a report for the given `measurement`.
         """
@@ -260,7 +263,7 @@ class BrainCircuitAnalysis(
             references={
                 label: reference.citation
                 for label, reference in reference_data.items()},
-            **provenance_circuit)
+            provenance_circuit=provenance_circuit)
 
     def _resolve_adapter_and_model(self,  *args):
         """
@@ -366,7 +369,7 @@ class BrainCircuitAnalysis(
                         reference_data),
                     caption=measurement["method"]),
                 reference_data=reference_data,
-                **adapter.get_provenance(circuit_model))
+                provenance_circuit=adapter.get_provenance(circuit_model))
 
         try:
             return self.reporter.post(report)

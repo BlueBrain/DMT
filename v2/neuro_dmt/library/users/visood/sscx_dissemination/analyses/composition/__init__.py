@@ -48,30 +48,17 @@ class CompositionAnalysesSuite(WithFields):
         Location where the reports will be posted.
         """,
         __default_value__=os.path.join(os.getcwd(), "reports"))
-    bin_size_cortical_thickness = Field(
-        """
-        Size of bins in um to be used to bin depth / height.
-        """,
-        __default_value__=100.)
-    maximum_cortical_thickness = Field(
-        """
-        Maximum cortical thickness will be used to measure phenomena by depth
-        or height.
-        """,
-        __default_value__=2500.)
     morphologies_interneurons = Field(
         """
         Interneuron morphologies that are stained by markers",
         """,
         __default_value__=["BP", "BTC", "CHC", "DB", "LBC", "NBC", "MC", "SBC", "SSC"])
+    number_cortical_thickness_bins = Field(
+        """
+        Number of bins for by depth / height analyses.
+        """,
+        __default_value__=50)
 
-
-    @lazyfield
-    def number_cortical_thickness_bins(self):
-        """..."""
-        return\
-            1 + np.floor(
-                self.maximum_cortical_thickness / self.bin_size_cortical_thickness)
 
     class AdapterInterface(Interface):
         """
@@ -250,18 +237,16 @@ class CompositionAnalysesSuite(WithFields):
         def _regions_and_depths(adapter, circuit_model):
             regions =\
                 adapter.get_brain_regions(circuit_model)
-            depths =\
-                np.linspace(
-                    0.,
-                    self.maximum_cortical_thickness,
-                    self.number_cortical_thickness_bins)
+            number_bins =\
+                self.number_cortical_thickness_bins
+            positions =\
+                np.linspace(0., 1., number_bins + 1)
             return\
                 pd.DataFrame({
-                    ("region", ""): [r for r in regions for _ in depths],
-                    ("depth", "begin"): [d for _ in regions for d in depths],
-                    ("depth", "end"): [d + self.bin_size_cortical_thickness
-                                  for _ in regions for d in depths]})
-
+                    ("region", ""): [r for r in regions for _ in range(number_bins)],
+                    ("depth", "begin"): [d for _ in regions for d in positions[:-1]],
+                    ("depth", "end"): [d  for _ in regions for d in positions[1:]]})
+                                  
         return\
             Parameters(
                 _regions_and_depths,
@@ -487,6 +472,8 @@ class CompositionAnalysesSuite(WithFields):
                 phenomenon=self.phenomenon_cell_density,
                 AdapterInterface=self.AdapterInterface,
                 measurement_parameters=self.parameters_regions_and_depths,
+                sampling_methodology=terminology.sampling_methodology.random,
+                sample_size=self.sample_size,
                 sample_measurement=self.measurement_cell_density_using_sampling,
                 plotter=LinePlot(
                     xvar=("depth", "begin"),
