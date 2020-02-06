@@ -266,94 +266,24 @@ class BrainCircuitAnalysis(
                 for label, reference in reference_data.items()},
             provenance_model=provenance_circuit)
 
-    def _resolve_adapter_and_model(self,  *args):
-        """
-        Resolve adapter and model.
-        """
-        a = len(args)
-
-        if a == 2:
-            return (args[1], args[0])
-
-        if a == 1:
-            try: 
-                return (self.adapter, args[0])
-            except AttributeError as error:
-                raise TypeError(
-                    """
-                    With only 1 argument, _resolve_adapter_and_model() assumes
-                    that the adapter is defined:
-                    {}
-                    """.format(error))
-        raise TypeError(
-            """
-            _resolve_adapter_and_model() takes 1 or 2 positional arguments,
-            but {} were given.
-            """.format(a))
-
     def _resolve_adapter(self, adapter=None):
         """
         Resolve which adapter to use.
         """
         return adapter if adapter else self.adapter
 
-    def comparison(self,
-            alternative,
-            reference,
-            adapter_alternative=None,
-            adapter_reference=None,
-            *args, **kwargs):
-        """
-        Compare an alternative model to a reference model.
-        """
-        measurement_alternative =\
-            self.get_measurement(
-                alternative,
-                adapter_alternative,
-                *args, **kwargs)
-        measurement_reference =\
-            self.get_measurement(
-                reference,
-                adapter_reference,
-                *args, **kwargs)
-        report =\
-            self.get_report(
-                self._with_reference_data(
-                    measurement_alternative,
-                    measurement_reference),
-                *args, **kwargs)
-        try:
-            return self.reporter.post(report)
-        except AttributeError:
-            return report
-
-    def validation(self,
-            circuit_model,
-            adapter=None,
-            *args, **kwargs):
-        """
-        Validation of a model against reference data.
-        """
-        assert not self.reference_data.empty,\
-            "Validation needs reference data."
-        return\
-            self.__call__(
-                circuit_model,
-                adapter,
-                *args, **kwargs)
-
     def __call__(self,
-            *args,
+            model,
+            adapter=None,
             author=Author.anonymous,
             **kwargs):
         """
         Make this `Analysis` masquerade as a function.
 
         """
-        adapter, circuit_model = self._resolve_adapter_and_model(*args)
         measurement =\
             self.get_measurement(
-                circuit_model,
+                model,
                 adapter=adapter,
                 **kwargs)
         reference_data =\
@@ -370,7 +300,7 @@ class BrainCircuitAnalysis(
                         reference_data),
                     caption=measurement["method"]),
                 reference_data=reference_data,
-                provenance_circuit=adapter.get_provenance(circuit_model))
+                provenance_circuit=adapter.get_provenance(model))
 
         try:
             return self.reporter.post(report)

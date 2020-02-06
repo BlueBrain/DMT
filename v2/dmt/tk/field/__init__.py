@@ -65,10 +65,6 @@ class WithFields:
                 for label, value in args[0].items()
                 if value is not None})
 
-        LOGGER.debug(
-            "Initialize {} with field-values".format(self.__class__.__name__),
-            "\n".join("{}: {}".format(l, v) for l, v in kwargs.items()))
-                      
         def __check_validity(field, value):
             """..."""
             try:
