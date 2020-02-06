@@ -60,8 +60,15 @@ class WithFields:
         Initialize Me
         """
         if len(args) == 1 and isinstance(args[0], Mapping):
-            kwargs.update(args[0])
+            kwargs.update({
+                label: value
+                for label, value in args[0].items()
+                if value is not None})
 
+        LOGGER.debug(
+            "Initialize {} with field-values".format(self.__class__.__name__),
+            "\n".join("{}: {}".format(l, v) for l, v in kwargs.items()))
+                      
         def __check_validity(field, value):
             """..."""
             try:
