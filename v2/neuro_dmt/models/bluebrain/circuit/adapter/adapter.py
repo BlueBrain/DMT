@@ -210,7 +210,7 @@ class BlueBrainCircuitAdapter(WithFields):
             circuit_model=None):
         """..."""
         circuit_model = self._resolve(circuit_model)
-        return circuit_model.provenance
+        return circuit_model.provenance.field_dict
 
     def get_brain_regions(self,
             circuit_model=None):

@@ -58,25 +58,25 @@ class CircuitAnalysisReport(Report):
     """
     Add some circuit analysis specific attributes to `Report`
     """
-    model = Field(
+    provenance_model = Field(
         """
         Either a `class CircuitProvenance` instance or a dict providing values
         for the fields of `class CircuitProvenance`.
         """,
-        __default_value__=CircuitProvenance())
+        __as__=CircuitProvenance)
 
     @lazyfield
     def field_values(self):
         """..."""
         fields = super().field_values
         fields.update(dict(
-            animal=self.model.animal,
-            age=self.model.age,
-            brain_region=self.model.brain_region,
-            uri=self.model.uri,
-            references=self.model.references,
-            date_release=self.model.date_release,
-            authors_circuit=self.modelauthors
+            animal=self.provenance_model.animal,
+            age=self.provenance_model.age,
+            brain_region=self.provenance_model.brain_region,
+            uri=self.provenance_model.uri,
+            references=self.references,
+            date_release=self.provenance_model.date_release,
+            authors_circuit=self.provenance_model.authors
         ))
         return fields
 

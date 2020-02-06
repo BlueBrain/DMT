@@ -25,7 +25,10 @@ class BrainCircuitAnalysis(
     """
     A base class for all circuit analyses.
     """
-
+    phenomenon = Field(
+        """
+        An object providing the phenomenon analyzed.
+        """)
 
     @property
     def _has_reference_data(self):
@@ -240,7 +243,7 @@ class BrainCircuitAnalysis(
             author=Author.anonymous,
             figures=None,
             reference_data=None,
-            provenance_circuit=CircuitProvenance()):
+            provenance_circuit={}):
         """
         Get a report for the given `measurement`.
         """
@@ -248,8 +251,6 @@ class BrainCircuitAnalysis(
             reference_data if reference_data is not None\
             else self.reference_data
 
-        provenance_circuit["authors_circuit"] =\
-            provenance_circuit.pop("authors", ["Not Available"])
         return self.report(
             author=author,
             phenomenon=self.phenomenon.label,
@@ -263,7 +264,7 @@ class BrainCircuitAnalysis(
             references={
                 label: reference.citation
                 for label, reference in reference_data.items()},
-            provenance_circuit=provenance_circuit)
+            provenance_model=provenance_circuit)
 
     def _resolve_adapter_and_model(self,  *args):
         """
