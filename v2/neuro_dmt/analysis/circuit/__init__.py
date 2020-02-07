@@ -6,7 +6,7 @@ import os
 from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
-from dmt.analysis.structured import StructuredAnalysis
+from dmt import analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, LambdaField, lazyfield
 from dmt.tk.author import Author
@@ -20,11 +20,13 @@ from neuro_dmt.analysis.reporting import\
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 
-class BrainCircuitAnalysis(
-        StructuredAnalysis):
+
+class StructuredAnalysis(
+        analysis.StructuredAnalysis):
     """
     A base class for all circuit analyses.
     """
+    #jinga
     phenomenon = Field(
         """
         An object providing the phenomenon analyzed.
@@ -306,3 +308,6 @@ class BrainCircuitAnalysis(
             return self.reporter.post(report)
         except AttributeError:
             return report
+
+
+BrainCircuitAnalysis = StructuredAnalysis
