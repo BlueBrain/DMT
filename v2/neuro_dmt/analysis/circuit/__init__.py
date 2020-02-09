@@ -107,9 +107,14 @@ class StructuredAnalysis(
                 deterministic or stochastic, or the number of samples to
                 measure for a single set of parameters.)
                 """
-                return\
-                    self.sample_measurement(
-                        circuit_model, adapter, **kwargs)
+                try:
+                    return\
+                        self.sample_measurement(
+                            circuit_model, adapter, **kwargs)
+                except TypeError:
+                    return\
+                        self.sample_measurement(
+                            adapter, circuit_model, **kwargs)
 
             try:
                 _adapter_measurement_method.__method__ =\
@@ -140,11 +145,10 @@ class StructuredAnalysis(
         using_random_samples=\
             self.sampling_methodology == terminology.sampling_methodology.random
         parameter_values =\
-            self.measurement_parameters\
-                .for_sampling(
+            self.measurement_parameters(
                     adapter,
                     circuit_model,
-                    size=self.sample_size if using_random_samples else 1)
+                    sample_size=self.sample_size if using_random_samples else 1)
         get_measurement =\
             self._get_measurement_method(adapter)
         measured_values = self\
@@ -204,7 +208,10 @@ class StructuredAnalysis(
         component, you will have to override However, if you change the type of that
         component, you will have to override.
         """
-        return self.measurement_parameters.values.shape[1]
+        try:
+            return self.measurement_parameters.number
+        except:
+            return np.nan
 
     @property
     def names_measurement_parameters(self):
