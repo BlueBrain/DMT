@@ -6,12 +6,13 @@ import pandas
 import matplotlib.pyplot as plt
 import seaborn
 from dmt.tk.plotting.utils import pivot_table
-from dmt.tk.field import Field, LambdaField, WithFields
+from dmt.tk.field import Field, LambdaField
 from dmt.data.observation import measurement
 from . import golden_aspect_ratio
 from .figure import Figure
+from .import BasePlotter
 
-class HeatMap(WithFields):
+class HeatMap(BasePlotter):
     """
     Define the requirements and behavior of a heatmap.
     """
@@ -30,25 +31,6 @@ class HeatMap(WithFields):
         Variable (column in the data-frame to plot) that provides the intensity
         value of the heat-map cells.
         """)
-    xlabel = LambdaField(
-        """
-        The label to be displayed along the y-axis.
-        Default value of an empty string will cause `xvar` to be displayed
-        as `xlabel`.
-        """,
-        lambda self: self.xvar)
-    ylabel = LambdaField(
-        """
-        The label to be displayed along the y-axis.
-        Default value of an empty string will cause `yvar` to be displayed
-        as `ylabel`.
-        """,
-        lambda self: self.yvar)
-    height_figure = Field(
-        """
-        Height of the figure.
-        """,
-        __default_value__ = 8.)
     aspect_ratio_figure = Field(
         """
         Aspect ratio width / height for the figure.
