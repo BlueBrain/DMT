@@ -15,9 +15,11 @@ from dmt.analysis import Analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from dmt.tk.author import Author
+from dmt.tk.parameters import Parameters
+from dmt.tk.stats import Statistics
+from dmt.tk.plotting import Plotter
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.string_utils import paragraphs
-from dmt.tk.parameters import Parameters
 from dmt.tk.collections.dataframes import make_dataframe_hashable
 from dmt.tk import terminology
 
@@ -116,6 +118,7 @@ class StructuredAnalysis(Analysis):
         instance used by this `BrainCircuitAnalysis` instance should have those
         set as instance attributes.
         """,
+        __as__=Plotter,
         __required__=False)
     stats = Field(
         """
@@ -123,6 +126,7 @@ class StructuredAnalysis(Analysis):
         made in this analysis. This object may be just a function that takes
         this analysis' measurements as an argument.
         """,
+        __as__=Statistics,
         __default_value__=nothing)
     verdict = Field(
         """
