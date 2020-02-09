@@ -52,7 +52,7 @@ class PostSynapticPotentialAnalysis(StructuredAnalysis):
         """
         raise NotImplementedError
 
-    def trace(self, adapter, model, pathway, connection):
+    def sample_measurement(self, adapter, model, pathway, connection):
         """..."""
         return adapter.get_trace(model, pathway, connection)
 

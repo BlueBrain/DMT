@@ -124,11 +124,11 @@ class StructuredAnalysis(
                 _adapter_measurement_method.__method__ =\
                     "Not provided in the sample measurement method."
 
-            return _adapter_measurement_method
+            return\
+                _adapter_measurement_method
         else:
             return\
-                paragraphs(
-                    self._get_adapter_measurement_method(adapter))
+                self._get_adapter_measurement_method(adapter)
 
         raise RuntimeError(
             "Unreachable point in code.")
