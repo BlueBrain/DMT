@@ -35,7 +35,9 @@ class SimulationPSP(WithFields):
     class Pathway(WithFields):
         """..."""
         class Constraints(WithFields):
-            """Constraints to impose when simulating a pathway."""
+            """
+            Constraints to impose when simulating a pathway.
+            """
             unique_gids = Field(
                 """
                 Boolean, true if unique gids should be used in sampling 
