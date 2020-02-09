@@ -135,6 +135,14 @@ class StructuredAnalysis(Analysis):
         measurements as an argument.
         """,
         __default_value__=always_pass)
+    results = Field(
+        """
+        A callable on relevant parameters that will return results for a
+        run of this analysis.
+        """,
+        __default_value__=lambda *args, **kwargs: """
+        Results are presented in the figure.
+        """)
     reference_data = Field(
         """
         A pandas.DataFrame containing reference data to compare with the

@@ -332,7 +332,7 @@ class ModelSimulationPSP(WithFields):
             for name_file in os.listdir(self.path_simulation_traces)
             if "traces" in name_file and name_file.split('.')[-1] == "h5"]
 
-    def get_connections(self, pathway, parsed=False):
+    def connections(self, pathway, parsed=False):
         """..."""
         data_sim =\
             self.simulation_data(pathway)
@@ -347,9 +347,19 @@ class Adapter:
     """
     Adapter of the model for simulation analysis.
     """
+    @staticmethod
     def get_pathways(model):
         """..."""
         return model.pathways
 
+    @staticmethod
     def get_connections(model, pathway):
-        raise NotImplementedError
+        return model.connections(pathway)
+
+    @staticmethod
+    def get_trace(model, pathway, connection):
+        """..."""
+        return\
+            model.simulation_data(pathway)\
+                 .traces\
+                 .loc[connection]

@@ -249,6 +249,7 @@ class StructuredAnalysis(
 
     def get_report(self,
             measurement,
+            results,
             author=Author.anonymous,
             figures=None,
             reference_data=None,
@@ -268,7 +269,7 @@ class StructuredAnalysis(
             methods=self.methods,
             measurement=measurement,
             figures=figures,
-            results="Results are presented in the figure.",
+            results=results,
             discussion="To be provided after a review of the results",
             references={
                 label: reference.citation
@@ -302,6 +303,7 @@ class StructuredAnalysis(
         report =\
             self.get_report(
                 measurement["data"],
+                self.results(adapter, model, measurement),
                 author=author,
                 figures=self.get_figures(
                     data=self._with_reference_data(

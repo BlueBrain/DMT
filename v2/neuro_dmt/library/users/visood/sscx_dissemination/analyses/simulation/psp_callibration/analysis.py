@@ -4,14 +4,15 @@ Analyze PSP amplitudes, obtained from a library.
 
 from dmt.tk.parameters import Parameters
 from dmt.model.interface import Interface, interfacemethod
+from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.field import Field, lazyfield, LambdaField, ABCWithFields
 from neuro_dmt.analysis.circuit import StructuredAnalysis
 
-class PostSynapticPotentialAnalysis(ABCWithFields):
+class PostSynapticPotentialAnalysis(StructuredAnalysis):
     """
     Specialize StructuredAnalysis for an analysis of PSP traces.
     """
-
+    
     @interfacemethod
     def get_pathways(adapter, model):
         """
@@ -115,22 +116,43 @@ class PostSynapticPotentialAnalysis(ABCWithFields):
                               .filter(lambda trace: not self._has_spiked(trace))\
                               .agg(self._amplitude)\
                               .groupby(["pathway", "connection"])\
-                              agg(["size", "mean", "std"])
+                              .agg(["size", "mean", "std"])
 
-
-    @lazyfield
-    def analysis_amplitudes(self):
+    def results(self, adapter, model, measurement_traces):
         """..."""
-        return StructuredAnalysis(
-            introduction="""
-            Analysis of PSP amplitudes.
-            """,
-            methods="""
-            """)
+        return\
+            """
+            Statistics for Amplitudes
+            -------------------------------------------------------------------
+            {}
+            -------------------------------------------------------------------
 
+            Statistics for Spikes
+            -------------------------------------------------------------------
+            -------------------------------------------------------------------
+            {}
+            """.format(
+                self.statistics_amplitudes(measurement_traces),
+                self.statistics_spikes(measurement_traces))
 
+    #@lazyfield
+    # def analysis_amplitudes(self):
+    #     """..."""
+    #     def results(adapter, model, measurement_traces):
+    #         """..."""
+    #         return\
+    #             "{}".format(self.statistics_amplitudes(measurement_traces))
 
-
-
-
-
+    #     return StructuredAnalysis(
+    #         introduction="""
+    #         Analysis of PSP amplitudes.
+    #         """,
+    #         methods="""
+    #         For each pathway, {} simulations were run for each of the
+    #         {} randomly sampled connections in that pathway.
+    #         """,
+    #         phenomenon=Phenomenon(
+    #             "PSP Amplitude",
+    #             description="PSP amplitude",
+    #             group="Simulation"),
+    #         AdapterInterface)
