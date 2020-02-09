@@ -216,7 +216,7 @@ def get_interface(attributes_or_class, name=None):
      if isinstance(attributes_or_class, type):
           attributes ={
                attribute: getattr(attributes_or_class, attribute)
-               for attribute in dir(attributes_or_class)}
+               for attribute in dir(attributes_or_class).items()}
      elif isinstance(attributes_or_class, dict):
           attributes = attributes_or_class
      else:

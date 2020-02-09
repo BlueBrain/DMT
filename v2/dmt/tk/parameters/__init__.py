@@ -99,6 +99,15 @@ class Parameters(WithFields):
             return list(values) if isinstance(values, GeneratorType) else values
         return self.values
 
+    def number(self):
+        """
+        Number of parameters
+        """
+        try:
+            return self.values.shape[1]
+        except (AttributeError, TypeError):
+            return np.nan
+
     def _set_labels(self, values):
         """
         Set labels affirming to `values`, but only if they are not already set,
@@ -203,7 +212,6 @@ class Parameters(WithFields):
         dataframe = self.as_dataframe(parameter_values)
         return dataframe.set_index(list(dataframe.columns.values)).index
 
-
     @lazyproperty
     def variables(self):
         """
@@ -214,8 +222,11 @@ class Parameters(WithFields):
             raise TypeError("Parameters lack labels.")
         return list(self.labels)
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, sample_size=1):
         """
-        Call Me
+
+        Returns
+        -----------
+        Each parameter set repeated `sample_size` number of times. 
         """
-        pass
+        return self.for_sampling(*args, size=sample_size)
