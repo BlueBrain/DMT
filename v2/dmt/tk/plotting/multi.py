@@ -66,3 +66,10 @@ class MultiPlot(WithFields):
                  caption,
                  *args, **kwargs))
              for value_mvar in values_mvar])
+
+
+    def __call__(self, *args, **kwargs):
+        """
+        Behave like a Plotter.
+        """
+        return self.get_figures(*args, **kwargs)
