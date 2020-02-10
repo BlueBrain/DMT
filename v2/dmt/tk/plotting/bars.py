@@ -65,6 +65,7 @@ class Bars(BasePlotter):
             graphic,
             caption=caption)
 
+
     def plot(self,
             *args, **kwargs):
         """

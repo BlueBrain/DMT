@@ -2,15 +2,11 @@
 Plotting for DMT
 """
 from abc import abstractmethod
-import matplotlib
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib import pylab
-from matplotlib.font_manager import FontProperties
-from dmt.data.observation import measurement
-from dmt.tk.field import Field, LambdaField, lazyfield, ABCWithFields
-
+from dmt.tk.field import Field, LambdaField,  ABCWithFields
 
 golden_aspect_ratio = 0.5 * (1. + np.sqrt(5)) 
 
@@ -95,29 +91,28 @@ class BasePlotter(ABCWithFields):
         """,
         __default_value__="sd")
 
+    @abstractmethod
+    def get_figure(self, *args, **kwargds):
+        """Every `Plotter` must implement."""
+        raise NotImplementedError
+
+    def get_figures(self, *args, **kwargs):
+        """
+        Package figure into an OrderedDict.
+        """
+        return OrderedDict([
+            (self.yvar, self.get_figure(*args, **kwargs))])
+
     def __call__(self,
             *args, **kwargs):
         """
         Make this class a callable,
         so that it can masquerade as a function!
         """
-        return self.get_figure(*args, **kwargs)
-
-
-def Plotter(instance_or_callable):
-    if isinstance(instance_or_callable, BasePlotter):
-        return instance_or_callable
-    if callable(instance_or_callable):
-        return instance_or_callable
-    raise TypeError(
-        """
-        A Plotter is either an instance of a `BasePlotter`,
-        or a callable that takes data and plots it.
-        """)
+        return self.get_figures(*args, **kwargs)
 
 
 from .bars import Bars
 from .crosses import Crosses
 from .heatmap import HeatMap
 from .lines import LinePlot
-

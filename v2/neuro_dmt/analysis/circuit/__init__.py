@@ -10,13 +10,10 @@ from dmt import analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import Field, LambdaField, lazyfield
 from dmt.tk.author import Author
-from dmt.tk.parameters import Parameters
-from dmt.tk.reporting import Reporter
 from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
 from neuro_dmt.analysis.reporting import\
-    CircuitAnalysisReport,\
-    CircuitProvenance
+    CircuitAnalysisReport
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 
@@ -26,7 +23,17 @@ class StructuredAnalysis(
     """
     A base class for all circuit analyses.
     """
-    #jinga
+    figures = LambdaField(
+        """
+        An alias for `Field plotter`, which will be deprecated.
+        A class instance or a module that has `plot` method that will be used to
+        plot the results of this analysis. The plotter should know how to 
+        interpret the data provided. For example, the plotter will have to know
+        which columns are the x-axis, and which the y-axis. The `Plotter`
+        instance used by this `BrainCircuitAnalysis` instance should have those
+        set as instance attributes.
+        """,
+        lambda self: self.plotter)
     phenomenon = Field(
         """
         An object providing the phenomenon analyzed.
@@ -227,25 +234,25 @@ class StructuredAnalysis(
             return []
         return None
 
-    def get_figures(self,
-            data,
-            caption=None):
-        """
-        Get a figure for the analysis of `circuit_model`.
+    # def figures(self,
+    #         data,
+    #         caption=None):
+    #     """
+    #     Get a figure for the analysis of `circuit_model`.
 
-        Arguments
-        ----------
-        `figure_data`: The data frame to make a figure for.
-        """
-        try:
-            return self.plotter.get_figures(data, caption=caption)
-        except AttributeError:
-            return {
-                "figure": self.plotter.get_figure(data, caption=caption)}
-        raise RuntimeError(
-            """
-            Execution of `get_figures(...)` should not reach here.
-            """)
+    #     Arguments
+    #     ----------
+    #     `figure_data`: The data frame to make a figure for.
+    #     """
+    #     try:
+    #         return self.plotter.get_figures(data, caption=caption)
+    #     except AttributeError:
+    #         return {
+    #             "figure": self.plotter.get_figure(data, caption=caption)}
+    #     raise RuntimeError(
+    #         """
+    #         Execution of `get_figures(...)` should not reach here.
+    #         """)
 
     def get_report(self,
             measurement,
@@ -305,7 +312,7 @@ class StructuredAnalysis(
                 measurement["data"],
                 self.results(adapter, model, measurement),
                 author=author,
-                figures=self.get_figures(
+                figures=self.figures(
                     data=self._with_reference_data(
                         measurement["data"],
                         reference_data),

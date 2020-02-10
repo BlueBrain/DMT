@@ -17,7 +17,7 @@ from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
 from dmt.tk.stats import Statistics
-from dmt.tk.plotting import Plotter
+from dmt.tk.plotting import BasePlotter
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.collections.dataframes import make_dataframe_hashable
@@ -109,6 +109,7 @@ class StructuredAnalysis(Analysis):
         elemental value such as integer, or floating point number.
         """,
         __default_value__=primitive_type_measurement_collection)
+    
     plotter = Field(
         """
         A class instance or a module that has `plot` method that will be used to
@@ -118,7 +119,6 @@ class StructuredAnalysis(Analysis):
         instance used by this `BrainCircuitAnalysis` instance should have those
         set as instance attributes.
         """,
-        __as__=Plotter,
         __required__=False)
     stats = Field(
         """
