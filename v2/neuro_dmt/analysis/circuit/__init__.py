@@ -3,6 +3,7 @@ Brain circuit analyses and validations.
 """
 
 import os
+from tqdm import tqdm
 from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
@@ -163,7 +164,7 @@ class StructuredAnalysis(
                 (p, get_measurement(circuit_model,
                                     sampling_methodology=self.sampling_methodology,
                                     **p, **kwargs))
-                for p in parameter_values)\
+                for p in tqdm(parameter_values))\
             .rename(columns={"value": self.phenomenon.label})
         measurement =\
               measured_values.reset_index()\
@@ -256,7 +257,6 @@ class StructuredAnalysis(
 
     def get_report(self,
             measurement,
-            results,
             author=Author.anonymous,
             figures=None,
             reference_data=None,
@@ -272,12 +272,13 @@ class StructuredAnalysis(
             author=author,
             phenomenon=self.phenomenon.label,
             abstract=self.abstract,
-            introduction=self.introduction.format(**provenance_circuit),
-            methods=self.methods,
+            introduction=self.introduction(provenance_circuit)["content"],
+            methods=self.methods(provenance_circuit)["content"],
             measurement=measurement,
             figures=figures,
-            results=results,
-            discussion="To be provided after a review of the results",
+            results=self.results(provenance_circuit)["content"],
+            discussion=self.discussion(provenance_circuit)["content"],
+            conclusion=self.conclusion(provenance_circuit)["content"],
             references={
                 label: reference.citation
                 for label, reference in reference_data.items()},
@@ -307,10 +308,11 @@ class StructuredAnalysis(
             kwargs.pop(
                 "reference_data",
                 self.reference_data)
+        provenance_circuit =\
+            adapter.get_provenance(model)
         report =\
             self.get_report(
                 measurement["data"],
-                self.results(adapter, model, measurement),
                 author=author,
                 figures=self.figures(
                     data=self._with_reference_data(
@@ -318,7 +320,7 @@ class StructuredAnalysis(
                         reference_data),
                     caption=measurement["method"]),
                 reference_data=reference_data,
-                provenance_circuit=adapter.get_provenance(model))
+                provenance_circuit=provenance_circuit)
 
         try:
             return self.reporter.post(report)

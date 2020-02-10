@@ -19,6 +19,7 @@ from dmt.tk.parameters import Parameters
 from dmt.tk.stats import Statistics
 from dmt.tk.plotting import BasePlotter
 from dmt.tk.reporting import Report, Reporter
+from dmt.tk.reporting.section import Section
 from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.collections.dataframes import make_dataframe_hashable
 from dmt.tk import terminology
@@ -59,12 +60,15 @@ class StructuredAnalysis(Analysis):
         """
         A scientific introduction to this analysis.
         """,
-        __default_value__="Not provided.")
+        __as__=Section.introduction,
+        __default_value__=Section.introduction("Not Provided"))
     methods = Field(
         """
         A description of the algorithm / procedure used to compute the results,
         and the experimental measurement reported in this analysis.
-        """)
+        """,
+        __as__=Section.methods,
+        __default_value__=Section.methods("Not Provided."))
     sampling_methodology = Field(
         """
         A tag indicating whether this analysis will make measurements on
@@ -109,7 +113,6 @@ class StructuredAnalysis(Analysis):
         elemental value such as integer, or floating point number.
         """,
         __default_value__=primitive_type_measurement_collection)
-    
     plotter = Field(
         """
         A class instance or a module that has `plot` method that will be used to
@@ -140,9 +143,22 @@ class StructuredAnalysis(Analysis):
         A callable on relevant parameters that will return results for a
         run of this analysis.
         """,
-        __default_value__=lambda *args, **kwargs: """
-        Results are presented in the figure.
-        """)
+        __as__=Section.results,
+        __default_value__="Results are presented in the figure")
+    conclusion = Field(
+        """
+        A callable on relevant parameters that will return conclusion for a
+        run of this analysis.
+        """,
+        __as__=Section.conclusion,
+        __default_value__="Conclusion will be provided after a review of the results.")
+    discussion = Field(
+        """
+        A callable on relevant parameters that will return conclusion for a
+        run of this analysis.
+        """,
+        __as__=Section.discussion,
+        __default_value__="Conclusion will be provided after a review of the results.")
     reference_data = Field(
         """
         A pandas.DataFrame containing reference data to compare with the
