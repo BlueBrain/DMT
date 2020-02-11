@@ -254,7 +254,8 @@ class StructuredAnalysis(
         return None
 
     def get_figures(self,
-            data,
+            measurement_model,
+            reference_data,
             caption=None):
         """
         Get a figure for the analysis of `circuit_model`.
@@ -263,7 +264,14 @@ class StructuredAnalysis(
         ----------
         `figure_data`: The data frame to make a figure for.
         """
-        return self.figures(data, caption=caption)
+        plotting_data =\
+            self._with_reference_data(
+                measurement_model["data"],
+                reference_data)
+        return\
+            self.figures(
+                plotting_data,
+                caption=caption)
 
     def get_report(self,
             measurement,
@@ -335,9 +343,8 @@ class StructuredAnalysis(
                 measurement["data"],
                 author=author,
                 figures=self.get_figures(
-                    data=self._with_reference_data(
-                        measurement["data"],
-                        reference_data),
+                    measurement,
+                    reference_data,
                     caption=measurement["method"]),
                 reference_data=reference_data,
                 provenance_circuit=provenance_circuit)
