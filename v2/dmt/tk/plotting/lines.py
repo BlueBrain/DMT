@@ -16,6 +16,21 @@ class LinePlot(BasePlotter):
     """
     Define the requirements and behavior of a line plot.
     """
+    fmt = Field(
+        """
+        Point type to be plotted.
+        """,
+        __default_value__='o')
+    gvar_order = Field(
+        """
+        An order on group variables, 
+        """,
+        __default_value__=[])
+    gvar_kwargs = Field(
+        """
+        Customize plotting of group variable data.
+        """,
+        __default_value__={})
     drawstyle = Field(
         """
         Specify how to draw the lines that join the (x, y) points.
@@ -23,6 +38,11 @@ class LinePlot(BasePlotter):
         are steps.
         """,
         __default_value__="default")
+    marker_size = Field(
+        """
+        Size of the markers.
+        """,
+        __default_value__=10)
 
     def get_dataframe(self, data, dataset=None):
         """
@@ -56,12 +76,13 @@ class LinePlot(BasePlotter):
             return make_name(
                 '_'.join(label) if isinstance(label, tuple) else label,
                 separator='_')
-
         grid = seaborn\
             .FacetGrid(
                 self.get_dataframe(data, dataset),
                 col=self.fvar if self.fvar else None,
                 hue=self.gvar if self.gvar else None,
+                hue_order=self.gvar_order if self.gvar_order else None,
+                hue_kws=self.gvar_kwargs if self.gvar_kwargs else None,
                 col_wrap=self.number_columns,
                 height=self.height_figure,
                 aspect=self.aspect_ratio_figure,
@@ -71,7 +92,8 @@ class LinePlot(BasePlotter):
             self.xvar,
             self.yvar,
             drawstyle=self.drawstyle,
-            alpha=0.7
+            alpha=0.7,
+            ms=self.marker_size,
         ).set_titles(
             _make_name(self.fvar) + "\n{col_name} "
         ).add_legend(
@@ -80,7 +102,7 @@ class LinePlot(BasePlotter):
             grid.set(
                 xlabel=self.xlabel,
                 ylabel=self.ylabel,
-                title=kwargs.pop("title", "")),
+                title=self.title),
             caption=caption)
 
     def plot(self,

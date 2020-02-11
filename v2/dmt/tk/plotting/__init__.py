@@ -6,6 +6,7 @@ from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn
 from dmt.tk.field import Field, LambdaField,  ABCWithFields
 
 golden_aspect_ratio = 0.5 * (1. + np.sqrt(5)) 
@@ -66,6 +67,16 @@ class BasePlotter(ABCWithFields):
         and hence there will be only one face in the figure.
         """,
         __default_value__="")
+    phenomenon = LambdaField(
+        """
+        Phenomenon studied.
+        """,
+        lambda self: self.yvar)
+    name = LambdaField(
+        """
+        Name of the file to save the figure to.
+        """,
+        lambda self: self.phenomenon)
     number_columns = LambdaField(
         """
         Number of columns in the figure.
@@ -90,6 +101,31 @@ class BasePlotter(ABCWithFields):
         and error bars will not be drawn.
         """,
         __default_value__="sd")
+    font_size = Field(
+        """
+        Size of the font to use.
+        """,
+        __default_value__=20)
+    title_size = Field(
+        """
+        Size of the title.
+        """,
+        __default_value__=20)
+    axes_labelsize = Field(
+        """
+        Size of axes labels.
+        """,
+        __default_value__=20)
+
+
+    def _set_rc_params(self):
+        """..."""
+        seaborn.set_context(
+            "paper",
+            rc={"font.size":self.font_size,
+                "axes.titlesize":self.title_size,
+                "axes.labelsize":self.axes_labelsize})
+
 
     @abstractmethod
     def get_figure(self, *args, **kwargds):
@@ -101,7 +137,7 @@ class BasePlotter(ABCWithFields):
         Package figure into an OrderedDict.
         """
         return OrderedDict([
-            (self.yvar, self.get_figure(*args, **kwargs))])
+            (self.name, self.get_figure(*args, **kwargs))])
 
     def __call__(self,
             *args, **kwargs):
@@ -109,6 +145,7 @@ class BasePlotter(ABCWithFields):
         Make this class a callable,
         so that it can masquerade as a function!
         """
+        self._set_rc_params()
         return self.get_figures(*args, **kwargs)
 
 

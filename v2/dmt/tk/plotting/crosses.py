@@ -155,16 +155,3 @@ class Crosses(BasePlotter):
             .get_figure(
                 data,
                 *args, **kwargs)
-
-    def __call__(self,
-                 data,
-                 caption=None):
-        """
-        Make this class a callable,
-        so that it can masquerade as a function!
-
-        Arguments
-        -----------
-        data : A dict mapping dataset to dataframe.
-        """
-        return self.get_figure(data, caption=caption)
