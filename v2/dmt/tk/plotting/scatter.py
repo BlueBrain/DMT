@@ -12,7 +12,7 @@ from  .import BasePlotter
 from .figure import Figure
 
 
-class LinePlot(BasePlotter):
+class ScatterPlot(BasePlotter):
     """
     Define the requirements and behavior of a line plot.
     """
@@ -31,18 +31,21 @@ class LinePlot(BasePlotter):
         Customize plotting of group variable data.
         """,
         __default_value__={})
-    drawstyle = Field(
-        """
-        Specify how to draw the lines that join the (x, y) points.
-        Default value join the points with simple points. Other possibilities
-        are steps.
-        """,
-        __default_value__="default")
-    marker_size = Field(
+    markers = Field(
         """
         Size of the markers.
         """,
-        __default_value__=10)
+        __default_value__={})
+    svar = Field(
+        """
+        Variable in the dataframe to determine style of the scattered points.
+        """,
+        __default_value__="")
+    size_markers = Field(
+        """
+        Size for all markers
+        """,
+        __default_value__=40)
 
     def get_dataframe(self, data, dataset=None):
         """
@@ -51,7 +54,7 @@ class LinePlot(BasePlotter):
         if dataset:
             raise NotImplementedError(
             """
-                `LinePLot.get_figure(...)` current version does not support
+                `ScatterPlot.get_figure(...)` current version does not support
                 argument `dataset`.
                 """)
         if isinstance(data, (pandas.Series, pandas.DataFrame)):
@@ -72,39 +75,57 @@ class LinePlot(BasePlotter):
         data : Either a dataframe or a dict mapping dataset to dataframe.
         dataset : dataset or list of dataset names whose data will be plotted.
         """
+        self._set_rc_params()
+        plt.figure(
+            figsize=(self.aspect_ratio_figure * self.height_figure,
+                     self.height_figure))
         def _make_name(label):
             return make_name(
                 '_'.join(label) if isinstance(label, tuple) else label,
                 separator='_')
         dataframe =\
             self.get_dataframe(data, dataset)
-        grid = seaborn\
-            .FacetGrid(
-                dataframe,
-                col=self.fvar if self.fvar else None,
-                hue=self.gvar if self.gvar else None,
-                hue_order=self.gvar_order if self.gvar_order else None,
-                hue_kws=self.gvar_kwargs if self.gvar_kwargs else None,
-                col_wrap=self.number_columns,
-                height=self.height_figure,
-                aspect=self.aspect_ratio_figure,
-                legend_out=True)
-        grid.map(
-            seaborn.lineplot,
-            self.xvar,
-            self.yvar,
-            drawstyle=self.drawstyle,
-            alpha=0.7,
-            ms=self.marker_size
-        ).set_titles(
-            _make_name(self.fvar) + "\n{col_name} "
-        ).add_legend(
-            title=_make_name(self.gvar))
-        return Figure(
-            grid.set(
+        # grid = seaborn\
+        #     .FacetGrid(
+        #         dataframe,
+        #         col=self.fvar if self.fvar else None,
+        #         hue=self.gvar if self.gvar else None,
+        #         hue_order=self.gvar_order if self.gvar_order else None,
+        #         hue_kws=self.gvar_kwargs if self.gvar_kwargs else None,
+        #         col_wrap=self.number_columns,
+        #         height=self.height_figure,
+        #         aspect=self.aspect_ratio_figure,
+        #         legend_out=True)
+        # grid.map(
+        #     seaborn.scatterplot,
+        #     self.xvar,
+        #     self.yvar,
+        #     style=self.svar if self.svar else None,
+        #         markers=self.markers if self.markers else None,
+        #     alpha=0.7
+        # ).set_titles(
+        #     _make_name(self.fvar) + "\n{col_name} "
+        # ).add_legend(
+        #     title=_make_name(self.gvar))
+        # graphic =\
+        #     grid.set(
+        #         xlabel=self.xlabel,
+        #         ylabel=self.ylabel,
+        #     title=self.title)
+        graphic =\
+            seaborn.scatterplot(
+                x=self.xvar,
+                y=self.yvar,
+                style=self.svar,
+                markers=self.markers,
+                hue=self.gvar,
+                data=dataframe,
+                s=self.size_markers
+            ).set(
                 xlabel=self.xlabel,
-                ylabel=self.ylabel,
-                title=self.title),
+                ylabel=self.ylabel)
+        return Figure(
+            graphic,
             caption=caption)
 
     def plot(self,
