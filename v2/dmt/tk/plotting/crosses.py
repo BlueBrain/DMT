@@ -7,7 +7,7 @@ import matplotlib.pylab as plt
 import pandas as pd
 import seaborn
 from dmt.data.observation import measurement
-from dmt.tk.field import Field, lazyfield
+from dmt.tk.field import Field, lazyfield, LambdaField
 from .import golden_aspect_ratio
 from .figure import Figure
 from .import BasePlotter
@@ -21,20 +21,16 @@ class Crosses(BasePlotter):
         Point type to be plotted.
         """,
         __default_value__='o')
-
-    @lazyfield
-    def xerr(self):
+    xerr = LambdaField(
         """
-        Column that will contain errors associated with `xvar`.
+        Column in the dataframe for plotting errors along X.
+        """,
+        lambda self: "{}_err".format(self.xvar))
+    yerr = LambdaField(
         """
-        return "{}_err".format(self.xvar)
-
-    @lazyfield
-    def yerr(self):
-        """
-        Column that will contain errors associated with `yvar`.
-        """
-        return "{}_err".format(self.yvar)
+        Column in the dataframe for plotting errors along Y.
+        """,
+        lambda self: "{}_err".format(self.yvar))
 
     @staticmethod
     def _get_phenomenon(dataframe_long):
@@ -56,12 +52,14 @@ class Crosses(BasePlotter):
                 """.format(datasets))
         phenomenon =\
             self._get_phenomenon(dataframe_long)
+        statistic = ["mean", "std"]
         dataframe_x =\
-            dataframe_long.xs(self.xvar, level="dataset")[phenomenon]\
-                     .dropna()
+            dataframe_long.xs(self.xvar, level="dataset")[phenomenon][statistic]\
+                          .dropna()
         dataframe_y =\
-            dataframe_long.xs(self.yvar, level="dataset")[phenomenon]\
-                     .dropna()
+            dataframe_long.xs(self.yvar, level="dataset")[phenomenon][statistic]\
+                     .dropna()\
+                     .reindex(dataframe_x.index)
         if dataframe_x.shape[0] != dataframe_y.shape[0]:
             raise TypeError(
                 """
@@ -155,11 +153,12 @@ class Crosses(BasePlotter):
         """
         return self\
             .get_figure(
-                dataframe,
+                data,
                 *args, **kwargs)
 
     def __call__(self,
-            data):
+                 data,
+                 caption=None):
         """
         Make this class a callable,
         so that it can masquerade as a function!
@@ -168,4 +167,4 @@ class Crosses(BasePlotter):
         -----------
         data : A dict mapping dataset to dataframe.
         """
-        return self.plot(data)
+        return self.get_figure(data, caption=caption)
