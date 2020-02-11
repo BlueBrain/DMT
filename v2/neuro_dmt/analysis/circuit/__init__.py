@@ -119,10 +119,21 @@ class StructuredAnalysis(
                     return\
                         self.sample_measurement(
                             circuit_model, adapter, **kwargs)
-                except TypeError:
-                    return\
-                        self.sample_measurement(
-                            adapter, circuit_model, **kwargs)
+                except (TypeError, AttributeError) as error_model_adapter:
+                    try:
+                        return\
+                            self.sample_measurement(
+                                adapter, circuit_model, **kwargs)
+                    except Exception as error_adapter_model:
+                        raise TypeError(
+                            """
+                            sample_measurement(...) failed with arguments
+                            (model, adapter) and (adapter, model):
+                            \t {}
+                            \t {}
+                            """.format(
+                                error_model_adapter,
+                                error_adapter_model))
 
             try:
                 _adapter_measurement_method.__method__ =\
@@ -177,9 +188,9 @@ class StructuredAnalysis(
         except AttributeError:
             method = "Measurement method description not provided."
 
-        return dict(
-            data=measurement,
-            method=method)
+        return {
+            "data": measurement,
+            "method": method}
 
     def _with_reference_data(self,
             measurement,
@@ -199,8 +210,15 @@ class StructuredAnalysis(
         measurement_dict = {
             dataset: measurement.xs(dataset, level="dataset")
             for dataset in measurement.reset_index().dataset.unique()}
+
+        def _get_data(dataset):
+            try:
+                return dataset.data
+            except AttributeError:
+                return dataset
+
         measurement_dict.update({
-            label: dataset.data
+            label: _get_data(dataset)
             for label, dataset in reference_data.items()})
         return measurement_dict
 
@@ -267,6 +285,18 @@ class StructuredAnalysis(
         reference_data =\
             reference_data if reference_data is not None\
             else self.reference_data
+        try:
+            reference_citations ={
+                label: reference.citation
+                for label, reference in reference_data.items()}
+        except AttributeError:
+            LOGGER.info(
+                """
+                Could not retrieve citations from reference data of type {}.
+                """.format(
+                    type(reference_data)))
+
+            reference_citations = {}
 
         return self.report(
             author=author,
@@ -279,9 +309,7 @@ class StructuredAnalysis(
             results=self.results(provenance_circuit)["content"],
             discussion=self.discussion(provenance_circuit)["content"],
             conclusion=self.conclusion(provenance_circuit)["content"],
-            references={
-                label: reference.citation
-                for label, reference in reference_data.items()},
+            references=reference_citations,
             provenance_model=provenance_circuit)
 
     def _resolve_adapter(self, adapter=None):
