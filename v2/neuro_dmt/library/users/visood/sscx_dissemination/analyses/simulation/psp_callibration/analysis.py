@@ -2,6 +2,7 @@
 Analyze PSP amplitudes, obtained from a library.
 """
 
+import os
 import pandas as pd
 from dmt.model.interface import Interface, interfacemethod
 from dmt.data.observation import measurement
@@ -14,6 +15,7 @@ from dmt.tk.plotting.lines import LinePlot
 from dmt.tk.plotting.scatter import ScatterPlot
 from dmt.tk.reporting.section import Section
 from neuro_dmt.analysis.circuit import StructuredAnalysis
+from neuro_dmt.analysis.reporting import CircuitAnalysisReport
 
 class PspTraceAnalysis(StructuredAnalysis):
     """
@@ -174,6 +176,11 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
         item --- its key will be used to label the reference data in plots
         and reports.
         """)
+    path_reports = Field(
+        """
+        Location where the reports will be posted.
+        """,
+        __default_value__=os.path.join(os.getcwd(), "reports"))
 
     @interfacemethod
     def get_pathways(adapter, model):
@@ -248,6 +255,8 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 "model": measurement_model.xs(model_datasets[0], level="dataset"),
                 "reference": reference_data})
 
+    report = CircuitAnalysisReport
+
     def get_figures(self,
             measurement_model,
             reference_data,
@@ -270,23 +279,6 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 reference_data)
         figures =\
             crosses(plotting_data, caption=caption)
-        # lines =\
-        #     LinePlot(
-        #         name="psp_std_mean",
-        #         title="PSP amplitude standard deviation dependence on mean",
-        #         xvar=("psp_amplitude", "mean"),
-        #         xlabel="Mean",
-        #         yvar=("psp_amplitude", "std"),
-        #         ylabel="Standard Deviation",
-        #         gvar="dataset",
-        #         gvar_order=["model", "reference"],
-        #         gvar_kwargs={"marker": ["o", "^"], "sizes": [20, 20]})
-        # figures.update(
-        #     lines(plotting_data,
-        #           caption="""
-        #           Standard-deviation increases with mean PSP amplitude,
-        #           for both reference and model traces.
-        #           """))
         scatter =\
             ScatterPlot(
                 name="psp_std_mean_scatter",
@@ -297,6 +289,7 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 ylabel="Standard Deviation",
                 svar="dataset",
                 markers={"model": "X", "reference": "o"},
+                size_markers=80,
                 gvar="pathway")
         figures.update(
             scatter(plotting_data,
