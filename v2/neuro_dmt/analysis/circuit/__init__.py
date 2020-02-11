@@ -253,25 +253,17 @@ class StructuredAnalysis(
             return []
         return None
 
-    # def figures(self,
-    #         data,
-    #         caption=None):
-    #     """
-    #     Get a figure for the analysis of `circuit_model`.
+    def get_figures(self,
+            data,
+            caption=None):
+        """
+        Get a figure for the analysis of `circuit_model`.
 
-    #     Arguments
-    #     ----------
-    #     `figure_data`: The data frame to make a figure for.
-    #     """
-    #     try:
-    #         return self.plotter.get_figures(data, caption=caption)
-    #     except AttributeError:
-    #         return {
-    #             "figure": self.plotter.get_figure(data, caption=caption)}
-    #     raise RuntimeError(
-    #         """
-    #         Execution of `get_figures(...)` should not reach here.
-    #         """)
+        Arguments
+        ----------
+        `figure_data`: The data frame to make a figure for.
+        """
+        return self.figures(data, caption=caption)
 
     def get_report(self,
             measurement,
@@ -342,7 +334,7 @@ class StructuredAnalysis(
             self.get_report(
                 measurement["data"],
                 author=author,
-                figures=self.figures(
+                figures=self.get_figures(
                     data=self._with_reference_data(
                         measurement["data"],
                         reference_data),
