@@ -11,6 +11,7 @@ from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.field import Field, lazyfield, LambdaField, ABCWithFields
 from dmt.tk.plotting.crosses import Crosses
 from dmt.tk.plotting.lines import LinePlot
+from dmt.tk.plotting.scatter import ScatterPlot
 from dmt.tk.reporting.section import Section
 from neuro_dmt.analysis.circuit import StructuredAnalysis
 
@@ -269,22 +270,41 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 reference_data)
         figures =\
             crosses(plotting_data, caption=caption)
-        lines =\
-            LinePlot(
+        # lines =\
+        #     LinePlot(
+        #         name="psp_std_mean",
+        #         title="PSP amplitude standard deviation dependence on mean",
+        #         xvar=("psp_amplitude", "mean"),
+        #         xlabel="Mean",
+        #         yvar=("psp_amplitude", "std"),
+        #         ylabel="Standard Deviation",
+        #         gvar="dataset",
+        #         gvar_order=["model", "reference"],
+        #         gvar_kwargs={"marker": ["o", "^"], "sizes": [20, 20]})
+        # figures.update(
+        #     lines(plotting_data,
+        #           caption="""
+        #           Standard-deviation increases with mean PSP amplitude,
+        #           for both reference and model traces.
+        #           """))
+        scatter =\
+            ScatterPlot(
+                name="psp_std_mean_scatter",
                 title="PSP amplitude standard deviation dependence on mean",
                 xvar=("psp_amplitude", "mean"),
                 xlabel="Mean",
                 yvar=("psp_amplitude", "std"),
                 ylabel="Standard Deviation",
-                gvar="dataset",
-                gvar_order=["model", "reference"],
-                gvar_kwargs={"marker": ["o", "^"], "sizes": [20, 20]})
+                svar="dataset",
+                markers={"model": "X", "reference": "o"},
+                gvar="pathway")
         figures.update(
-            lines(plotting_data,
-                  caption="""
-                  Standard-deviation increases with mean PSP amplitude,
-                  for both reference and model traces.
-                  """))
+            scatter(plotting_data,
+                    caption="""
+                    Standard-deviation increases with mean PSP amplitude,
+                    for both reference and model traces.
+                    """))
+
         return figures
         
 
