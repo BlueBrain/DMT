@@ -192,7 +192,7 @@ class StructuredAnalysis(
             "data": measurement,
             "method": method}
 
-    def _with_reference_data(self,
+    def append_reference_data(self,
             measurement,
             reference_data={}):
         """
@@ -221,6 +221,14 @@ class StructuredAnalysis(
             label: _get_data(dataset)
             for label, dataset in reference_data.items()})
         return measurement_dict
+
+    def _with_reference_data(self,
+            measurement,
+            reference_data={}):
+        """
+        Deprecated
+        """
+        return self.append_reference_data(measurement, reference_data)
 
     @property
     def number_measurement_parameters(self):
@@ -265,7 +273,7 @@ class StructuredAnalysis(
         `figure_data`: The data frame to make a figure for.
         """
         plotting_data =\
-            self._with_reference_data(
+            self.append_reference_data(
                 measurement_model["data"],
                 reference_data)
         return\
