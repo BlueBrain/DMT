@@ -2,6 +2,7 @@
 A figure is a graphic with a caption.
 """
 
+from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.field import Field, lazyproperty, WithFields
 
 class Figure(WithFields):
@@ -15,7 +16,8 @@ class Figure(WithFields):
     caption = Field(
         """
         A text to go with the graphic.
-        """)
+        """,
+        __as__=paragraphs)
 
     def __init__(self,
             figure_graphic,

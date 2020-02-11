@@ -120,8 +120,8 @@ class ScatterPlot(BasePlotter):
                 markers=self.markers,
                 hue=self.gvar,
                 data=dataframe,
-                s=self.size_markers
-            ).set(
+                s=self.size_markers)
+        graphic.set(
                 xlabel=self.xlabel,
                 ylabel=self.ylabel)
         return Figure(
