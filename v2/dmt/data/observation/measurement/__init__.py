@@ -233,63 +233,82 @@ class SummaryMeasurement(Measurement):
         Check dataframe to load as a `Measurement`.
         """
         columns = dataframe.columns.values
-        if len(columns) != 2:
-            raise TypeError(
-                """
-                to load as a `summarymeasurement` a dataframe should have a
-                multi-indexed two level column. received dataframe columns: {}
-                """.format(columns))
+
         if not all(isinstance(c, tuple) for c in columns):
-            raise typeerror(
+            raise ValueError(
                 """
-                to load as a `summarymeasurement` a dataframe should have a
+                To load as a `summarymeasurement` a dataframe should have a
                 multi-indexed two level column containing two-tuples.
                 received dataframe columns: {}
                 """.format(columns))
-        try:
-            phenomenon, statistic = columns[0]
-        except ValueError:
-            raise TypeError(
+
+        phenomena ={
+            column[0] for column in columns}
+        if len(phenomena) != 1:
+            raise ValueError(
                 """
-                To load as a `SummaryMeasurement` a dataframe should have a
-                multi-indexed two level column containing two-tuples.
-                Received dataframe columns: {}
-                """.format(columns))
-        try:
-            phenomenon_2, statistic_2 = columns[1]
-        except ValueError:
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have a
-                multi-indexed two level column containing two-tuples.
-                Received dataframe columns: {}
+                More than one phenomenon in the dataframe.
+                To load as a `SummaryMeasurement` dataframe should have
+                two-level columns for a single phenomenon in the zeroth-level.
+                Passed dataframe had more than one phenomenon in its columns:
+                {}
                 """.format(columns))
 
-        if phenomenon_2 != phenomenon:
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have a
-                multi-indexed two level column containing two-tuples, with
-                the same phenomenon names as the first element.
-                Received dataframe columns: {}
-                """.format(columns))
+        def _check_column(statistic):
+            """..."""
+            if not any(column[1] == statistic for column in columns):
+                raise ValueError(
+                    """
+                    No column<{}> in columns {}.
+                    To Load as a `SummaryMeasurement` a dataframe should have a
+                    (two-level) column for {}.
+                    """.format(statistic, columns, statistic))
+            return True
 
-        if "mean" not in (statistic, statistic_2):
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have a
-                multi-indexed two level column containing two-tuples.
-                One of the second levels should be "mean"
-                Received dataframe columns: {}
-                """.format(columns))
-        if "std" not in (statistic, statistic_2):
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have a
-                multi-indexed two level column containing two-tuples.
-                One of the second levels should be "std"
-                Received dataframe columns: {}
-                """.format(columns))
+        # try:
+        #     phenomenon, statistic = columns[0]
+        # except ValueError:
+        #     raise ValueError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have a
+        #         multi-indexed two level column containing two-tuples.
+        #         Received dataframe columns: {}
+        #         """.format(columns))
+        # try:
+        #     phenomenon_2, statistic_2 = columns[1]
+        # except ValueError:
+        #     raise ValueError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have a
+        #         multi-indexed two level column containing two-tuples.
+        #         Received dataframe columns: {}
+        #         """.format(columns))
+
+        # if phenomenon_2 != phenomenon:
+        #     raise TypeError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have a
+        #         multi-indexed two level column containing two-tuples, with
+        #         the same phenomenon names as the first element.
+        #         Received dataframe columns: {}
+        #         """.format(columns))
+
+        # if "mean" not in (statistic, statistic_2):
+        #     raise TypeError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have a
+        #         multi-indexed two level column containing two-tuples.
+        #         One of the second levels should be "mean"
+        #         Received dataframe columns: {}
+        #         """.format(columns))
+        # if "std" not in (statistic, statistic_2):
+        #     raise TypeError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have a
+        #         multi-indexed two level column containing two-tuples.
+        #         One of the second levels should be "std"
+        #         Received dataframe columns: {}
+        #         """.format(columns))
 
         index = dataframe.index.names
         if len(index) and None in index:
@@ -298,6 +317,8 @@ class SummaryMeasurement(Measurement):
                 To load as a `SampleMeasurement` a dataframe should have
                 properly named index. Received dataframe index: {}
                 """.formnat(index))
+        _check_column("mean")
+        _check_column("std")
         return (
             columns[0][0],
             OrderedDict([(parameter, parameter) for parameter in index]))
@@ -318,28 +339,30 @@ class SummaryMeasurement(Measurement):
                 """.format(dataframe.columns))
         phenomenon, parameters = SummaryMeasurement._read(dataframe)
         dataframe_phenomenon = dataframe[phenomenon]
-        if "mean" not in dataframe_phenomenon.columns:
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have
-                "mean" as a column at the second level.
-                """)
-        if "std" not in dataframe_phenomenon.columns:
-            raise TypeError(
-                """
-                To load as a `SummaryMeasurement` a dataframe should have
-                "std" as a column at the second level.
-                """)
-        SummaryMeasurementType = type(
-            "{}By{}Summary".format(
-                phenomenon,
-                ''.join(format(p.capitalize() for p in parameters))),
-            (SummaryMeasurement, ),
-            {"phenomenon": phenomenon,
-             "parameters": parameters})
-        return SummaryMeasurementType(
-            data=dataframe.reset_index(),
-            label="ignore")
+        # if "mean" not in dataframe_phenomenon.columns:
+        #     raise TypeError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have
+        #         "mean" as a column at the second level.
+        #         """)
+        # if "std" not in dataframe_phenomenon.columns:
+        #     raise TypeError(
+        #         """
+        #         To load as a `SummaryMeasurement` a dataframe should have
+        #         "std" as a column at the second level.
+        #         """)
+        SummaryMeasurementType =\
+            type(
+                "{}By{}Summary".format(
+                    phenomenon,
+                    ''.join(format(p.capitalize() for p in parameters))),
+                (SummaryMeasurement, ),
+                {"phenomenon": phenomenon,
+                 "parameters": parameters})
+        return\
+            SummaryMeasurementType(
+                data=dataframe.reset_index(),
+                label="ignore")
 
     def summary(self):
         """

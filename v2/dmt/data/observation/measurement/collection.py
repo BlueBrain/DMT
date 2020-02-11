@@ -60,3 +60,37 @@ def series_type(measurement_generator):
             _join(*args)
             for args in measurement_generator]))
 
+
+def summary_type(
+        measurement_generator,
+        sample_type,
+        summary_variable):
+    """
+    Use to convert a collection of sample measurements to a statistical summary.
+    """
+    return\
+        sample_type(measurement_generator)\
+        .groupby(summary_variable)\
+        .agg(["size", "mean", "std"])
+
+
+def summary_series_type(
+        measurement_generator,
+        summary_variable):
+    """..."""
+    return\
+        summary_type(measurement_generator,
+                     series_type,
+                     summary_variable)
+
+def summary_primitive_type(
+        measurement_generator,
+        summary_variable):
+    """..."""
+    return\
+        summary_type(measurement_generator,
+                     primitive_type,
+                     summary_variable)
+
+
+
