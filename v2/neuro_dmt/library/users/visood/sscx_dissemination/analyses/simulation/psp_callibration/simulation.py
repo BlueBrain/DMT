@@ -167,6 +167,18 @@ class PathwaySimulation(WithFields):
         associated with the pathway simulated.
         """,
         __default_value__= "{}.traces.h5".format)
+    amplitude_file_name = Field(
+        """
+        A call back that provides the name of the file containing data
+        associated with amplitudes for sampled connections in a pathway.
+        """,
+        __default_value__="{}.amplitudes.txt".format)
+    summary_file_name = Field(
+        """
+        A call back that provides the name of the file containing summary
+        data for the traces simulated for a given pathway.
+        """,
+        __default_value__="{}.summary.yaml".format)
     parse_connection = Field(
         """
         A call-back to parse connection label into a pre and post synaptic cell.
@@ -174,16 +186,17 @@ class PathwaySimulation(WithFields):
         __default_value__=lambda c: tuple(c.split('-')))
 
     @lazyfield
+    def path_traces(self):
+        return os.path.join(
+            self.path_output,
+            self.h5_file_name(self.pathway.label))
+
+    @lazyfield
     def raw_traces(self):
         """
         Raw output traces
         """
-        return\
-            h5py.File(
-                os.path.join(
-                    self.path_output,
-                    self.h5_file_name(self.pathway.label))
-            )[self.key_traces]
+        return h5py.File(self.path_traces)[self.key_traces]
 
     @lazyfield
     def connections(self):
@@ -203,11 +216,85 @@ class PathwaySimulation(WithFields):
                 index_voltage=self.index_voltage,
                 parse_connection=lambda c: tuple(c.split('-')))
 
+    @lazyfield
+    def path_amplitudes(self):
+        return os.path.join(
+            self.path_output,
+            self.amplitude_file_name(self.pathway.label))
 
+    @lazyfield
+    def amplitudes(self):
+        """
+        Load measured amplitudes as a dataframe.
+        """
+        data =\
+            np.loadtxt(self.path_amplitudes)
+        return\
+            pd.Series(
+                data,
+                name="amplitude",
+                index=pd.Index(range(len(data)), name="trial"))
+
+    @lazyfield
+    def path_summaries(self):
+        return os.path.join(
+            self.path_output,
+            self.summary_file_name(self.pathway.label))
+
+    class StatisticalSummary(WithFields):
+        """
+        Statistical summary of the traces...
+        """
+        pathway = Field(
+            """
+            Label for the simulated pathway.
+            """)
+        model = Field(
+            """
+            Mean and standard-deviation of the measured amplitudes,
+            across simulation trials for each of several connections in the
+            pathway.
+            """,
+            __as__=pd.Series)
+        reference = Field(
+            """
+            Mean and standard-deviation of the experimentally measured
+            amplitudes,
+            """,
+            __as__=pd.Series)
+        scaling = Field(
+            """
+            Suggested scaling value...
+            """)
+
+    @lazyfield
+    def summary_amplitude(self):
+        """..."""
+        with open(
+                self.path_summaries, 'r'
+        ) as file_summaries:
+            try:
+                summary_dict =\
+                    yaml.load(file_summaries, Loader=yaml.FullLoader)
+            except AttributeError:
+                summary_dict =\
+                    yaml.load(file_summaries)
+        return self.StatisticalSummary(summary_dict)
+                
+                
 class ModelSimulationPSP(WithFields):
     """
     PSP Simulation output wrapped as a model.
     """
+    provenance = Field(
+        """
+        Provenance of the model...
+        """)
+    label = LambdaField(
+        """
+        Label for this instance.
+        """,
+        lambda self: self.provenance.label)
     path_simulation_data = Field(
         """
         Path where data associated with PSP simulations are located.
@@ -300,7 +387,7 @@ class ModelSimulationPSP(WithFields):
                 """
                 Unknown pathway {}.
                 """.format(pathway))
-        
+
     def __load_simulation_data(self, pathway):
         """..."""
         with open(
@@ -308,11 +395,11 @@ class ModelSimulationPSP(WithFields):
         ) as file_config:
             try:
                 config = yaml.load(file_config, Loader=yaml.FullLoader)
-            except:
+            except AttributeError:
                 config = yaml.load(file_config)
 
         return PathwaySimulation(config, path_output=self.path_simulation_traces)
-            
+
     __simulation_data = {} #to store simulation data for individual pathways.
     def simulation_data(self, pathway):
         """..."""
@@ -328,9 +415,10 @@ class ModelSimulationPSP(WithFields):
         "model".
         """
         return[
-            name_file.split('.')[0]
-            for name_file in os.listdir(self.path_simulation_traces)
-            if "traces" in name_file and name_file.split('.')[-1] == "h5"]
+            split_name[0] for split_name in (
+                name_file.split('.')
+                for name_file in os.listdir(self.path_simulation_traces))
+            if "traces" in split_name and split_name[-1] == "h5"]
 
     def connections(self, pathway, parsed=False):
         """..."""
@@ -348,6 +436,10 @@ class Adapter:
     Adapter of the model for simulation analysis.
     """
     @staticmethod
+    def get_label(model):
+        return model.provenance.label
+
+    @staticmethod
     def get_pathways(model):
         """..."""
         return model.pathways
@@ -363,3 +455,28 @@ class Adapter:
             model.simulation_data(pathway)\
                  .traces\
                  .loc[connection]
+
+    @staticmethod
+    def get_amplitudes(model, pathway):
+        """..."""
+        return\
+            model.simulation_data(pathway)\
+                 .amplitudes
+
+    @staticmethod
+    def get_summary_amplitude(model, pathway):
+        """
+        Get the summary amplitudes from the model.
+
+        For BlueBrain PSP simulations, we will use the summaries saved by the
+        `psp-validatlion` tool.
+        """
+        return\
+            model.simulation_data(pathway)\
+                 .model
+
+    @staticmethod
+    def get_provenance(model):
+        """..."""
+        return model.provenance.field_dict
+
