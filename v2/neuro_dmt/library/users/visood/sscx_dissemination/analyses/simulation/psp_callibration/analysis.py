@@ -10,6 +10,7 @@ from dmt.tk.parameters import Parameters
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.field import Field, lazyfield, LambdaField, ABCWithFields
 from dmt.tk.plotting.crosses import Crosses
+from dmt.tk.plotting.lines import LinePlot
 from dmt.tk.reporting.section import Section
 from neuro_dmt.analysis.circuit import StructuredAnalysis
 
@@ -246,12 +247,44 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 "model": measurement_model.xs(model_datasets[0], level="dataset"),
                 "reference": reference_data})
 
-    @lazyfield
-    def figures(self):
-        """Plot the measurement."""
-        return Crosses(
-            xvar="model",
-            yvar="reference",
-            gvar="pathway",
-            title="PSP Amplitude Validation.")
+    def get_figures(self,
+            measurement_model,
+            reference_data,
+            caption=""):
+        """
+        Plot the measurement.
+        """
+        crosses =\
+            Crosses(
+                name="psp_amplitude_validation",
+                xvar="model",
+                xlabel="Model",
+                yvar="reference",
+                ylabel="Reference",
+                gvar="pathway",
+                title="PSP Amplitude Validation.")
+        plotting_data =\
+            self._with_reference_data(
+                measurement_model["data"],
+                reference_data)
+        figures =\
+            crosses(plotting_data, caption=caption)
+        lines =\
+            LinePlot(
+                title="PSP amplitude standard deviation dependence on mean",
+                xvar=("psp_amplitude", "mean"),
+                xlabel="Mean",
+                yvar=("psp_amplitude", "std"),
+                ylabel="Standard Deviation",
+                gvar="dataset",
+                gvar_order=["model", "reference"],
+                gvar_kwargs={"marker": ["o", "^"], "sizes": [20, 20]})
+        figures.update(
+            lines(plotting_data,
+                  caption="""
+                  Standard-deviation increases with mean PSP amplitude,
+                  for both reference and model traces.
+                  """))
+        return figures
+        
 
