@@ -123,11 +123,12 @@ class CheetahReporter(Reporter):
           <p>$line</p>
         #end for
     <br>
-    <h3> Figures </h3>
+    <p>$(70 * '-')</p>
     #for $label_image, $location_image in $images.items()
         <img src=$location_image alt="apologies.png"/>
+        <h3>Caption</h3>
         #for $line in $captions[$label_image]
-          <br><strong>$line</strong></br>
+          $line
         #end for
     #end for
     </br>
