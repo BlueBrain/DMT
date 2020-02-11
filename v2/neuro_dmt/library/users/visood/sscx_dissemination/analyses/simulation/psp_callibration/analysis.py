@@ -219,22 +219,34 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
         return\
             adapter.get_amplitudes(model, pathway)
 
-    @lazyfield
-    def measurement_collection(self):
+    @staticmethod
+    def measurement_collection(measurement_generator):
         """..."""
-        return lambda\
-            measurement_generator: measurement.collection\
-                                              .summary_series_type(
-                                                  measurement_generator,
-                                                  "pathway")
-        return measurement.collection.series_type
+        def _get_one(p, m):
+            return m.apply(["mean", "std"])\
+                    .rename(lambda n: ("psp_amplitude", n))\
+                    .append(pd.Series(p))
+
+        measurement_collected =\
+            pd.DataFrame([_get_one(p, m) for p, m in measurement_generator])\
+              .set_index("pathway")
+        measurement_collected.columns=\
+            pd.MultiIndex.from_tuples(
+                measurement_collected.columns)
+        return measurement_collected
+        # return lambda\
+        #     measurement_generator: measurement.collection\
+        #                                       .summary_series_type(
+        #                                           measurement_generator,
+        #                                           "pathway")
+        # return measurement.collection.series_type
 
     def statistics_spiking(self, amplitudes):
         return\
             amplitudes.groupby("pathway")\
                       .agg(["size", "mean", "std"])
 
-    def _with_reference_data(self,
+    def append_reference_data(self,
             measurement_model,
             reference_data):
         """
@@ -249,11 +261,19 @@ class PspAmplitudeAnalysis(StructuredAnalysis):
                 Only a single model data can be handled.
                 Datasets passed: {}
                 """.format(list(model_datasets)))
-        
+        model_data =\
+            measurement_model.xs(model_datasets[0], level="dataset")
         return\
-            measurement.concat_as_summaries({
-                "model": measurement_model.xs(model_datasets[0], level="dataset"),
-                "reference": reference_data})
+            pd.concat([
+                model_data.assign(dataset="model"),
+                reference_data.assign(dataset="reference")])\
+              .reset_index()\
+             .set_index(["dataset", "pathway"])
+        
+        # return\
+        #     measurement.concat_as_summaries({
+        #         "model": measurement_model.xs(model_datasets[0], level="dataset"),
+        #         "reference": reference_data})
 
     report = CircuitAnalysisReport
 
