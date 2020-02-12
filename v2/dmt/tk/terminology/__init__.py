@@ -255,3 +255,5 @@ def where(**term_dict):
     return decorator
 
 
+
+from .collection import TermCollection
