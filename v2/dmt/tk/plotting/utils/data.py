@@ -1,6 +1,7 @@
 """utility functions shared by some plotters"""
 import pandas as pd
 from collections import Mapping, OrderedDict
+from dmt.tk.terminology.data import data as dataterms
 
 
 def default_group_label(row):
@@ -41,6 +42,13 @@ def collapse_dataframe_column(df, columnlabel,
                           for i, r in iterator])
     return pd.DataFrame({cat_column_label: column_values}), groups
 
+def default_label_callback(row):
+    try:
+        return ", ".join(str(v) for v in row.values())
+    except AttributeError as ae:
+        return str(row)
+    except TypeError as te:
+        return ", ".join(str(v) for v in row.values)
 
 # TODO: ugly default, refactor
 def _default_group_desc(df, st):
@@ -76,9 +84,24 @@ def _default_group_desc(df, st):
     else:
         return df.columns[0]
 
+def infer_index_columns(cols, index=None, columns=None):
+    non_data_columns = [c for c in cols if c not in dataterms.all]
+    if not len(non_data_columns) == 2:
+        raise ValueError(
+            "if index and columns are not both specified, "
+            "dataframe must have exactly two columns aside from {}, "
+            "found: {}"
+            .format(dataterms.all, non_data_columns))
+    if index is None and columns is None:
+        return non_data_columns[0], non_data_columns[1]
+    elif index is None:
+        index = [c for c in non_data_columns if c != columns][0]
+    elif columns is None:
+        columns = [c for c in non_data_columns if c != index][0]
+    return index, columns
 
-def pivot_table(df, index, columns, values,
-                value_callback=default_group_label, **kwargs):
+def pivot_table(df, index=None, columns=None, values=dataterms.samples,
+                label_callback=default_label_callback, **kwargs):
     """
     construct a pivot table for a dataframe with potentially
     multiindexed columns
@@ -102,15 +125,44 @@ def pivot_table(df, index, columns, values,
         togrps: OrderedDict mapping collapsed values in the columns column
                 to their initial state
     """
-    fromdf, fromgrps = collapse_dataframe_column(
-        df, index, value_callback=value_callback)
-    fromcol = fromdf.columns[0]
-    todf, togrps = collapse_dataframe_column(
-        df, columns, value_callback=value_callback)
-    tocol = todf.columns[0]
+    dataframe_cols = df.columns
+    if isinstance(dataframe_cols[0], tuple):
+        dataframe_cols = []
+        for c in df.columns:
+            if c[0] not in dataframe_cols:
+                dataframe_cols.append(c[0])
+
+    if index is None or columns is None:
+        index, columns = infer_index_columns(
+            [c for c in dataframe_cols if c != values],
+            index=index, columns=columns)
+
+    def uniquevals(dforseries):
+        if isinstance(dforseries, pd.DataFrame):
+            return [v for _, v in
+                    dforseries.drop_duplicates().iterrows()]
+        return dforseries.unique()
+
+    def iterthrough(dforseries):
+        if isinstance(dforseries, pd.DataFrame):
+            return dforseries.iterrows()
+        return dforseries.iteritems()
+
+    # TODO: handle case where two different groups
+    #       produce same label
+    fromgrps = OrderedDict([(label_callback(grp), grp)
+                            for grp in uniquevals(df[index])])
+    togrps = OrderedDict([(label_callback(grp), grp)
+                          for grp in uniquevals(df[columns])])
+
     # flatten out multiindex
-    valdf = pd.DataFrame({values: df[values]})
-    flat_df = pd.concat((fromdf, todf, valdf), axis=1)
-    piv_df = flat_df.pivot_table(columns=tocol, index=fromcol, values=values,
-                                 **kwargs)
+    flat_df = pd.DataFrame(OrderedDict([
+        (index, [label_callback(grp) for _, grp in iterthrough(df[index])]),
+        (columns, [label_callback(grp) for _, grp in iterthrough(df[columns])]),
+        (values, df[values])]))
+
+    piv_df = flat_df.pivot_table(columns=columns, index=index, values=values,
+                                 **kwargs)\
+                    .reindex(fromgrps.keys(), axis=0)\
+                    .reindex(togrps.keys(), axis=1)
     return piv_df, fromgrps, togrps
