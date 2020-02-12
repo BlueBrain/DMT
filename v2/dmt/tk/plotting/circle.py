@@ -1,12 +1,10 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-import pandas as pd
 from collections import OrderedDict
-from dmt.tk.enum import DATA_KEYS, MEAN
-from dmt.tk.data import multilevel_dataframe
-from dmt.tk.plotting.utils import pivot_table, default_group_label
-from dmt.tk.plotting import golden_figure
+from dmt.tk.terminology.data import data as dataterms
+from dmt.tk.plotting.utils import default_label_callback, pivot_table
+from dmt.tk.plotting import golden_figure, SeparatePlots
 
 
 # TODO: test that rotation works
@@ -178,16 +176,19 @@ def default_color_callback(groups):
                        for i, grp in enumerate(groups))
 
 
-# TODO: customize group sort order
-class CirclePlot:
+# TODO: indicator of directionality
+# TODO: make space_between automatically adjust to number of groups
+class CirclePlot(SeparatePlots):
     """
     a plotter for circle-plots. CirclePlots consist of circle segments
     connected by curves, the thickness of which corresponds to the weight
     of the connection between the groups the segments represent
     """
-    def __init__(self, space_between=0.0, value_callback=default_group_label,
+    def __init__(self, space_between=0.0,
+                 label_callback=default_label_callback,
                  color_callback=default_color_callback, min_conn_size=0,
-                 segment_thickness=0.05, connection_alpha=1.0):
+                 segment_thickness=0.05, connection_alpha=1.0,
+                 values_column=dataterms.samples):
         """
         Arguments:
            space_between : the space to leave between segments, in radians
@@ -199,72 +200,42 @@ class CirclePlot:
 
         self.space_between = space_between
         self.circle = CircleTool(1.0)
-        self.value_callback = value_callback
+        self.label_callback = label_callback
         self.segment_thickness = segment_thickness
         self.color_callback = color_callback
         self.min_conn_size = min_conn_size
         self.connection_alpha = connection_alpha
+        self.values_column = dataterms.samples
 
-    def _prepare_plot(self, df):
+    def _prepare_plot(self, df, values):
         """
         convert the data into a pivot table for plotting
         with mean as the values, and the two non-data columns
         as the index and column values.
 
         Arguments:
-            df: DataFrame with {MEAN} column
+            df: DataFrame with {vls} column
 
         Returns:
-            pivot table of {MEAN},
+            pivot table of {vls},
             OrderedDict mapping group labels to dataframe rows
                 representing them
-        """.format(MEAN=MEAN)
-
-        try:
-            [df[c].unique() for c in df.columns]
-        except TypeError:
-            df = multilevel_dataframe(df)
-
+        """.format(vls=self.values_column)
         # TODO: should this work on samples without mean?
-        if MEAN not in df.columns:
+        if values not in df.columns:
             raise ValueError(
-                "dataframe must have {} column".format(MEAN))
+                "dataframe must have {} column".format(values))
 
-        columns = df.columns
-        if isinstance(columns[0], tuple):
-            columns = []
-            for c in df.columns:
-                if c[0] not in columns:
-                    columns.append(c[0])
-
-        non_data_columns = [col for col in columns
-                            if col not in DATA_KEYS]
-        if len(non_data_columns) != 2:
-            raise ValueError(
-                "dataframe must have exactly two columns aside from {}, "
-                "found: {}"
-                .format(DATA_KEYS, non_data_columns))
-
-        if self.value_callback is not None:
-            pv, fgroups, tgroups = pivot_table(
-                df, non_data_columns[0], non_data_columns[1], MEAN,
-                value_callback=self.value_callback)
-        else:
-            pv, fgroups, tgroups = pivot_table(
-                df, non_data_columns[0], non_data_columns[1], MEAN)
-
+        pvt, fgroups, tgroups = pivot_table(df, values=values,
+                                            label_callback=self.label_callback)
         # we want to have groups from-first, but without overwriting
         # any from-groups with to-groups
         groups = fgroups
         for key, value in tgroups.items():
             if key not in groups:
                 groups[key] = value
+        return pvt, groups
 
-        return pv, groups
-
-    # TODO: instead of sorting by labels, group order should simply
-    #       be preserved from the table, and all dicts passed around
-    #       should be OrderedDicts or DataFrames
     def _group_angles(self, groups, pivot_table):
         """
         find the start and end angles for each segment representing a
@@ -290,7 +261,7 @@ class CirclePlot:
 
         available_space = 2 * np.pi - occupied_space
         aspace_div2 = available_space * 0.5
-        for grp in groups:
+        for grp in groups.keys():
             try:
                 size_from = np.nansum(pivot_table.loc[grp, :])
             except KeyError:
@@ -399,7 +370,7 @@ class CirclePlot:
         return self.color_callback(groups)
 
     # TODO: should __plot_components__ return the actual patches?
-    def __plot_components__(self, df):
+    def __plot_components__(self, df, values=None):
         """
         provide all the geometric and textual plotting information
 
@@ -422,7 +393,9 @@ class CirclePlot:
                 source_angles : source angle for each connection {from:{to:a}}
                 dest_angles : destination angle for each conn {from:{to:a}}
         """
-        pvt, groups = self._prepare_plot(df)
+        if values is None:
+            values = self.values_column
+        pvt, groups = self._prepare_plot(df, values)
         group_angles = self._group_angles(groups, pvt)
         group_colors = self._group_colors(groups)
         conn_angles = self._connection_angles(pvt, group_angles)
@@ -432,24 +405,10 @@ class CirclePlot:
         group_labels = {grp: np.mean(a) for grp, a in group_angles.items()}
         return groups, group_labels, group_patchdata, conn_angles
 
-    def plot(self, df):
-        """"
-        create a CirclePlot of the data in df
-
-        Arguments:
-             df: a pandas DataFrame which must have a {MEAN} column,
-                 may have any of {DATA_KEYS} columns,
-                 and must have exactly two other columns
-                 the entries of which will define the groups to plot
-                 the {MEAN} column will determine the connection weight
-                 between the corresponding groups
-
-        Returns:
-            figure, axis with CirclePlot
-        """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
-
+    # TODO: fix confusing error message on not passing values
+    def plot(self, df, values=None):
         groups, group_labels, group_patchdata, conn_angles\
-            = self.__plot_components__(df)
+            = self.__plot_components__(df, values=values)
         group_angles, group_colors = group_patchdata
         source_angles, dest_angles = conn_angles
         sz = 60  # len(pivot_table.index)*4
@@ -477,51 +436,4 @@ class CirclePlot:
             plt.text(*textcirc.angles_to_points(a), t,
                      rotation=90-a*(180/np.pi), rotation_mode="anchor")
         plt.rcParams.update({"font.size": oldfont})
-        return fig, ax
-
-    # TODO: test the actual plot method once its clear what
-    #        its supposed to do
-    # TODO: test how it handles NaNs
-    # def plot(self, df):
-    #     """"
-    #     create a CirclePlot of the data in df
-
-    #     Arguments:
-    #          df: a pandas DataFrame which must have a {MEAN} column,
-    #              may have any of {DATA_KEYS} columns,
-    #              and must have exactly two other columns
-    #              the entries of which will define the groups to plot
-    #              the {MEAN} column will determine the connection weight
-    #              between the corresponding groups
-
-    #     Returns:
-    #         figure, axis with CirclePlot
-    #     """.format(MEAN=MEAN, DATA_KEYS=DATA_KEYS)
-    #     pivot_table = self._prepare_plot(df)
-    #     sz = 60# len(pivot_table.index)*4
-    #     print(pivot_table.index, len(pivot_table.index))
-    #     fig, ax = golden_figure(width=sz, height=sz)
-    #     # TODO: adapt limits to text
-    #     ax.set_xlim(left=-1.3, right=+1.3)
-    #     ax.set_ylim(bottom=-1.3, top=+1.3)
-    #     ax.get_xaxis().set_visible(False)
-    #     ax.get_yaxis().set_visible(False)
-    #     ax.set_xticklabels([])
-    #     ax.set_yticklabels([])
-    #     group_patches, connection_patches = self.get_patches(pivot_table)
-    #     group_collection, connections_collection =\
-    #         self.patch_collections(group_patches, connection_patches)
-    #     ax.add_collection(group_collection)
-    #     ax.add_collection(connections_collection)
-
-    #     # awkward to re-calculate this!
-    #     group_angles = {t: np.mean(a)
-    #                     for t, a in self._group_angles(pivot_table).items()}
-    #     oldfont = plt.rcParams.get('font.size')
-    #     plt.rcParams.update({'font.size': sz})
-    #     textcirc = CircleTool(self.circle.radius * 1.2)
-    #     for t, a in group_angles.items():
-    #         plt.text(*textcirc.angles_to_points(a), t,
-    #                  rotation=90-a*(180/np.pi), rotation_mode="anchor")
-    #     plt.rcParams.update({"font.size": oldfont})
-    #     return fig, ax
+        return fig

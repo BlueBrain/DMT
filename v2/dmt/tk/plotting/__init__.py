@@ -1,7 +1,7 @@
 """
 Plotting for DMT
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -149,7 +149,25 @@ class BasePlotter(ABCWithFields):
         return self.get_figures(*args, **kwargs)
 
 
+class SeparatePlots(ABC):
+    """
+    when plotting multiple datasets, put each in a separate plot
+    """
+
+    @abstractmethod
+    def plot(self, df):
+        pass
+
+    def __call__(self, dataframes_dict, phenomenon=None):
+        """
+        plot a heatplot for each dataframe value of dataframes_dict
+        """
+        return [self.plot(dataframe, values=phenomenon)
+                for label, dataframe in dataframes_dict.items()]
+
+
 from .bars import Bars
 from .crosses import Crosses
 from .heatmap import HeatMap
+from .heat import HeatPlot
 from .lines import LinePlot
