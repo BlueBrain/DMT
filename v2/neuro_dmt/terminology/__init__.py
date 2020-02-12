@@ -134,6 +134,14 @@ class cell(TermCollection):
         The value of this parameter should describe,
         the presynaptic cell group of a pathway.
         """)
+    morphology_class = Term(
+        "morphology_class",
+        "the morphology class of a cell, either pyramidal or interneuron.")
+    morphology_subclass = Term(
+        "morphology_subclass",
+        """
+        the specific form of morphology, e.g. MC or CHC.
+        """)
     terms =(
         mtype,
         etype,
@@ -168,6 +176,7 @@ class synapse(TermCollection):
     terms =(
         afferent,
         efferent)
+
 
 class measurement_method(TermCollection):
     """
