@@ -27,4 +27,8 @@ class Statistics(ABCWithFields):
             evaluator=evaluator,
             **kwargs)
 
+    def __call__(self, *args, **kwargs):
+        """..."""
+        return self.evaluator(*args, **kwargs)
+
 from .distributions import *
