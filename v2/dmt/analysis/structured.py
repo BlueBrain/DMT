@@ -33,6 +33,8 @@ def always_pass(*args, **kwargs):
 
 NP = "Not-Provided"
 
+NOT_PROVIDED = "Not-Provided"
+
 LOGGER = Logger(client=__file__)
 
 class StructuredAnalysis(Analysis):
@@ -51,6 +53,11 @@ class StructuredAnalysis(Analysis):
         documents the methods required of the adapter by this analysis.
         """,
         __type__=InterfaceMeta)
+    default_adapter = Field(
+        """
+        the adapter to use if none is provided when the analysis is run
+        """,
+        __required__=False)
     abstract = LambdaField(
         """
         A short description of this analysis.
@@ -166,7 +173,7 @@ class StructuredAnalysis(Analysis):
         Each dataset in the dataframe must be annotated with index level
         'dataset', in addition to levels that make sense for the measurements.
         """,
-        __default_value__={})
+        __default_value__=NOT_PROVIDED)
     report = Field(
         """
         A callable that will generate a report. The callable should be able to
@@ -179,7 +186,7 @@ class StructuredAnalysis(Analysis):
         It is up to the reporter what kind of report to generate. For example,
         the report can be a (interactive) webpage, or a static PDF.
         """,
-        __required__=False,
+        __default_value__=NOT_PROVIDED,
         __examples__=[
             Reporter(path_output_folder=os.getcwd())])
     
@@ -188,15 +195,19 @@ class StructuredAnalysis(Analysis):
     # TODO: The methods below are from HD's alpha StructuredAnalysis
     #       This must be refactored...
     # TODO: this probably should not be public....
-    def adapter_method(self):
+    def adapter_method(self, adapter=None):
         """
         get the measuremet marked on the AdapterInterface
         """
         measurement_name = self.AdapterInterface.__measurement__
+        adapter = self.adapter if adapter is None else adapter
+
         try:
-            return getattr(self.adapter, measurement_name)
+            method = getattr(adapter, measurement_name)
         except AttributeError:
-            return getattr(self.adapter, "get_{}".format(measurement_name))
+            method = getattr(adapter, "get_{}".format(measurement_name))
+        finally:
+            return method
 
     @lazyfield
     def label(self):
@@ -214,17 +225,20 @@ class StructuredAnalysis(Analysis):
         """
         assert not sample_size or isinstance(sample_size, int),\
             "Expected int, received {}".format(type(sample_size))
+
         try:
-            method = self.measurement_method
+            method = self.sample_measurement
+            measurement_method =\
+                lambda *args, **kwargs: method(adapter, *args, **kwargs)
         except AttributeError:
-            method = self.adapter_method()
+            measurement_method = self.adapter_method(adapter)
         parameters = self._parameters.for_sampling(
-            adapter, model, size=self.samples_per_measurement)
+            adapter, model, size=self.sample_size)
         # TODO: test parameter order is preserved
         measurements = make_dataframe_hashable(
             pd.DataFrame(parameters).assign(
                 **{self.phenomenon:
-                   [method(adapter, model, **p)
+                   [measurement_method(model, **p)
                     for p in tqdm(parameters)]}))
         return measurements
 
@@ -259,7 +273,7 @@ class StructuredAnalysis(Analysis):
     @property
     def phenomenon(self):
         try:
-            return self.measurement_method.phenomenon
+            return self.sample_measurement.phenomenon
         except AttributeError:
             try:
                 return self.AdapterInterface.phenomenon
@@ -318,13 +332,13 @@ class StructuredAnalysis(Analysis):
             fig = [fig]
         # TODO: until field is fixed, this will raise for empty docstrings
         # TEMPORARY workaround:
-        if self.measurement_method.__doc__ is None:
-            self.measurement_method.__doc__ = ''
+        if self.sample_measurement.__doc__ is None:
+            self.sample_measurement.__doc__ = ''
         report = Report(
             figures=fig,
             measurement=measurements,
             phenomenon=self.phenomenon,
-            methods=self.measurement_method.__doc__)
+            methods=self.sample_measurement.__doc__)
         report.stats = self.stats(report)
         report.verdict = self.verdict(report)
         return report
