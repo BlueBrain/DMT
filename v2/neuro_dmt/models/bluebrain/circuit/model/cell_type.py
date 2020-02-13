@@ -3,6 +3,7 @@ Abstraction of a cell type.
 """
 import functools
 from collections import OrderedDict
+from collections.abc import Mapping
 import pandas as pd
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 
@@ -55,7 +56,7 @@ class CellType(WithFields):
         """
         Sample cells from circuit model.
         """
-        circuit_model.cells
+        raise NotImplementedError
 
     @staticmethod
     def get_specifier(cell_type):
@@ -66,13 +67,13 @@ class CellType(WithFields):
         --------------
         `cell_type`: a Mapping like an OrderedDict, or a pandas.Series
         """
-        if isinstance(cell_type, OrderedDict):
+        if isinstance(cell_type, Mapping):
             return frozenset(cell_type.keys())
         if isinstance(cell_type, pd.Series):
             return frozenset(cell_type.index.values)
         raise TypeError(
             """
-            Can extract cell type specifiers from an `OrderedDict`
+            Can extract cell type specifiers from an `Mapping`
             or a `pandas.Series`, received a {}
             """.format(type(cell_type)))
 

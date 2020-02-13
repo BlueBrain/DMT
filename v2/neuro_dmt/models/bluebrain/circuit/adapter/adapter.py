@@ -11,7 +11,7 @@ from dmt.tk.journal import Logger
 from dmt.model.interface import implements
 from dmt.model.adapter import adapts
 from dmt.tk.field import Field, lazyfield, WithFields 
-from dmt.tk.collections import take
+from dmt.tk.collections import get_list
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
 from neuro_dmt.analysis.circuit.connectome.interfaces import\
@@ -205,7 +205,6 @@ class BlueBrainCircuitAdapter(WithFields):
             if sampling_methodology == terminology.sampling_methodology.random\
             else cells_all
 
-
     def get_provenance(self,
             circuit_model=None):
         """..."""
@@ -241,16 +240,133 @@ class BlueBrainCircuitAdapter(WithFields):
         circuit_model = self._resolve(circuit_model)
         return circuit_model.mtypes
 
+    def get_etypes(self,
+                   circuit_model=None):
+        """..."""
+        circuit_model = self._resolve(circuit_model)
+        return circuit_model.etypes
+
     def mtype_to_morphology(self,
             circuit_model=None,
             mtypes=[]):
         """..."""
         return [mtype.split('_')[-1] for mtype in mtypes]
 
+    def get_cell_types(self,
+            circuit_model=None,
+            query=None):
+        """
+        Get cell-types for the given specifiers.
+
+        Arguments
+        -------------
+        query :: Either an iterable of unique cell type specifiers
+        ~        Or a mapping cell_type_specifier --> value / list(value)
+
+        Returns
+        ----------
+        A `pandas.DataFrame` containing all cell-types,
+        each row providing values for each cell type specifier.
+        """
+        if query is None:
+            raise TypeError(
+                """
+                Missing argument query. Please pass a query:
+                1. Either a tuple of cell type specifiers
+                2. Or a Mapping cell_type_specifier --> value / list(value)
+                """)
+        circuit_model = self._resolve(circuit_model)
+        def __values(variable):
+            try:
+                raw_values = query[variable]
+            except (TypeError, KeyError):
+                try:
+                    get_values = getattr(self,  "get_{}s".format(variable))
+                except AttributeError as error:
+                    raise AttributeError(
+                        """
+                        {} adapter does not implement a getter for cell property
+                        {}.
+                        """.format(self.__class__.__name__, variable))
+                raw_values = get_values(circuit_model)
+
+            return get_list(raw_values)
+
+        def _get_tuple_values(params):
+            """..."""
+            if not params: return [[]]
+
+            head_tuples =[
+                [(params[0], value)]
+                for value in __values(params[0])]
+            tail_tuples =\
+                _get_tuple_values(params[1:])
+            return[
+                h + t for h in head_tuples
+                for t in tail_tuples]
+
+        try:
+            cell_type_specifiers = list(query.keys())
+        except AttributeError:
+            cell_type_specifiers = tuple(query)
+
+        return pd.DataFrame([
+            dict(row)
+            for row in _get_tuple_values(tuple(cell_type_specifiers))])
+
     def get_pathways(self,
             circuit_model=None,
-            pre_synaptic_cell_type=None,
-            post_synaptic_cell_type=None):
+            pre_synaptic=None,
+            post_synaptic=None):
+        """
+        Arguments
+        ---------------
+        pre_synaptic :: Either an iterable of unique cell type specifiers 
+        ~               (a.k.a cell properties)
+        ~               Or a mapping `cell_type_specifier-->value`
+        post_synaptic :: Either an iterable of unique cell type specifiers 
+        ~               (a.k.a cell properties)
+        ~               Or a mapping `cell_type_specifier-->value`
+        """
+        circuit_model = self._resolve(circuit_model)
+        if pre_synaptic is None:
+            if post_synaptic is None:
+                raise TypeError(
+                    """
+                    Missing arguments. Pass at least one of:
+                    1. pre_synaptic
+                    2. post_synaptic
+                    """)
+            pre_synaptic = post_synaptic
+        else:
+            if post_synaptic is None:
+                post_synaptic = pre_synaptic
+        
+        def _at(synaptic_location, cell_type):
+            return\
+                pd.concat(
+                    [cell_type],
+                    axis=1,
+                    keys=["{}_synaptic_cell".format(synaptic_location)])
+
+        pre_synaptic_cell_types =\
+            _at("pre",
+                self.get_cell_types(circuit_model, pre_synaptic))
+        post_synaptic_cell_types =\
+            _at("post",
+                self.get_cell_types(circuit_model, post_synaptic))
+        return\
+            pd.DataFrame([
+                pre.append(post)
+                for _, pre in pre_synaptic_cell_types.iterrows()
+                for _, post in post_synaptic_cell_types.iterrows()])\
+              .reset_index(drop=True)
+
+
+    def get_pathways(self,
+            circuit_model=None,
+            pre_synaptic_cell_type_specifiers =None,
+            post_synaptic_cell_type_specifiers=None):
         """
         Arguments
         ------------
@@ -276,26 +392,91 @@ class BlueBrainCircuitAdapter(WithFields):
         Under each of these two columns should be one column each for
         the cell properties specified in the `cell_group` when it is a
         set, or its keys if it is a mapping.
-        ~   1. When `cell_group` is a set of cell properties, pathways between
-        ~      all possible values of these cell properties.
-        ~   2. When `cell-group` is a mapping, pathways between cell groups
-        ~      that satisfy the mapping values.
         """
         circuit_model = self._resolve(circuit_model)
-        if isinstance(cell_group, Set) :
+        if pre_synaptic_cell_type_specifiers is None:
+            if post_synaptic_cell_type_specifiers is None:
+                raise TypeError(
+                    """
+                    Missing arguments. Pass at least one of:
+                    1. pre_synaptic_cell_type_specifiers
+                    2. post_synaptic_cell_type_specifiers
+                    """)
+            pre_synaptic_cell_type_specifiers =\
+                post_synaptic_cell_type_specifiers
+        else:
+            if post_synaptic_cell_type_specifiers is None:
+                post_synaptic_cell_type_specifiers =\
+                    pre_synaptic_cell_type_specifiers
+
+        def _at(synaptic_location, cell_type):
             return\
-                circuit_model.pathways(
-                    cell_type_specifier=cell_group)
-        if isinstance(cell_group, pd.DataFrame):
-            return\
-                circuit_model.pathways(
-                    cell_types=cell_group)
-        raise TypeError(
-            """
-            `get_pathways(...)` argument `cell_group` is neither a set of
-            cell properties, nor a `pandas.DataFrame` specifying cell types.
-            """
-        )
+                pd.concat(
+                    [cell_type],
+                    axis=1,
+                    keys=["{}_synaptic_cell".format(synaptic_location)])
+
+        pre_synaptic_cell_types =\
+            _at("pre", self.get_cell_types(circuit_model,
+                                           pre_synaptic_cell_type_specifiers))
+        post_synaptic_cell_types =\
+            _at("post", self.get_cell_types(circuit_model,
+                                            post_synaptic_cell_type_specifiers))
+        return\
+            pd.DataFrame([
+                pre.append(post)
+                for _, pre in pre_synaptic_cell_types.iterrows()
+                for _, post in post_synaptic_cell_types.iterrows()])\
+              .reset_index(drop=True)
+
+    # def get_pathways(self,
+    #         circuit_model=None,
+    #         pre_synaptic_cell_type=None,
+    #         post_synaptic_cell_type=None):
+    #     """
+    #     Arguments
+    #     ------------
+    #     pre_synaptic_cell_type ::  An object describing the group of
+    #     ~  pre-synaptic cells to be investigated in these analyses.
+    #     ~  This object must be a `Mappable` with cell properties such as
+    #     ~  region, layer, mtype, and etype defined as keys or columns.
+    #     ~  Each key may be given either a single value or an iterable of
+    #     ~  values. Phenomena must be evaluated for each of these values and
+    #     ~  collected as a pandas.DataFrame.
+    #     post_synaptic_cell_type :: An object describing the group of
+    #     ~  post-synaptic cells to be investigated in these analyses.
+    #     ~  This object must be a `Mappable` with cell properties such as
+    #     ~  region, layer, mtype, and etype defined as keys or columns.
+    #     ~  Each key may be given either a single value or an iterable of
+    #     ~  values. Phenomena must be evaluated for each of these values and
+    #     ~  collected as a pandas.DataFrame.
+
+    #     Returns
+    #     ------------
+    #     pandas.DataFrame with nested columns, with two columns 
+    #     `(pre_synaptic, post_synaptic)` at the 0-th level.
+    #     Under each of these two columns should be one column each for
+    #     the cell properties specified in the `cell_group` when it is a
+    #     set, or its keys if it is a mapping.
+    #     ~   1. When `cell_group` is a set of cell properties, pathways between
+    #     ~      all possible values of these cell properties.
+    #     ~   2. When `cell-group` is a mapping, pathways between cell groups
+    #     ~      that satisfy the mapping values.
+    #     """
+    #     circuit_model = self._resolve(circuit_model)
+    #     if isinstance(cell_group, Set) :
+    #         return\
+    #             circuit_model.pathways(
+    #                 cell_type_specifier=cell_group)
+    #     if isinstance(cell_group, pd.DataFrame):
+    #         return\
+    #             circuit_model.pathways(
+    #                 cell_types=cell_group)
+    #     raise TypeError(
+    #         """
+    #         `get_pathways(...)` argument `cell_group` is neither a set of
+    #         cell properties, nor a `pandas.DataFrame` specifying cell types.
+    #       """)
     @lazyfield
     def visible_voxels(self):
         """
@@ -353,7 +534,7 @@ class BlueBrainCircuitAdapter(WithFields):
             positions.sample(n=1).iloc[0]\
             if not positions.empty\
                else None
-            
+
     def random_region_of_interest(self,
             circuit_model,
             query_dict):
@@ -477,8 +658,7 @@ class BlueBrainCircuitAdapter(WithFields):
         Cells were counted in a box with sides of dimensions {bounding_box_size} um. Each cube was centered at a cell that was randomly sampled from  a population described by a cell-query.
     """)
     @terminology.require(
-        *(terminology.circuit.terms + terminology.cell.terms)
-    )
+        *(terminology.circuit.terms + terminology.cell.terms))
     def get_cell_density(self,
             circuit_model=None,
             *args,
@@ -502,7 +682,7 @@ class BlueBrainCircuitAdapter(WithFields):
         return number_cells/(1.e-9 * random_roi.volume)
 
     @measurement_method("""
-    Fraction of inhibitory cells was computed in randomly sampled boxes of dimensions {bounding_box_size} um. 
+    Fraction of inhibitory cells was computed in randomly sampled boxes of dimensions {bounding_box_size} um.
     """)
     @terminology.require(*terminology.circuit.terms)
     def get_inhibitory_cell_fraction(self,
