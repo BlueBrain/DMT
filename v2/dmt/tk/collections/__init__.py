@@ -55,3 +55,4 @@ def get_list(head, *tail):
     return [head] + list(tail)
 
 from .emuset import emuset
+from ..field.record import Record

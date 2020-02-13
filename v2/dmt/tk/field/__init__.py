@@ -13,10 +13,8 @@ from sys import stdout
 from abc import ABC
 from collections.abc import Mapping
 from .field import Field, LambdaField
-from .prop import Property
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
-
 
 def set_name(
         field_or_class_attribute,
@@ -389,3 +387,6 @@ def lazyfield(instance_field):
 lazy = lazyfield
 
 lazyproperty = lazyfield
+
+from .prop import Property
+from .record import Record

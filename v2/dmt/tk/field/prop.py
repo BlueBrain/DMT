@@ -1,6 +1,7 @@
 """
 Property is a subtype of Field.
 """
+import collections
 from ..collections import emuset
 from ..field import Field
 
