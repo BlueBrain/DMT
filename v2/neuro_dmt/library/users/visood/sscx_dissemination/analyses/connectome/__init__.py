@@ -11,7 +11,7 @@ from dmt.model.interface import Interface
 from dmt.tk.field import WithFields, Field, LambdaField, lazyfield
 from dmt.tk.author import Author
 from dmt.tk.phenomenon import Phenomenon
-from dmt.tk.plotting import Bars, LinePlot
+from dmt.tk.plotting import LinePlot, HeatMap
 from dmt.tk.plotting.multi import MultiPlot
 from dmt.tk.parameters import Parameters
 from dmt.data.observation import measurement
@@ -337,12 +337,12 @@ class ConnectomeAnalysesSuite(WithFields):
         --------------
         post_synaptic_cell_type :: An object describing the group of
         ~   post-synaptic cells to be investigated in these analyses.
-        ~   Interpretation of the data in this object will be 
+        ~   Interpretation of the data in this object will be
         ~   delegated to the adapter used for the model analyzed.
-        ~   Here are some guidelines when this object may is a dictionary. 
+        ~   Here are some guidelines when this object may is a dictionary.
         ~    Such a dictionary will have cell properties such as region, layer,
-        ~    mtype,  and etype as keys. Each key may be given either a single 
-        ~    value or an iterable of values. Phenomena must be evaluated for 
+        ~    mtype,  and etype as keys. Each key may be given either a single
+        ~    value or an iterable of values. Phenomena must be evaluated for
         ~    each of these values and collected as a pandas.DataFrame.
         """
         LOGGER.debug(
@@ -370,11 +370,13 @@ class ConnectomeAnalysesSuite(WithFields):
                 circuit_model,
                 adapter,
                 post_synaptic_cell_type)
+
         def _soma_distance(pre_cells):
             return\
                 self.get_soma_distance_bins(
                     circuit_model, adapter,
                     post_synaptic_cell, pre_cells)
+
         gids_afferent =\
             adapter.get_afferent_gids(
                 circuit_model,
@@ -531,4 +533,37 @@ class ConnectomeAnalysesSuite(WithFields):
                     gvar=("pre_synaptic_cell_type", "mtype"),
                     drawstyle="steps-mid")),
             report=CircuitAnalysisReport)
+
+    def analysis_synapse_count(self,
+            pre_synaptic_cell_type_specifiers,
+            post_synaptic_cell_type_specifiers):
+        """
+        Analysis of number of synapses in pathways specified by
+        values of pre and post synaptic cell properties.
+
+        Arguments
+        ----------------
+        pre_synaptic_cell_type_specifiers :: cell properties
+        post_synaptic_cell_type_specifiers :: cell properties
+        """
+        return BrainCircuitAnalysis(
+            introduction="""
+            Not provided.
+            """,
+            methods="""
+            Not provided.
+            """,
+            phenomenon=Phenomenon(
+                "Sysapse count",
+                """
+                Number of synapses in a pathway.
+                """),
+            AdapterInterface=self.AdapterInterface,
+            measurement_parameters=self.pathways(
+                pre_synaptic_cell_type_specifiers,
+                post_synaptic_cell_type_specifiers),
+            sample_measurement=self.synapse_count,
+            measurement_collection=measurement.collection.primitive_type,
+            plotter=HeatMap(
+                xvar=))
 
