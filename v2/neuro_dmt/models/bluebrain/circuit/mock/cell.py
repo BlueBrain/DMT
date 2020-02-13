@@ -13,6 +13,7 @@ cell_properties =[
     CellProperty.ID,
     CellProperty.LAYER,
     CellProperty.MTYPE,
+    CellProperty.ETYPE,
     CellProperty.MORPHOLOGY,
     CellProperty.MORPH_CLASS,
     CellProperty.ME_COMBO,
@@ -59,8 +60,8 @@ class Cell(WithFields):
         """
         The electrical type this cell.
         The etype must be one of several categories.
-        """,
-        __default_value__="not-defined")
+        """)
+        #__default_value__="NAC")
     morph_class = Field(
         """
         The morphological class of this cell's morphology

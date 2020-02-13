@@ -78,10 +78,12 @@ class CircuitBuilder(WithFields):
                 layer=layer,
                 position=Position.sample(
                     self.composition.bounding_box(layer, mtype)),
-                mtype=mtype)
+                mtype=mtype,
+                etype=etype)
             for region in self.composition.regions
             for layer in self.composition.layers
             for mtype in self.composition.mtypes
+            for etype in self.composition.etypes
             for _ in range(self.get_number_cells(region, layer, mtype))]
 
     def get_cell_collection(self):

@@ -41,6 +41,11 @@ class CircuitComposition(WithFields):
         """
         A list of mtypes in the circuit.
         """)
+    etypes = Field(
+        """
+        A list of etypes in the circuit.
+        """,
+        __default_value__=["bNAC", "NAC"])
     cell_density = Field(
         """
         A dict mapping layer label to its density of cells,
