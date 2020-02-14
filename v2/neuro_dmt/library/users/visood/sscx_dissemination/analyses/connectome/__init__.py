@@ -27,7 +27,7 @@ from .pathway import PathwaySummary
 LOGGER = Logger(client=__file__, level="DEBUG")
 COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
 
-def add_counter(method):
+def count_number_calls(method):
     """decorate..."""
             
     method.n_calls = 0
@@ -251,7 +251,6 @@ class ConnectomeAnalysesSuite(WithFields):
 
         return _rename
 
-
     @staticmethod
     def get_soma_distance_bins(
             circuit_model,
@@ -320,7 +319,7 @@ class ConnectomeAnalysesSuite(WithFields):
     consideration Afferent connection count or in-degree of a post-synaptic
     cell is defined as the number of pre-synaptic cells in each of these groups.
     """)
-    @add_counter
+    @count_number_calls
     def number_afferent_connections(self,
             circuit_model,
             adapter,
@@ -396,7 +395,7 @@ class ConnectomeAnalysesSuite(WithFields):
                    .agg("sum")\
                    .number_connections_afferent
 
-    @add_counter
+    @count_number_calls
     def number_afferent_connections_deprecated(self,
             circuit_model,
             adapter,
@@ -533,6 +532,107 @@ class ConnectomeAnalysesSuite(WithFields):
                     gvar=("pre_synaptic_cell_type", "mtype"),
                     drawstyle="steps-mid")),
             report=CircuitAnalysisReport)
+
+
+    @count_number_calls
+    def strength_afferent_connections(self,
+            circuit_model,
+            adapter,
+            post_synaptic_cell_type,
+            pre_synaptic_cell_type_specifier=None,
+            by_soma_distance=True,
+            bin_size=100,
+            sampling_methodology=terminology.sampling_methodology.random):
+        """
+        Strength of afferent connections incident on the post-synaptic cells,
+        originating from the pre-synaptic cells. Strength of connection is the
+        number of synapses mediating that connection.
+
+        Arugments
+        --------------
+        post_synaptic_cell_type :: An object describing the group of
+        ~   post-synaptic cells to be investigated in these analyses.
+        ~   Interpretation of the data in this object will be
+        ~   delegated to the adapter used for the model analyzed.
+        ~   Here are some guidelines when this object may is a dictionary.
+        ~    Such a dictionary will have cell properties such as region, layer,
+        ~    mtype,  and etype as keys. Each key may be given either a single
+        ~    value or an iterable of values. Phenomena must be evaluated for
+        ~    each of these values and collected as a pandas.DataFrame.
+        """
+        LOGGER.debug(
+            """
+            Strength afferent connections for post-synaptic cell type: {}
+            """.format(post_synaptic_cell_type))
+        if pre_synaptic_cell_type_specifier is None:
+            pre_synaptic_cell_type_specifier =\
+                list(post_synaptic_cell_type.keys())
+
+        def _prefix_pre_synaptic(variable):
+            return\
+                self._at("pre_synaptic_cell_type", as_tuple=True)(variable)\
+                if variable in pre_synaptic_cell_type_specifier\
+                   else variable
+
+        variables_groupby =[
+            _prefix_pre_synaptic(variable)
+            for variable in pre_synaptic_cell_type_specifier]
+        if by_soma_distance:
+            variables.groupby.append("soma_distance")
+
+        post_synaptic_cell =\
+            self.random_cell(
+                circuit_model,
+                adapter,
+                post_synaptic_cell_type)
+
+        def _soma_distance(pre_cells):
+            return\
+                self.get_soma_distance_bins(
+                    circuit_model, adapter,
+                    post_synaptic_cell, pre_cells)
+
+        return\
+            adapter.get_afferent_connections(post_synaptic_cell)\
+                   .assign(**variables_measurement)\
+                   .rename(columns=_prefix_pre_synaptic)\
+                   [variables_groupby + ["strength"]]\
+                   .groupby(variables_groupby)\
+                   .agg("sum")\
+                   .strength
+                     
+        # def _strength_connection(pre_synaptic_cells):
+        #     return\
+        #         adapter.get_strength_connections(
+        #             pre_synaptic_cells,
+        #             post_synaptic_cell)
+        # gids_afferent =\
+        #     adapter.get_afferent_gids(
+        #         circuit_model,
+        #         post_synaptic_cell)
+        # variables_measurement =\
+        #     dict(strength_afferent_connections=_strength_connection,
+        #          soma_distance=_soma_distance)\
+        #          if by_soma_distance else\
+        #             dict(strength_afferent_connections=_strength_connection)
+        # return\
+        #     adapter.get_cells(circuit_model)\
+        #            .loc[gids_afferent]\
+        #            .assign(**variables_measurement)\
+        #            .rename(columns=_prefix_pre_synaptic)\
+        #            [variables_groupby + ["strength_afferent_connections"]]\
+        #            .groupby(variables_groupby)\
+        #            .agg("sum")\
+        #            .strength_afferent_connections
+
+    def synapse_count(self,
+            adapter,
+            circuit_model,
+            pathway):
+        """
+        Get synapse count ...
+        """
+        raise NotImplementedError
 
     def analysis_synapse_count(self,
             pre_synaptic_cell_type_specifiers,

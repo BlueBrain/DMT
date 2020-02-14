@@ -347,7 +347,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 pd.concat(
                     [cell_type],
                     axis=1,
-                    keys=["{}_synaptic_cell".format(synaptic_location)])
+                    keys=["{}_synaptic".format(synaptic_location)])
 
         pre_synaptic_cell_types =\
             _at("pre",
@@ -651,11 +651,14 @@ class BlueBrainCircuitAdapter(WithFields):
     =============================
     Exhaustive Methodology
     =============================
-        Count of cells in all the voxcells confirming to a cell-query was divided by the total volume of these voxcells.
+    Count of cells in all the voxcells confirming to a cell-query was
+    divided by the total volume of these voxcells.
     =============================
     Random Sampling Methodology
     =============================
-        Cells were counted in a box with sides of dimensions {bounding_box_size} um. Each cube was centered at a cell that was randomly sampled from  a population described by a cell-query.
+    Cells were counted in a box with sides of dimensions {bounding_box_size} um.
+    Each cube was centered at a cell that was randomly sampled from
+    a population described by a cell-query.
     """)
     @terminology.require(
         *(terminology.circuit.terms + terminology.cell.terms))
@@ -682,7 +685,8 @@ class BlueBrainCircuitAdapter(WithFields):
         return number_cells/(1.e-9 * random_roi.volume)
 
     @measurement_method("""
-    Fraction of inhibitory cells was computed in randomly sampled boxes of dimensions {bounding_box_size} um.
+    Fraction of inhibitory cells was computed in randomly sampled boxes
+    of dimensions {bounding_box_size} um.
     """)
     @terminology.require(*terminology.circuit.terms)
     def get_inhibitory_cell_fraction(self,
