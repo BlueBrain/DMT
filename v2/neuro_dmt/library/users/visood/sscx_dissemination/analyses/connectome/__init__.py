@@ -196,6 +196,15 @@ class ConnectomeAnalysesSuite(WithFields):
             """
             raise NotImplementedError
 
+        def get_afferent_connections(self, circuit_model, post_synaptic_cell):
+            """
+            Returns
+            ----------------
+            A `pandas.DataFrame` with each row a pre-synaptic cell connectied
+            to the given post-synaptic-cell, plus an extra column <strength>
+            providing the strength of the connection, i.e. number of synapses.
+            """
+            raise NotImplementedError
 
     def pre_synaptic_cell_type(self,
             circuit_model,
@@ -601,30 +610,6 @@ class ConnectomeAnalysesSuite(WithFields):
                    .agg("sum")\
                    .strength
                      
-        # def _strength_connection(pre_synaptic_cells):
-        #     return\
-        #         adapter.get_strength_connections(
-        #             pre_synaptic_cells,
-        #             post_synaptic_cell)
-        # gids_afferent =\
-        #     adapter.get_afferent_gids(
-        #         circuit_model,
-        #         post_synaptic_cell)
-        # variables_measurement =\
-        #     dict(strength_afferent_connections=_strength_connection,
-        #          soma_distance=_soma_distance)\
-        #          if by_soma_distance else\
-        #             dict(strength_afferent_connections=_strength_connection)
-        # return\
-        #     adapter.get_cells(circuit_model)\
-        #            .loc[gids_afferent]\
-        #            .assign(**variables_measurement)\
-        #            .rename(columns=_prefix_pre_synaptic)\
-        #            [variables_groupby + ["strength_afferent_connections"]]\
-        #            .groupby(variables_groupby)\
-        #            .agg("sum")\
-        #            .strength_afferent_connections
-
     def synapse_count(self,
             adapter,
             circuit_model,

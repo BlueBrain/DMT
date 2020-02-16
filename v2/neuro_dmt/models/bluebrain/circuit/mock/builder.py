@@ -123,6 +123,7 @@ class CircuitBuilder(WithFields):
                 .format(len(gids), len(syn_counts))
 
         return Connectome(
+            cells=cell_collection,
             afferent_adjacency=[
                 np.array(list(
                     zip(afferent_gids[gid], afferent_synapse_counts[gid])))
