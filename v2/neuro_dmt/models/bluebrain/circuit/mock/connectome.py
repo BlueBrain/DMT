@@ -5,12 +5,11 @@ The connectome of a circuit.
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Direction
-from bluepy.exceptions import BluePyError
-from dmt.tk.field import Field, WithFields, lazyfield
+from dmt.tk.field import Field, WithFields, lazy
 from dmt.tk.journal import Logger
 from .synapse import Synapse
 
-LOGGER = Logger(client=__file__)
+log = Logger(client=__file__)
 
 class Connection(WithFields):
     """
@@ -36,10 +35,6 @@ class Connectome(WithFields):
     """
     The connectome of a circuit.
     """
-    cells = Field(
-        """
-        Cell collection on which this `Connectome` instance is defined.
-        """)
     afferent_adjacency = Field(
         """
         List of 2-tuples giving afferent cell gid and synapse count,
@@ -96,36 +91,22 @@ class Connectome(WithFields):
         super().__init__(
             *args, **kwargs)
 
-    @lazyfield
+    @lazy
     def gids(self):
         """
         All the gids, loaded lazily
         """
         return np.array(range(len(self.afferent_adjacency)), dtype=int)
 
-    @lazyfield
+    @lazy
     def connections(self):
         """
         An array of (pre_gid, post_gid, number_synapses) tuples
         """
-        return\
-            pd.DataFrame(
-                np.array([
-                    (pre_gid, post_gid, synapse_count)
-                    for post_gid, cnxns in enumerate(self.afferent_adjacency)
-                    for pre_gid, synapse_count in cnxns]),
-                columns=["pre_synaptic_cell_gid",
-                         "post_synaptic_cell_gid",
-                         "synapse_count"])\
-              .set_index(["pre_synaptic_cell_gid",
-                          "post_synaptic_cell_gid"])
-
-    def afferent_connections(self, post_synaptic_cell):
-        """..."""
-        return\
-            self.connections\
-                .xs(post_synaptic_cell.gid,
-                    level="post_synaptic_cell_gid")
+        return np.array(
+            [(pre_gid, post_gid, strength)
+             for post_gid in self.gids
+             for pre_gid, strength in self.afferent_adjacency])
 
     def synapse_properties(self,
             synapse_ids,
@@ -205,10 +186,9 @@ class Connectome(WithFields):
             return i < len(xs) and xs[i] == y
 
         if gid not in self.efferent_adjacency:
-            self.efferent_adjacency[gid] =\
-                np.array([
-                    post_gid for post_gid in self.gids
-                    if self.__in_sorted(self.afferent_gids(post_gid), gid)])
+            self.efferent_adjacency[gid] = np.array([
+                post_gid for post_gid in self.gids
+                if self.__in_sorted(self.afferent_gids(post_gid), gid)])
         return self.efferent_adjacency[gid]
 
     def efferent_synapses(self, gid, properties=None):
@@ -273,7 +253,7 @@ class Connectome(WithFields):
         try:
             synapse_cache = self.cache_synapses
         except AttributeError as error:
-            LOGGER.info(
+            log.info(
                 "{} instance does not cache synapses: {}."\
                 .format(self.__class__, error))
             raise KeyError(
@@ -288,7 +268,7 @@ class Connectome(WithFields):
         try:
             synapses_cache = self.cache_synapses
         except AttributeError as error:
-            LOGGER.info(
+            log.info(
                 "{} instance does not cache synapses: {}."\
                 .format(self.__class__, error))
             return None
@@ -301,8 +281,8 @@ class Connectome(WithFields):
         try:
             return self._get_cached(pre_gid, post_gid)
         except KeyError:
-            LOGGER.info(
-                LOGGER.get_source_info(),
+            log.info(
+                log.get_source_info(),
                 "No cached synapses {}==>{}".format(
                     pre_gid if pre_gid is not None else "",
                     post_gid if post_gid is not None else ""))
@@ -381,44 +361,8 @@ class Connectome(WithFields):
                 for _post_gid in post_gids
                 for _pre_gid in self._filter_connected(_post_gid, pre_gids)])
     
-    def _resolve_gids(self, cell_group):
+    def iter_connections(self, pre_gids, post_gids, unique_gids, shuffle):
         """
-        Gids of the cells in a group.
+        Iterate through {pre_gids} -> {post_gids} connections.
         """
-        if isinstance(cell_group, pd.DataFrame):
-            return self.cells.gid.values
-        return None if cell_group is None else self.cells.gid.values
-
-
-    def iter_connections(self,
-            pre=None,
-            post=None,
-            unique_gids=False,
-            shuffle=False,
-            return_synapse_ids=False,
-            return_synapse_count=False):
-        """
-        Iterate through `pre` -> `post` connections.
-
-        Args:
-            pre: presynaptic cell group
-            post: postsynaptic cell group
-            unique_gids: if True, no gid would be used more than once
-            shuffle: if True, result order would be (somewhat) randomised
-            return_synapse_count: if True, synapse count is added to yield result
-            return_synapse_ids: if True, synapse ID list is added to yield result
-
-        `return_synapse_count` and `return_synapse_ids` are mutually exclusive.
-
-        Yields:
-            (pre_gid, post_gids, synapse_ids) if return_synapse_ids == True;
-            (pre_gid, post_gid, synapse_count) if return_synapse_count == True;
-            (pre_gid, post_gid) otherwise.
-        """
-        if return_synapse_ids and return_synapse_count:
-            raise BluePyError(
-                "`return_synapse_count` and `return_synapse_ids` are mutually exclusive")
-        pre_gids = self._resolve_gids(pre)
-        post_gids = self._resolve_gids(post)
-
         raise NotImplementedError

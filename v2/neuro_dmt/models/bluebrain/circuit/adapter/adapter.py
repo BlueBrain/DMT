@@ -837,24 +837,6 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         return circuit_model.connectome.afferent_gids(post_synaptic_cell.gid)
 
-    def get_afferent_connections(self,
-            circuit_model,
-            post_synaptic_cell):
-        """
-        Returns
-        ----------------
-        A `pandas.DataFrame` with each row a pre-synaptic cell connectied
-        to the given post-synaptic-cell, plus an extra column <strength>
-        providing the strength of the connection, i.e. number of synapses.
-        """
-        data =\
-            np.array(list(
-                circuit_model.connectome.iter_connections(
-                    pre=None, post=post_synaptic_cell.gid)))
-        return\
-            self.get_cells(circuit_model)\
-                .loc[data[:,0]]\
-                .assign(strength=data[:2])
 
     def get_connection_probability(self,
             circuit_model=None,
