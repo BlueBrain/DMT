@@ -362,8 +362,7 @@ class BlueBrainCircuitAdapter(WithFields):
                 for _, post in post_synaptic_cell_types.iterrows()])\
               .reset_index(drop=True)
 
-
-    def get_pathways(self,
+    def get_pathways_older_implementation(self,
             circuit_model=None,
             pre_synaptic_cell_type_specifiers =None,
             post_synaptic_cell_type_specifiers=None):
@@ -836,6 +835,24 @@ class BlueBrainCircuitAdapter(WithFields):
         These ids (gids) are used to index the circuit's cells.
         """
         return circuit_model.connectome.afferent_gids(post_synaptic_cell.gid)
+
+    def get_afferent_connections(self,
+            circuit_model,
+            post_synaptic_cell):
+        """
+        (pre, post, strength)
+        """
+        iter_connections =\
+            circuit_model.connectome\
+                         .iter_connections(
+                             post=[post_synaptic_cell.gid])
+        connections =\
+            np.array([
+                connection for connection in iter_connections])
+        return\
+            pd.DataFrame({
+                "pre_gid": connections[:, 0],
+                "strength": connections[:, 2]})
 
 
     def get_connection_probability(self,
