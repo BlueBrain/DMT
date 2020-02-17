@@ -759,8 +759,12 @@ class BlueBrainCircuitAdapter(WithFields):
         cell_group :: A `pandas.DataFrame` containing entries for cell's
         ~             position <X, Y, Z>.
         """
-        distance = np.linalg.norm(cell_group[XYZ] - cell[XYZ], axis=1)
-        bin_starts = bin_size * np.floor(distance / bin_size)
+        delta_positions =\
+            cell_group[XYZ].to_numpy(dtype=np.float64)\
+            - cell[XYZ].to_numpy(dtype=np.float64)
+        distances =\
+            np.linalg.norm(delta_positions, axis=1)
+        bin_starts = bin_size * np.floor(distances / bin_size)
         return np.array([
             bin_start + bin_size / 2. for bin_start in bin_starts])
 

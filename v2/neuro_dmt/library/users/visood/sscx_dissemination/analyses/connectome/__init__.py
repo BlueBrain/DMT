@@ -579,7 +579,7 @@ class ConnectomeAnalysesSuite(WithFields):
             _prefix_pre_synaptic(variable)
             for variable in pre_synaptic_cell_type_specifier]
         if by_soma_distance:
-            variables.groupby.append("soma_distance")
+            variables_groupby.append("soma_distance")
 
         post_synaptic_cell =\
             self.random_cell(
@@ -594,12 +594,17 @@ class ConnectomeAnalysesSuite(WithFields):
                     post_synaptic_cell, pre_cells)
 
         connections =\
-            adapter.get_afferent_connections(post_synaptic_cell)
-
+            adapter.get_afferent_connections(
+                circuit_model,
+                post_synaptic_cell)
+        variables_measurement =\
+            dict(strength=connections.strength.to_numpy(dtype=np.float64),
+                 soma_distance=_soma_distance)\
+            if by_soma_distance else\
+               dict(number_connections_afferent=1.)
         return\
             adapter.get_cells(circuit_model)\
                    .loc[connections.pre_gid.values]\
-                   .assign(strength=connections.strength.values)\
                    .assign(**variables_measurement)\
                    .rename(columns=_prefix_pre_synaptic)\
                    [variables_groupby + ["strength"]]\
@@ -670,6 +675,6 @@ class ConnectomeAnalysesSuite(WithFields):
                 post_synaptic_cell_type_specifiers),
             sample_measurement=self.synapse_count,
             measurement_collection=measurement.collection.primitive_type,
-            plotter=HeatMap(
-                xvar=))
+            plotter=HeatMap())
+                
 
