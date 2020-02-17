@@ -10,7 +10,7 @@ from dmt.tk.field import Field, WithFields, lazyfield
 from dmt.tk.journal import Logger
 from .synapse import Synapse
 
-log = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
 
 class Connection(WithFields):
     """
@@ -108,6 +108,7 @@ class Connectome(WithFields):
         """
         An array of (pre_gid, post_gid, number_synapses) tuples
         """
+        LOGGER.info("Loading connections.")
         return\
             pd.DataFrame(
                 np.array(
@@ -135,6 +136,7 @@ class Connectome(WithFields):
     @lazyfield
     def synapse_count(self):
         """..."""
+        LOGGER.info("Loading synapse counts.")
         levels_index =[
             "pre_synaptic_cell_gid",
             "post_synaptic_cell_gid"]
@@ -289,7 +291,7 @@ class Connectome(WithFields):
         try:
             synapse_cache = self.cache_synapses
         except AttributeError as error:
-            log.info(
+            LOGGER.info(
                 "{} instance does not cache synapses: {}."\
                 .format(self.__class__, error))
             raise KeyError(
@@ -304,7 +306,7 @@ class Connectome(WithFields):
         try:
             synapses_cache = self.cache_synapses
         except AttributeError as error:
-            log.info(
+            LOGGER.info(
                 "{} instance does not cache synapses: {}."\
                 .format(self.__class__, error))
             return None
@@ -317,8 +319,8 @@ class Connectome(WithFields):
         try:
             return self._get_cached(pre_gid, post_gid)
         except KeyError:
-            log.info(
-                log.get_source_info(),
+            LOGGER.info(
+                LOGGER.get_source_info(),
                 "No cached synapses {}==>{}".format(
                     pre_gid if pre_gid is not None else "",
                     post_gid if post_gid is not None else ""))
