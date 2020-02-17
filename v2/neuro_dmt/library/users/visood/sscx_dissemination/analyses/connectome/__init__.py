@@ -468,6 +468,7 @@ class ConnectomeAnalysesSuite(WithFields):
                              [variables_groupby + ["number_connections_afferent"]]\
                              .groupby(variables_groupby)\
                              .agg("sum")
+
         sample_post_synaptic_cells =\
             self.get_random_cells(
                 circuit_model,
@@ -592,8 +593,13 @@ class ConnectomeAnalysesSuite(WithFields):
                     circuit_model, adapter,
                     post_synaptic_cell, pre_cells)
 
+        connections =\
+            adapter.get_afferent_connections(post_synaptic_cell)
+
         return\
-            adapter.get_afferent_connections(post_synaptic_cell)\
+            adapter.get_cells(circuit_model)\
+                   .loc[connections.pre_gid.values]\
+                   .assign(strength=connections.strength.values)\
                    .assign(**variables_measurement)\
                    .rename(columns=_prefix_pre_synaptic)\
                    [variables_groupby + ["strength"]]\
