@@ -4,9 +4,10 @@ Build a mock circuit.
 
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.field import Field, WithFields
-
+from dmt.tk.journal import Logger
 from ..geometry import Position
 from .cell import Cell, CellCollection
 from .composition import CircuitComposition
@@ -17,6 +18,7 @@ MTYPE = CellProperty.MTYPE
 REGION = CellProperty.REGION
 LAYER = CellProperty.LAYER
 
+LOGGER = Logger(client=__file__)
 
 class CircuitBuilder(WithFields):
     """
@@ -99,22 +101,34 @@ class CircuitBuilder(WithFields):
         """
         Get this circuit's connectome.
         """
+        cells =\
+            cell_collection.get()
         afferent_gids =[
-            np.sort(np.random.choice(
-                cell_collection.gids,
-                self.connectivity.get_afferent_degree(**cell_props.to_dict()),
-                replace=False))
-            for _, cell_props in cell_collection.get().iterrows()]
-        mtype_of =\
-            np.array(
-                cell_collection.get(properties="mtype"),
-                dtype=str)
-        afferent_synapse_counts =[
-            [self.connectivity.get_synapse_count(
-                mtype_of[pre_gid], mtype_of[post_gid])
-             for post_gid in afferent_gids[pre_gid]]
-            for pre_gid in cell_collection.gids]
+            self.connectivity.get_afferent_gids(post_synaptic_cell, cells)
+            for _, post_synaptic_cell in tqdm(cells.iterrows())]
+        # mtype_of =\
+        #     np.array(
+        #         cell_collection.get(properties="mtype"),
+        #         dtype=str)
+        LOGGER.debug(
+            "Get afferent synapse counts.")
+        # afferent_synapse_counts =[
+        #     [self.connectivity.get_synapse_count(cells.iloc[pre_gid],
+        #                                          post_synaptic_cell)
+        #      for pre_gid in afferent_gids[post_gid]]
+        #     for post_gid, post_synaptic_cell in tqdm(cells.iterrows())]
 
+        # afferent_synapse_counts =[
+        #     [self.connectivity.get_synapse_count(cells.iloc[pre_gid],
+        #                                          cells.iloc[post_gid])
+        #      for pre_gid in afferent_gids[post_gid]]
+        #     for post_gid in tqdm(cell_collection.gids)]
+
+        afferent_synapse_counts =\
+            self.connectivity\
+                .get_synapse_count(
+                    afferent_gids, cell_collection)
+        
         assert len(afferent_gids) == len(afferent_synapse_counts)
 
         for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
@@ -123,6 +137,7 @@ class CircuitBuilder(WithFields):
                 .format(len(gids), len(syn_counts))
 
         return Connectome(
+            cells=cell_collection,
             afferent_adjacency=[
                 np.array(list(
                     zip(afferent_gids[gid], afferent_synapse_counts[gid])))

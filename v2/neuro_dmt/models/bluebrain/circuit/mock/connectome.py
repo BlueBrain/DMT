@@ -2,10 +2,11 @@
 The connectome of a circuit.
 """
 
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from bluepy.v2.enums import Direction
-from dmt.tk.field import Field, WithFields, lazy
+from dmt.tk.field import Field, WithFields, lazyfield
 from dmt.tk.journal import Logger
 from .synapse import Synapse
 
@@ -35,6 +36,10 @@ class Connectome(WithFields):
     """
     The connectome of a circuit.
     """
+    cells = Field(
+        """
+        Instance of cell collection on which this `Connectome` has been defined.
+        """)
     afferent_adjacency = Field(
         """
         List of 2-tuples giving afferent cell gid and synapse count,
@@ -91,22 +96,53 @@ class Connectome(WithFields):
         super().__init__(
             *args, **kwargs)
 
-    @lazy
+    @lazyfield
     def gids(self):
         """
         All the gids, loaded lazily
         """
         return np.array(range(len(self.afferent_adjacency)), dtype=int)
 
-    @lazy
+    @lazyfield
     def connections(self):
         """
         An array of (pre_gid, post_gid, number_synapses) tuples
         """
-        return np.array(
-            [(pre_gid, post_gid, strength)
-             for post_gid in self.gids
-             for pre_gid, strength in self.afferent_adjacency])
+        return\
+            pd.DataFrame(
+                np.array(
+                    [(pre_gid_and_strength[0], post_gid, pre_gid_and_strength[1])
+                     for post_gid in tqdm(self.gids)
+                     for pre_gid_and_strength in self.afferent_adjacency[post_gid]]),
+                columns=["pre_synaptic_cell_gid",
+                         "post_synaptic_cell_gid",
+                         "strength"])
+
+    @lazyfield
+    def afferent_connections(self):
+        """..."""
+        return\
+            self.connections\
+                .set_index("post_synaptic_cell_gid")
+
+    @lazyfield
+    def efferent_connections(self):
+        """..."""
+        return\
+            self.connections\
+                .set_index("pre_synaptic_cell_gid")
+
+    @lazyfield
+    def synapse_count(self):
+        """..."""
+        levels_index =[
+            "pre_synaptic_cell_gid",
+            "post_synaptic_cell_gid"]
+        return\
+            self.connections\
+                .set_index(levels_index)\
+                .strength\
+                .sort_index(level=levels_index)
 
     def synapse_properties(self,
             synapse_ids,
@@ -361,8 +397,33 @@ class Connectome(WithFields):
                 for _post_gid in post_gids
                 for _pre_gid in self._filter_connected(_post_gid, pre_gids)])
     
-    def iter_connections(self, pre_gids, post_gids, unique_gids, shuffle):
+    def _resolve_gids(self, group_cells):
+        return\
+            self.cells.get(group_cells).index.values
+
+    def iter_connections(self,
+            pre=None, post=None,
+            unique_gids=False,
+            shuffle=False,
+            return_synapse_ids=False,
+            return_synapse_count=False):
         """
-        Iterate through {pre_gids} -> {post_gids} connections.
+        Iterate through pre -> post connections.
         """
-        raise NotImplementedError
+        # return(
+        #     (pre_gid, post_gid, strength)
+        #     for pre_gid in self._resolve_gids(pre)
+        #     for post_gid, strength in self.synapse_counts\
+        #                                   .loc[pre_gid]\
+        #                                   .reindex(self._resolve_gids(post))\
+        #                                   .dropna()\
+        #                                   .iterrows())
+        
+        for pre_gid in self._resolve_gids(pre):
+            efferent_synapse_count =\
+                self.synapse_count\
+                    .loc[pre_gid]\
+                    .reindex(self._resolve_gids(post))\
+                    .dropna()
+            for post_gid, strength in efferent_synapse_count.iteritems():
+                yield (pre_gid, post_gid, strength)
