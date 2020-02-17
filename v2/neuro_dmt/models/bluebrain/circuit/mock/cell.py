@@ -118,7 +118,6 @@ class CellCollection(WithFields):
         Brain regions represented in the circuit model.
         """,
         __required__=False)
-
     def __init__(self, cells, **field_values):
         """
         Initialize
@@ -152,8 +151,9 @@ class CellCollection(WithFields):
                     lambda v: (
                         v == property_value
                         if not isinstance(property_value, (frozenset, set, list))
-                        else v in frozenset(property_value)))
-
+                        else v in frozenset(property_value)
+                    )
+                )
     def get(self, group=None, properties=None):
         """
         Get a dataframe, with cells of 'group' (any cell type if None).
@@ -172,7 +172,7 @@ class CellCollection(WithFields):
             """
             return data_frame_or_series if properties is None\
                 else data_frame_or_series[properties]
-
+        
         if group is None:
             return __get_properties(self._dataframe)
         if (isinstance(group, (int, np.integer,)) or
@@ -196,3 +196,4 @@ class CellCollection(WithFields):
                 np.logical_and(filtered, property_filter)
 
         return __get_properties(self._dataframe[filtered])
+            
