@@ -48,11 +48,10 @@ class MockCircuit(WithFields):
             CircuitBuilder(
                 composition=composition,
                 connectivity=connectivity)
-        cell_collection =\
-            circuit_builder.get_cell_collection()
-        return MockCircuit(
-            cells=cell_collection,
-            connectome=circuit_builder.get_connectome(cell_collection))
+        return\
+            MockCircuit(
+                cells=circuit_builder.get_cell_collection(),
+                connectome=circuit_builder.get_connectome())
 
 
 class MockBlueBrainCircuitModel(BlueBrainCircuitModel):

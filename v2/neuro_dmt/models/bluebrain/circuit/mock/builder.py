@@ -22,7 +22,6 @@ class CircuitBuilder(WithFields):
     """
     Builds a circuit.
     """
-
     composition = Field(
         """
         An object parameterizing the circuit's composition.
@@ -86,7 +85,7 @@ class CircuitBuilder(WithFields):
             for etype in self.composition.etypes
             for _ in range(self.get_number_cells(region, layer, mtype))]
 
-    def get_cell_collection(self):
+    def get_cell_collection(self, **kwargs):
         """
         Get a CellCollection.
         """
@@ -95,35 +94,12 @@ class CircuitBuilder(WithFields):
             regions=self.composition.regions,
             layers=self.composition.layers)
 
-    def get_connectome(self, cell_collection):
+    def get_connectome(self, **kwargs):
         """
         Get this circuit's connectome.
         """
-        afferent_gids =[
-            np.sort(np.random.choice(
-                cell_collection.gids,
-                self.connectivity.get_afferent_degree(**cell_props.to_dict()),
-                replace=False))
-            for _, cell_props in cell_collection.get().iterrows()]
-        mtype_of =\
-            np.array(
-                cell_collection.get(properties="mtype"),
-                dtype=str)
-        afferent_synapse_counts =[
-            [self.connectivity.get_synapse_count(
-                mtype_of[pre_gid], mtype_of[post_gid])
-             for post_gid in afferent_gids[pre_gid]]
-            for pre_gid in cell_collection.gids]
-
-        assert len(afferent_gids) == len(afferent_synapse_counts)
-
-        for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
-            assert len(gids) == len(syn_counts),\
-                "Length {} of afferent gids should equal that of synapse counts"\
-                .format(len(gids), len(syn_counts))
-
+        cells = self.get_cell_collection().get()
+        connections = self.connectivity.get_connections(cells)
         return Connectome(
-            afferent_adjacency=[
-                np.array(list(
-                    zip(afferent_gids[gid], afferent_synapse_counts[gid])))
-                for gid in cell_collection.gids])
+            cells=cells,
+            connections=connections)
