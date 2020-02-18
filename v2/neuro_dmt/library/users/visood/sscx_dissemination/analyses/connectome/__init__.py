@@ -22,7 +22,7 @@ from neuro_dmt.analysis.reporting import\
     CheetahReporter
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from neuro_dmt.models.bluebrain.circuit.adapter.adapter import measurement_method
-from .pathway import PathwaySummary
+from  ..tools import PathwayMeasurement
 
 LOGGER = Logger(client=__file__, level="DEBUG")
 COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
@@ -222,7 +222,7 @@ class ConnectomeAnalysesSuite(WithFields):
                 if len(self.pre_synaptic_mtypes) > 0 else\
                    adapter.get_mtypes(circuit_model)
             return pd.DataFrame({
-                ("pre_synaptic_cell_type", "mtype"): mtypes})
+                ("pre_synaptic_cell", "mtype"): mtypes})
         return\
             Parameters(_mtypes)
 
@@ -236,7 +236,7 @@ class ConnectomeAnalysesSuite(WithFields):
                 if len(self.post_synaptic_mtypes) > 0 else\
                    adapter.get_mtypes(circuit_model)
             return pd.DataFrame({
-                ("post_synaptic_cell_type", "mtype"): mtypes})
+                ("post_synaptic_cell", "mtype"): mtypes})
         return\
             Parameters(_mtypes)
 
@@ -300,15 +300,46 @@ class ConnectomeAnalysesSuite(WithFields):
             cell_type):
         """Only one random cell"""
         return\
-            ConnectomeAnalysesSuite\
-            .get_random_cells(
-                circuit_model,
-                adapter,
-                cell_type,
-                number=1)\
-            .iloc[0]
+            ConnectomeAnalysesSuite.get_random_cells(circuit_model,
+                                                     adapter,
+                                                     cell_type,
+                                                     number=1)\
+                                   .iloc[0]
 
 
+    def example_number_connections_afferent(self,
+            circuit_model,
+            adapter,
+            cell,
+            variables_groupby,
+            by_soma_distance=True,
+            bin_size_soma_distance=100.,
+            prefix_synaptic=None):
+        """
+        Just an example, for now.
+        """
+        def _soma_distance(other_cells):
+            return\
+                self.get_soma_distance_bins(
+                    circuit_model, adapter,
+                    cell, other_cells,
+                    bin_size=bin_size_soma_distance)
+        
+        variables_measurement =\
+            dict(number_connections_afferent=1., soma_distance=_soma_distance)\
+            if by_soma_distance else\
+               dict(number_connections_afferent=1.)
+        additional_variables_groupby =\
+            ["soma_distance"] if by_soma_distance else []
+        return\
+            adapter.get_cells(circuit_model)\
+                   .loc[adapter.get_afferent_gids(circuit_model, cell)]\
+                   .assign(**variables_measurement)\
+                   [variables_groupby + additional_variables_groupby + ["number_connections_afferent"]]\
+                   .groupby(variables_groupby + additional_variables_groupby)\
+                   .agg("sum")\
+                   .number_connections_afferent
+    
     @measurement_method("""
     Number of afferent connections are computed as a function of the
     post-synaptic cell type. Cell-type can be any defined by the values of
@@ -437,7 +468,7 @@ class ConnectomeAnalysesSuite(WithFields):
             summaries=["count", "sum",
                        "mean", "mad", "std", "var",
                        "min", "median", "max"]):
-            
+
         """
         Total number of connections afferent on a randomly sampled
         post-synaptic cell.
@@ -461,7 +492,6 @@ class ConnectomeAnalysesSuite(WithFields):
         """
         Analyze number of incoming connections.
         """
-
         return BrainCircuitAnalysis(
             introduction="""
             A circuit model should reproduce experimentally measured number
@@ -495,7 +525,11 @@ class ConnectomeAnalysesSuite(WithFields):
                 """),
             AdapterInterface=self.AdapterInterface,
             measurement_parameters=self.parameters_post_synaptic_cell_mtypes,
-            sample_measurement=self.number_connections_afferent,
+            sample_measurement=PathwayMeasurement(
+                method=self.number_connections_afferent,
+                sampling_methodology=terminology.sampling_methodology.random,
+                sample_size=1.).sample_post_synaptic,
+            #sample_measurement=self.number_connections_afferent,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
                 mvar=("post_synaptic_cell_type", "mtype"),
