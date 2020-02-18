@@ -56,6 +56,13 @@ class PathwayMeasurement(WithFields):
             if sampling_random and self.sample_size < all_cells.shape[0]\
                else all_cells
 
+    def sample_one(self, *args, **kwargs):
+        """
+        Sample of size 1.
+        """
+        return\
+            list(self.sample(*args, **kwargs))[0]
+
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
             post_synaptic_cell=None):
@@ -111,6 +118,22 @@ class PathwayMeasurement(WithFields):
                 measurement.index.names =[
                     _prefix(variable) for variable in measurement.index.names]
             else:
-                measurement.index.name = _prefix(variable)
+                measurement.index.name = _prefix(measurement.index.name)
 
             yield measurement
+
+    def collect(self, *args, **kwargs):
+        """"..."""
+        return\
+            pd.concat(
+                [m for m in self.sample(*args, **kwargs)],
+                axis=1)
+
+    def summary(self, *args, **kwargs):
+        """..."""
+        return\
+            self.collect(*args, **kwargs)\
+                .agg(["count", "sum",
+                       "mean", "mad", "std", "var",
+                       "min", "median", "max"],
+                     axis=1)

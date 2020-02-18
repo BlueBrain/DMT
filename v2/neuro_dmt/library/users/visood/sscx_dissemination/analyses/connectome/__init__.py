@@ -527,9 +527,7 @@ class ConnectomeAnalysesSuite(WithFields):
             measurement_parameters=self.parameters_post_synaptic_cell_mtypes,
             sample_measurement=PathwayMeasurement(
                 method=self.number_connections_afferent,
-                sampling_methodology=terminology.sampling_methodology.random,
-                sample_size=1.).sample_post_synaptic,
-            #sample_measurement=self.number_connections_afferent,
+                sampling_methodology=terminology.sampling_methodology.random).sample_one,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
                 mvar=("post_synaptic_cell_type", "mtype"),
