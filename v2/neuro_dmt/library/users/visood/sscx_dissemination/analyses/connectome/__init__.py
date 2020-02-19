@@ -378,9 +378,10 @@ class ConnectomeAnalysesSuite(WithFields):
                 by_soma_distance=by_soma_distance,
                 direction="AFF",
                 specifiers_cell_type=["mtype"],
-                sampling_methodology=terminology.sampling_methodology.random)
+                sampling_methodology=terminology.sampling_methodology.random
+            ).sample_one
 
-    def number_pathways_afferent(self, by_soma_distance):
+    def number_connections_pathway(self, by_soma_distance):
         return\
             PathwayMeasurement(
                 value=lambda connection: np.ones(connection.shape[0]),
@@ -388,7 +389,9 @@ class ConnectomeAnalysesSuite(WithFields):
                 by_soma_distance=by_soma_distance,
                 direction="AFF",
                 specifiers_cell_type=["mtype"],
-                sampling_methodology=terminology.sampling_methodology.exhaustive)
+                sampling_methodology=terminology.sampling_methodology.exhaustive,
+                summaries="sum"
+            ).summary
 
     def strength_connections_afferent(self, by_soma_distance):
         """..."""
@@ -398,9 +401,11 @@ class ConnectomeAnalysesSuite(WithFields):
                 by_soma_distance=by_soma_distance,
                 direction="AFF",
                 specifiers_cell_type=["mtype"],
-                sampling_methodology=terminology.sampling_methodology.random)
+                sampling_methodology=terminology.sampling_methodology.random,
+                summaries="sum"
+            ).sample_one
 
-    def strength_pathways_afferent(self, by_soma_distance):
+    def strength_pathways(self, by_soma_distance):
         """..."""
         return\
             PathwayMeasurement(
