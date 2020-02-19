@@ -1,6 +1,7 @@
 """
 Tools to help analyze.
 """
+import numpy as np
 import pandas as pd
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal.logger import Logger 
@@ -12,10 +13,17 @@ class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
     """
-    method = Field(
+    value = Field(
         """
         Measurement method for a single set of parameter-values.
         """)
+    variable = Field(
+        """
+        Name of the variable to give to the measurement.
+        Thus variable may be queried to retrieve the measurement from
+        a connections pandas dataframe.
+        """,
+        __default_value__="measurement")
     sampling_methodology = Field(
         """
         Random or exhaustive?
@@ -119,19 +127,105 @@ class PathwayMeasurement(WithFields):
 
         for _, cell in self.cells(cell_type, circuit_model, adapter).iterrows():
             measurement =\
-                self.method(circuit_model, adapter, cell,
-                            variables_groupby=specifier_aggregated_synaptic_side_cells,
-                            by_soma_distance=self.by_soma_distance,
-                            bin_size_soma_distance=self.bin_size_soma_distance,
-                            **kwargs)\
-                    .rename(cell.gid)
+                self.method(
+                    circuit_model, adapter, cell,
+                    cell_properties_groupby=specifier_aggregated_synaptic_side_cells,
+                    by_soma_distance=self.by_soma_distance,
+                    bin_size_soma_distance=self.bin_size_soma_distance,
+                    **kwargs)
             if isinstance(measurement.index, pd.MultiIndex):
                 measurement.index.names =[
                     _prefix(variable) for variable in measurement.index.names]
             else:
                 measurement.index.name = _prefix(measurement.index.name)
 
-            yield measurement
+            yield measurement.rename(cell.gid)
+
+    @staticmethod
+    def get_soma_distance_bins(
+            circuit_model,
+            adapter,
+            cell,
+            cell_group,
+            bin_size=100.,
+            bin_mids=True):
+        """
+        Get binned distance of `cell`'s soma from soma of all the cells in
+        `cell_group`.
+        """
+        distance =\
+            adapter.get_soma_distance(
+                circuit_model,
+                cell, cell_group)
+        bin_starts =\
+            bin_size * np.floor(distance / bin_size)
+        return\
+            [bin_start + bin_size / 2. for bin_start in bin_starts]\
+            if bin_mids else\
+               [[bin_start, bin_size] for bin_start in bin_starts]
+
+    def method(self, circuit_model, adapter, cell,
+            cell_properties_groupby,
+            by_soma_distance,
+            bin_size_soma_distance,
+            **kwargs):
+        """..."""
+        try:
+            return\
+                self.value(
+                    circuit_model, adapter, cell,
+                    cell_properties_groupby=cell_properties_groupby,
+                    by_soma_distance=self.by_soma_distance,
+                    bin_size_soma_distance=self.bin_size_soma_distance,
+                    **kwargs)
+        except TypeError:
+            connections =\
+                adapter.get_afferent_connections(
+                    circuit_model,
+                    cell)
+            try:
+                value = self.value(connections)
+            except TypeError:
+                try:
+                    value = connections[self.variable]
+                except:
+                    raise TypeError(
+                        """
+                        Not enough information to make the measurement:
+                        \t value: {}
+                        \t variable: {}
+                        """.format(
+                            self.value,
+                            self.variable))
+            variables_groupby =\
+                cell_properties_groupby +(
+                    ["soma_distance"] if by_soma_distance else [])
+            columns_relevant =\
+                cell_properties_groupby + (
+                    [self.variable, "soma_distance"]\
+                    if by_soma_distance else\
+                    [self.variable])
+            cells_afferent =\
+                adapter.get_cells(circuit_model)\
+                       .loc[connections.pre_gid.values]\
+                       .assign(**{self.variable: self.value(connections)})
+            if by_soma_distance:
+                def _soma_distance(other_cells):
+                    return\
+                        self.get_soma_distance_bins(
+                            circuit_model, adapter,
+                            cell, other_cells,
+                            bin_size=bin_size_soma_distance)
+                cells_afferent =\
+                    cells_afferent.assign(soma_distance=_soma_distance)
+            value_measurement =\
+                cells_afferent[columns_relevant].groupby(variables_groupby)\
+                                                .agg("sum")
+            return\
+                value_measurement[self.variable]
+        
+
+
 
     def collect(self, *args, **kwargs):
         """"..."""

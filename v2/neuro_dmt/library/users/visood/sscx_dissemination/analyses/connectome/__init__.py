@@ -321,9 +321,10 @@ class ConnectomeAnalysesSuite(WithFields):
             circuit_model,
             adapter,
             cell,
-            variables_groupby,
+            cell_properties_groupby,
             by_soma_distance=True,
-            bin_size_soma_distance=100.):
+            bin_size_soma_distance=100.,
+            with_cell_propreties_as_index=True):
         """
         Just an example, for now.
         """
@@ -334,25 +335,62 @@ class ConnectomeAnalysesSuite(WithFields):
                     cell, other_cells,
                     bin_size=bin_size_soma_distance)
         
-        variables_measurement =\
-            dict(number_connections_afferent=1., soma_distance=_soma_distance)\
-            if by_soma_distance else\
-               dict(number_connections_afferent=1.)
-        additional_variables_groupby =\
-            ["soma_distance"] if by_soma_distance else []
-        return\
+        variables_groupby =\
+            cell_properties_groupby + (
+                ["soma_distance"] if by_soma_distance else [])
+
+        connections =\
+            adapter.get_afferent_connections(
+                circuit_model,
+                cell)
+
+        variable = "number_connections_afferent"
+        value = lambda cnxns: np.ones(cnxns.shape[0])
+
+        columns_relevant =\
+            cell_properties_groupby + (
+                [variable, "soma_distance"]\
+                if by_soma_distance else [variable])
+
+        cells_afferent =\
             adapter.get_cells(circuit_model)\
-                   .loc[adapter.get_afferent_gids(circuit_model, cell)]\
-                   .assign(**variables_measurement)\
-                   [variables_groupby +
-                    additional_variables_groupby +
-                    ["number_connections_afferent"]]\
-                   .groupby(variables_groupby + additional_variables_groupby)\
-                   .agg("sum")\
-                   .number_connections_afferent
+                   .loc[connections.pre_gid.values]\
+                   .assign(**{variable: value(connections)})
+        if by_soma_distance:
+            cells_afferent =\
+                cells_afferent.assign(soma_distance=_soma_distance)
+        value_measurement =\
+            cells_afferent[columns_relevant].groupby(variables_groupby)\
+                                            .agg("sum")
+        return\
+            value_measurement[variable]\
+            if with_cell_propreties_as_index else\
+               value_measurement.reindex()
+                          
+
+        # variables_measurement =\
+        #     dict(number=1., soma_distance=_soma_distance)\
+        #     if by_soma_distance else\
+        #        dict(number=1.)
+
+        # return\
+        #     cells_afferent.assign(**variables_measurement)[columns_relevant]\
+        #                   .groupby(variables_groupby)\
+        #                   .agg("sum")\
+        #                   .number
+        # return\
+        #     adapter.get_cells(circuit_model)\
+        #            .loc[adapter.get_afferent_gids(circuit_model, cell)]\
+        #            .assign(**variables_measurement)\
+        #            [variables_groupby +
+        #             additional_variables_groupby +
+        #             ["number_connections_afferent"]]\
+        #            .groupby(variables_groupby + additional_variables_groupby)\
+        #            .agg("sum")\
+        #            .number_connections_afferent
     
     @lazyfield
-    def analysis_number_afferent_connections(self):
+    def analysis_number_connections_afferent(self):
         """
         Analyze number of incoming connections.
         """
@@ -403,6 +441,49 @@ class ConnectomeAnalysesSuite(WithFields):
                     gvar=("pre_synaptic_cell", "mtype"),
                     drawstyle="steps-mid")),
             report=CircuitAnalysisReport)
+
+
+    @count_number_calls
+    def strength_connections_afferent(self,
+            circuit_model,
+            adapter,
+            cell,
+            cell_properties_groupby,
+            by_soma_distance=True,
+            bin_size_soma_distance=100.):
+        """
+        ...
+        """
+        def _soma_distance(other_cells):
+            return\
+                self.get_soma_distance_bins(
+                    circuit_model, adapter,
+                    cell, other_cells,
+                    bin_size=bin_size_soma_distance)
+
+        connections =\
+            adapter.get_afferent_connections(
+                circuit_model,
+                cell)
+        variables_measurement =\
+            dict(strength=connections.strength.to_numpy(np.float64),
+                 soma_distance=_soma_distance)\
+            if by_soma_distance else\
+               dict(strength=connections.strength.to_numpy(np.float64))
+        columns_relevant =\
+            variables_groupby + list(variables_measurement.keys())
+        variables_groupby =\
+            cell_properties_groupby + (
+                ["soma_distance"] if by_soma_distance else [])
+        cells_afferent =\
+            adapter.get_cells(circuit_model)\
+                   .loc[connections.pre_gid.values]
+        return\
+            cells_afferent.assign(**variables_measurement)[columns_relevant]\
+                          .groupby(variables_groupby)\
+                          .agg("sum")\
+                          .strength
+
 
 
     @count_number_calls
