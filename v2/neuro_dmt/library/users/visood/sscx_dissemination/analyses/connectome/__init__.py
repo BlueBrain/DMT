@@ -317,7 +317,7 @@ class ConnectomeAnalysesSuite(WithFields):
     cell is defined as the number of pre-synaptic cells in each of these groups.
     """)
     @count_number_calls
-    def number_connections_afferent(self,
+    def number_connections_afferent_verbose(self,
             circuit_model,
             adapter,
             cell,
@@ -369,6 +369,48 @@ class ConnectomeAnalysesSuite(WithFields):
             if with_cell_propreties_as_index else\
                value_measurement.reindex()
                           
+    def number_connections_afferent(self, by_soma_distance):
+        """..."""
+        return\
+            PathwayMeasurement(
+                value=lambda connection: np.ones(connection.shape[0]),
+                variable="number_connections_afferent",
+                by_soma_distance=by_soma_distance,
+                direction="AFF",
+                specifiers_cell_type=["mtype"],
+                sampling_methodology=terminology.sampling_methodology.random)
+
+    def number_pathways_afferent(self, by_soma_distance):
+        return\
+            PathwayMeasurement(
+                value=lambda connection: np.ones(connection.shape[0]),
+                variable="number_connections_afferent",
+                by_soma_distance=by_soma_distance,
+                direction="AFF",
+                specifiers_cell_type=["mtype"],
+                sampling_methodology=terminology.sampling_methodology.exhaustive)
+
+    def strength_connections_afferent(self, by_soma_distance):
+        """..."""
+        return\
+            PathwayMeasurement(
+                value=lambda cnxn: cnxn.strength.to_numpy(np.float64),
+                by_soma_distance=by_soma_distance,
+                direction="AFF",
+                specifiers_cell_type=["mtype"],
+                sampling_methodology=terminology.sampling_methodology.random)
+
+    def strength_pathways_afferent(self, by_soma_distance):
+        """..."""
+        return\
+            PathwayMeasurement(
+                value=lambda cnxn: cnxn.strength.to_numpy(np.float64),
+                by_soma_distance=by_soma_distance,
+                direction="AFF",
+                specifiers_cell_type=["mtype"],
+                sampling_methodology=terminology.sampling_methodology.exhaustive,
+                summaries="sum"
+            ).summary
 
         # variables_measurement =\
         #     dict(number=1., soma_distance=_soma_distance)\
@@ -429,11 +471,9 @@ class ConnectomeAnalysesSuite(WithFields):
                 """),
             AdapterInterface=self.AdapterInterface,
             measurement_parameters=self.parameters_post_synaptic_cell_mtypes,
-            sample_measurement=PathwayMeasurement(
-                value=lambda connection: connection.strength.to_numpy(np.float64),
-                direction="AFF",
-                specifiers_cell_type=["mtype"],
-                sampling_methodology=terminology.sampling_methodology.random).sample_one,
+            sample_measurement=self.number_connections_afferent(
+                terminology.sampling_methodology.random,
+                by_soma_distance=True).sample_one,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
                 mvar=("post_synaptic_cell", "mtype"),

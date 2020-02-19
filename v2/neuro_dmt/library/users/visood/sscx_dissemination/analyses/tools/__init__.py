@@ -47,8 +47,7 @@ class PathwayMeasurement(WithFields):
     by_soma_distance = Field(
         """
         Boolean, indicating if the measurements should be made by soma-distance.
-        """,
-        __default_value__=True)
+        """)
     bin_size_soma_distance = Field(
         """
         Size of soma distance bins (in um) 
@@ -103,33 +102,59 @@ class PathwayMeasurement(WithFields):
         except KeyError:
             pass
 
-        if pre_synaptic_cell is None:
+        if self.direction == "AFF":
             if post_synaptic_cell is None:
                 raise TypeError(
                     """
-                    Provide at least one of:
-                    1. pre_synaptic_cell
-                    2. post_synaptic_cell
+                    Missing argument `post_synaptic_cell` for a pathway
+                    measurement to be made in the afferent direction.
                     """)
-            else:
-                cell_type =\
-                    post_synaptic_cell
-                prefix_aggregated_synaptic_side =\
-                    "pre_synaptic_cell"
-        else:
-            if post_synaptic_cell is None:
-                cell_type =\
-                    pre_synaptic_cell
-                prefix_aggregated_synaptic_side =\
-                    "post_synaptic_cell"
-            else:
-                raise NotImplementedError(
+            cell_type = post_synaptic_cell
+            prefix_aggregated_synaptic_side =\
+                "pre_synaptic_cell"
+        elif self.direction == "EFF":
+            if pre_synaptic_cell is None:
+                raise TypeError(
                     """
-                    PathwayMeasurement not implemented when both pre and post
-                    synaptic cell groups specified.
-                    Meanwhile provide only when.
+                    Missing argument `pre_synaptic_cell` for a pathway
+                    measurement to be made in the direction efferent.
                     """)
-
+            cell_type = pre_synaptic_cell
+            prefix_aggregated_synaptic_side =\
+                "post_synaptic_cell"
+        else:
+            LOGGER.warn(
+                LOGGER.get_source_info(),
+                """
+                Unknown direction, will fall on default behavior.
+                """)
+            if pre_synaptic_cell is None:
+                if post_synaptic_cell is None:
+                    raise TypeError(
+                        """
+                        Provide at least one of:
+                        1. pre_synaptic_cell
+                        2. post_synaptic_cell
+                        """)
+                else:
+                    cell_type =\
+                        post_synaptic_cell
+                    prefix_aggregated_synaptic_side =\
+                        "pre_synaptic_cell"
+            else:
+                if post_synaptic_cell is None:
+                    cell_type =\
+                        pre_synaptic_cell
+                    prefix_aggregated_synaptic_side =\
+                        "post_synaptic_cell"
+                else:
+                    raise NotImplementedError(
+                        """
+                        PathwayMeasurement not implemented when both pre and post
+                        synaptic cell groups specified.
+                        Meanwhile provide only when.
+                        """)
+                
         def _prefix(variable):
             return\
                 (prefix_aggregated_synaptic_side, variable)\
@@ -138,7 +163,7 @@ class PathwayMeasurement(WithFields):
 
         for _, cell in self.cells(cell_type, circuit_model, adapter).iterrows():
             measurement =\
-                self.method(
+                self._method(
                     circuit_model, adapter, cell,
                     cell_properties_groupby=self.specifiers_cell_type,
                     by_soma_distance=self.by_soma_distance,
@@ -183,7 +208,7 @@ class PathwayMeasurement(WithFields):
         return\
             "pre_gid" if self.direction == "AFF" else "post_gid"
 
-    def method(self, circuit_model, adapter, cell,
+    def _method(self, circuit_model, adapter, cell,
             cell_properties_groupby,
             by_soma_distance,
             bin_size_soma_distance,
@@ -243,7 +268,7 @@ class PathwayMeasurement(WithFields):
             try:
                 value_groups =\
                     cells_afferent.groupby(variables_groupby)
-            except TypeError:
+            except (TypeError, ValueError):
                 value_groups =\
                     cells_afferent 
             return\
@@ -251,10 +276,14 @@ class PathwayMeasurement(WithFields):
         
     def collect(self, *args, **kwargs):
         """"..."""
-        return\
-            pd.concat(
-                [m for m in self.sample(*args, **kwargs)],
-                axis=1)
+        sample =[
+            m for m in self.sample(*args, **kwargs)]
+        try:
+            return\
+                pd.concat(sample, axis=1)
+        except TypeError:
+            return\
+                pd.Series(sample, name=self.variable)
 
     def summary(self,
             *args, **kwargs):
