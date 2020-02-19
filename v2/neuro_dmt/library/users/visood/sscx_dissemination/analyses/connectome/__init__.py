@@ -307,14 +307,13 @@ class ConnectomeAnalysesSuite(WithFields):
                                    .iloc[0]
 
 
-    def example_number_connections_afferent(self,
+    def number_connections_afferent(self,
             circuit_model,
             adapter,
             cell,
             variables_groupby,
             by_soma_distance=True,
-            bin_size_soma_distance=100.,
-            prefix_synaptic=None):
+            bin_size_soma_distance=100.):
         """
         Just an example, for now.
         """
@@ -449,14 +448,14 @@ class ConnectomeAnalysesSuite(WithFields):
                 number_connections_afferent(post_synaptic_cell)
                     
 
-    def number_connections_afferent(self, *args, **kwargs):
+    def number_connections_afferent_not_needed(self, *args, **kwargs):
         """
         Number of connections afferent on a randomly sampled post-synaptic-cell,
         """
         kwargs["sample_size"] = 1
         return list(self.sample_number_connections_afferent(*args, **kwargs))[0]
 
-    def summary_number_connections_afferent(self,
+    def summary_number_connections_afferent_not_needed(self,
             circuit_model,
             adapter,
             post_synaptic_cell_type,
