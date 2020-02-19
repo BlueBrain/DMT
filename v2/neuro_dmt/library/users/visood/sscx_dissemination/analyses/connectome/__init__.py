@@ -410,6 +410,7 @@ class ConnectomeAnalysesSuite(WithFields):
         return\
             PathwayMeasurement(
                 value=lambda cnxn: cnxn.strength.to_numpy(np.float64),
+                variable="pathway_strength",
                 by_soma_distance=by_soma_distance,
                 direction="AFF",
                 specifiers_cell_type=["mtype"],

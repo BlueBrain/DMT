@@ -290,6 +290,9 @@ class PathwayMeasurement(WithFields):
         """..."""
         aggregators =\
             self.summaries[0] if len(self.summaries) == 1 else self.summaries
-        return\
-            self.collect(*args, **kwargs)\
-                .agg(aggregators, axis=1)
+        collection =\
+            self.collect(*args, **kwargs)
+        try:
+            return collection.agg(aggregators, axis=1)
+        except ValueError:
+            return collection.agg(aggregators)
