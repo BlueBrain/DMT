@@ -40,7 +40,7 @@ def count_number_calls(method):
                     method.__name__,
                     method.n_calls))
         return result
-        
+
     return _decorated
 
 
@@ -300,13 +300,23 @@ class ConnectomeAnalysesSuite(WithFields):
             cell_type):
         """Only one random cell"""
         return\
-            ConnectomeAnalysesSuite.get_random_cells(circuit_model,
-                                                     adapter,
-                                                     cell_type,
-                                                     number=1)\
-                                   .iloc[0]
-
-
+            ConnectomeAnalysesSuite.get_random_cells(
+                circuit_model, adapter,
+                cell_type,
+                number=1
+            ).iloc[0]
+    @measurement_method("""
+    Number of afferent connections are computed as a function of the
+    post-synaptic cell type. Cell-type can be any defined by the values of
+    a neuron's properties, for example layer, mtype, and etype. A group of
+    cells are sampled with the given (post-synaptic) cell-type. For each of
+    these post-synaptic cells, incoming connections from all other neurons are
+    grouped by cell type of the neuron where they start (i.e. their pre-synaptic
+    cell-type) and their soma-dstiance from the post-synaptic cell under .
+    consideration Afferent connection count or in-degree of a post-synaptic
+    cell is defined as the number of pre-synaptic cells in each of these groups.
+    """)
+    @count_number_calls
     def number_connections_afferent(self,
             circuit_model,
             adapter,
@@ -334,158 +344,13 @@ class ConnectomeAnalysesSuite(WithFields):
             adapter.get_cells(circuit_model)\
                    .loc[adapter.get_afferent_gids(circuit_model, cell)]\
                    .assign(**variables_measurement)\
-                   [variables_groupby + additional_variables_groupby + ["number_connections_afferent"]]\
+                   [variables_groupby +
+                    additional_variables_groupby +
+                    ["number_connections_afferent"]]\
                    .groupby(variables_groupby + additional_variables_groupby)\
                    .agg("sum")\
                    .number_connections_afferent
     
-    @measurement_method("""
-    Number of afferent connections are computed as a function of the
-    post-synaptic cell type. Cell-type can be any defined by the values of
-    a neuron's properties, for example layer, mtype, and etype. A group of
-    cells are sampled with the given (post-synaptic) cell-type. For each of
-    these post-synaptic cells, incoming connections from all other neurons are
-    grouped by cell type of the neuron where they start (i.e. their pre-synaptic
-    cell-type) and their soma-dstiance from the post-synaptic cell under .
-    consideration Afferent connection count or in-degree of a post-synaptic
-    cell is defined as the number of pre-synaptic cells in each of these groups.
-    """)
-    @count_number_calls
-    def sample_number_connections_afferent(self,
-            circuit_model,
-            adapter,
-            post_synaptic_cell_type,
-            pre_synaptic_cell_type_specifier=None,
-            by_soma_distance=True,
-            bin_size=100,
-            sample_size=1,
-            sampling_methodology=terminology.sampling_methodology.random):
-        """
-        Number of afferent connections incident on a randomly sampled set of
-        post-synaptic cell originating from the pre-synaptic cells.
-
-        Arugments
-        --------------
-        post_synaptic_cell_type :: An object describing the group of
-        ~   post-synaptic cells to be investigated in these analyses.
-        ~   Interpretation of the data in this object will be
-        ~   delegated to the adapter used for the model analyzed.
-        ~   Here are some guidelines when this object may is a dictionary.
-        ~    Such a dictionary will have cell properties such as region, layer,
-        ~    mtype,  and etype as keys. Each key may be given either a single
-        ~    value or an iterable of values. Phenomena must be evaluated for
-        ~    each of these values and collected as a pandas.DataFrame.
-        """
-        LOGGER.debug(
-            """
-            Number afferent connections for post-synaptic cell type: {}
-            """.format(post_synaptic_cell_type))
-
-        if pre_synaptic_cell_type_specifier is None:
-            pre_synaptic_cell_type_specifier =\
-                list(post_synaptic_cell_type.keys())
-           
-        def _soma_distance(pre_cells):
-            return\
-                self.get_soma_distance_bins(
-                    circuit_model, adapter,
-                    post_synaptic_cell, pre_cells,
-                    bin_size=bin_size)
-
-        def _prefix_pre_synaptic(variable):
-            return\
-                self._at("pre_synaptic_cell_type", as_tuple=True)(variable)\
-                if variable in pre_synaptic_cell_type_specifier\
-                   else variable
-                
-        variables_groupby =[
-            _prefix_pre_synaptic(variable)
-            for variable in pre_synaptic_cell_type_specifier]
-        if by_soma_distance:
-            variables_groupby.append("soma_distance")
-        
-        variables_measurement =\
-            dict(number_connections_afferent=1., soma_distance=_soma_distance)\
-            if by_soma_distance else\
-               dict(number_connections_afferent=1.)
-
-        @count_number_calls
-        def number_connections_afferent(post_synaptic_cell):
-            """
-            Number of connections afferent to a post-synaptic-cell.
-            """
-            gids_afferent =\
-                adapter.get_afferent_gids(
-                    circuit_model,
-                    post_synaptic_cell)
-            return\
-                adapter.get_cells(circuit_model)\
-                       .loc[gids_afferent]\
-                       .assign(**variables_measurement)\
-                       .rename(columns=_prefix_pre_synaptic)\
-                       [variables_groupby + ["number_connections_afferent"]]\
-                       .groupby(variables_groupby)\
-                       .agg("sum")\
-                       .number_connections_afferent\
-                       .rename(post_synaptic_cell.gid)
-
-        def post_synaptic_cells():
-            if sampling_methodology == terminology.sampling_methodology.random:
-                for i in range(sample_size):
-                    yield\
-                        self.random_cell(
-                            circuit_model,
-                            adapter,
-                            post_synaptic_cell_type)
-                else:
-                    return\
-                        adapter.get_cells(
-                            circuit_model,
-                            **post_synaptic_cell_type)
-
-        for post_synaptic_cell in post_synaptic_cells():
-            yield\
-                number_connections_afferent(post_synaptic_cell)
-                    
-
-    def number_connections_afferent_not_needed(self, *args, **kwargs):
-        """
-        Number of connections afferent on a randomly sampled post-synaptic-cell,
-        """
-        kwargs["sample_size"] = 1
-        return list(self.sample_number_connections_afferent(*args, **kwargs))[0]
-
-    def summary_number_connections_afferent_not_needed(self,
-            circuit_model,
-            adapter,
-            post_synaptic_cell_type,
-            pre_synaptic_cell_type_specifier=None,
-            by_soma_distance=True,
-            bin_size=100,
-            sample_size=1,
-            sampling_methodology=terminology.sampling_methodology.random,
-            summaries=["count", "sum",
-                       "mean", "mad", "std", "var",
-                       "min", "median", "max"]):
-
-        """
-        Total number of connections afferent on a randomly sampled
-        post-synaptic cell.
-        """
-        sample_number_connections_afferent =\
-            self.sample_number_connections_afferent(
-                circuit_model,
-                adapter,
-                post_synaptic_cell_type,
-                pre_synaptic_cell_type_specifier=pre_synaptic_cell_type_specifier,
-                by_soma_distance=by_soma_distance,
-                bin_size=bin_size,
-                sample_size=sample_size,
-                sampling_methodology=sampling_methodology)
-        return\
-            pd.concat([m for m in sample_number_connections_afferent], axis=1)\
-              .agg(summaries, axis=1)
-
     @lazyfield
     def analysis_number_afferent_connections(self):
         """
@@ -529,13 +394,13 @@ class ConnectomeAnalysesSuite(WithFields):
                 sampling_methodology=terminology.sampling_methodology.random).sample_one,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
-                mvar=("post_synaptic_cell_type", "mtype"),
+                mvar=("post_synaptic_cell", "mtype"),
                 plotter=LinePlot(
                     xvar="soma_distance",
                     xlabel="Soma Distance",
                     yvar="number_afferent_connections",
                     ylabel="Mean number of afferent connections",
-                    gvar=("pre_synaptic_cell_type", "mtype"),
+                    gvar=("pre_synaptic_cell", "mtype"),
                     drawstyle="steps-mid")),
             report=CircuitAnalysisReport)
 

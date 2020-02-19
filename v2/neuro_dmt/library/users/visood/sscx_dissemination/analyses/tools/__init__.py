@@ -3,22 +3,15 @@ Tools to help analyze.
 """
 import pandas as pd
 from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.journal.logger import Logger 
 from neuro_dmt import terminology
 
+LOGGER = Logger(client=__file__)
 
 class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
     """
-    # circuit_model = Field(
-    #     """
-    #     Cicuit on which measurement should be made.
-    #     """)
-    # adapter = Field(
-    #     """
-    #     Adapter for the circuit model on which this instance's
-    #     measurement method will apply.
-    #     """)
     method = Field(
         """
         Measurement method for a single set of parameter-values.
@@ -65,10 +58,28 @@ class PathwayMeasurement(WithFields):
 
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
-            post_synaptic_cell=None):
+            post_synaptic_cell=None,
+            **kwargs):
         """
         Sample of measurements.
+
         """
+        try:
+            sampling_methodology = kwargs.pop("sampling_methodology")
+            if sampling_methodology != self.sampling_methodology:
+                LOGGER.warn(
+                    """
+                    Argument `sampling_methodology` will be dropped.
+                    A sampling methodology of {} was set at the time this {} 
+                    instance computing {} was generated.
+                    Provided value {} will be dropped.
+                    """.format(self.sampling_methodology,
+                               self.__class__.__name__,
+                               self.method.__name__,
+                               sampling_methodology))
+        except KeyError:
+            pass
+
         if pre_synaptic_cell is None:
             if post_synaptic_cell is None:
                 raise TypeError(
@@ -112,7 +123,7 @@ class PathwayMeasurement(WithFields):
                             variables_groupby=specifier_aggregated_synaptic_side_cells,
                             by_soma_distance=self.by_soma_distance,
                             bin_size_soma_distance=self.bin_size_soma_distance,
-                            prefix_synaptic=prefix_aggregated_synaptic_side)\
+                            **kwargs)\
                     .rename(cell.gid)
             if isinstance(measurement.index, pd.MultiIndex):
                 measurement.index.names =[
