@@ -858,6 +858,34 @@ class BlueBrainCircuitAdapter(WithFields):
                 "pre_gid": connections[:, 0],
                 "strength": connections[:, 2]})
 
+    def get_efferent_connections(self,
+            circuit_model,
+            pre_synaptic_cell):
+        """
+        (pre, post, strength)
+        """
+        iter_connections =\
+            circuit_model.connectome\
+                         .iter_connections(
+                             pre=[pre_synaptic_cell.gid])
+        connections =\
+            np.array([
+                connection for connection in iter_connections])
+        return\
+            pd.DataFrame({
+                "post_gid": connections[:, 1],
+                "strength": connections[:, 2]})
+
+    def get_connections(self,
+            circuit_model,
+            cell,
+            direction):
+        """..."""
+        return\
+            self.get_afferent_connections(circuit_model, cell)\
+            if direction == "AFF" else\
+               self.get_efferent_connections(circuit_model, cell)
+
 
     def get_connection_probability(self,
             circuit_model=None,

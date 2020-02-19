@@ -13,6 +13,16 @@ class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
     """
+    specifiers_cell_type = Field(
+        """
+        Cell properties that define this pathway.
+        """,
+        __examples__=["mtype", "etype"],
+        __default_value__=[])
+    direction = Field(
+        """
+        AFF / EFF.
+        """)
     value = Field(
         """
         Measurement method for a single set of parameter-values.
@@ -44,7 +54,12 @@ class PathwayMeasurement(WithFields):
         Size of soma distance bins (in um) 
         """,
         __default_value__=100)
-
+    summaries = Field(
+        """
+        Summaries required, if making a summary measurement.
+        """,
+        __default_value__=[
+            "count", "sum", "mean", "mad", "std", "var", "min", "median", "max"])
 
     def cells(self, cell_type, circuit_model, adapter):
         """..."""
@@ -99,16 +114,12 @@ class PathwayMeasurement(WithFields):
             else:
                 cell_type =\
                     post_synaptic_cell
-                specifier_aggregated_synaptic_side_cells =\
-                    list(post_synaptic_cell.keys())
                 prefix_aggregated_synaptic_side =\
                     "pre_synaptic_cell"
         else:
             if post_synaptic_cell is None:
                 cell_type =\
                     pre_synaptic_cell
-                specifier_aggregated_synaptic_side_cells =\
-                    list(pre_synaptic_cell.keys())
                 prefix_aggregated_synaptic_side =\
                     "post_synaptic_cell"
             else:
@@ -122,24 +133,27 @@ class PathwayMeasurement(WithFields):
         def _prefix(variable):
             return\
                 (prefix_aggregated_synaptic_side, variable)\
-                if variable in specifier_aggregated_synaptic_side_cells\
+                if variable in self.specifiers_cell_type\
                    else variable
 
         for _, cell in self.cells(cell_type, circuit_model, adapter).iterrows():
             measurement =\
                 self.method(
                     circuit_model, adapter, cell,
-                    cell_properties_groupby=specifier_aggregated_synaptic_side_cells,
+                    cell_properties_groupby=self.specifiers_cell_type,
                     by_soma_distance=self.by_soma_distance,
                     bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs)
-            if isinstance(measurement.index, pd.MultiIndex):
-                measurement.index.names =[
-                    _prefix(variable) for variable in measurement.index.names]
+            if isinstance(measurement, (pd.Series, pd.DataFrame)):
+                if isinstance(measurement.index, pd.MultiIndex):
+                    measurement.index.names =[
+                        _prefix(variable) for variable in measurement.index.names]
+                else:
+                    measurement.index.name = _prefix(measurement.index.name)
+                    
+                yield measurement.rename(cell.gid)
             else:
-                measurement.index.name = _prefix(measurement.index.name)
-
-            yield measurement.rename(cell.gid)
+                yield measurement
 
     @staticmethod
     def get_soma_distance_bins(
@@ -164,6 +178,11 @@ class PathwayMeasurement(WithFields):
             if bin_mids else\
                [[bin_start, bin_size] for bin_start in bin_starts]
 
+    @lazyfield
+    def label_gid(self):
+        return\
+            "pre_gid" if self.direction == "AFF" else "post_gid"
+
     def method(self, circuit_model, adapter, cell,
             cell_properties_groupby,
             by_soma_distance,
@@ -180,9 +199,10 @@ class PathwayMeasurement(WithFields):
                     **kwargs)
         except TypeError:
             connections =\
-                adapter.get_afferent_connections(
+                adapter.get_connections(
                     circuit_model,
-                    cell)
+                    cell,
+                    direction=self.direction)
             try:
                 value = self.value(connections)
             except TypeError:
@@ -207,8 +227,8 @@ class PathwayMeasurement(WithFields):
                     [self.variable])
             cells_afferent =\
                 adapter.get_cells(circuit_model)\
-                       .loc[connections.pre_gid.values]\
-                       .assign(**{self.variable: self.value(connections)})
+                       .loc[connections[self.label_gid].values]\
+                       .assign(**{self.variable: value})
             if by_soma_distance:
                 def _soma_distance(other_cells):
                     return\
@@ -218,15 +238,17 @@ class PathwayMeasurement(WithFields):
                             bin_size=bin_size_soma_distance)
                 cells_afferent =\
                     cells_afferent.assign(soma_distance=_soma_distance)
-            value_measurement =\
-                cells_afferent[columns_relevant].groupby(variables_groupby)\
-                                                .agg("sum")
+            cells_afferent = cells_afferent[columns_relevant]
+
+            try:
+                value_groups =\
+                    cells_afferent.groupby(variables_groupby)
+            except TypeError:
+                value_groups =\
+                    cells_afferent 
             return\
-                value_measurement[self.variable]
+                value_groups.agg("sum")[self.variable]
         
-
-
-
     def collect(self, *args, **kwargs):
         """"..."""
         return\
@@ -234,11 +256,11 @@ class PathwayMeasurement(WithFields):
                 [m for m in self.sample(*args, **kwargs)],
                 axis=1)
 
-    def summary(self, *args, **kwargs):
+    def summary(self,
+            *args, **kwargs):
         """..."""
+        aggregators =\
+            self.summaries[0] if len(self.summaries) == 1 else self.summaries
         return\
             self.collect(*args, **kwargs)\
-                .agg(["count", "sum",
-                       "mean", "mad", "std", "var",
-                       "min", "median", "max"],
-                     axis=1)
+                .agg(aggregators, axis=1)

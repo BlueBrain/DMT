@@ -328,6 +328,11 @@ class ConnectomeAnalysesSuite(WithFields):
         """
         Just an example, for now.
         """
+
+
+        variable = "number_connections_afferent"
+        value = lambda cnxns: np.ones(cnxns.shape[0])
+
         def _soma_distance(other_cells):
             return\
                 self.get_soma_distance_bins(
@@ -343,9 +348,6 @@ class ConnectomeAnalysesSuite(WithFields):
             adapter.get_afferent_connections(
                 circuit_model,
                 cell)
-
-        variable = "number_connections_afferent"
-        value = lambda cnxns: np.ones(cnxns.shape[0])
 
         columns_relevant =\
             cell_properties_groupby + (
@@ -428,7 +430,9 @@ class ConnectomeAnalysesSuite(WithFields):
             AdapterInterface=self.AdapterInterface,
             measurement_parameters=self.parameters_post_synaptic_cell_mtypes,
             sample_measurement=PathwayMeasurement(
-                method=self.number_connections_afferent,
+                value=lambda connection: connection.strength.to_numpy(np.float64),
+                direction="AFF",
+                specifiers_cell_type=["mtype"],
                 sampling_methodology=terminology.sampling_methodology.random).sample_one,
             measurement_collection=measurement.collection.series_type,
             plotter=MultiPlot(
