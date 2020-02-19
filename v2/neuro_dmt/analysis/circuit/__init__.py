@@ -39,6 +39,14 @@ class StructuredAnalysis(
         """
         An object providing the phenomenon analyzed.
         """)
+    reference_data = Field(
+        """
+        A pandas.DataFrame containing reference data to compare with the
+        measurement made on a circuit model.
+        Each dataset in the dataframe must be annotated with index level
+        'dataset', in addition to levels that make sense for the measurements.
+        """,
+        __default_value__={})
 
     @property
     def _has_reference_data(self):
