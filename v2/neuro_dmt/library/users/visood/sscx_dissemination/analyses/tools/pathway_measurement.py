@@ -3,6 +3,7 @@ Measure pathways.
 """
 import numpy as np
 import pandas as pd
+from dmt.tk.collections import head
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal.logger import Logger 
 from neuro_dmt import terminology
@@ -75,8 +76,16 @@ class PathwayMeasurement(WithFields):
         """
         Sample of size 1.
         """
-        return\
-            list(self.sample(*args, **kwargs))[0]
+        if self.sampling_methodology != terminology.sampling_methodology.random:
+            raise TypeError(
+                """
+                A single size sample makes sense only when sampling randomly.
+                This instance of {} was set to
+                \t `sampling_methodology {}`.
+                """.format(
+                    self.__class__.__name__,
+                    self.sampling_methodology))
+        return head(self.sample(*args, **kwargs))
 
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
@@ -93,11 +102,10 @@ class PathwayMeasurement(WithFields):
                     """
                     Argument `sampling_methodology` will be dropped.
                     A sampling methodology of {} was set at the time this {} 
-                    instance computing {} was generated.
-                    Provided value {} will be dropped.
+                    instance was generated.
+                    Provided value '{}' will be dropped.
                     """.format(self.sampling_methodology,
                                self.__class__.__name__,
-                               self.method.__name__,
                                sampling_methodology))
         except KeyError:
             pass

@@ -3,7 +3,9 @@ Bar plot.
 """
 
 import pandas
+import matplotlib.pyplot as plt
 import seaborn
+from dmt.tk.journal import Logger
 from dmt.data.observation import measurement
 from dmt.data.observation.measurement import get_samples
 from dmt.tk.field import Field, LambdaField, lazyproperty
@@ -11,6 +13,7 @@ from .import golden_aspect_ratio
 from .figure import Figure
 from .import BasePlotter
 
+LOGGER = Logger(client=__file__)
 
 class Bars(BasePlotter):
     """
@@ -32,12 +35,24 @@ class Bars(BasePlotter):
         phenomenon = self._get_phenomenon(dataframe_long)
         return ' '.join(word.capitalize() for word in phenomenon.split('_'))
 
-    @classmethod
-    def get_dataframe(cls, data):
+    def get_dataframe(self, data):
         """..."""
-        return data.reset_index()\
+        dataframe =\
+            data.reset_index()\
             if isinstance(data, (pandas.Series, pandas.DataFrame)) else\
-               measurement.concat_as_samples(data).reset_index()\
+               measurement.concat_as_samples(data).reset_index()
+        try:
+            return self.order(dataframe)
+        except TypeError:
+            try:
+                return dataframe.sort_values(by=self.order)
+            except (TypeError, ValueError):
+                LOGGER.warn(
+                    """
+                    Could not order dataframe to be plotted.
+                    Using the dataframe as it is.
+                    """)
+        return dataframe
 
     def get_figure(self,
             data,
@@ -61,6 +76,7 @@ class Bars(BasePlotter):
                 xlabel=self.xlabel,
                 ylabel=self.ylabel,
                 title=kwargs.pop("title", ""))
+        plt.xticks(rotation=90)
         return Figure(
             graphic,
             caption=caption)

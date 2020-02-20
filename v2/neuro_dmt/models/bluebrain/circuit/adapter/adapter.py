@@ -842,49 +842,69 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_afferent_connections(self,
             circuit_model,
-            post_synaptic_cell):
+            post_synaptic_cell,
+            with_synapse_count=True):
         """
         (pre, post, strength)
         """
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             post=[post_synaptic_cell.gid])
+                             post=[post_synaptic_cell.gid],
+                             return_synapse_count=with_synapse_count)
         connections =\
             np.array([
                 connection for connection in iter_connections])
-        return\
-            pd.DataFrame({
-                "pre_gid": connections[:, 0],
-                "strength": connections[:, 2]})
+        if with_synapse_count:
+            if connections.shape[0] == 0:
+                return pd.DataFrame([], columns=["pre_gid", "strength"])
+            return\
+                pd.DataFrame({
+                    "pre_gid": connections[:, 0],
+                    "strength": connections[:, 2]})
+        if connections.shape[0] == 0:
+            return pd.DataFrame([], columns=["pre_gid"])
+        return pd.DataFrame({"pre_gid": connections[:, 0]})
 
     def get_efferent_connections(self,
             circuit_model,
-            pre_synaptic_cell):
+            pre_synaptic_cell,
+            with_synapse_count=True):
         """
         (pre, post, strength)
         """
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             pre=[pre_synaptic_cell.gid])
+                             pre=[pre_synaptic_cell.gid],
+                             return_synapse_count=with_synapse_count)
         connections =\
             np.array([
                 connection for connection in iter_connections])
-        return\
-            pd.DataFrame({
-                "post_gid": connections[:, 1],
-                "strength": connections[:, 2]})
+        if with_synapse_count:
+            if connections.shape[0] == 0:
+                return pd.DataFrame([], columns=["post_gid", "strength"])
+            return\
+                pd.DataFrame({
+                    "post_gid": connections[:, 1],
+                    "strength": connections[:, 2]})
+        if connections.shape[0] == 0:
+            return pd.DataFrame([], columns=["post_gid"])
+        return pd.DataFrame({"post_gid": connections[:, 1]})
+
 
     def get_connections(self,
             circuit_model,
             cell,
-            direction):
+            direction,
+            with_synapse_count=True):
         """..."""
         return\
-            self.get_afferent_connections(circuit_model, cell)\
+            self.get_afferent_connections(
+                circuit_model, cell, with_synapse_count)\
             if direction == "AFF" else\
-               self.get_efferent_connections(circuit_model, cell)
+               self.get_efferent_connections(
+                   circuit_model, cell, with_synapse_count)
 
 
     def get_connection_probability(self,

@@ -116,6 +116,13 @@ class BasePlotter(ABCWithFields):
         Size of axes labels.
         """,
         __default_value__=20)
+    order = Field(
+        """
+        Either a column in the measurement dataframe that the values should
+        be ordered by, or a callable that consumes a dataframe and returns a
+        dataframe.
+        """,
+        __default_value__=lambda dataframe: dataframe)
 
 
     def _set_rc_params(self):

@@ -417,25 +417,28 @@ class Connectome(WithFields):
         if pre is None:
             if post is None:
                 for _, connection in self.connections.iterrows():
-                    yield (connection.pre_synaptic_cell_gid,
-                           connection.post_synaptic_cell_gid,
-                           connection.strength)
+                    result = (connection.pre_synaptic_cell_gid,
+                              connection.post_synaptic_cell_gid,
+                              connection.strength)
+                    yield result if return_synapse_count else result[0:2]
             else:
                 for post_gid in self._resolve_gids(post):
                     afferent_connections =\
                         self.afferent_connections.loc[post_gid]
                     for _, connection in afferent_connections.iterrows():
-                        yield (connection.pre_synaptic_cell_gid,
-                               post_gid,
-                               connection.strength)
+                        result = (connection.pre_synaptic_cell_gid,
+                                  post_gid,
+                                  connection.strength)
+                        yield result if return_synapse_count else result[0:2]
         elif post is None:
             for pre_gid in self._resolve_gids(pre):
                 efferent_connections =\
                     self.efferent_connections.loc[pre_gid]
                 for _, connection in efferent_connections.iterrows():
-                    yield (pre_gid,
-                           connection.post_synaptic_cell_gid,
-                           connection.strength)
+                    result = (pre_gid,
+                              connection.post_synaptic_cell_gid,
+                              connection.strength)
+                    yield result if return_synapse_count else result[0:2]
         else:
             for pre_gid in tqdm(self._resolve_gids(pre)):
                 efferent_synapse_count =\
@@ -444,4 +447,6 @@ class Connectome(WithFields):
                         .reindex(self._resolve_gids(post))\
                         .dropna()
                 for post_gid, strength in efferent_synapse_count.iteritems():
-                    yield (pre_gid, post_gid, strength)
+                    result = (pre_gid, post_gid, strength)
+                    yield result if return_synapse_count else result[0:2]
+

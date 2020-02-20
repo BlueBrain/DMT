@@ -35,6 +35,14 @@ class StructuredAnalysis(
         set as instance attributes.
         """,
         lambda self: self.plotter)
+    sampling_methodology = Field(
+        """
+        A tag indicating whether this analysis will make measurements on
+        random samples drawn from a relevant population of circuit constituents,
+        or on the entire population. The circuit constituents population to be
+        measured will be determined by a query.
+        """,
+        __default_value__=terminology.sampling_methodology.random)
     phenomenon = Field(
         """
         An object providing the phenomenon analyzed.

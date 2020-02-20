@@ -101,7 +101,6 @@ class CircuitBuilder(WithFields):
         """
         Get this circuit's connectome.
         """
-        LOGGER.debug("Build the (mock) circuit connectome.")
         cells =\
             cell_collection.get()
         afferent_gids =[
@@ -111,6 +110,8 @@ class CircuitBuilder(WithFields):
         #     np.array(
         #         cell_collection.get(properties="mtype"),
         #         dtype=str)
+        LOGGER.debug(
+            "Get afferent synapse counts.")
         # afferent_synapse_counts =[
         #     [self.connectivity.get_synapse_count(cells.iloc[pre_gid],
         #                                          post_synaptic_cell)

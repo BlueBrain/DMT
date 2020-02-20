@@ -11,6 +11,10 @@ import collections
 from itertools import *
 
 
+def head(xs):
+    """..."""
+    return list(islice(xs, 1))[0]
+
 def take(n, xs):
     """
     Take n elements from a collection
