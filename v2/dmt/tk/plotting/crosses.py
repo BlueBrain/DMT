@@ -6,16 +6,24 @@ import numpy as np
 import matplotlib.pylab as plt
 import pandas as pd
 import seaborn
+from dmt.tk.journal import Logger
 from dmt.data.observation import measurement
 from dmt.tk.field import Field, lazyfield, LambdaField
 from .import golden_aspect_ratio
 from .figure import Figure
 from .import BasePlotter
 
+LOGGER = Logger(client=__file__)
+
+
 class Crosses(BasePlotter):
     """
     A plot that compares measurements of a phenomena across two datasets.
     """
+    vvar = Field(
+        """
+        Variable (column) that provides the quantity to be compared.
+        """)
     fmt = Field(
         """
         Point type to be plotted.
@@ -50,18 +58,24 @@ class Crosses(BasePlotter):
                 """
                 Dataframe for plotting has more than two datasets: {}
                 """.format(datasets))
-        phenomenon =\
-            self._get_phenomenon(dataframe_long)
+
         statistic = ["mean", "std"]
         dataframe_x =\
-            dataframe_long.xs(self.xvar, level="dataset")[phenomenon][statistic]\
+            dataframe_long.xs(self.xvar, level="dataset")[self.vvar]\
                           .dropna()
+        if isinstance(dataframe_x, pd.DataFrame):
+            dataframe_x = dataframe_x[statistic]
+
         dataframe_y =\
-            dataframe_long.xs(self.yvar, level="dataset")[phenomenon][statistic]\
-                     .dropna()\
-                     .reindex(dataframe_x.index)
-        if dataframe_x.shape[0] != dataframe_y.shape[0]:
-            raise TypeError(
+            dataframe_long.xs(self.yvar, level="dataset")[self.vvar]\
+                     .reindex(dataframe_x.index)\
+                     .dropna()
+        if isinstance(dataframe_y, pd.DataFrame):
+            dataframe_y = dataframe_y[statistic]
+
+        if dataframe_y.shape[0] != dataframe_x.shape[0]:
+            LOGGER.warn(
+                LOGGER.get_source_info(),
                 """
                 Dataframe for plotting had different number of elements
                 for the two datasets to be plotted:
@@ -70,14 +84,28 @@ class Crosses(BasePlotter):
                 """.format(
                     self.xvar, dataframe_x.shape[0],
                     self.yvar, dataframe_y.shape[0]))
-        return\
-            pd.DataFrame(
-                {self.xvar: dataframe_x["mean"].values,
-                 self.yvar: dataframe_y["mean"].values,
-                 self.xerr: dataframe_x["std"].values,
-                 self.yerr: dataframe_y["std"].values},
-                index=dataframe_x.index)\
-              .reset_index()
+            dataframe_x =\
+                dataframe_x.reindex(dataframe_y.index)\
+                           .dropna()
+        try:
+            return\
+                pd.DataFrame(
+                    {self.xvar: dataframe_x["mean"].values,
+                     self.yvar: dataframe_y["mean"].values,
+                     self.xerr: dataframe_x["std"].values,
+                     self.yerr: dataframe_y["std"].values},
+                    index=dataframe_x.index)\
+                  .reset_index()
+        except KeyError:
+            return\
+                pd.DataFrame(
+                    {self.xvar: dataframe_x.values,
+                     self.yvar: dataframe_y.values,
+                     self.xerr: 0.,
+                     self.yerr: 0.},
+                    index=dataframe_x.index)\
+                  .reset_index()
+
 
     def _get_title(self, dataframe_long):
         """
