@@ -78,6 +78,12 @@ class Field:
                     value))
         return True
 
+    def cast(self, value):
+        """..."""
+        return value\
+            if isinstance(self._cast, type) and isinstance(value, self._cast)\
+               else self._cast(value)
+
     @property
     def default_value(self):
         """
