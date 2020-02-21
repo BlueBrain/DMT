@@ -840,27 +840,49 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         return circuit_model.connectome.afferent_gids(post_synaptic_cell.gid)
 
+    @staticmethod
+    def _resolve_gids(cells):
+        """
+        Resolve cell gids...
+        """
+        if isinstance(cells, np.ndarray):
+            gids = cells
+        elif isinstance(cells, pd.Series):
+            gids = np.array([cells.gid])
+        elif isinstance(cells, pd.DataFrame):
+            gids = cells.gid.to_numpy(np.int32)
+        else:
+            raise ValueError(
+                """
+                Could not resolve gids from object {}
+                """.format(cells))
+
     def get_afferent_connections(self,
             circuit_model,
-            post_synaptic_cell,
+            post_synaptic,
             with_synapse_count=True):
         """
-        (pre, post, strength)
+        Arguments
+        ----------------
+        post_synaptic :: Either a pandas.Series representing a cell
+        ~                or a pandas.DataFrame containing cells as rows
+        ~                or a numpy.array of cell gids.,
         """
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             post=[post_synaptic_cell.gid],
+                             post=self._resolve_gids(post_synaptic),
                              return_synapse_count=with_synapse_count)
         connections =\
             np.array([
                 connection for connection in iter_connections])
         if with_synapse_count:
             if connections.shape[0] == 0:
-                return pd.DataFrame([], columns=["pre_gid", "strength"])
+                return pd.DataFrame([], columns=["pre_gid", "post_gid", "strength"])
             return\
                 pd.DataFrame({
                     "pre_gid": connections[:, 0],
+                    "post_gid": connections[:, 1],
                     "strength": connections[:, 2]})
         if connections.shape[0] == 0:
             return pd.DataFrame([], columns=["pre_gid"])
@@ -868,44 +890,48 @@ class BlueBrainCircuitAdapter(WithFields):
 
     def get_efferent_connections(self,
             circuit_model,
-            pre_synaptic_cell,
+            pre_synaptic,
             with_synapse_count=True):
         """
-        (pre, post, strength)
+
+        Arguments
+        ----------------
+        pre_synaptic :: Either a pandas.Series representing a cell
+        ~               or a pandas.DataFrame containing cells as rows
+        ~               or a numpy.array of cell gids.,
         """
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             pre=[pre_synaptic_cell.gid],
+                             pre=self._resolve_gids(pre_synaptic),
                              return_synapse_count=with_synapse_count)
         connections =\
             np.array([
                 connection for connection in iter_connections])
         if with_synapse_count:
             if connections.shape[0] == 0:
-                return pd.DataFrame([], columns=["post_gid", "strength"])
+                return pd.DataFrame([], columns=["post_gid", "post_gid", "strength"])
             return\
                 pd.DataFrame({
+                    "pre_gid": connections[:, 0],
                     "post_gid": connections[:, 1],
                     "strength": connections[:, 2]})
         if connections.shape[0] == 0:
             return pd.DataFrame([], columns=["post_gid"])
         return pd.DataFrame({"post_gid": connections[:, 1]})
 
-
     def get_connections(self,
             circuit_model,
-            cell,
+            cell_group,
             direction,
             with_synapse_count=True):
         """..."""
         return\
             self.get_afferent_connections(
-                circuit_model, cell, with_synapse_count)\
+                circuit_model, cell_group, with_synapse_count)\
             if direction == "AFF" else\
                self.get_efferent_connections(
-                   circuit_model, cell, with_synapse_count)
-
+                   circuit_model, cell_group, with_synapse_count)
 
     def get_connection_probability(self,
             circuit_model=None,
