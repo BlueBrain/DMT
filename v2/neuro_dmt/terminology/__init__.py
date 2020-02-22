@@ -186,6 +186,16 @@ class sampling_methodology(TermCollection):
         The function making the measurement will also need the number
         of individuals to collect in the sample.
         """)
+    random_one = Term(
+        "random_one",
+        """
+        Indicate to sample one individual from the population at a time.
+        """)
+    random_batch = Term(
+        "random_one",
+        """
+        Indicate to sample a batch of individual from the population at a time.
+        """)
     exhaustive = Term(
         "exhaustive",
         """

@@ -101,17 +101,17 @@ class CircuitBuilder(WithFields):
         """
         Get this circuit's connectome.
         """
+        LOGGER.debug(
+            "Mock circuit builder: get_connectome(...)")
         cells =\
             cell_collection.get()
-        afferent_gids =[
-            self.connectivity.get_afferent_gids(post_synaptic_cell, cells)
-            for _, post_synaptic_cell in tqdm(cells.iterrows())]
+        # afferent_gids =[
+        #     self.connectivity.get_afferent_gids(post_synaptic_cell, cells)
+        #     for _, post_synaptic_cell in tqdm(cells.iterrows())]
         # mtype_of =\
         #     np.array(
         #         cell_collection.get(properties="mtype"),
         #         dtype=str)
-        LOGGER.debug(
-            "Get afferent synapse counts.")
         # afferent_synapse_counts =[
         #     [self.connectivity.get_synapse_count(cells.iloc[pre_gid],
         #                                          post_synaptic_cell)
@@ -124,21 +124,37 @@ class CircuitBuilder(WithFields):
         #      for pre_gid in afferent_gids[post_gid]]
         #     for post_gid in tqdm(cell_collection.gids)]
 
-        afferent_synapse_counts =\
-            self.connectivity\
-                .get_synapse_count(
-                    afferent_gids, cell_collection)
+        # afferent_synapse_counts =\
+        #     self.connectivity\
+        #         .get_synapse_count(
+        #             afferent_gids, cell_collection)
         
-        assert len(afferent_gids) == len(afferent_synapse_counts)
+        # assert len(afferent_gids) == len(afferent_synapse_counts)
 
-        for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
-            assert len(gids) == len(syn_counts),\
-                "Length {} of afferent gids should equal that of synapse counts"\
-                .format(len(gids), len(syn_counts))
-
+        # for gids, syn_counts in zip(afferent_gids, afferent_synapse_counts):
+        #     assert len(gids) == len(syn_counts),\
+        #         "Length {} of afferent gids should equal that of synapse counts"\
+        #         .format(len(gids), len(syn_counts))
+        connections =\
+            pd.concat([
+                self.connectivity.get_afferent_connections(post_gid, post_cell, cells)
+                for post_gid, post_cell in tqdm(cells.iterrows())])\
+              .assign(synapse_count=self.connectivity.get_synapse_counts)
+                  
         return Connectome(
             cells=cell_collection,
-            afferent_adjacency=[
-                np.array(list(
-                    zip(afferent_gids[gid], afferent_synapse_counts[gid])))
-                for gid in cell_collection.gids])
+            connections=connections)
+                
+        return Connectome(
+            cells=cell_collection,
+            connections=pd.concat([
+                self.connectivity.get_afferent_connections(post_gid, post_cell, cells)
+                for post_gid, post_cell in tqdm(cells.iterrows())]))
+        
+        
+        # return Connectome(
+        #     cells=cell_collection,
+        #     afferent_adjacency=[
+        #         np.array(list(
+        #             zip(afferent_gids[gid], afferent_synapse_counts[gid])))
+        #         for gid in cell_collection.gids])

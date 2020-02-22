@@ -40,19 +40,10 @@ class Connectome(WithFields):
         """
         Instance of cell collection on which this `Connectome` has been defined.
         """)
-    afferent_adjacency = Field(
+    connections = Field(
         """
-        List of 2-tuples giving afferent cell gid and synapse count,
-        for each  cell in a circuit.  We can build other connectome properties
-        from this list.
+        A pandas.DataFrame <pre_gid, post_gid, synapse_count>...
         """)
-    efferent_adjacency = Field(
-        """
-        dict mapping gids to 2-tuples giving efferent cell gid and synapse count,
-        for each cell in a circuit. We will set this field to an empty dict, and
-        fill it lazily.
-        """,
-        __default_value__={})
     cache_synapses = Field(
         """
         An object that can cache synapses as they are read.
@@ -97,55 +88,88 @@ class Connectome(WithFields):
             *args, **kwargs)
 
     @lazyfield
+    def pre_gids(self):
+        return\
+            np.sort(self.connections.pre_gid.unique())
+    @lazyfield
+    def post_gids(self):
+        return\
+            np.sort(self.connections.post_gid.unique())
+    @lazyfield
     def gids(self):
         """
         All the gids, loaded lazily
         """
-        return np.array(range(len(self.afferent_adjacency)), dtype=int)
-
-    @lazyfield
-    def connections(self):
-        """
-        An array of (pre_gid, post_gid, number_synapses) tuples
-        """
-        LOGGER.info("Loading connections")
         return\
-            pd.DataFrame(
-                np.array(
-                    [(pre_gid_and_strength[0], post_gid, pre_gid_and_strength[1])
-                     for post_gid in tqdm(self.gids)
-                     for pre_gid_and_strength in self.afferent_adjacency[post_gid]]),
-                columns=["pre_synaptic_cell_gid",
-                         "post_synaptic_cell_gid",
-                         "strength"])
+            np.unique(np.concatenate([self.pre_gids, self.post_gids], axis=0))
+
+    # @lazyfield
+    # def connections(self):
+    #     """
+    #     An array of (pre_gid, post_gid, number_synapses) tuples
+    #     """
+    #     LOGGER.info(
+    #         LOGGER.get_source_info(),
+    #         "Loading connections")
+    #     cnxns =\
+    #         pd.DataFrame(
+    #             np.array(
+    #                 [(pre_gid_and_strength[0], post_gid, pre_gid_and_strength[1])
+    #                  for post_gid in tqdm(self.gids)
+    #                  for pre_gid_and_strength in self.afferent_adjacency[post_gid]]),
+    #             columns=["pre_synaptic_cell_gid",
+    #                      "post_synaptic_cell_gid",
+    #                      "strength"])
+    #     LOGGER.info(
+    #         LOGGER.get_source_info(),
+    #         "DONE")
+    #     return cnxns
+
 
     @lazyfield
     def afferent_connections(self):
         """..."""
         return\
             self.connections\
-                .set_index("post_synaptic_cell_gid")\
+                .set_index("post_gid")\
                 .sort_index()
+    @lazyfield
+    def afferent_adjacency(self):
+        """
+        List of 2-tuples giving afferent cell gid and synapse count,
+        for each  cell in a circuit.  We can build other connectome properties
+        from this list.
+        """
+        raise NotImplementedError
+
+    @lazyfield
+    def efferent_adjacency(self):
+        """
+        dict mapping gids to 2-tuples giving efferent cell gid and synapse count,
+        for each cell in a circuit. We will set this field to an empty dict, and
+        fill it lazily.
+        """
+        raise NotImplementedError
+
 
     @lazyfield
     def efferent_connections(self):
         """..."""
         return\
             self.connections\
-                .set_index("pre_synaptic_cell_gid")\
+                .set_index("pre_gid")\
                 .sort_index()
 
     @lazyfield
-    def synapse_count(self):
+    def synapse_counts(self):
         """..."""
         LOGGER.info("Loading synapse counts.")
         levels_index =[
-            "pre_synaptic_cell_gid",
-            "post_synaptic_cell_gid"]
+            "pre_gid", "post_gid"]
         return\
             self.connections\
                 .set_index(levels_index)\
-                .strength\
+                .synapse_count\
                 .sort_index(level=levels_index)
 
     def synapse_properties(self,
@@ -185,7 +209,8 @@ class Connectome(WithFields):
         """
         All the incoming connected cell gids of the cell with 'gid'.
         """
-        return self.afferent_adjacency[gid][:, 0]
+        return\
+            self.afferent_connections.loc[gid].pre_gid.values
 
     def afferent_synapses(self, gid, properties=None):
         """
@@ -217,19 +242,21 @@ class Connectome(WithFields):
         """
         All the outcoming connected cell gids of the cell with 'gid'.
         """
+        return\
+            self.efferent_connections.loc[gid].post_gid.values
 
-        def __contains(xs, y):
-            """
-            Is 'y' in 'xs', given xs is sorted?
-            """
-            i = np.searchsorted(xs, y)
-            return i < len(xs) and xs[i] == y
+        # def __contains(xs, y):
+        #     """
+        #     Is 'y' in 'xs', given xs is sorted?
+        #     """
+        #     i = np.searchsorted(xs, y)
+        #     return i < len(xs) and xs[i] == y
 
-        if gid not in self.efferent_adjacency:
-            self.efferent_adjacency[gid] = np.array([
-                post_gid for post_gid in self.gids
-                if self.__in_sorted(self.afferent_gids(post_gid), gid)])
-        return self.efferent_adjacency[gid]
+        # if gid not in self.efferent_adjacency:
+        #     self.efferent_adjacency[gid] = np.array([
+        #         post_gid for post_gid in self.gids
+        #         if self.__in_sorted(self.afferent_gids(post_gid), gid)])
+        # return self.efferent_adjacency[gid]
 
     def efferent_synapses(self, gid, properties=None):
         """
@@ -253,10 +280,12 @@ class Connectome(WithFields):
         """
         Get number of synapses pre_gid to post_gid.
         """
-        pre_gids = self.afferent_gids(post_gid)
-        i = np.searchsorted(pre_gids, pre_gid)
-        return 0 if i >= len(pre_gids) or pre_gids[i] != pre_gid\
-            else self.afferent_adjacency[post_gid][i, 1]
+        return\
+            self.synapse_counts.loc[(pre_gid, post_gid)]
+        # pre_gids = self.afferent_gids(post_gid)
+        # i = np.searchsorted(pre_gids, pre_gid)
+        # return 0 if i >= len(pre_gids) or pre_gids[i] != pre_gid\
+        #     else self.afferent_adjacency[post_gid][i, 1]
 
     def _read_synapses(self, pre_gid=None, post_gid=None):
         """
@@ -366,7 +395,7 @@ class Connectome(WithFields):
         return\
             candidate_gids[
                 np.in1d(candidate_gids, connected_gids)]
-                
+
     def pathway_synapses(self,
             pre_gids=np.array([]),
             post_gids=np.array([]),
@@ -400,10 +429,12 @@ class Connectome(WithFields):
                 self.pair_synapses(_pre_gid, _post_gid, properties=properties)
                 for _post_gid in post_gids
                 for _pre_gid in self._filter_connected(_post_gid, pre_gids)])
-    
+
     def _resolve_gids(self, group_cells):
-        return\
-            self.cells.get(group_cells).index.values
+        cells_subset = self.cells.get(group_cells)
+        if isinstance(cells_subset, pd.Series):
+            return group_cells
+        return cells_subset.index.values
 
     def iter_connections(self,
             pre=None, post=None,
@@ -414,39 +445,42 @@ class Connectome(WithFields):
         """
         Iterate through pre -> post connections.
         """
+        result = lambda xyz: xyz if return_synapse_count else xyz[0:2]
         if pre is None:
             if post is None:
                 for _, connection in self.connections.iterrows():
-                    result = (connection.pre_synaptic_cell_gid,
-                              connection.post_synaptic_cell_gid,
-                              connection.strength)
-                    yield result if return_synapse_count else result[0:2]
+                    yield result((
+                        connection.pre_gid,
+                        connection.post_gid,
+                        connection.synapse_count))
             else:
                 for post_gid in self._resolve_gids(post):
                     afferent_connections =\
                         self.afferent_connections.loc[post_gid]
                     for _, connection in afferent_connections.iterrows():
-                        result = (connection.pre_synaptic_cell_gid,
-                                  post_gid,
-                                  connection.strength)
-                        yield result if return_synapse_count else result[0:2]
+                        yield result((
+                            connection.pre_gid,
+                            post_gid,
+                            connection.synapse_count))
         elif post is None:
             for pre_gid in self._resolve_gids(pre):
                 efferent_connections =\
                     self.efferent_connections.loc[pre_gid]
                 for _, connection in efferent_connections.iterrows():
-                    result = (pre_gid,
-                              connection.post_synaptic_cell_gid,
-                              connection.strength)
-                    yield result if return_synapse_count else result[0:2]
+                    yield result((
+                        pre_gid,
+                        connection.post_gid,
+                        connection.synapse_count))
         else:
             for pre_gid in tqdm(self._resolve_gids(pre)):
                 efferent_synapse_count =\
-                    self.synapse_count\
+                    self.synapse_counts\
                         .loc[pre_gid]\
                         .reindex(self._resolve_gids(post))\
                         .dropna()
-                for post_gid, strength in efferent_synapse_count.iteritems():
-                    result = (pre_gid, post_gid, strength)
-                    yield result if return_synapse_count else result[0:2]
+                for post_gid, synapse_count in efferent_synapse_count.iteritems():
+                    yield result((
+                        pre_gid,
+                        post_gid,
+                        synapse_count))
 

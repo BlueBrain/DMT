@@ -69,7 +69,7 @@ class PathwayMeasurement(WithFields):
                else adapter.get_cells(circuit_model)
 
         sampling_random =\
-            self.sampling_methodology == terminology.sampling_methodology.random
+            self.sampling_methodology == terminology.sampling_methodology.random_one
 
         if size is not None and sampling_random:
             LOGGER.warn(
@@ -83,12 +83,17 @@ class PathwayMeasurement(WithFields):
         else:
             sample_size = self.sample_size
 
+        if sample_size == 1:
+            return\
+                all_cells.sample(1).iloc[0]\
+                if sampling_random and all_cells.shape[0] > 0\
+                   else pd.DataFrame([], columns=all_cells.columns)
         return\
-            all_cells.sample(self.sample_size)\
-            if sampling_random and sample_size < all_cells.shape[0]\
+            all_cells.sample(sample_size)\
+            if sampling_random and all_cells.shape[0] > sample_size\
                else all_cells
 
-    def _check_sampling_methodology(self, sampling_methodology):
+    def _check_sampling_methodology(self, kwargs):
         """..."""
         try:
             sampling_methodology = kwargs.pop("sampling_methodology")
@@ -115,7 +120,7 @@ class PathwayMeasurement(WithFields):
                     measurement to be made in the afferent direction.
                     """)
             return Record(
-                cell_type=post_synaptic_cell
+                cell_type=post_synaptic_cell,
                 prefix_aggregated_synaptic_side="pre_synaptic_cell")
                     
         elif self.direction == "EFF":
@@ -188,6 +193,10 @@ class PathwayMeasurement(WithFields):
         """
         ...
         """
+        LOGGER.debug(
+            "PathwayMeasurement sample one",
+            "pre_synaptic_cell {}".format(pre_synaptic_cell),
+            "post_synaptic_cell {}".format(post_synaptic_cell))
         self._check_sampling_methodology(kwargs)
         pair =\
             self._resolve_pair(pre_synaptic_cell, post_synaptic_cell)
@@ -203,6 +212,7 @@ class PathwayMeasurement(WithFields):
                     circuit_model, adapter, cell,
                     cell_properties_groupby=self.specifiers_cell_type,
                     by_soma_distance=self.by_soma_distance,
+                    bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs))
         try:
             return measured_values.rename(cell.gid)
@@ -240,7 +250,7 @@ class PathwayMeasurement(WithFields):
             self._sample_cells(
                 circuit_model, adapter, pair.cell_type)
 
-        if self.sampling_methodology == terminology.sampling_methodology.sample_one:
+        if self.sampling_methodology == terminology.sampling_methodology.random_one:
             for _, cell in cells.iterrows():
                 measurement =\
                     self._prefix_aggregated_synaptic_side(
@@ -318,11 +328,16 @@ class PathwayMeasurement(WithFields):
         cell :: pandas.Series containing information about the cell.
         """
         """..."""
+        LOGGER.debug(
+            "PathwayMeasurement _single(...) for cell {}".format(cell))
         connections =\
             adapter.get_connections(
                 circuit_model,
                 cell,
                 direction=self.direction)
+        LOGGER.debug(
+            "PathwayMeasurement _single(...) connections "\
+            .format(connections.shape[0]))
         try:
             value = self.value(connections)
         except TypeError:
@@ -369,13 +384,18 @@ class PathwayMeasurement(WithFields):
         return\
             value_groups.agg("sum")[self.variable]
 
-    def _method(self, circuit_model, adapter,
+    def _method(self,
+            circuit_model, adapter,
             cell_info,
             cell_properties_groupby,
             by_soma_distance,
             bin_size_soma_distance,
             **kwargs):
         """..."""
+        LOGGER.debug(
+            "PathwayMeasurement _method",
+            "cell: {}".format(cell_info),
+            "group by {}".format(cell_properties_groupby))
         try:
            return self.value(
                circuit_model, adapter, cell_info,
@@ -411,21 +431,38 @@ class PathwayMeasurement(WithFields):
                     """.format(
                         self.value,
                         self.variable))
-        variables_groupby =\
-            cell_properties_groupby +(
-                [self.label_gid, self.label_other_gid, "soma_distance"]
-                if by_soma_distance else 
-                [self.label_gid, self.label_other_gid])
-        columns_relevant =\
-            cell_properties_groupby + (
-                [self.label_gid, self.label_other_gid, "soma_distance", self.variable]
-                if by_soma_distance else
-                [self.label_gid, self.label_other_gid, self.variable])
-        cells_connected =\
-            adapter.get_cells(circuit_model)\
-                   .loc[connections[self.label_other_gid].values]\
-                   .assign(**{self.label_gid: connections[self.label_gid],
-                              self.variable: value})
+        if self.sampling_methodology == terminology.sampling_methodology.random_batch:
+            variables_groupby =\
+                cell_properties_groupby +(
+                    [self.label_gid, "soma_distance"]
+                    if by_soma_distance else 
+                    [self.label_gid])
+            columns_relevant =\
+                cell_properties_groupby + (
+                    [self.label_gid, "soma_distance", self.variable]
+                    if by_soma_distance else
+                    [self.label_gid, self.variable])
+            cells_connected =\
+                adapter.get_cells(circuit_model)\
+                       .loc[connections[self.label_other_gid].values]\
+                       .assign(**{self.label_gid: connections[self.label_gid],
+                                  self.variable: value})
+        else:
+            variables_groupby =\
+                cell_properties_groupby +(
+                    ["soma_distance"]
+                    if by_soma_distance else
+                    [])
+            columns_relevant =\
+                cell_properties_groupby +(
+                    ["soma_distance", self.variable]
+                    if by_soma_distance else
+                    [self.variable])
+            cells_connected =\
+                adapter.get_cells(circuit_model)\
+                       .loc[connections[self.label_other_gid].values]\
+                       .assign(**{self.variable: value})
+
         if by_soma_distance:
             def _soma_distance(other_cells):
                 return\
@@ -450,14 +487,15 @@ class PathwayMeasurement(WithFields):
  
     def collect(self, *args, **kwargs):
         """"..."""
-        sample =[
-            m for m in self.sample(*args, **kwargs)]
-        try:
-            return\
-                pd.concat(sample, axis=1)
-        except TypeError:
-            return\
-                pd.Series(sample, name=self.variable)
+        sample = self.sample(*args, **kwargs)
+        if self.sampling_methodology == terminology.sampling_methodology.random_one:
+            sample = [m for m in sample]
+            try:
+                return pd.concat(sample, axis=1)
+            except TypeError:
+                return pd.Series(sample, name=self.variable)
+            pass
+        return sample
 
     def summary(self,
             *args, **kwargs):

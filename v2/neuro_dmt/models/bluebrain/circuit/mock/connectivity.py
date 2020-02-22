@@ -25,7 +25,12 @@ class CircuitConnectivity(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_synapse_count(self, pre_mtype, post_mtype):
+    def get_afferent_gids(self, post_synaptic_cell, cells):
+        """..."""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_synapse_counts(self, pre_mtype, post_mtype):
         """
         How many synapses connecting cells in pathway pre_mtype --> post_mtype?
         """
@@ -33,6 +38,72 @@ class CircuitConnectivity(ABC):
 
 
 class SimpleUniformRandomConnectivity(
+        CircuitConnectivity,
+        WithFields):
+    """
+    A circuit in which a neuron has a prescribed efferent degree,
+    and is assigned that many randomly chosen efferent neighbors.
+    """
+    mean_afferent_degree = Field(
+        """
+        A post-synaptic cell (irrespecitive of it's mtype) will be given
+        a Poisson distributed number of afferent connections with the mean
+        equal to this Field's value.
+        """)
+    mean_synapse_count = Field(
+        """
+        Mean number of synapses of a connection.
+        """,
+        __default_value__=5)
+    def get_afferent_degree(self,
+            post_synaptic_cell,
+            *args, **kwargs):
+        """
+        Number of out-going connections of a neuron of given 'mtype'.
+        """
+        return\
+            np.random.poisson(self.mean_afferent_degree)
+
+    def _synapse_count(self, *args, **kwargs):
+        return 1. + np.random.poisson(self.mean_synapse_count)
+
+    def get_synapse_counts(self,
+            connections):
+        """
+        ...
+        """
+        return\
+            1. + np.random.poisson(
+                self.mean_synapse_count,
+                size=connections.shape[0])
+
+    def get_afferent_gids(self,
+            post_synaptic_cell,
+            cells):
+        """
+        GIDs of cells afferent on a post-synaptic cell.
+        Arguments
+        -------------
+        post_gid :: GID of the post_synaptic cell.
+        cells :: pandas.DataFrame containing cells in the circuit
+        """
+        return\
+            np.sort(np.random.choice(
+                cells.index.values,
+                self.get_afferent_degree(post_synaptic_cell),
+                replace=False))
+
+    def get_afferent_connections(self,
+            post_gid, post_cell,
+            cells):
+        """...
+        """
+        return pd.DataFrame({
+            "pre_gid": self.get_afferent_gids(post_cell, cells),
+            "post_gid": post_gid})
+
+
+class SimpleUniformRandomConnectivityWithMtypeDependence(
         CircuitConnectivity,
         WithFields):
     """
@@ -49,6 +120,7 @@ class SimpleUniformRandomConnectivity(
         expected to connect cells in the pathway pre_mtype --> post_mtype.
         """)
 
+
     def get_afferent_degree(self,
             post_synaptic_cell,
             *args, **kwargs):
@@ -60,7 +132,11 @@ class SimpleUniformRandomConnectivity(
                 self.afferent_degree_mtype[
                     post_synaptic_cell.mtype])
 
-    def get_synapse_count(self,
+    def _synapse_count(self, pre_cell, post_cell):
+        return 1. + np.random.poisson(
+            self.synapse_count_pathway[pre_cell.mtype][post_cell.mtype])
+
+    def get_synapse_counts(self,
             afferent_adjacency,
             cell_collection):
         """
@@ -83,24 +159,11 @@ class SimpleUniformRandomConnectivity(
         #             mtype_of[pre_gid]][mtype_of[post_gid]])
         #      for pre_gid in afferent_adjacency[post_gid]]
         #     for post_gid in tqdm(cell_collection.gids)]
-        return [
+        return  np.array([
             [_synapse_count(mtype_of[pre_gid], mtype_of[post_gid])
              for pre_gid in afferent_adjacency[post_gid]]
-            for post_gid in tqdm(cell_collection.gids)]
+            for post_gid in tqdm(cell_collection.gids)])
 
-
-    # def get_synapse_count(self,
-    #         pre_synaptic_cell,
-    #         post_synaptic_cell,
-    #         *args, **kwargs):
-    #     """
-    #     How many synapses connecting cells in pathway pre_mtype --> post_mtype?
-    #     """
-    #     return\
-    #         1 + np.random.poisson(
-    #             self.synapse_count_pathway[
-    #                 pre_synaptic_cell.mtype][
-    #                     post_synaptic_cell.mtype])
 
     def get_afferent_gids(self,
             post_synaptic_cell,
@@ -117,3 +180,16 @@ class SimpleUniformRandomConnectivity(
                 cells.index.values,
                 self.get_afferent_degree(post_synaptic_cell),
                 replace=False))
+
+    def get_afferent_connections(self,
+            post_gid, post_cell,
+            cells):
+        """...
+        """
+        return pd.DataFrame({
+            "pre_gid": self.get_afferent_degree(post_cell, cells),
+            "post_gid": post_gid,
+            "synapse_count": [self._synapse_count(cells.iloc[pre_gid], post_cell)]})
+        # return np.array([
+        #     [pre_gid, post_gid, self._synapse_count(cells.iloc[pre_gid], post_cell)]
+        #     for pre_gid in self.get_afferent_gids(post_cell, cells)])

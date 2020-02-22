@@ -6,7 +6,9 @@ Test develop mock circuit.
 import pandas as pd
 from bluepy.v2.enums import Synapse
 from dmt.tk.journal import Logger
-from .. import CircuitComposition, SimpleUniformRandomConnectivity
+from .. import\
+    CircuitComposition,\
+    SimpleUniformRandomConnectivityWithMtypeDependence
 
 __log = Logger(client = "test develop mock circuit")
 
@@ -188,7 +190,7 @@ circuit_composition =\
         cell_density=__cell_density)
 
 circuit_connectivity =\
-    SimpleUniformRandomConnectivity(
+    SimpleUniformRandomConnectivityWithMtypeDependence(
         afferent_degree_mtype={
             mtype: 2000 for mtype in __mtypes},
         synapse_count_pathway={
