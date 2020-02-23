@@ -578,7 +578,11 @@ class PathwayMeasurement(WithFields):
                 pre_synaptic_cell=pre_synaptic_cell,
                 post_synaptic_cell=post_synaptic_cell,
                 **kwargs)
-        try:
-            return collection.agg(aggregators, axis=1)
-        except ValueError:
-            return collection.agg(aggregators)
+        pair =\
+            self._resolve_pair(pre_synaptic_cell, post_synaptic_cell)
+        variables_groupby =[
+            self._prefix(pair, variable)
+            for variable in (self.specifiers_cell_type+(
+                ["soma_distance"] if self.by_soma_distance else []))]
+        return\
+            collection.groupby(variables_groupby).agg(aggregators)
