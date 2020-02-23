@@ -249,7 +249,14 @@ class PathwayMeasurement(WithFields):
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (cell for _, cell in cells.iterrows())
 
-        return (cells,)
+        n_batches =\
+            int(np.floor(cells.shape[0] / self.batch_size))
+        batches =\
+            [(b * self.batch_size, (b+1) * self.batch_size)
+             for b in range(n_batches)] +\
+                 [(n_batches * self.batch_size, cells.shape[0])]
+        return (cells.iloc[begin_batch: end_batch]
+                for (begin_batch, end_batch) in batches)
 
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
@@ -571,8 +578,9 @@ class PathwayMeasurement(WithFields):
         try:
             summed_value_groups =\
                 summed_value_groups.droplevel(self.label_gid)
-        except KeyError:
+        except (KeyError, AttributeError, ValueError):
             pass
+
         return summed_value_groups
  
     def collect(self, circuit_model, adapter,
@@ -626,5 +634,9 @@ class PathwayMeasurement(WithFields):
             self._prefix(pair, variable)
             for variable in (self.specifiers_cell_type+(
                 ["soma_distance"] if self.by_soma_distance else []))]
-        return\
-            collection.groupby(variables_groupby).agg(aggregators)
+        try:
+            return\
+                collection.groupby(variables_groupby).agg(aggregators)
+        except ValueError:
+            return\
+                collection.agg(aggregators)
