@@ -186,20 +186,27 @@ class sampling_methodology(TermCollection):
         The function making the measurement will also need the number
         of individuals to collect in the sample.
         """)
-    random_one = Term(
-        "random_one",
-        """
-        Indicate to sample one individual from the population at a time.
-        """)
-    random_batch = Term(
-        "random_batch",
-        """
-        Indicate to sample a batch of individual from the population at a time.
-        """)
     exhaustive = Term(
         "exhaustive",
         """
         Use the entire population as the sample.
+        """)
+
+
+class processing_methodology(TermCollection):
+    """
+    Enum specifying / indicating how to process a sample.
+    """
+    serial = Term(
+        "one",
+        """
+        Indicate to process one individual from the population at a time.
+        """)
+    batch = Term(
+        "random_batch",
+        """
+        Indicate to process a batch of individuals from the population at a
+        time.
         """)
 
 
