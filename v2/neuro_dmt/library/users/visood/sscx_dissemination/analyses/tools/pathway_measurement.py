@@ -44,7 +44,7 @@ class PathwayMeasurement(WithFields):
         """
         Number of samples to consider if random sampling methodology.
         """,
-        __default_value__=1)
+        __default_value__=20)
     by_soma_distance = Field(
         """
         Boolean, indicating if the measurements should be made by soma-distance.
@@ -68,29 +68,24 @@ class PathwayMeasurement(WithFields):
             if cell_type is not None\
                else adapter.get_cells(circuit_model)
 
-        sampling_random =\
-            self.sampling_methodology == terminology.sampling_methodology.random_one
+        if (self.sampling_methodology == terminology.sampling_methodology.exhaustive
+            and size is None):\
+           return all_cells
 
-        if size is not None and sampling_random:
-            LOGGER.warn(
-                LOGGER.get_source_info(),
-                """
-                Requested number of cells to sample: {} from a 
-                `PathwayMeasurement` instance with sampling methodology {}
-                """.format(size, self.sampling_methodology))
-            sampling_random = True
-            sample_size = 1
-        else:
-            sample_size = self.sample_size
+        sample_size = size if size is not None else self.sample_size
 
         if sample_size == 1:
             return\
                 all_cells.sample(1).iloc[0]\
-                if sampling_random and all_cells.shape[0] > 0\
-                   else pd.DataFrame([], columns=all_cells.columns)
+                if all_cells.shape[0] > 0\
+                   else None
+        if all_cells.shape[0] == 0:
+            return\
+                pd.DataFrame([], columns=all_cells.columns)
+
         return\
             all_cells.sample(sample_size)\
-            if sampling_random and all_cells.shape[0] > sample_size\
+            if all_cells.shape[0] > sample_size\
                else all_cells
 
     def _check_sampling_methodology(self, kwargs):
@@ -243,6 +238,9 @@ class PathwayMeasurement(WithFields):
         Sample of measurements.
 
         """
+        LOGGER.debug(
+            "PathwayMeasurement.sample(...)",
+            "with sampling methodology {}".format(self.sampling_methodology))
         self._check_sampling_methodology(kwargs)
         pair =\
             self._resolve_pair(pre_synaptic_cell, post_synaptic_cell)
@@ -250,37 +248,41 @@ class PathwayMeasurement(WithFields):
             self._sample_cells(
                 circuit_model, adapter, pair.cell_type)
 
-        if self.sampling_methodology == terminology.sampling_methodology.random_one:
-            for _, cell in cells.iterrows():
+        if self.sampling_methodology == terminology.sampling_methodology.random_batch:
+            def measurement():
                 measurement =\
                     self._prefix_aggregated_synaptic_side(
                         pair,
                         self._method(
                             circuit_model, adapter,
-                            cell,
+                            cells,
                             cell_properties_groupby=self.specifiers_cell_type,
                             by_soma_distance=self.by_soma_distance,
                             bin_size_soma_distance=self.bin_size_soma_distance,
-                        **kwargs))
+                            **kwargs))
                 try:
-                    yield measurement.rename(cell.gid)
+                    return measurement.rename(cell.gid)
                 except:
-                    yield measurement
+                    return measurement
         else:
-            measurement =\
-                self._prefix_aggregated_synaptic_side(
-                    pair,
-                    self._method(
-                        circuit_model, adapter,
-                        cells.gid.values,
-                        cell_properties_groupby=self.specifiers_cell_type,
-                        by_soma_distance=self.by_soma_distance,
-                        bin_size_soma_distance=self.bin_size_soma_distance,
-                        **kwargs))
-            try:
-                return measurement.rename(cell.gid)
-            except:
-                return measurement
+            def measurement():
+                for _, cell in cells.iterrows():
+                    measurement_one =\
+                        self._prefix_aggregated_synaptic_side(
+                            pair,
+                            self._method(
+                                circuit_model, adapter,
+                                cell,
+                                cell_properties_groupby=self.specifiers_cell_type,
+                                by_soma_distance=self.by_soma_distance,
+                                bin_size_soma_distance=self.bin_size_soma_distance,
+                                **kwargs))
+                    try:
+                        yield measurement_one.rename(cell.gid)
+                    except:
+                        yield measurement_one
+                
+        return measurement()
 
     @staticmethod
     def get_soma_distance_bins(
@@ -362,7 +364,7 @@ class PathwayMeasurement(WithFields):
                 [self.variable])
         cells_connected =\
             adapter.get_cells(circuit_model)\
-                   .loc[connections[self.label_gid].values]\
+                   .loc[connections[self.label_other_gid].values]\
                    .assign(**{self.variable: value})
         if by_soma_distance:
             def _soma_distance(other_cells):
@@ -373,7 +375,8 @@ class PathwayMeasurement(WithFields):
                         bin_size=bin_size_soma_distance)
             cells_connected =\
                 cells_connected.assign(soma_distance=_soma_distance)
-            cells_connected = cells_connected[columns_relevant]
+
+        cells_connected = cells_connected[columns_relevant]
 
         try:
             value_groups =\
@@ -393,6 +396,7 @@ class PathwayMeasurement(WithFields):
             **kwargs):
         """..."""
         LOGGER.debug(
+            LOGGER.get_source_info(),
             "PathwayMeasurement _method",
             "cell: {}".format(cell_info),
             "group by {}".format(cell_properties_groupby))
@@ -404,34 +408,61 @@ class PathwayMeasurement(WithFields):
                bin_size_soma_distance=self.bin_size_soma_distance,
                **kwargs)
         except (TypeError, ValueError):
-            if isinstance(cell_info, pd.Series):
-                return self._single(
-                    circuit_model, adapter,
-                    cell_info,
-                    cell_properties_groupby,
-                    by_soma_distance,
-                    bin_size_soma_distance,
-                    **kwargs)
-        connections =\
-            adapter.get_connections(
-                circuit_model,
-                cell_info,
-                direction=self.direction)
-        try:
-            value = self.value(connections)
-        except TypeError:
+            pass
+            # if isinstance(cell_info, pd.Series):
+            #     return self._single(
+            #         circuit_model, adapter,
+            #         cell_info,
+            #         cell_properties_groupby,
+            #         by_soma_distance,
+            #         bin_size_soma_distance,
+            #         **kwargs)
+
+        def _get_connections(gids):
+            connections =\
+                adapter.get_connections(
+                    circuit_model,
+                    gids,
+                    direction=self.direction)
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "PathwayMeasurement _method",
+                "number connections: {}".format(connections.shape[0]))
+            return connections
+
+        def _get_value(connections):
             try:
-                value = connections[self.variable]
-            except:
-                raise TypeError(
-                    """
-                    Not enough information to make the measurement:
-                    \t value: {}
-                    \t variable: {}
-                    """.format(
-                        self.value,
-                        self.variable))
-        if self.sampling_methodology == terminology.sampling_methodology.random_batch:
+                value = self.value(connections)
+            except TypeError:
+                try:
+                    value = connections[self.variable]
+                except:
+                    raise TypeError(
+                        """
+                        Not enough information to make the measurement:
+                        \t value: {}
+                        \t variable: {}
+                        """.format(
+                            self.value,
+                            self.variable))
+            return value
+
+        def _gids(connections, label_nodes):
+            return\
+                connections[label_nodes].to_numpy(np.int32)
+
+        def _gids_measured(connections):
+            return _gids(connections, self.label_gid)
+
+        def _gids_connected(connections):
+            return _gids(connections, self.label_other_gid)
+
+        if isinstance(cell_info, pd.DataFrame):
+            connections =\
+                _get_connections(
+                    cell_info.gid.values)
+            value =\
+                _get_value(connections)
             variables_groupby =\
                 cell_properties_groupby +(
                     [self.label_gid, "soma_distance"]
@@ -444,10 +475,21 @@ class PathwayMeasurement(WithFields):
                     [self.label_gid, self.variable])
             cells_connected =\
                 adapter.get_cells(circuit_model)\
-                       .loc[connections[self.label_other_gid].values]\
-                       .assign(**{self.label_gid: connections[self.label_gid],
+                       .loc[_gids_connected(connections)]\
+                       .assign(**{self.label_gid: _gids_measured(connections),
                                   self.variable: value})
-        else:
+        elif isinstance(cell_info, pd.Series):
+            if not "gid" in cell_info.index:
+                raise ValueError(
+                    """
+                    `PathwayMeasurement._method(...)` got a pandas.Series
+                    as a `cell_info` that did not contain cell `gid`.
+                    """)
+            connections =\
+                _get_connections(
+                    np.array([cell_info.gid]))
+            value =\
+                _get_value(connections)
             variables_groupby =\
                 cell_properties_groupby +(
                     ["soma_distance"]
@@ -455,24 +497,38 @@ class PathwayMeasurement(WithFields):
                     [])
             columns_relevant =\
                 cell_properties_groupby +(
-                    ["soma_distance", self.variable]
-                    if by_soma_distance else
+                    ["soma_distance", self.variable] if by_soma_distance else
                     [self.variable])
             cells_connected =\
                 adapter.get_cells(circuit_model)\
-                       .loc[connections[self.label_other_gid].values]\
+                       .loc[_gids_connected(connections)]\
                        .assign(**{self.variable: value})
+        else:
+            raise ValueError(
+                """
+                `PathwayMeasurement._method(...)` does not know how to handle
+                `cell_info` {}.
+                """.format(cell_info))
+
+        LOGGER.debug(
+            LOGGER.get_source_info(),
+            "PathwayMeasurement._method(...)",
+            "variables_groupby {}".format(variables_groupby),
+            "columns_relevant {}".format(columns_relevant),
+            "number cells_connected {}".format(cells_connected.shape[0]),
+            "columns in cells_connected {}".format(cells_connected.columns))
 
         if by_soma_distance:
             def _soma_distance(other_cells):
                 return\
                     self.get_soma_distance_bins(
                         circuit_model, adapter,
-                        cell, other_cells,
+                        cell_info, other_cells,
                         bin_size=bin_size_soma_distance)
             cells_connected =\
                 cells_connected.assign(soma_distance=_soma_distance)
-            cells_connected = cells_connected[columns_relevant]
+
+        cells_connected = cells_connected[columns_relevant]
 
         try:
             value_groups =\
@@ -480,30 +536,48 @@ class PathwayMeasurement(WithFields):
         except (TypeError, ValueError):
             value_groups =\
                 cells_connected 
-        return\
+        summed_value_groups =\
             value_groups.agg("sum")[self.variable]
-
-
+        try:
+            summed_value_groups =\
+                summed_value_groups.droplevel(self.label_gid)
+        except KeyError:
+            pass
+        return summed_value_groups
  
-    def collect(self, *args, **kwargs):
+    def collect(self, circuit_model, adapter,
+            pre_synaptic_cell=None,
+            post_synaptic_cell=None,
+            **kwargs):
         """"..."""
-        sample = self.sample(*args, **kwargs)
+        sample =\
+            self.sample(
+                circuit_model, adapter,
+                pre_synaptic_cell=pre_synaptic_cell,
+                post_synaptic_cell=post_synaptic_cell,
+                **kwargs)
         if self.sampling_methodology == terminology.sampling_methodology.random_one:
             sample = [m for m in sample]
             try:
-                return pd.concat(sample, axis=1)
+                return pd.concat(sample)
             except TypeError:
                 return pd.Series(sample, name=self.variable)
             pass
         return sample
 
-    def summary(self,
-            *args, **kwargs):
+    def summary(self, circuit_model, adapter,
+            pre_synaptic_cell=None,
+            post_synaptic_cell=None,
+            **kwargs):
         """..."""
         aggregators =\
             self.summaries[0] if len(self.summaries) == 1 else self.summaries
         collection =\
-            self.collect(*args, **kwargs)
+            self.collect(
+                circuit_model, adapter,
+                pre_synaptic_cell=pre_synaptic_cell,
+                post_synaptic_cell=post_synaptic_cell,
+                **kwargs)
         try:
             return collection.agg(aggregators, axis=1)
         except ValueError:
