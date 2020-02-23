@@ -45,6 +45,17 @@ class PathwayMeasurement(WithFields):
         Number of samples to consider if random sampling methodology.
         """,
         __default_value__=20)
+    processing_methodology = Field(
+        """
+        Specifies if `Field value` computes it's result for one cell at a time,
+        or a batch of cells at a time.
+        """,
+        __default_value__=terminology.processing_methodology.serial)
+    batch_size = Field(
+        """
+        Maximum size of a single batch that can be processed.
+        """,
+        __default_value__=10000)
     by_soma_distance = Field(
         """
         Boolean, indicating if the measurements should be made by soma-distance.
@@ -230,6 +241,16 @@ class PathwayMeasurement(WithFields):
                     self.sampling_methodology))
         return head(self.sample(*args, **kwargs))
 
+    def _batches(self, cells):
+        """
+        Batches of cells to process.
+        """
+        if self.processing_methodology == terminology.processing_methodology.serial:
+            return (cell for _, cell in cells.iterrows())
+
+        return (cells,)
+
+
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
             post_synaptic_cell=None,
@@ -248,41 +269,52 @@ class PathwayMeasurement(WithFields):
             self._sample_cells(
                 circuit_model, adapter, pair.cell_type)
 
-        if self.sampling_methodology == terminology.sampling_methodology.random_batch:
-            def measurement():
-                measurement =\
-                    self._prefix_aggregated_synaptic_side(
-                        pair,
-                        self._method(
-                            circuit_model, adapter,
-                            cells,
-                            cell_properties_groupby=self.specifiers_cell_type,
-                            by_soma_distance=self.by_soma_distance,
-                            bin_size_soma_distance=self.bin_size_soma_distance,
-                            **kwargs))
-                try:
-                    return measurement.rename(cell.gid)
-                except:
-                    return measurement
-        else:
-            def measurement():
-                for _, cell in cells.iterrows():
-                    measurement_one =\
-                        self._prefix_aggregated_synaptic_side(
-                            pair,
-                            self._method(
-                                circuit_model, adapter,
-                                cell,
-                                cell_properties_groupby=self.specifiers_cell_type,
-                                by_soma_distance=self.by_soma_distance,
-                                bin_size_soma_distance=self.bin_size_soma_distance,
-                                **kwargs))
-                    try:
-                        yield measurement_one.rename(cell.gid)
-                    except:
-                        yield measurement_one
+        for batch_cells in self._batches(cells):
+            measurement =\
+                self._method(
+                    circuit_model, adapter,
+                    cells,
+                    cell_properties_groupby=self.specifiers_cell_type,
+                    by_soma_distance=self.by_soma_distance,
+                    bin_size_soma_distance=self.bin_size_soma_distance,
+                    **kwargs)
+            yield\
+                self._prefix_aggregated_synaptic_side(pair, measurement)
+        # if self.processing_methodology == terminology.processing_methodology.batch:
+        #     def measurement():
+        #         measurement =\
+        #             self._prefix_aggregated_synaptic_side(
+        #                 pair,
+        #                 self._method(
+        #                     circuit_model, adapter,
+        #                     cells,
+        #                     cell_properties_groupby=self.specifiers_cell_type,
+        #                     by_soma_distance=self.by_soma_distance,
+        #                     bin_size_soma_distance=self.bin_size_soma_distance,
+        #                     **kwargs))
+        #         try:
+        #             return measurement.rename(cell.gid)
+        #         except:
+        #             return measurement
+        # else:
+        #     def measurement():
+        #         for _, cell in cells.iterrows():
+        #             measurement_one =\
+        #                 self._prefix_aggregated_synaptic_side(
+        #                     pair,
+        #                     self._method(
+        #                         circuit_model, adapter,
+        #                         cell,
+        #                         cell_properties_groupby=self.specifiers_cell_type,
+        #                         by_soma_distance=self.by_soma_distance,
+        #                         bin_size_soma_distance=self.bin_size_soma_distance,
+        #                         **kwargs))
+        #             try:
+        #                 yield measurement_one.rename(cell.gid)
+        #             except:
+        #                 yield measurement_one
                 
-        return measurement()
+        # return measurement()
 
     @staticmethod
     def get_soma_distance_bins(
@@ -432,7 +464,7 @@ class PathwayMeasurement(WithFields):
 
         def _get_value(connections):
             try:
-                value = self.value(connections)
+               value = self.value(connections)
             except TypeError:
                 try:
                     value = connections[self.variable]
@@ -460,7 +492,7 @@ class PathwayMeasurement(WithFields):
         if isinstance(cell_info, pd.DataFrame):
             connections =\
                 _get_connections(
-                    cell_info.gid.values)
+                    cell_info.gid.to_numpy(np.int32))
             value =\
                 _get_value(connections)
             variables_groupby =\
@@ -550,21 +582,33 @@ class PathwayMeasurement(WithFields):
             post_synaptic_cell=None,
             **kwargs):
         """"..."""
-        sample =\
+        listed_sample =[
+            m for m in
             self.sample(
                 circuit_model, adapter,
                 pre_synaptic_cell=pre_synaptic_cell,
                 post_synaptic_cell=post_synaptic_cell,
-                **kwargs)
-        if self.sampling_methodology == terminology.sampling_methodology.random_one:
-            sample = [m for m in sample]
-            try:
-                return pd.concat(sample)
-            except TypeError:
-                return pd.Series(sample, name=self.variable)
-            pass
-        return sample
+                **kwargs)]
+        try:
+            return pd.concat(listed_sample)
+        except TypeError:
+            return pd.Series(listed_sample, name=self.variable)
+        # sample =\
+        #     self.sample(
+        #         circuit_model, adapter,
+        #         pre_synaptic_cell=pre_synaptic_cell,
+        #         post_synaptic_cell=post_synaptic_cell,
+        #         **kwargs)
+        # if self.processing_methodology == terminology.processing_methodology.batch:
+        #     return sample
 
+        # listed_sample = [m for m in sample]
+        # try:
+        #     return pd.concat(listed_sample)
+        # except TypeError:
+        #     return pd.Series(listed_sample, name=self.variable)
+        # pass
+    
     def summary(self, circuit_model, adapter,
             pre_synaptic_cell=None,
             post_synaptic_cell=None,
