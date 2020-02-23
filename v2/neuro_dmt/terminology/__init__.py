@@ -192,7 +192,7 @@ class sampling_methodology(TermCollection):
         Indicate to sample one individual from the population at a time.
         """)
     random_batch = Term(
-        "random_one",
+        "random_batch",
         """
         Indicate to sample a batch of individual from the population at a time.
         """)
