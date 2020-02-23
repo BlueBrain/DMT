@@ -22,26 +22,10 @@ from neuro_dmt.analysis.reporting import\
     CheetahReporter
 from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
 from neuro_dmt.models.bluebrain.circuit.adapter.adapter import measurement_method
-from  ..tools import PathwayMeasurement
+from  ..tools import count_number_calls, PathwayMeasurement
+
 
 LOGGER = Logger(client=__file__, level="DEBUG")
-COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
-
-def count_number_calls(method):
-    """decorate..."""
-            
-    method.n_calls = 0
-    def _decorated(*args, **kwargs):
-        result = method(*args, **kwargs)
-        method.n_calls += 1
-        if method.n_calls % COUNTERBASE == 0:
-            LOGGER.info(
-                """{} call count : {}""".format(
-                    method.__name__,
-                    method.n_calls))
-        return result
-
-    return _decorated
 
 
 class ConnectomeAnalysesSuite(WithFields):
@@ -316,7 +300,7 @@ class ConnectomeAnalysesSuite(WithFields):
     consideration Afferent connection count or in-degree of a post-synaptic
     cell is defined as the number of pre-synaptic cells in each of these groups.
     """)
-    @count_number_calls
+    @count_number_calls(LOGGER)
     def number_connections_afferent_verbose(self,
             circuit_model,
             adapter,
@@ -493,7 +477,7 @@ class ConnectomeAnalysesSuite(WithFields):
             report=CircuitAnalysisReport)
 
 
-    @count_number_calls
+    @count_number_calls(LOGGER)
     def strength_connections_afferent(self,
             circuit_model,
             adapter,
@@ -536,7 +520,7 @@ class ConnectomeAnalysesSuite(WithFields):
 
 
 
-    @count_number_calls
+    @count_number_calls(LOGGER)
     def strength_afferent_connections(self,
             circuit_model,
             adapter,

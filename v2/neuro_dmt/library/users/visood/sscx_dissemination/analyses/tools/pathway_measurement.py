@@ -7,6 +7,7 @@ from dmt.tk.collections import head, Record
 from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.journal.logger import Logger 
 from neuro_dmt import terminology
+from .import count_number_calls
 
 LOGGER = Logger(client=__file__)
 
@@ -17,8 +18,8 @@ class PathwayMeasurement(WithFields):
     specifiers_cell_type = Field(
         """
         Cell properties that define this pathway.
-        """,
-        __examples__=["mtype", "etype"],
+      """,
+      __examples__=["mtype", "etype"],
         __default_value__=[])
     direction = Field(
         """
@@ -250,7 +251,6 @@ class PathwayMeasurement(WithFields):
 
         return (cells,)
 
-
     def sample(self, circuit_model, adapter,
             pre_synaptic_cell=None,
             post_synaptic_cell=None,
@@ -273,7 +273,7 @@ class PathwayMeasurement(WithFields):
             measurement =\
                 self._method(
                     circuit_model, adapter,
-                    cells,
+                    batch_cells,
                     cell_properties_groupby=self.specifiers_cell_type,
                     by_soma_distance=self.by_soma_distance,
                     bin_size_soma_distance=self.bin_size_soma_distance,
@@ -419,6 +419,7 @@ class PathwayMeasurement(WithFields):
         return\
             value_groups.agg("sum")[self.variable]
 
+    @count_number_calls(LOGGER)
     def _method(self,
             circuit_model, adapter,
             cell_info,
@@ -429,9 +430,7 @@ class PathwayMeasurement(WithFields):
         """..."""
         LOGGER.debug(
             LOGGER.get_source_info(),
-            "PathwayMeasurement _method",
-            "cell: {}".format(cell_info),
-            "group by {}".format(cell_properties_groupby))
+            "PathwayMeasurement _method")
         try:
            return self.value(
                circuit_model, adapter, cell_info,
@@ -457,7 +456,6 @@ class PathwayMeasurement(WithFields):
                     gids,
                     direction=self.direction)
             LOGGER.debug(
-                LOGGER.get_source_info(),
                 "PathwayMeasurement _method",
                 "number connections: {}".format(connections.shape[0]))
             return connections
@@ -542,7 +540,7 @@ class PathwayMeasurement(WithFields):
                 `cell_info` {}.
                 """.format(cell_info))
 
-        LOGGER.debug(
+        LOGGER.ignore(
             LOGGER.get_source_info(),
             "PathwayMeasurement._method(...)",
             "variables_groupby {}".format(variables_groupby),
