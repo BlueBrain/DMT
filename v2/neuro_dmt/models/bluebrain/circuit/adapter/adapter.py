@@ -840,22 +840,25 @@ class BlueBrainCircuitAdapter(WithFields):
         """
         return circuit_model.connectome.afferent_gids(post_synaptic_cell.gid)
 
-    @staticmethod
-    def _resolve_gids(cells):
+    def _resolve_gids(self, circuit_model, cell_group):
         """
         Resolve cell gids...
         """
-        if isinstance(cells, np.ndarray):
-            gids = cells
-        elif isinstance(cells, pd.Series):
-            gids = np.array([cells.gid])
-        elif isinstance(cells, pd.DataFrame):
-            gids = cells.gid.to_numpy(np.int32)
+        if isinstance(cell_group, np.ndarray):
+            gids = cell_group
+        elif isinstance(cell_group, pd.Series):
+            try:
+                gids = np.array([cell_group.gid])
+            except AttributeError:
+                gids = self.get_cells(circuit_model, **cell_group).gid.values
+        elif isinstance(cell_group, pd.DataFrame):
+            gids = cell_group.gid.values
         else:
             raise ValueError(
                 """
                 Could not resolve gids from object {}
-                """.format(cells))
+                """.format(cell_group))
+        return gids
 
     def get_afferent_connections(self,
             circuit_model,
@@ -871,7 +874,7 @@ class BlueBrainCircuitAdapter(WithFields):
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             post=self._resolve_gids(post_synaptic),
+                             post=self._resolve_gids(circuit_model, post_synaptic),
                              return_synapse_count=with_synapse_count)
         connections =\
             np.array([
@@ -903,7 +906,7 @@ class BlueBrainCircuitAdapter(WithFields):
         iter_connections =\
             circuit_model.connectome\
                          .iter_connections(
-                             pre=self._resolve_gids(pre_synaptic),
+                             pre=self._resolve_gids(circuit_model, pre_synaptic),
                              return_synapse_count=with_synapse_count)
         connections =\
             np.array([
