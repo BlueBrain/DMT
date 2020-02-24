@@ -1,5 +1,7 @@
 """
 Tools to help analyze.
+
+And essential imports
 """
 import os
 
@@ -16,7 +18,7 @@ def count_number_calls(LOGGER):
                     """{} call count : {}""".format(
                         method.__name__,
                         method.n_calls))
-                return result
+            return result
         return _decorated
     return decorator
 
