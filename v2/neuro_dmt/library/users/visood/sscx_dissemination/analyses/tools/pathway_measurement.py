@@ -80,11 +80,17 @@ class PathwayMeasurement(WithFields):
         """,
         __default_value__=np.nan)
 
-    cache_cells = Field(
+    cell_counts = Field(
         """
-        Mapping <circuit -> cells > to cache cells for a given circuit.
+        Mapping <circuit -> cell-type> to cache for a given circuit.
         """,
         __default_value__={})
+    cache_cells = Field(
+        """
+        Mapping <circuit -> cells > to cache for a given circuit.
+        """,
+        __default_value__={})
+
 
     @lazyfield
     def using_random_pool_cells(self):
@@ -120,10 +126,18 @@ class PathwayMeasurement(WithFields):
         cell_types =\
             adapter.get_cell_types(
                 circuit_model, self.specifiers_cell_type)
-        self.cache_cells[circuit_model] =\
+        pool_cells =\
             pd.concat([
                 _sample_cells(group_id, cell_type)
                 for group_id, cell_type in cell_types.iterrows()])
+        self.cache_cells[circuit_model] =\
+            pool_cells
+        self.cell_counts[circuit_model] =\
+            cell_types.assign(number=pool_cells.group.value_counts())\
+                      .set_index(self.specifiers_cell_type)\
+                      .number
+                
+        return pool_cells
 
     def get_cells(self, circuit_model, adapter, cell_type=None):
         """
@@ -422,7 +436,6 @@ class PathwayMeasurement(WithFields):
         #                 yield measurement_one
                 
         # return measurement()
-
     @staticmethod
     def get_soma_distance_bins(
             circuit_model,
@@ -639,14 +652,17 @@ class PathwayMeasurement(WithFields):
         # except TypeError:
         #     return pd.Series(listed_sample, name=self.variable)
         # pass
-    
     def summary(self, circuit_model, adapter,
             pre_synaptic_cell=None,
             post_synaptic_cell=None,
+            aggregators=None,
             **kwargs):
         """..."""
-        aggregators =\
-            self.summaries[0] if len(self.summaries) == 1 else self.summaries
+        if aggregators is None:
+            aggregators =\
+                self.summaries[0]\
+                if len(self.summaries) == 1 else\
+                self.summaries
         collection =\
             self.collect(
                 circuit_model, adapter,
@@ -665,3 +681,36 @@ class PathwayMeasurement(WithFields):
         except ValueError:
             return\
                 collection.agg(aggregators)
+
+        raise RuntimeError(
+            "Execution should not reach here.")
+
+    def norm_per_pair(self, circuit_model, adapter,
+            pre_synaptic_cell=None,
+            post_synaptic_cell=None,
+            **kwargs):
+        """
+        Get a norm for the summaries...
+        Will be used to measure connection probability.
+        """
+        number_connections_pathway =\
+            self.summary(
+                circuit_model, adapter,
+                pre_synaptic_cell=pre_synaptic_cell,
+                post_synaptic_cell=post_synaptic_cell,
+                aggregators="sum",
+                **kwargs)
+        pair =\
+            self._resolve_pair(
+                pre_synaptic_cell=pre_synaptic_cell,
+                post_synaptic_cell=post_synaptic_cell)
+        number_pairs_pathway =\
+            self.cell_counts[circuit_model].loc[
+                tuple(pair.cell_type[p] for p in self.specifiers_cell_type)
+            ] * self.cell_counts[circuit_model]
+        return\
+            number_connections_pathway / number_pairs_pathway
+
+
+
+
