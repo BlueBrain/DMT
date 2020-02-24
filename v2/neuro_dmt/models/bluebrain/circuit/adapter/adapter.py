@@ -884,8 +884,8 @@ class BlueBrainCircuitAdapter(WithFields):
                 return pd.DataFrame([], columns=["pre_gid", "post_gid", "strength"])
             return\
                 pd.DataFrame({
-                    "pre_gid": connections[:, 0],
-                    "post_gid": connections[:, 1],
+                    "pre_gid": np.array(connections[:, 0], dtype=np.int32),
+                    "post_gid": np.array(connections[:, 1], dtype=np.int32),
                     "strength": connections[:, 2]})
         if connections.shape[0] == 0:
             return pd.DataFrame([], columns=["pre_gid"])
@@ -916,8 +916,8 @@ class BlueBrainCircuitAdapter(WithFields):
                 return pd.DataFrame([], columns=["post_gid", "post_gid", "strength"])
             return\
                 pd.DataFrame({
-                    "pre_gid": connections[:, 0],
-                    "post_gid": connections[:, 1],
+                    "pre_gid": np.array(connections[:, 0], dtype=np.int32),
+                    "post_gid": np.array(connections[:, 1], dtype=np.int32),
                     "strength": connections[:, 2]})
         if connections.shape[0] == 0:
             return pd.DataFrame([], columns=["post_gid"])
