@@ -73,19 +73,76 @@ class PathwayMeasurement(WithFields):
         __default_value__=[
             "count", "sum", "mean", "mad", "std", "var", "min", "median", "max"])
 
+    fraction_circuit_cells = Field(
+        """
+        Float representing the fraction of circuit cells to define a sub-network
+        to measure.
+        """,
+        __default_value__=np.nan)
+
     cache_cells = Field(
         """
         Mapping <circuit -> cells > to cache cells for a given circuit.
         """,
         __default_value__={})
 
+    @lazyfield
+    def using_random_pool_cells(self):
+        """
+        Does this `PathwayMeasurement` instance use a pool of randomly
+        selected cells?
+        """
+        return not np.isnan(self.fraction_circuit_cells)
+
+    def _load_cells(self, circuit_model, adapter):
+        """
+        Load cells...
+        """
+        if circuit_model in self.cache_cells:
+            return
+
+        if not self.using_random_pool_cells:
+            self.cache_cells[circuit_model] =\
+                adapter.get_cells(circuit_model)
+            return
+
+        def _sample_cells(group_id, cell_type):
+            cells =\
+                adapter.get_cells(
+                    circuit_model, **cell_type)
+            n_cells =\
+                np.int32(
+                    self.fraction_circuit_cells * cells.shape[0])
+            return\
+                cells.sample(n_cells)\
+                     .assign(group=group_id)
+
+        cell_types =\
+            adapter.get_cell_types(
+                circuit_model, self.specifiers_cell_type)
+        self.cache_cells[circuit_model] =\
+            pd.concat([
+                _sample_cells(group_id, cell_type)
+                for group_id, cell_type in cell_types.iterrows()])
+
     def get_cells(self, circuit_model, adapter, cell_type=None):
         """
         Population of cells in the circuit model to work with.
         """
-        return adapter.get_cells(circuit_model)\
-            if cell_type is None else\
-               adapter.get_cells(circuit_model, **cell_type)
+        self._load_cells(circuit_model, adapter)
+        pool_cells = self.cache_cells[circuit_model]
+
+        if cell_type is None:
+            return pool_cells
+
+        gids_cell_type =\
+            adapter.get_cells(circuit_model, **cell_type)\
+                   .index\
+                   .to_numpy(np.int32)
+                
+        return\
+            pool_cells.reindex(gids_cell_type)\
+                      .dropna()
 
     def get_connections(self, circuit_model, adapter, gids):
         """
@@ -97,9 +154,20 @@ class PathwayMeasurement(WithFields):
                 gids,
                 direction=self.direction)
         LOGGER.debug(
-            "PathwayMeasurement _method",
+            "PathwayMeasurement get_connections",
+            "queried gids {}".format(len(gids)),
             "number connections: {}".format(all_connections.shape[0]))
-        return all_connections
+        if not self.using_random_pool_cells:
+            return all_connections
+
+        gids_all =\
+            self.get_cells(circuit_model, adapter)\
+                .index\
+                .to_numpy(np.int32)
+        return all_connections[
+            np.logical_and(
+                np.in1d(all_connections.pre_gid.to_numpy(np.int32), gids_all),
+                np.in1d(all_connections.post_gid.to_numpy(np.int32), gids_all))]
 
     def get_connected_cells(self, cells, connections):
         """..."""
