@@ -1,20 +1,40 @@
 """
 Measure pathways.
 """
+from enum import Enum
 import numpy as np
 import pandas as pd
 from dmt.tk.collections import head, Record
-from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from dmt.tk.journal.logger import Logger 
 from neuro_dmt import terminology
 from .import count_number_calls
 
 LOGGER = Logger(client=__file__)
 
+
+class Connectivity(Enum):
+    """
+    Used for testing, or to compute pathway phenomena on a complete network
+    connectome.
+    """
+    COMPLETE = 1
+    RANDOM   = 2
+    CIRCUIT  = 3
+
+
 class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
     """
+    connectivity = Field(
+        """
+        Indicates if the circuit model itself will provide measurements (
+        through the adapter), or if the connectome connections must be assumed
+        to be complete (i.e. all pairs connected), or are randomly connected.
+        """,
+        __type__=Connectivity,
+        __default_value__=Connectivity.CIRCUIT)
     direction = Field(
         """
         AFF / EFF.
@@ -66,6 +86,12 @@ class PathwayMeasurement(WithFields):
         Size of soma distance bins (in um) 
         """,
         __default_value__=100)
+    upper_bound_soma_distance = Field(
+        """
+        Consider cell pairs that are separated by up to this soma-distance,
+        interpreting a nan value as infinity.
+        """,
+        __default_value__=np.nan)
     summaries = Field(
         """
         Summaries required, if making a summary measurement.
@@ -91,60 +117,59 @@ class PathwayMeasurement(WithFields):
         """,
         __default_value__={})
 
-
     @lazyfield
-    def using_random_pool_cells(self):
+    def using_subset_of_cells(self):
         """
-        Does this `PathwayMeasurement` instance use a pool of randomly
-        selected cells?
-        """
+        Boolean, set to `False` if all cells in circuit should be used for
+        connectome measurements. Otherwise a subset of all the circuit cells
+        will be used.
+        By default, the value will inferred from `Field fraction_circuit_cells`.
+        If its value is meaningful (i.e. not NaN), a random pool of cells will
+        be used (and cached).
+        """,
         return not np.isnan(self.fraction_circuit_cells)
 
     def _load_cells(self, circuit_model, adapter):
         """
         Load cells...
         """
-        if circuit_model in self.cache_cells:
-            return
-
-        if not self.using_random_pool_cells:
-            self.cache_cells[circuit_model] =\
-                adapter.get_cells(circuit_model)
-            return
-
-        def _sample_cells(group_id, cell_type):
-            cells =\
-                adapter.get_cells(
-                    circuit_model, **cell_type)
-            n_cells =\
-                np.int32(
-                    self.fraction_circuit_cells * cells.shape[0])
-            return\
-                cells.sample(n_cells)\
-                     .assign(group=group_id)
-
-        cell_types =\
-            adapter.get_cell_types(
-                circuit_model, self.specifiers_cell_type)
-        pool_cells =\
-            pd.concat([
-                _sample_cells(group_id, cell_type)
-                for group_id, cell_type in cell_types.iterrows()])
-        self.cache_cells[circuit_model] =\
-            pool_cells
-        self.cell_counts[circuit_model] =\
-            cell_types.assign(number=pool_cells.group.value_counts())\
-                      .set_index(self.specifiers_cell_type)\
-                      .number
+        if circuit_model not in self.cache_cells:
+            if not self.using_subset_of_cells:
+                self.cache_cells[circuit_model] =\
+                    adapter.get_cells(circuit_model)
+            else:
+                def _sample_cells(group_id, cell_type):
+                    cells =\
+                        adapter.get_cells(
+                            circuit_model, **cell_type)
+                    n_cells =\
+                        np.int32(
+                            self.fraction_circuit_cells * cells.shape[0])
+                    return\
+                        cells.sample(n_cells)\
+                             .assign(group=group_id)
                 
-        return pool_cells
+                cell_types =\
+                    adapter.get_cell_types(
+                        circuit_model, self.specifiers_cell_type)
+                pool_cells =\
+                    pd.concat([
+                        _sample_cells(group_id, cell_type)
+                        for group_id, cell_type in cell_types.iterrows()])
+                self.cache_cells[circuit_model] =\
+                    pool_cells
+                self.cell_counts[circuit_model] =\
+                    cell_types.assign(number=pool_cells.group.value_counts())\
+                              .set_index(self.specifiers_cell_type)\
+                              .number
+
+        return self.cache_cells[circuit_model]
 
     def get_cells(self, circuit_model, adapter, cell_type=None):
         """
         Population of cells in the circuit model to work with.
         """
-        self._load_cells(circuit_model, adapter)
-        pool_cells = self.cache_cells[circuit_model]
+        pool_cells =self._load_cells(circuit_model, adapter)
 
         if cell_type is None:
             return pool_cells
@@ -153,41 +178,70 @@ class PathwayMeasurement(WithFields):
             adapter.get_cells(circuit_model, **cell_type)\
                    .index\
                    .to_numpy(np.int32)
-                
+
         return\
             pool_cells.reindex(gids_cell_type)\
                       .dropna()
 
-    def get_connections(self, circuit_model, adapter, gids):
+    def get_pairs(self, circuit_model, adapter, gids):
+        """
+        Get pairs between all pooled cells and cells with the argumented gids.
+        """
+        other_gids =\
+            adapter.get_cell_gids(
+                circuit_model,
+                self.get_cells(circuit_model, adapter))
+        return\
+            pd.concat([
+                pd.DataFrame({
+                    self.label_gid: gid,
+                    self.label_other_gid: other_gids})
+                for gid in gids])
+
+    def get_connections(self,
+            circuit_model,
+            adapter,
+            gids,
+            connectivity=None):
         """
         Get connections...
         """
+        connectivity =\
+            connectivity if connectivity else self.connectivity
+        if connectivity == Connectivity.COMPLETE:
+            return\
+                self.get_pairs(circuit_model, adapter, gids)\
+                    .assign(strength=1.)
+
         all_connections =\
             adapter.get_connections(
                 circuit_model,
                 gids,
                 direction=self.direction)
+
         LOGGER.debug(
             "PathwayMeasurement get_connections",
             "queried gids {}".format(len(gids)),
             "number connections: {}".format(all_connections.shape[0]))
-        if not self.using_random_pool_cells:
+
+        if not self.using_subset_of_cells:
             return all_connections
 
-        gids_all =\
-            self.get_cells(circuit_model, adapter)\
-                .index\
-                .to_numpy(np.int32)
-        return all_connections[
-            np.logical_and(
-                np.in1d(all_connections.pre_gid.to_numpy(np.int32), gids_all),
-                np.in1d(all_connections.post_gid.to_numpy(np.int32), gids_all))]
+        pooled_gids =\
+            adapter.get_cell_gids(
+                circuit_model,
+                self.get_cells(circuit_model, adapter))
+        return\
+            all_connections[np.in1d(
+                all_connections[self.label_other_gid].to_numpy(np.int32),
+                pooled_gids)]
 
     def get_connected_cells(self, cells, connections):
         """..."""
         return\
             cells.loc[connections[self.label_other_gid].to_numpy(np.int32)]\
-                 .dropna()
+                 .dropna()\
+                 .assign(**{self.label_gid: connections[self.label_gid].values})
 
     def _sample_cells(self, circuit_model, adapter, cell_type=None, size=None):
         """..."""
@@ -401,63 +455,49 @@ class PathwayMeasurement(WithFields):
                     **kwargs)
             yield\
                 self._prefix_aggregated_synaptic_side(pair, measurement)
-        # if self.processing_methodology == terminology.processing_methodology.batch:
-        #     def measurement():
-        #         measurement =\
-        #             self._prefix_aggregated_synaptic_side(
-        #                 pair,
-        #                 self._method(
-        #                     circuit_model, adapter,
-        #                     cells,
-        #                     cell_properties_groupby=self.specifiers_cell_type,
-        #                     by_soma_distance=self.by_soma_distance,
-        #                     bin_size_soma_distance=self.bin_size_soma_distance,
-        #                     **kwargs))
-        #         try:
-        #             return measurement.rename(cell.gid)
-        #         except:
-        #             return measurement
-        # else:
-        #     def measurement():
-        #         for _, cell in cells.iterrows():
-        #             measurement_one =\
-        #                 self._prefix_aggregated_synaptic_side(
-        #                     pair,
-        #                     self._method(
-        #                         circuit_model, adapter,
-        #                         cell,
-        #                         cell_properties_groupby=self.specifiers_cell_type,
-        #                         by_soma_distance=self.by_soma_distance,
-        #                         bin_size_soma_distance=self.bin_size_soma_distance,
-        #                         **kwargs))
-        #             try:
-        #                 yield measurement_one.rename(cell.gid)
-        #             except:
-        #                 yield measurement_one
-                
-        # return measurement()
-    @staticmethod
-    def get_soma_distance_bins(
+
+    def get_soma_distance_bins(self,
             circuit_model,
             adapter,
-            cell,
-            cell_group,
-            bin_size=100.,
-            bin_mids=True):
+            cell_group_from,
+            cell_group_to,
+            bin_size_soma_distance=None):
         """
         Get binned distance of `cell`'s soma from soma of all the cells in
         `cell_group`.
         """
-        distance =\
-            adapter.get_soma_distance(
-                circuit_model,
-                cell, cell_group)
-        bin_starts =\
-            bin_size * np.floor(distance / bin_size)
-        return\
-            [bin_start + bin_size / 2. for bin_start in bin_starts]\
-            if bin_mids else\
-               [[bin_start, bin_size] for bin_start in bin_starts]
+        def _binned(distances):
+            bin_size =\
+                bin_size_soma_distance if bin_size_soma_distance\
+                else self.bin_size_soma_distance
+            bin_starts =\
+                bin_size * np.floor(distances / bin_size)
+            return\
+                np.array([
+                    bin_start + bin_size / 2.
+                    for bin_start in bin_starts])
+
+        if isinstance(cell_group_from, pd.Series):
+            return\
+                _binned(adapter.get_soma_distance(
+                    circuit_model,
+                    cell_group_from,
+                    cell_group_to))
+        elif isinstance(cell_group_from, pd.DataFrame):
+            positions_from =\
+                adapter.get_soma_positions(
+                    circuit_model,
+                    cell_group_from.loc[
+                        cell_group_to[self.label_gid].to_numpy(np.int32)])
+            positions_to =\
+                adapter.get_soma_positions(
+                    circuit_model,
+                    cell_group_to)
+            return\
+                _binned(np.linalg.norm(
+                    positions_to.values - positions_from.values,
+                    axis=1))
+
 
     @lazyfield
     def label_other_gid(self):
@@ -473,19 +513,21 @@ class PathwayMeasurement(WithFields):
             circuit_model, adapter,
             cell_info,
             cell_properties_groupby,
-            by_soma_distance,
-            bin_size_soma_distance,
             **kwargs):
         """..."""
         LOGGER.ignore(
             LOGGER.get_source_info(),
             "PathwayMeasurement _method")
+        by_soma_distance =\
+            kwargs.get("by_soma_distance", self.by_soma_distance)
+        bin_size_soma_distance =\
+            kwargs.get("bin_size_soma_distance", self.bin_size_soma_distance)
         try:
            return self.value(
                circuit_model, adapter, cell_info,
                cell_properties_groupby=cell_properties_groupby,
-               by_soma_distance=self.by_soma_distance,
-               bin_size_soma_distance=self.bin_size_soma_distance,
+               by_soma_distance=by_soma_distance,
+               bin_size_soma_distance=bin_size_soma_distance,
                **kwargs)
         except (TypeError, ValueError):
             pass
@@ -518,9 +560,6 @@ class PathwayMeasurement(WithFields):
             return _gids(connections, self.label_other_gid)
 
 
-        cells =\
-            self.get_cells(circuit_model, adapter)
-
         if isinstance(cell_info, pd.DataFrame):
             connections =\
                 self.get_connections(
@@ -538,16 +577,6 @@ class PathwayMeasurement(WithFields):
                     [self.label_gid, "soma_distance", self.variable]
                     if by_soma_distance else
                     [self.label_gid, self.variable])
-            cells_connected =\
-                self.get_connected_cells(cells, connections)\
-                    .assign(**{self.label_gid: _gids_measured(connections),
-                               self.variable: value})
-            # cells_connected =\
-            #     self.get_cells(circuit_model, adapter)\
-            #         .loc[_gids_connected(connections)]\
-            #         .dropna()\
-            #         .assign(**{self.label_gid: _gids_measured(connections),
-            #                    self.variable: value})
         elif isinstance(cell_info, pd.Series):
             if not "gid" in cell_info.index:
                 raise ValueError(
@@ -570,14 +599,6 @@ class PathwayMeasurement(WithFields):
                 cell_properties_groupby +(
                     ["soma_distance", self.variable] if by_soma_distance else
                     [self.variable])
-            cells_connected =\
-                self.get_connected_cells(cells, connections)\
-                    .assign(**{self.variable: value})
-            # cells_connected =\
-            #     self.get_cells(circuit_model, adapter)\
-            #         .loc[_gids_connected(connections)]\
-            #         .dropna()\
-            #         .assign(**{self.variable: value})
         else:
             raise ValueError(
                 """
@@ -585,13 +606,17 @@ class PathwayMeasurement(WithFields):
                 `cell_info` {}.
                 """.format(cell_info))
 
+        cells_connected =\
+            self.get_connected_cells(self.get_cells(circuit_model, adapter),
+                                     connections)\
+                .assign(**{self.variable: value})
         if by_soma_distance:
             def _soma_distance(other_cells):
                 return\
                     self.get_soma_distance_bins(
                         circuit_model, adapter,
                         cell_info, other_cells,
-                        bin_size=bin_size_soma_distance)
+                        bin_size_soma_distance=bin_size_soma_distance)
             cells_connected =\
                 cells_connected.assign(soma_distance=_soma_distance)
 
@@ -685,29 +710,28 @@ class PathwayMeasurement(WithFields):
         raise RuntimeError(
             "Execution should not reach here.")
 
-    def norm_per_pair(self, circuit_model, adapter,
-            pre_synaptic_cell=None,
-            post_synaptic_cell=None,
-            **kwargs):
+    def norm_per_pair(self, *args, **kwargs):
         """
         Get a norm for the summaries...
         Will be used to measure connection probability.
         """
+
         number_connections_pathway =\
-            self.summary(
-                circuit_model, adapter,
-                pre_synaptic_cell=pre_synaptic_cell,
-                post_synaptic_cell=post_synaptic_cell,
-                aggregators="sum",
-                **kwargs)
-        pair =\
-            self._resolve_pair(
-                pre_synaptic_cell=pre_synaptic_cell,
-                post_synaptic_cell=post_synaptic_cell)
+            self.summary(*args, aggregators="sum", **kwargs)
+
         number_pairs_pathway =\
-            self.cell_counts[circuit_model].loc[
-                tuple(pair.cell_type[p] for p in self.specifiers_cell_type)
-            ] * self.cell_counts[circuit_model]
+            self.with_field_values(connectivity=Connectivity.COMPLETE,
+                                   cache_cells=self.cache_cells)\
+                .summary(*args, aggregators="sum", **kwargs)
+                    
+        # pair =\
+        #     self._resolve_pair(
+        #         pre_synaptic_cell=pre_synaptic_cell,
+        #         post_synaptic_cell=post_synaptic_cell)
+        # number_pairs_pathway =\
+        #     self.cell_counts[circuit_model].loc[
+        #         tuple(pair.cell_type[p] for p in self.specifiers_cell_type)
+        #     ] * self.cell_counts[circuit_model]
         return\
             number_connections_pathway / number_pairs_pathway
 
