@@ -203,7 +203,7 @@ class processing_methodology(TermCollection):
         Indicate to process one individual from the population at a time.
         """)
     batch = Term(
-        "random_batch",
+        "batch",
         """
         Indicate to process a batch of individuals from the population at a
         time.
