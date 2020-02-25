@@ -80,7 +80,8 @@ class PathwayMeasurement(WithFields):
     by_soma_distance = Field(
         """
         Boolean, indicating if the measurements should be made by soma-distance.
-        """)
+        """,
+        __default_value__=False)
     bin_size_soma_distance = Field(
         """
         Size of soma distance bins (in um) 
@@ -117,6 +118,16 @@ class PathwayMeasurement(WithFields):
         """,
         __default_value__={})
 
+    def _validate_fields(self):
+        """..."""
+        if (self.by_soma_distance and
+            not np.isnan(self.upper_bound_soma_distance)):
+            raise TypeError(
+                """
+                {} cannot be instantiated to bin results by soma-distance and 
+                use an upper bound on soma-distance to filter connections.
+                """.format(self.__class__.__name__))
+
     @lazyfield
     def using_subset_of_cells(self):
         """
@@ -128,6 +139,10 @@ class PathwayMeasurement(WithFields):
         be used (and cached).
         """,
         return not np.isnan(self.fraction_circuit_cells)
+
+    @lazyfield
+    def filter_by_upper_bound_soma_distance(self):
+        return not np.isnan(self.upper_bound_soma_distance)
 
     def _load_cells(self, circuit_model, adapter):
         """
@@ -610,7 +625,7 @@ class PathwayMeasurement(WithFields):
             self.get_connected_cells(self.get_cells(circuit_model, adapter),
                                      connections)\
                 .assign(**{self.variable: value})
-        if by_soma_distance:
+        if by_soma_distance or self.filter_by_upper_bound_soma_distance:
             def _soma_distance(other_cells):
                 return\
                     self.get_soma_distance_bins(
@@ -619,6 +634,11 @@ class PathwayMeasurement(WithFields):
                         bin_size_soma_distance=bin_size_soma_distance)
             cells_connected =\
                 cells_connected.assign(soma_distance=_soma_distance)
+
+        if self.filter_by_upper_bound_soma_distance:
+            cells_connected =\
+                cells_connected[
+                    cells_connected.soma_distance < self.upper_bound_soma_distance]
 
         cells_connected = cells_connected[columns_relevant]
 
