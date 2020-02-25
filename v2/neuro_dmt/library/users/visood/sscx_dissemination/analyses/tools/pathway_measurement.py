@@ -112,7 +112,7 @@ class PathwayMeasurement(WithFields):
         Mapping <circuit -> cell-type> to cache for a given circuit.
         """,
         __default_value__={})
-    cache_cells = Field(
+    target = Field(
         """
         Mapping <circuit -> cells > to cache for a given circuit.
         """,
@@ -148,9 +148,9 @@ class PathwayMeasurement(WithFields):
         """
         Load cells...
         """
-        if circuit_model not in self.cache_cells:
+        if circuit_model not in self.target:
             if not self.using_subset_of_cells:
-                self.cache_cells[circuit_model] =\
+                self.target[circuit_model] =\
                     adapter.get_cells(circuit_model)
             else:
                 def _sample_cells(group_id, cell_type):
@@ -171,14 +171,14 @@ class PathwayMeasurement(WithFields):
                     pd.concat([
                         _sample_cells(group_id, cell_type)
                         for group_id, cell_type in cell_types.iterrows()])
-                self.cache_cells[circuit_model] =\
+                self.target[circuit_model] =\
                     pool_cells
                 self.cell_counts[circuit_model] =\
                     cell_types.assign(number=pool_cells.group.value_counts())\
                               .set_index(self.specifiers_cell_type)\
                               .number
 
-        return self.cache_cells[circuit_model]
+        return self.target[circuit_model]
 
     def get_cells(self, circuit_model, adapter, cell_type=None):
         """
@@ -741,7 +741,7 @@ class PathwayMeasurement(WithFields):
 
         number_pairs_pathway =\
             self.with_field_values(connectivity=Connectivity.COMPLETE,
-                                   cache_cells=self.cache_cells)\
+                                   target=self.target)\
                 .summary(*args, aggregators="sum", **kwargs)
                     
         # pair =\
