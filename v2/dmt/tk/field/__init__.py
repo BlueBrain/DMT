@@ -169,12 +169,16 @@ class WithFields:
             self._logger = Logger(
                 client=self.__class__.__name__,
                 level=kwargs.get("log_level", None))
-
         try:
             super().__init__(
                 *args, **kwargs)
         except TypeError as error:
             pass
+
+        self._validate_fields()
+
+    def _validate_fields(self):
+        pass
 
     def _check_class_attribute(self, field):
         """
