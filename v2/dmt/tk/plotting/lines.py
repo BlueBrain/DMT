@@ -58,6 +58,23 @@ class LinePlot(BasePlotter):
             return data.reset_index()
         return measurement.concat_as_samples(data).reset_index()
 
+    @staticmethod
+    def _get_markers(series, filled=True):
+        """
+        Get markers for elements in a series...
+        """
+        markers_filled =[
+            "o", "v", "^", "<", ">",  "8", "s", "p", "P", "*",
+            "X", "d", "D",  "h", "H"]
+        markers_unfilled =[
+            "o", "v", "^", "<", ">",  "8", "s", "p", "P", "*",
+            "X", "d", "D",  "h", "H"]
+        markers_to_use =\
+            markers_filled if filled else markers_unfilled
+        return {
+            value: markers_to_use[index % len(markers_to_use)]
+            for index, value in series.iteritems()}
+
     def get_figure(self,
             data,
             *args,
@@ -78,6 +95,7 @@ class LinePlot(BasePlotter):
                 separator='_')
         dataframe =\
             self.get_dataframe(data, dataset)
+        #if self.fvar:
         grid = seaborn\
             .FacetGrid(
                 dataframe,
@@ -95,6 +113,10 @@ class LinePlot(BasePlotter):
             self.yvar,
             drawstyle=self.drawstyle,
             alpha=0.7,
+            dashes=False,
+            hue=dataframe[self.gvar] if self.gvar else None,
+            style=dataframe[self.gvar] if self.gvar else None,
+            markers=self._get_markers(dataframe[self.gvar]) if self.gvar else None,
             ms=self.marker_size
         ).set_titles(
             _make_name(self.fvar) + "\n{col_name} "
@@ -106,6 +128,16 @@ class LinePlot(BasePlotter):
                 ylabel=self.ylabel,
                 title=self.title),
             caption=caption)
+        # return Figure(
+        #     seaborn.lineplot(
+        #         x=self.xvar,
+        #         y=self.yvar,
+        #         #hue=self.gvar if self.gvar else None,
+        #         style=self.gvar if self.gvar else None,
+        #         drawstyle=self.drawstyle,
+        #         alpha=0.7,
+        #         markers=True,
+        #         data=dataframe))
 
     def plot(self,
             *args, **kwargs):
