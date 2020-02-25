@@ -128,16 +128,6 @@ class LinePlot(BasePlotter):
                 ylabel=self.ylabel,
                 title=self.title),
             caption=caption)
-        # return Figure(
-        #     seaborn.lineplot(
-        #         x=self.xvar,
-        #         y=self.yvar,
-        #         #hue=self.gvar if self.gvar else None,
-        #         style=self.gvar if self.gvar else None,
-        #         drawstyle=self.drawstyle,
-        #         alpha=0.7,
-        #         markers=True,
-        #         data=dataframe))
 
     def plot(self,
             *args, **kwargs):
