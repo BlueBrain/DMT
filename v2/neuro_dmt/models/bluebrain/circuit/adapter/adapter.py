@@ -746,6 +746,15 @@ class BlueBrainCircuitAdapter(WithFields):
         return number_segments / (1.e-9 * region_of_interest.volume)
 
 
+    def get_soma_positions(self, circuit_model, cells):
+        try:
+            return cells[XYZ]
+        except KeyError:
+            return\
+                self.get_cells(circuit_model).loc[
+                    cells.index.to_numpy(np.int32)
+                ][XYZ]
+
     def get_soma_distance(self,
             circuit_model,
             cell,
@@ -767,6 +776,14 @@ class BlueBrainCircuitAdapter(WithFields):
         bin_starts = bin_size * np.floor(distances / bin_size)
         return np.array([
             bin_start + bin_size / 2. for bin_start in bin_starts])
+
+    def get_cell_gids(self, circuit_model, cells=None):
+        """..."""
+        if cells is None:
+            cells = self.get_cells(circuit_model)
+
+        return\
+            cells.index.to_numpy(np.int32)
 
     def get_adjacency_list(self,
             circuit_model=None,
@@ -1009,16 +1026,16 @@ class BlueBrainCircuitAdapter(WithFields):
                 sampling_methodology,
                 sample_size_post_synaptic_cells)
         return\
-            circuit_model.pathway_summary.probability_connection(
-                pre_synaptic_cells,
-                post_synaptic_cells,
-                with_soma_distance=True
-            ).reset_index(
-            ).assign(
-                soma_distance=lambda df: df.soma_distance.apply(np.mean)
-            ).set_index(
-                "soma_distance"
-            ).probability_connection
+            circuit_model.pathway_summary\
+                         .probability_connection(
+                             pre_synaptic_cells,
+                             post_synaptic_cells,
+                             with_soma_distance=True)\
+                         .reset_index()\
+                         .assign(
+                             soma_distance=lambda df: df.soma_distance.apply(np.mean))\
+                         .set_index("soma_distance")\
+                         .probability_connection
 
     def get_number_connections_afferent(self,
             circuit_model=None,
