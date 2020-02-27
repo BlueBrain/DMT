@@ -229,7 +229,7 @@ class bluepy(Singleton):
     """
     Terms defined in BluePy enums
     """
-    class cell_columns(TermCollection):
+    class cell(TermCollection):
         """Terms found in bluepy.enums.Cell"""
         morphology = Term(
             "morphology",
@@ -273,6 +273,9 @@ class bluepy(Singleton):
         orientation = Term(
             "orientation",
             "A matrix representing the cell's orientation.")
+        target = Term(
+            "target",
+            "A named target of cells in the circuit.")
 
 
         terms =(
@@ -287,4 +290,5 @@ class bluepy(Singleton):
             morph_class,
             synapse_class,
             x, y, z,
-            orientation)
+            orientation,
+            target)
