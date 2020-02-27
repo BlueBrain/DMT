@@ -22,5 +22,4 @@ def count_number_calls(LOGGER):
         return _decorated
     return decorator
 
-
 from .pathway_measurement import PathwayMeasurement

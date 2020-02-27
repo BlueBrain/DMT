@@ -12,7 +12,6 @@ from .import count_number_calls
 
 LOGGER = Logger(client=__file__)
 
-
 class Connectivity(Enum):
     """
     Used for testing, or to compute pathway phenomena on a complete network
@@ -21,6 +20,28 @@ class Connectivity(Enum):
     COMPLETE = 1
     RANDOM   = 2
     CIRCUIT  = 3
+
+
+class PathwayQuery(Record):
+    """
+    Defines a pathway query.
+    """
+    post_synaptic_cells = Field(
+        """
+        Mapping or pandas.Series...
+        """)
+    pre_synaptic_cells = Field(
+        """
+        Mapping or pandas.Series...
+        """)
+    direction = Field(
+        """
+        AFF/EFF.
+        """)
+
+    @lazyfield
+    def prefix_aggeregated_synaptic_side(self):
+        raise NotImplementedError
 
 
 class PathwayMeasurement(WithFields):
