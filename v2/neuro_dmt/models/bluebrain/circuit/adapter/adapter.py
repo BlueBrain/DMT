@@ -1220,3 +1220,53 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             dataframe.number_connections_afferent\
             if as_series else dataframe
+
+
+    def get_column(self, circuit_model, target=None, axcell=None, radius=250.):
+        """
+        Get a (cortical) column with the argumented `axcell` on its axis.
+        
+        Returns
+        -------------
+        A subset of all cells in the argumented circuit model that lie in the
+        column.
+        """
+        if target is not None:
+            if axcell is not None:
+                raise TypeError(
+                    """
+                    get_column(...) called with both `target` and `axcell`
+                    arguments. Only one of are accepted.
+                    """)
+            return self.get_cells(circuit_model, target=target)
+        
+        cells = self.get_cells(circuit_model)
+        if isinstance(axcell, (float, np.float)):
+            axcell = all_cells.iloc[axcell]
+            
+        def _axis(orientation):
+            """..."""
+            return np.dot(orientation, np.array([0., 1., 0.]))
+        
+        try:
+            axis_column = _axis(axcell.orientation)
+        except AttributeError:
+            axis_column = np.array([0., 1., 0.])
+            
+
+        position =\
+            lambda cell: cell[XYZ].to_numpy(np.float64)
+        position_axcell =\
+            position(cells) - position(axcell)
+        distance_axcell =\
+            np.linalg.norm(
+                position_axcell, axis=1)
+        component_axis =\
+            np.dot(
+                position_axcell, axis_column)
+        distance_axis =\
+            np.sqrt(
+                distance_axcell ** 2 - component_axis ** 2)
+        
+        return\
+            cells[distance_axis < radius]
