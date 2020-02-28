@@ -399,7 +399,6 @@ class BlueBrainCircuitModel(WithFields):
             else:
                 cells =\
                     cells.reindex(np.sort(np.unique([x for x in target])))\
-                         .assign(group="None")\
                          .dropna()
         return\
             cells.assign(gid=cells.index.values) if with_gid_column else cells
