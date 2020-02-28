@@ -220,6 +220,12 @@ class direction(TermCollection):
     reverse = Term(
         "REVERSE",
         "From post-synaptic neuron to pre-synaptic neuron.")
+    afferent = Term(
+        "AFF",
+        "An afferent synapse, or connection, enters a cell.")
+    efferent = Term(
+        "EFF",
+        "An efferent synapse, or connection exits a cell.")
 
     random = 1
     exhaustive = 2
