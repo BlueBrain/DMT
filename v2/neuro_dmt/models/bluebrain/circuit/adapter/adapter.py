@@ -593,12 +593,13 @@ class BlueBrainCircuitAdapter(WithFields):
     def get_cells(self,
             circuit_model=None,
             properties=None,
+            target=None,
             **query):
         """..."""
         cells =\
             self._resolve(circuit_model)\
                 .get_cells(properties=properties,
-                           with_gid_column=True,
+                           target=target,
                            **query)
         query_atlas =\
             terminology.circuit.atlas.filter(**query)

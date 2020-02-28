@@ -4,6 +4,7 @@ A class that represents circuit models developed at the Blue Brain Project.
 
 import os
 from copy import deepcopy
+from collections.abc import Iterable
 import yaml
 import numpy as np
 import pandas as pd
@@ -329,7 +330,7 @@ class BlueBrainCircuitModel(WithFields):
             Cell.Z: (corner_0[2], corner_1[2])})
         return query
 
-    def _get_bluepy_cell_query(self, **query):
+    def _get_bluepy_cell_query(self, query):
         """
         Convert `query` that will be accepted by a `BluePyCircuit`.
         """
@@ -352,13 +353,6 @@ class BlueBrainCircuitModel(WithFields):
 
         cell_query =\
             terminology.bluepy.cell.filter(**query)
-        if terminology.bluepy.cell.target in cell_query:
-            cell_query["$target"] =\
-                cell_query[terminology.bluepy.cell.target]
-
-        # cell_query =\
-        #     terminology.circuit.filter(
-        #         **terminology.cell.filter(**query))
 
         if terminology.bluepy.cell.layer in cell_query:
             cell_query[terminology.bluepy.cell.layer] =\
@@ -370,7 +364,11 @@ class BlueBrainCircuitModel(WithFields):
     @terminology.use(*(
         terminology.circuit.terms +
         terminology.cell.terms))
-    def get_cells(self, properties=None, with_gid_column=True, **query):
+    def get_cells(self,
+            properties=None,
+            with_gid_column=True,
+            target=None,
+            **query):
         """
         Get cells in a region, with requested properties.
 
@@ -382,15 +380,29 @@ class BlueBrainCircuitModel(WithFields):
         """
         cell_query =\
             self._get_bluepy_cell_query(
-                **self._resolve_query_region(**query))
+                self._resolve_query_region(**query))
+
+        if isinstance(target, str):
+            cell_query["$target"] = target
+
         cells =\
             self.cell_collection.get(
                 group=cell_query,
                 properties=properties)
+        if isinstance(target, Iterable):
+            if isinstance(target, str):
+                cells =\
+                    cells.assign(group=target)
+            elif isinstance(target, pd.DataFrame):
+                cells =\
+                    cells.reindex(target.index.to_numpy(np.int32))
+            else:
+                cells =\
+                    cells.reindex(np.sort(np.unique([x for x in target])))\
+                         .assign(group="None")\
+                         .dropna()
         return\
-            cells.assign(gid=cells.index.values)\
-            if with_gid_column\
-               else cells
+            cells.assign(gid=cells.index.values) if with_gid_column else cells
 
     @terminology.use(*(
         terminology.circuit.terms +
