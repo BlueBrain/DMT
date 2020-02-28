@@ -335,8 +335,8 @@ class PathwayMeasurement(WithFields):
         return\
             pd.concat([
                 pd.DataFrame({
-                    self.label_gid: gid,
-                    self.label_other_gid: gids_secondary})
+                    self.label_gid_primary: gid,
+                    self.label_gid_secondary: gids_secondary})
                 for gid in gids_primary])
 
     def get_connections(self,
@@ -373,20 +373,8 @@ class PathwayMeasurement(WithFields):
 
         return\
             all_connections[np.in1d(
-                all_connections[self.label_other_gid].to_numpy(np.int32),
+                all_connections[self.label_gid_secondary].to_numpy(np.int32),
                 gids_secondary)]
-
-        # if not self.using_subset_of_cells:
-        #     return all_connections
-
-        # pooled_gids =\
-        #     adapter.get_cell_gids(
-        #         circuit_model,
-        #         self.get_cells(circuit_model, adapter))
-        # return\
-        #     all_connections[np.in1d(
-        #         all_connections[self.label_other_gid].to_numpy(np.int32),
-        #         pooled_gids)]
 
     def _check_sampling_methodology(self, kwargs):
         """..."""
@@ -542,7 +530,7 @@ class PathwayMeasurement(WithFields):
                 adapter.get_soma_positions(
                     circuit_model,
                     cell_group_from.loc[
-                        cell_group_to[self.label_gid].to_numpy(np.int32)])
+                        cell_group_to[self.label_gid_primary].to_numpy(np.int32)])
             positions_to =\
                 adapter.get_soma_positions(
                     circuit_model,
@@ -554,11 +542,11 @@ class PathwayMeasurement(WithFields):
 
 
     @lazyfield
-    def label_other_gid(self):
+    def label_gid_secondary(self):
         return\
             "pre_gid" if self.direction == "AFF" else "post_gid"
     @lazyfield
-    def label_gid(self):
+    def label_gid_primary(self):
         return\
             "post_gid" if self.direction == "AFF" else "pre_gid"
 
@@ -611,10 +599,10 @@ class PathwayMeasurement(WithFields):
                 connections[label_nodes].to_numpy(np.int32)
 
         def _gids_measured(connections):
-            return _gids(connections, self.label_gid)
+            return _gids(connections, self.label_gid_primary)
 
         def _gids_connected(connections):
-            return _gids(connections, self.label_other_gid)
+            return _gids(connections, self.label_gid_secondary)
 
         if isinstance(target.primary, pd.DataFrame):
             connections =\
@@ -624,14 +612,14 @@ class PathwayMeasurement(WithFields):
                     target.secondary.gid.to_numpy(np.int32))
             variables_groupby =\
                 cell_properties_groupby +(
-                    [self.label_gid, "soma_distance"]
+                    [self.label_gid_primary, "soma_distance"]
                     if by_soma_distance else
-                    [self.label_gid])
+                    [self.label_gid_primary])
             columns_relevant =\
                 cell_properties_groupby + (
-                    [self.label_gid, "soma_distance", self.variable]
+                    [self.label_gid_primary, "soma_distance", self.variable]
                     if by_soma_distance else
-                    [self.label_gid, self.variable])
+                    [self.label_gid_primary, self.variable])
         elif isinstance(target.primary, pd.Series):
             if not "gid" in target.primary.index:
                 raise ValueError(
@@ -661,14 +649,14 @@ class PathwayMeasurement(WithFields):
                 """.format(target.primary))
 
         primary_gids =\
-            connections[self.label_gid].to_numpy(np.int32)
+            connections[self.label_gid_primary].to_numpy(np.int32)
         secondary_gids =\
-            connections[self.label_other_gid].to_numpy(np.int32)
+            connections[self.label_gid_secondary].to_numpy(np.int32)
         cells_connected =\
             adapter.get_cells(circuit_model)\
                    .loc[secondary_gids]\
                    .assign(**{
-                       self.label_gid: primary_gids,
+                       self.label_gid_primary: primary_gids,
                        self.variable: self.value(connections)})
                 
         if by_soma_distance or self.filter_by_upper_bound_soma_distance:
@@ -713,7 +701,8 @@ class PathwayMeasurement(WithFields):
 
         summed_value_groups = value_groups.agg("sum")[self.variable]
         try:
-             summed_value_groups = summed_value_groups.droplevel(self.label_gid)
+             summed_value_groups =\
+                 summed_value_groups.droplevel(self.label_gid_primary)
         except (KeyError, AttributeError, ValueError):
             pass
 
