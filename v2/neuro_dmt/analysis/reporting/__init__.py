@@ -156,8 +156,7 @@ class CheetahReporter(Reporter):
         """
         return {
             label: figure.caption
-            for label, figure in report.figures.items()
-        }
+            for label, figure in report.figures.items()}
 
     def filled_template(self, report, figure_locations):
         """
@@ -179,8 +178,7 @@ class CheetahReporter(Reporter):
             captions={
                 _make_name(label): figure.caption
                 for label, figure in report.figures.items()},
-            references=report.references
-            ))
+            references=report.references))
         return template_dict
 
     def post(self,
@@ -189,6 +187,7 @@ class CheetahReporter(Reporter):
             output_subfolder=None,
             report_file_name="report.html",
             strict=False,
+            with_time_stamp=True,
             *args, **kwargs):
         """
         Post the report.
@@ -201,7 +200,8 @@ class CheetahReporter(Reporter):
             self.get_output_location(
                 report,
                 path_output_folder=path_output_folder,
-                output_subfolder=output_subfolder)
+                output_subfolder=output_subfolder,
+                with_time_stamp=with_time_stamp)
         base_file_name =\
             get_file_name_base(report_file_name)
         path_report_file =\
@@ -229,8 +229,6 @@ class CheetahReporter(Reporter):
             with open(path_report_file, "w") as file_output:
                 file_output.write(report_html)
 
-            return output_uri
-
         except Exception as template_fill_error:
             if strict:
                 raise template_fill_error
@@ -239,7 +237,13 @@ class CheetahReporter(Reporter):
                 "Error during filling the report template: \n\t{}".format(
                     template_fill_error))
 
-            return super()._save_text_report(report, output_uri, folder_figures)
+            super()._save_text_report(
+                report, output_uri, folder_figures)
 
-        raise RuntimeError(
-            "Execution should not have reached here.")
+        for section in report.sections:
+            self.post(
+                section,
+                path_output_folder=output_uri,
+                with_time_stamp=False)
+
+        return output_uri
