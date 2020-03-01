@@ -45,6 +45,15 @@ class NothingType:
 
 Nothing = NothingType()
 
+from .nothing import NA
+
+
+class NullType:
+    """
+    Another kind of None.
+
+    """
+
 DayTime = namedtuple("DayTime", ["day", "time"])
 
 def timestamp(now=None, sep=None):

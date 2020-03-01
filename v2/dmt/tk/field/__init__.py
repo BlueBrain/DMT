@@ -401,3 +401,4 @@ lazyproperty = lazyfield
 
 from .prop import Property
 from .record import Record
+from ..utils.nothing import NA
