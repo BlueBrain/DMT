@@ -13,6 +13,7 @@ from dmt.tk.plotting import golden_figure
 from dmt.tk.plotting.figure import Figure
 from dmt.tk.collections import Record
 from dmt.tk.field import NA
+from dmt.tk.utils.string_utils import make_label
 from ..import CircuitAnalysisReport, CheetahReporter, CircuitProvenance
 
 def test_post():
@@ -46,7 +47,7 @@ def test_post():
         return\
             CircuitAnalysisReport(
                 author=Author.anonymous,
-                phenomenon="test-{}".format(label),
+                phenomenon="{}".format(label),
                 abstract="""
                 Abstract {}
                 """.format(label),
@@ -76,7 +77,14 @@ def test_post():
                 provenance_model=provenance)
 
     report_main =\
-        _section("main", subsections=[_section(index) for index in range(2)])
+        _section("Composition",
+                 subsections=[_section(make_label(phenomenon, separator='-'))
+                              for phenomenon in ("Cell Density by Layer",
+                                            "Inhibitory Fractions by Layer",
+                                            "Mtype Cell Density by Layer",
+                                            "Fiber Density by Layer",
+                                            "Marker Density by Cortical Depth",
+                                            "Cell Density by Layer")])
 
     reporter =\
         CheetahReporter(
