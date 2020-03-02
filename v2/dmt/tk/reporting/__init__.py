@@ -206,6 +206,37 @@ class Reporter(WithFields):
         return (figures_folder, figure_locations)
 
 
+    def _save_sections(self, report, output_folder, format_file=".txt"):
+        """
+        Save report sections.
+        """
+        def _write(attribute, text):
+            path_output_file =\
+                os.path.join(output_folder,
+                             "{}{}".format(attribute, format_file))
+            with open(path_output_file, 'w') as output_file:
+                try:
+                    output_file.write(text)
+                except TypeError:
+                    output_file.write('\n'.join(text))
+
+        if report.introduction:
+            _write("introduction", report.introduction)
+        if report.methods:
+            _write("methods", report.methods)
+        if report.results:
+            _write("methods", report.results)
+        if report.discussion:
+            _write("discussion", report.discussion)
+        if report.references:
+            _write("references", report.references)
+
+        if report.sections:
+            for section in report.sections:
+                _write(section.label, section.content)
+
+        return output_folder
+
     def _save_text_report(self, report, output_folder, folder_figures):
         """..."""
         def __write(output_file, attribute, text=""):
@@ -274,6 +305,7 @@ class Reporter(WithFields):
                     "{}.csv".format(report.label)))
         except AttributeError:
             pass
+
 
 
     def post(self,
