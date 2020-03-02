@@ -72,19 +72,28 @@ def test_post():
                 discussion="""
                 Discussion {}
                 """.format(label),
-                references={"{}".format(label): "https://www.example.org/label".format(label)},
+                references={"{}".format(label): "https://www.example.org/{}".format(label)},
                 sections=subsections,
                 provenance_model=provenance)
 
     report_main =\
-        _section("Composition",
-                 subsections=[_section(make_label(phenomenon, separator='-'))
-                              for phenomenon in ("Cell Density by Layer",
-                                                 "Inhibitory Fractions by Layer",
-                                                 "Mtype Cell Density by Layer",
-                                                 "Fiber Density by Layer",
-                                                 "Marker Density by Cortical Depth",
-                                                 "Cell Density by Layer")])
+        CircuitAnalysisReport(
+            author=Author.anonymous,
+            phenomenon="Composition",
+            abstract="Main abstract",
+            introduction="Main introduction",
+            methods="Main methods",
+            sections=[_section(make_label(phenomenon, separator='-'))
+                      for phenomenon in ("Cell Density by Layer",
+                                         "Inhibitory Fractions by Layer",
+                                         "Mtype Cell Density by Layer",
+                                         "Fiber Density by Layer",
+                                         "Marker Density by Cortical Depth",
+                                         "Cell Density by Cortical Depth")],
+            results="Main results",
+            discussion="Main discussion",
+            references={"main": "https://www.example.org"},
+            provenance_model=provenance)
 
     reporter =\
         CheetahReporter(

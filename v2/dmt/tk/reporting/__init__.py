@@ -192,6 +192,8 @@ class Reporter(WithFields):
 
     def _save_figures(self, report, output_folder, format_file=".png"):
         """..."""
+        if not report.figures:
+            return (None, {})
         if format_file[0] != '.':
             format_file = '.' + format_file
         figures_folder =\
@@ -258,13 +260,14 @@ class Reporter(WithFields):
                 output_file, "results")
             __write(
                 output_file, "discussion")
-            __write(
-                output_file, "figures", folder_figures)
-            __write(
-                output_file, "figure captions",
-                "\n".join(
-                    "({}). {}".format(label, figure.caption)
-                    for label, figure in report.figures.items()))
+            if report.figures:
+                __write(
+                    output_file, "figures", folder_figures)
+                __write(
+                    output_file, "figure captions",
+                    "\n".join(
+                        "({}). {}".format(label, figure.caption)
+                        for label, figure in report.figures.items()))
 
     def save(self,
             report,
