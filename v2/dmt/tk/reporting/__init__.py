@@ -11,7 +11,7 @@ from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields, NA
 from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
-from dmt.tk.utils.string_utils import paragraphs
+from dmt.tk.utils.string_utils import paragraphs, make_name, make_label
 
 class Report(WithFields):
     """
@@ -41,6 +41,12 @@ class Report(WithFields):
         with a properly annotated index.
         """,
         __default_value__=NA)
+    abstract = Field(
+        """
+        Provide an abstract for the report.
+        """,
+        __default_value__=NA,
+        __as__=paragraphs)
     introduction = Field(
         """
         Provide the research question, and the tested hypothesis or the
@@ -137,7 +143,7 @@ class Reporter(WithFields):
         path_report_folder =\
             os.path.join(
                 path_parent,
-                report.phenomenon)
+                make_label(report.label))
         if output_subfolder is not None:
             path_report_folder =\
                 os.path.join(
@@ -265,7 +271,7 @@ class Reporter(WithFields):
             self._flattened_columns(report.measurement.reset_index()).to_csv(
                 os.path.join(
                     output_folder,
-                    "{}.csv".format(report.phenomenon)))
+                    "{}.csv".format(report.label)))
         except AttributeError:
             pass
 

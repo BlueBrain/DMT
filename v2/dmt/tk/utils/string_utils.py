@@ -47,14 +47,14 @@ def make_name(
         with_capitalized_words=True,
         keep_original_capitalization=keep_original_capitalization)
 
-def make_label(string):
+def make_label(string, separator='_'):
     """
     Make label from a string.
     A label cannot have any spaces.
     """
     return make_text_like(
         string,
-        separator='_',
+        separator=separator,
         with_capitalized_words=False)
     
 def paragraphs(string):
