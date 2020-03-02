@@ -65,19 +65,20 @@ class WithFields:
 
         def __check_validity(field, value):
             """..."""
-            print("Check validity field {} validity {}".format(field, value))
             try:
                 field.assert_validity(value)
             except TypeError as error:
                 raise TypeError(
-                    """{}\n\t{} field {} value {} type {} is inadmissible.
+                    """
+                    {}
+                    A value `{}` of type `{}` for {} field {} is inadmissible.
                     Expected type is {}."""\
                     .format(
                         error,
-                        self.__class__.__name__,
                         value,
-                        field.__attr_name__,
                         type(value),
+                        self.__class__.__name__,
+                        field.__attr_name__,
                         field.__type__))
             except ValueError as error:
                 raise ValueError(
