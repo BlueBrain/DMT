@@ -9,6 +9,7 @@ from dmt.tk.field import Field, lazyfield
 from dmt.tk.journal import Logger
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import string_utils, get_file_name_base
+from dmt.tk.utils.string_utils import make_name
 from dmt.tk.field import Field, WithFields
 
 LOGGER = Logger(client=__file__)
@@ -76,17 +77,25 @@ class CircuitAnalysisReport(Report):
     @lazyfield
     def field_values(self):
         """..."""
-        fields = super().field_values
-        fields.update(dict(
-            animal=self.provenance_model.animal,
-            age=self.provenance_model.age,
-            brain_region=self.provenance_model.brain_region,
-            uri=self.provenance_model.uri,
-            references=self.references,
-            date_release=self.provenance_model.date_release,
-            authors_circuit=self.provenance_model.authors
-        ))
-        return fields
+        try:
+            name_phenomenon = self.phenomenon.name
+        except AttributeError:
+            name_phenomenon = make_name(self.phenomenon, separator="_")
+        return\
+            dict(
+                animal=self.provenance_model.animal,
+                age=self.provenance_model.age,
+                brain_region=self.provenance_model.brain_region,
+                uri=self.provenance_model.uri,
+                references=self.references,
+                date_release=self.provenance_model.date_release,
+                authors_circuit=self.provenance_model.authors,
+                author=self.author,
+                phenomenon=name_phenomenon,
+                introduction=self.introduction,
+                methods=self.methods,
+                results=self.results,
+                discussion=self.discussion)
 
 class CheetahReporter(Reporter):
     """
@@ -131,8 +140,18 @@ class CheetahReporter(Reporter):
         #for $line in $results
           <p>$line</p>
         #end for
+
         <h3>Figures</h3>
           <br>{}</br>
+
+        #if $sections
+          <h3>Sections</h3>
+          <p>$(70 * '=')</p>
+          #for $section, $location in $sections.items()
+            <p><strong>$section</strong>: <A HREF=$location>$location</A></p>
+          #end for
+        #end if
+      <p>$(70 * '=')</p>
 
     <h2>Discussion</h2>
         <p>$(70 * '=')</p>
@@ -164,18 +183,8 @@ class CheetahReporter(Reporter):
         </p>
         #end for
         """)
-    template_section = Field(
-        """
-        Template for a report section that can be inserted into the main
-        template.
-        """,
-        __default_value__="""
-        <h2>$title</h2>
 
-        #for $label_imge
-        """)
-
-    def _template(self, report):
+    def _template(self, report, sections):
         """
         HTML template for sections.
         """
@@ -191,7 +200,7 @@ class CheetahReporter(Reporter):
             label: figure.caption
             for label, figure in report.figures.items()}
 
-    def filled_template(self, report, figure_locations):
+    def filled_template(self, report, figure_locations, sections=None):
         """
         Fill in the template.
         """
@@ -211,8 +220,28 @@ class CheetahReporter(Reporter):
             captions={
                 _make_name(label): figure.caption
                 for label, figure in report.figures.items()},
-            references=report.references))
+            references=report.references,
+            sections=sections))
+        
         return template_dict
+
+    def _post_sections(self,
+            report,
+            output_uri,
+            report_file_name):
+        """
+        Report sections of this report!
+        """
+        if report.sections:
+            return {
+                section.label: os.path.join(
+                    self.post(section,
+                              path_output_folder=output_uri,
+                              report_file_name=report_file_name,
+                              with_time_stamp=False),
+                    report_file_name)
+                for section in report.sections}
+        return None
 
     def post(self,
             report,
@@ -247,11 +276,16 @@ class CheetahReporter(Reporter):
 
         self._save_measurement(report, output_uri)
 
+        sections =\
+            self._post_sections(report, output_uri, report_file_name)
+
         try:
             report_template_filled =\
                 Template(
-                    self._template(report),
-                    searchList=self.filled_template(report, locations_figures))
+                    self._template(report, sections),
+                    searchList=self.filled_template(report,
+                                                    locations_figures,
+                                                    sections))
             try:
                 report_html = str(report_template_filled)
             except Exception as html_error:
@@ -283,12 +317,5 @@ class CheetahReporter(Reporter):
 
             super()._save_text_report(
                 report, output_uri, folder_figures)
-
-        if report.sections:
-            for section in report.sections:
-                self.post(
-                    section,
-                    path_output_folder=output_uri,
-                    with_time_stamp=False)
 
         return output_uri
