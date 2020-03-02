@@ -6,13 +6,20 @@ class Singleton:
     """
     Base for classes that can have only a single instance.
     """
+
+    instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = super().__new__(cls, *args, **kwargs)
+        return cls.instance
+
     def __init__(self,
             *args, **kwargs):
         """
-        Cannot initialize.
-        A stand in that must be implemented to do what a singleton promises.
+        Can have only a single instance,
+        so can be initialized only once!
         """
-        raise TypeError(
-            """
-            Cannot initialize a class derived from `CanNotHaveInstances`.
-            """)
+        if self.__class__.instance is None:
+            self.__class__.instance = self
+            super().__init__(*args, **kwargs)

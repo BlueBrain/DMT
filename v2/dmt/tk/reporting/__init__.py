@@ -54,6 +54,11 @@ class Report(WithFields):
         """,
         __default_value__="Not provided",
         __as__=paragraphs)
+    sections = Field(
+        """
+        An ordered list of report sections.
+        """,
+        __default_value__=[])
     results = Field(
         """
         Answer to the research question, to be included in the figure caption.
@@ -91,8 +96,9 @@ class Report(WithFields):
             "introduction": self.introduction,
             "methods": self.methods,
             "results": self.results,
-            "discussion": self.discussion
-        }
+            "discussion": self.discussion,
+            "references": self.references,
+            "sections": self.sections}
 
 
 class Reporter(WithFields):
@@ -199,11 +205,7 @@ class Reporter(WithFields):
                     text if text else getattr(report, attribute),
                     section_end))
 
-        with open(
-                os.path.join(
-                    output_folder,
-                    "report.txt"),
-                'w') as output_file:
+        with open(os.path.join(output_folder, "report.txt"),'w') as output_file:
             __write(
                 output_file, "introduction")
             __write(
@@ -220,11 +222,11 @@ class Reporter(WithFields):
                     "({}). {}".format(label, figure.caption)
                     for label, figure in report.figures.items()))
 
-
     def save(self,
             report,
             path_output_folder=None,
-            output_subfolder=None):
+            output_subfolder=None,
+            with_time_stamp=True):
         """
         Save report at the path provided.
         """
@@ -232,7 +234,8 @@ class Reporter(WithFields):
                 self.get_output_location(
                     report,
                     path_output_folder=path_output_folder,
-                    output_subfolder=output_subfolder)
+                    output_subfolder=output_subfolder,
+                    with_time_stamp=with_time_stamp)
 
         folder_figures, _ =\
             self._save_figures(report, output_folder)
@@ -240,6 +243,12 @@ class Reporter(WithFields):
         self._save_measurement(report, output_folder)
 
         self._save_text_report(report, output_folder, folder_figures)
+
+        for section in self.sections:
+            self.save(
+                section,
+                path_output_folder=output_folder,
+                with_time_stamp=False)
 
         return output_folder
 
