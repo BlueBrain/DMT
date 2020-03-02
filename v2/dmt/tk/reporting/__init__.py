@@ -8,7 +8,7 @@ from collections.abc import Mapping
 import pandas as pd
 from dmt.tk.utils import timestamp
 from dmt.tk.utils.string_utils import make_name
-from dmt.tk.field import Field, lazyfield, WithFields, NA
+from dmt.tk.field import Field, LambdaField, lazyfield, WithFields, NA
 from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
 from dmt.tk.utils.string_utils import paragraphs
@@ -82,6 +82,12 @@ class Report(WithFields):
         References for this analysis report.
         """,
         __default_value__=NA)
+
+    label = LambdaField(
+        """
+        Label for this report to save data.
+        """,
+        lambda self: self.phenomenon)
 
     @lazyfield
     def field_values(self):
