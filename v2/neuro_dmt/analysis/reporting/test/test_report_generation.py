@@ -84,11 +84,14 @@ def test_post():
         CheetahReporter(
             path_output_folder=os.path.join(
                 os.getcwd(), "random_walks"))
-    reporter.post(report)
-    return Record(
-        provenance=provenance,
-        report=report,
-        reporter=reporter)
+    path_report =\
+        reporter.post(report)
+    return\
+        Record(
+            provenance=provenance,
+            report=report,
+            reporter=reporter,
+            path_report=path_report)
 
 def test_dict_provenance():
     """
