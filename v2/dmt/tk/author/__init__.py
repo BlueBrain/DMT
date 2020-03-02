@@ -42,14 +42,11 @@ class Author(WithFields):
         Pretty print an Author.
         """
         return """
-        Author(
-        name: {},
-        affiliation: {},
-        homepage: {})"""\
+        {},
+        {}"""\
             .format(
                 self.name,
-                self.affiliation,
-                self.homepage)
+                self.affiliation)
 
 
 Author.anonymous =\

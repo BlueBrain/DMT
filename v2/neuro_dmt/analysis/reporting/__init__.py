@@ -68,7 +68,12 @@ class CircuitAnalysisReport(Report):
         for the fields of `class CircuitProvenance`.
         """,
         __as__=CircuitProvenance)
-
+    figures = Field(
+        """
+        A dict mapping label to an object with a `.graphic` and `.caption`
+        attributes.
+        """,
+        __default_value__={})
     references = Field(
         """
         References of literature cited in this report.
@@ -132,11 +137,15 @@ class CheetahReporter(Reporter):
 
               <h2>Circuit Analyzed</h2>
                 <p>$(70 * '=')</p>
-                <p>Animal: $animal</p>
-                <p>Age: $age</p>
-                <p>Brain Region: $brain_region</p>
-                <p>URI: $uri</p>
-                <p>Author: $authors_circuit</p>
+                <p><strong>Animal</strong>: $animal</p>
+                <p><strong>Age</strong>: $age</p>
+                <p><strong>Brain Region</strong>: $brain_region</p>
+                <p><strong>URI</strong>: $uri</p>
+
+                <p><strong>Authors</strong></p>
+                #for $author in $authors_circuit
+                    <p>$author</p>
+                #end for
 
               <h2>Abstract</h2>
                 <p>$(70 * '=')</p>
@@ -162,8 +171,10 @@ class CheetahReporter(Reporter):
                   <p>$line</p>
                 #end for
 
-              <h3>Figures</h3>
+              #if $images
+                <h3>Figures</h3>
                 <br>{}</br>
+              #end if
 
               #if $sections
                 <h3>Sections</h3>
@@ -180,12 +191,13 @@ class CheetahReporter(Reporter):
                   <p>$line</p>
                 #end for
 
-              <h2>References</h2>
-                <p>$(70 * '=')</p>
-                #for $label, $citation in $references.items()
-                  <p><strong>$label</strong>: $citation</p>
-                #end for
-
+              #if $references
+                <h2>References</h2>
+                  <p>$(70 * '=')</p>
+                  #for $label, $citation in $references.items()
+                    <p><strong>$label</strong>: $citation</p>
+                  #end for
+              #end if
           </body>
         </html>
         """)
@@ -197,10 +209,10 @@ class CheetahReporter(Reporter):
         #for $label_image, $location_image in $images.items()
           <img src=$location_image alt="apologies.png"/>
         <p>
-          <strong>$label_image.capitalize():</strong>
-          #for $line in $captions[$label_image]
-            $line
-          #end for
+           <strong>$label_image.capitalize():</strong>
+           #for $line in $captions[$label_image]
+             $line
+           #end for
         </p>
         #end for
         """)
@@ -219,6 +231,7 @@ class CheetahReporter(Reporter):
             #else
               <h3>$title</h3>
             #end if
+            <p>$(70 * '-')</p>
 
             <h4>Figures</h4>
               <br>{}</br>
@@ -240,8 +253,10 @@ class CheetahReporter(Reporter):
         """
         HTML template for sections.
         """
-        return\
-            self.template.format(self.template_figures)
+        if report.figures:
+            return\
+                self.template.format(self.template_figures)
+        return self.template
 
     def _get_captions(self, report):
         """
@@ -261,18 +276,8 @@ class CheetahReporter(Reporter):
         """
         Fill in the template.
         """
-        LOGGER.debug(
-            """
-            Fill report template {}
-            path_main_report {}
-            title_main_report {}
-            section_index {}
-            """.format(
-                report.label,
-                path_main_report,
-                title_main_report,
-                section_index))
-        template_dict = report.field_values
+        template_dict =\
+            report.field_values
         def _make_name(label):
             return\
                 string_utils.make_name(
@@ -297,7 +302,6 @@ class CheetahReporter(Reporter):
             template_dict["path_main_report"] = path_main_report
             template_dict["title"] = make_name(report.label, separator='-')
             template_dict["section_index"] = section_index + 1
-
 
         return template_dict
 
@@ -347,6 +351,10 @@ class CheetahReporter(Reporter):
         ~            posted.
         strict : If `True`, a backup text report will not be generated.
         """
+        LOGGER.debug(
+            """
+            Post report {}
+            """.format(report.label))
         output_uri =\
             self.get_output_location(
                 report,
