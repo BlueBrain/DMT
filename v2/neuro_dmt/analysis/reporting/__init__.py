@@ -4,6 +4,7 @@ Infrastructure for neuroscience analyses reports.
 
 import os
 from collections.abc import Mapping
+from collections import OrderedDict
 from Cheetah.Template import Template
 from dmt.tk.field import Field, LambdaField, lazyfield
 from dmt.tk.journal import Logger
@@ -142,7 +143,7 @@ class CheetahReporter(Reporter):
                 #for $line in $abstract
                   <p>$line</p>
                 #end for
-              
+
               <h2>Introduction</h2>
                 <p>$(70 * '=')</p>
                 #for $line in $introduction
@@ -168,7 +169,7 @@ class CheetahReporter(Reporter):
                 <h3>Sections</h3>
                   <p>$(70 * '=')</p>
                   #for $index, $section in enumerate($sections.items())
-                    <p>$index: <strong><A HREF=$section[1]>$section[0]</A></strong></p>
+                    <p>$(index+1): <strong><A HREF=$section[1]>$section[0]</A></strong></p>
                   #end for
               #end if
               <p>$(70 * '=')</p>
@@ -213,7 +214,12 @@ class CheetahReporter(Reporter):
           </body>
             <h2><strong><A HREF=$path_main_report>$title_main_report Analysis</A></strong></h2>
 
-            <h3>$title</h3>
+            #if $section_index
+              <h3>$section_index: $title</h3>
+            #else
+              <h3>$title</h3>
+            #end if
+
             <h4>Figures</h4>
               <br>{}</br>
 
@@ -250,10 +256,22 @@ class CheetahReporter(Reporter):
             figure_locations,
             sections=None,
             path_main_report=None,
-            title_main_report=None):
+            title_main_report=None,
+            section_index=None):
         """
         Fill in the template.
         """
+        LOGGER.debug(
+            """
+            Fill report template {}
+            path_main_report {}
+            title_main_report {}
+            section_index {}
+            """.format(
+                report.label,
+                path_main_report,
+                title_main_report,
+                section_index))
         template_dict = report.field_values
         def _make_name(label):
             return\
@@ -278,6 +296,7 @@ class CheetahReporter(Reporter):
                 else "Main Report"
             template_dict["path_main_report"] = path_main_report
             template_dict["title"] = make_name(report.label, separator='-')
+            template_dict["section_index"] = section_index + 1
 
 
         return template_dict
@@ -295,16 +314,18 @@ class CheetahReporter(Reporter):
             section_reporter =\
                 self.with_fields(
                     template=self.template_section)
-            return {
-                make_name(section.label, separator='-'): os.path.join(
-                    section_reporter.post(section,
-                                          path_output_folder=output_uri,
-                                          report_file_name=report_file_name,
-                                          path_main_report=path_main_report,
-                                          title_main_report=title_main_report,
-                                          with_time_stamp=False),
-                    report_file_name)
-                for section in report.sections}
+            return OrderedDict(
+                (make_name(section.label, separator='-'),
+                 os.path.join(
+                     section_reporter.post(section,
+                                           path_output_folder=output_uri,
+                                           report_file_name=report_file_name,
+                                           path_main_report=path_main_report,
+                                           title_main_report=title_main_report,
+                                           section_index=index,
+                                           with_time_stamp=False),
+                     report_file_name))
+                for index, section in enumerate(report.sections))
         return None
 
     def post(self,
@@ -317,6 +338,7 @@ class CheetahReporter(Reporter):
             with_time_stamp=True,
             path_main_report=None,
             title_main_report=None,
+            section_index=None,
             *args, **kwargs):
         """
         Post the report.
@@ -341,6 +363,8 @@ class CheetahReporter(Reporter):
         folder_figures, locations_figures =\
             self._save_figures(report, output_uri)
 
+        self._save_sections(report, output_uri)
+
         self._save_measurement(report, output_uri)
 
         sections =\
@@ -359,7 +383,8 @@ class CheetahReporter(Reporter):
                                                     locations_figures,
                                                     sections,
                                                     path_main_report=path_main_report,
-                                                    title_main_report=title_main_report))
+                                                    title_main_report=title_main_report,
+                                                    section_index=section_index))
                                                     
             try:
                 report_html = str(report_template_filled)

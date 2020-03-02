@@ -80,11 +80,11 @@ def test_post():
         _section("Composition",
                  subsections=[_section(make_label(phenomenon, separator='-'))
                               for phenomenon in ("Cell Density by Layer",
-                                            "Inhibitory Fractions by Layer",
-                                            "Mtype Cell Density by Layer",
-                                            "Fiber Density by Layer",
-                                            "Marker Density by Cortical Depth",
-                                            "Cell Density by Layer")])
+                                                 "Inhibitory Fractions by Layer",
+                                                 "Mtype Cell Density by Layer",
+                                                 "Fiber Density by Layer",
+                                                 "Marker Density by Cortical Depth",
+                                                 "Cell Density by Layer")])
 
     reporter =\
         CheetahReporter(
