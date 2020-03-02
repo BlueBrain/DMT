@@ -4,10 +4,11 @@ Tools for reporting analysis results.
 
 from abc import ABC, abstractmethod
 import os
+from collections.abc import Mapping
 import pandas as pd
 from dmt.tk.utils import timestamp
 from dmt.tk.utils.string_utils import make_name
-from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.field import Field, lazyfield, WithFields, NA
 from dmt.tk.author import Author
 from dmt.tk.plotting.figure import Figure
 from dmt.tk.utils.string_utils import paragraphs
@@ -27,24 +28,25 @@ class Report(WithFields):
         """
         Label for the phenomenon that this report is about.
         """,
-        __default_value__="Measurement")
+        __default_value__=NA)
     figures = Field(
         """
         A dict mapping label to an object with a `.graphic` and `.caption`
         attributes.
-        """)
+        """,
+        __default_value__=NA)
     measurement = Field(
         """
         Measurement associated with this `Report`. This should be a dataframe,
         with a properly annotated index.
         """,
-        __required__=False)
+        __default_value__=NA)
     introduction = Field(
         """
         Provide the research question, and the tested hypothesis or the
         purpose of the research?
         """,
-        __default_value__="Not provided",
+        __default_value__=NA,
         __as__=paragraphs)
     methods = Field(
         """
@@ -52,18 +54,18 @@ class Report(WithFields):
         or the experimental measurement presented in this `Report`. This
         `Field` will be used in the figure caption.
         """,
-        __default_value__="Not provided",
+        __default_value__=NA,
         __as__=paragraphs)
     sections = Field(
         """
         An ordered list of report sections.
         """,
-        __default_value__=[])
+        __default_value__=NA)
     results = Field(
         """
         Answer to the research question, to be included in the figure caption.
         """,
-        __default_value__="Not provided",
+        __default_value__=NA,
         __as__=paragraphs)
     discussion = Field(
         """
@@ -73,14 +75,13 @@ class Report(WithFields):
         with what other researchers have found? What are the perspectives
         for future research?
         """,
-        __default_value__="Not provided",
+        __default_value__=NA,
         __as__=paragraphs)
     references = Field(
         """
-        A dict mapping reference label to it's citation.
+        References for this analysis report.
         """,
-        __default_value__={
-            "None": "Not Provided"})
+        __default_value__=NA)
 
     @lazyfield
     def field_values(self):
