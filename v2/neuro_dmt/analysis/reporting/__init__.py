@@ -92,9 +92,10 @@ class CheetahReporter(Reporter):
     """
     Report with a cheetah template.
     """
-    template = Field(
+    template_main = Field(
         """
-        Cheetah report that will be used to create an HTML report.
+        Cheetah report that will be used to create an HTML report
+        for the report's main section.
         """,
         __default_value__="""
 <html>
@@ -130,16 +131,8 @@ class CheetahReporter(Reporter):
         #for $line in $results
           <p>$line</p>
         #end for
-    <br>
-    <p>$(70 * '-')</p>
-    #for $label_image, $location_image in $images.items()
-        <img src=$location_image alt="apologies.png"/>
-        <h3>Caption</h3>
-        #for $line in $captions[$label_image]
-          $line
-        #end for
-    #end for
-    </br>
+        <h3>Figures</h3>
+          <br>{}</br>
 
     <h2>Discussion</h2>
         <p>$(70 * '=')</p>
@@ -152,11 +145,43 @@ class CheetahReporter(Reporter):
         #for $label, $citation in $references.items()
           <p><strong>$label</strong>: $citation</p>
         #end for
-
   </body>
 
 </html>
         """)
+    template_figures = Field(
+        """
+        Template for figures...
+        """,
+        __default_value__="""
+        #for $label_image, $location_image in $images.items()
+          <img src=$location_image alt="apologies.png"/>
+        <p>
+          <strong>$label_image.capitalize():</strong>
+          #for $line in $captions[$label_image]
+            $line
+          #end for
+        </p>
+        #end for
+        """)
+    template_section = Field(
+        """
+        Template for a report section that can be inserted into the main
+        template.
+        """,
+        __default_value__="""
+        <h2>$title</h2>
+
+        #for $label_imge
+        """)
+
+    def _template(self, report):
+        """
+        HTML template for sections.
+        """
+        return\
+            self.template_main\
+                .format(self.template_figures)
 
     def _get_captions(self, report):
         """
@@ -225,7 +250,7 @@ class CheetahReporter(Reporter):
         try:
             report_template_filled =\
                 Template(
-                    self.template,
+                    self._template(report),
                     searchList=self.filled_template(report, locations_figures))
             try:
                 report_html = str(report_template_filled)

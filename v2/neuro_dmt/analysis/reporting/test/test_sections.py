@@ -58,11 +58,9 @@ def test_post():
                 """.format(label),
                 measurement=measurement,
                 figures={
-                    "random_walk_{}": Figure(
+                    "random_walk_{}".format(label): Figure(
                         figure,
                         caption="""
-                        Random Walk
-                        ================
                         Each random walk step size is uniformly drawn from [0, 1).
                         The individual steps are added up cummulatively to obtain
                         the location of the walk at a given time.
