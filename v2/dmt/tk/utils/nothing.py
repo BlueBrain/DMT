@@ -1,24 +1,32 @@
 """
-Nothing like None
+Another None.
 """
 
 from .singleton import Singleton
 
 class NullType(Singleton):
     """
-    Null may be 'Not-Available', or 'Not-Applicable`.
+    ...
     """
     def __nonzero__(self):
         """
-        Used by Python 2
+        Python 2 uses this.
         """
         return False
 
     def __bool__(self):
         """
-        Used by Python 3
+        Python 3.
         """
         return False
+
+    def __str__(self):
+        """..."""
+        return "Not Available"
+
+    def __repr__(self):
+        """..."""
+        return self.__str__()
 
 
 NA = NullType()
