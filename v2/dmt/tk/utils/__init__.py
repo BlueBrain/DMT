@@ -45,7 +45,7 @@ class NothingType:
 
 Nothing = NothingType()
 
-from .nothing import NA
+#from .nothing import NA
 
 
 class NullType:

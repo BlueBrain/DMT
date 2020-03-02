@@ -65,6 +65,7 @@ class WithFields:
 
         def __check_validity(field, value):
             """..."""
+            print("Check validity field {} validity {}".format(field, value))
             try:
                 field.assert_validity(value)
             except TypeError as error:
