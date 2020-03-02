@@ -3,6 +3,7 @@ Infrastructure for neuroscience analyses reports.
 """
 
 import os
+from collections.abc import Mapping
 from Cheetah.Template import Template
 from dmt.tk.field import Field, lazyfield
 from dmt.tk.journal import Logger
@@ -64,6 +65,13 @@ class CircuitAnalysisReport(Report):
         for the fields of `class CircuitProvenance`.
         """,
         __as__=CircuitProvenance)
+
+    references = Field(
+        """
+        References of literature cited in this report.
+        """,
+        __type__=Mapping,
+        __default_value__={})
 
     @lazyfield
     def field_values(self):
@@ -222,28 +230,40 @@ class CheetahReporter(Reporter):
             try:
                 report_html = str(report_template_filled)
             except Exception as html_error:
-                raise Exception(
-                    "Failed to generate HTML for the report: \n\t{}".format(
+                LOGGER.alert(
+                    LOGGER.get_source_info(),
+                    """
+                    Failed to generate HTML for the report:
+                    {}
+                    \t{}
+                    """.format(
+                        type(html_error),
                         html_error))
+                raise html_error
 
             with open(path_report_file, "w") as file_output:
                 file_output.write(report_html)
 
         except Exception as template_fill_error:
-            if strict:
-                raise template_fill_error
             LOGGER.warning(
                 LOGGER.get_source_info(),
-                "Error during filling the report template: \n\t{}".format(
+                """
+                Error during filling the report template:
+                {}
+                \t{}""".format(
+                    type(template_fill_error),
                     template_fill_error))
+            if strict:
+                raise template_fill_error
 
             super()._save_text_report(
                 report, output_uri, folder_figures)
 
-        for section in report.sections:
-            self.post(
-                section,
-                path_output_folder=output_uri,
-                with_time_stamp=False)
+        if report.sections:
+            for section in report.sections:
+                self.post(
+                    section,
+                    path_output_folder=output_uri,
+                    with_time_stamp=False)
 
         return output_uri

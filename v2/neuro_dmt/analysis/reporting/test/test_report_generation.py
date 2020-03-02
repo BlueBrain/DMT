@@ -78,9 +78,7 @@ def test_post():
             discussion="""
             No need to discuss.
             """,
-            reference="""
-            No need for references.
-            """,
+            references={"xyz": "https://www.xxx.yyy.zzz/qqq"},
             provenance_model=provenance)
     reporter =\
         CheetahReporter(
