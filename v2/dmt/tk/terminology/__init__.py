@@ -99,7 +99,6 @@ def _terms_decorated_doc_string(terms, docstring):
     params_posn = docstring.find("{" + arguments_label + "}")
     preceding_newline = docstring[:params_posn].rfind("\n") + 1	
     leading_whitespace = "\n" + " " * (params_posn - preceding_newline)
-    print(terms)
     try:
         return docstring.format(**{
             arguments_label: leading_whitespace.join(
