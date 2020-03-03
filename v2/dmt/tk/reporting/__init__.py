@@ -67,6 +67,11 @@ class Report(WithFields):
         An ordered list of report sections.
         """,
         __default_value__=NA)
+    chapters = Field(
+        """
+        An ordered list of report chapters.
+        """,
+        __default_value__=NA)
     results = Field(
         """
         Answer to the research question, to be included in the figure caption.
@@ -111,7 +116,8 @@ class Report(WithFields):
             "results": self.results,
             "discussion": self.discussion,
             "references": self.references,
-            "sections": self.sections}
+            "sections": self.sections,
+            "chapters": self.chapters}
 
 
 class Reporter(WithFields):
@@ -207,20 +213,24 @@ class Reporter(WithFields):
 
         return (figures_folder, figure_locations)
 
+    def _write_attr(self, attribute, text, output_folder, format_file):
+        """..."""
+        path_output_file =\
+            os.path.join(output_folder,
+                         "{}{}".format(attribute, format_file))
+        with open(path_output_file, 'w') as output_file:
+            try:
+                output_file.write(text)
+            except TypeError:
+                output_file.write('\n'.join(text))
+
 
     def _save_sections(self, report, output_folder, format_file=".txt"):
         """
         Save report sections.
         """
-        def _write(attribute, text):
-            path_output_file =\
-                os.path.join(output_folder,
-                             "{}{}".format(attribute, format_file))
-            with open(path_output_file, 'w') as output_file:
-                try:
-                    output_file.write(text)
-                except TypeError:
-                    output_file.write('\n'.join(text))
+        def _write(attr, text):
+            self._write_attr(attr, text, output_folder, format_file)
 
         if report.introduction:
             _write("introduction", report.introduction)
@@ -238,6 +248,24 @@ class Reporter(WithFields):
                 _write(section.label, section.content)
 
         return output_folder
+
+    def _save_chapters(self, report, output_folder, format_file="txt"):
+        """
+        Save report chapters .
+        """
+        if not report.chapters:
+            return None
+
+        for chapter in report.chapters:
+            path_chapter_folder =\
+                self.get_output_location(
+                    report,
+                    path_output_folder=output_folder,
+                    with_time_stamp=False)
+            path_figures_folder =\
+                os.path.join(path_chapter_folder, "figures")
+            self._save_text_report(
+                chapter, path_chapter_folder, path_figures_folder)
 
     def _save_text_report(self, report, output_folder, folder_figures):
         """..."""
@@ -278,11 +306,11 @@ class Reporter(WithFields):
         Save report at the path provided.
         """
         output_folder =\
-                self.get_output_location(
-                    report,
-                    path_output_folder=path_output_folder,
-                    output_subfolder=output_subfolder,
-                    with_time_stamp=with_time_stamp)
+            self.get_output_location(
+                report,
+                path_output_folder=path_output_folder,
+                output_subfolder=output_subfolder,
+                with_time_stamp=with_time_stamp)
 
         folder_figures, _ =\
             self._save_figures(report, output_folder)
@@ -296,6 +324,9 @@ class Reporter(WithFields):
                 section,
                 path_output_folder=output_folder,
                 with_time_stamp=False)
+
+        for chapter in self.chapters:
+            self._save_chapters(report, output_folder)
 
         return output_folder
 
