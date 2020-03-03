@@ -225,7 +225,7 @@ class PathwayMeasurement(WithFields):
                     return\
                         cells.sample(n_cells)\
                              .assign(group=group_id)
-                
+
                 cell_types =\
                     adapter.get_cell_types(
                         circuit_model, self.specifiers_cell_type)
