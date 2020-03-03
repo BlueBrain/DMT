@@ -11,7 +11,7 @@ from dmt.tk.journal import Logger
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.utils import string_utils, get_file_name_base
 from dmt.tk.utils.string_utils import make_name, make_label
-from dmt.tk.field import Field, WithFields
+from dmt.tk.field import Field, WithFields, NA
 from dmt.tk.utils.string_utils import paragraphs
 
 LOGGER = Logger(client=__file__)
@@ -124,7 +124,7 @@ class CheetahReporter(Reporter):
     template_main = Field(
         """
         Template for Cheetah that will be used to create an HTML report
-        for the report's main section.
+        for the report's main.
         """,
         __default_value__="""
         <html>
@@ -177,13 +177,24 @@ class CheetahReporter(Reporter):
               #end if
 
               #if $sections
-                <h3>Sections</h3>
+                <h2>Sections</h2>
                   <p>$(70 * '=')</p>
                   #for $index, $section in enumerate($sections.items())
                     <p>$(index+1): <strong><A HREF=$section[1]>$section[0]</A></strong></p>
                   #end for
               #end if
               <p>$(70 * '=')</p>
+
+              #if $chapters
+                <h2>Chapters</h2>
+                  <p>$(70 * '=')</p>
+                  #for $index, $chapter in enumerate($chapters.items())
+                    <p>$(index+1): <strong><A HREF=$chapter[1]>$chapter[0]</A></strong></p>
+                  #end for
+              #end if
+              <p>$(70 * '=')</p>
+
+
 
               <h2>Discussion</h2>
                 <p>$(70 * '=')</p>
@@ -269,9 +280,11 @@ class CheetahReporter(Reporter):
     def filled_template(self,
             report,
             figure_locations,
-            sections=None,
             path_main_report=None,
             title_main_report=None,
+            chapters=NA,
+            chapter_index=None,
+            sections=NA,
             section_index=None):
         """
         Fill in the template.
@@ -294,14 +307,19 @@ class CheetahReporter(Reporter):
                 _make_name(label): figure.caption
                 for label, figure in report.figures.items()},
             references=report.references,
-            sections=sections))
+            sections=sections,
+            chapters=chapters))
         if path_main_report is not None:
             template_dict["title_main_report"] =\
                 title_main_report if title_main_report is not None\
                 else "Main Report"
             template_dict["path_main_report"] = path_main_report
             template_dict["title"] = make_name(report.label, separator='-')
-            template_dict["section_index"] = section_index + 1
+            if section_index is not None:
+                template_dict["section_index"] = section_index + 1
+            if chapter_index is not None:
+                template_dict["chapter_index"] = chapter_index + 1
+
 
         return template_dict
 
@@ -330,7 +348,34 @@ class CheetahReporter(Reporter):
                                            with_time_stamp=False),
                      report_file_name))
                 for index, section in enumerate(report.sections))
-        return None
+        return NA
+
+    def _post_chapters(self,
+            report,
+            output_uri,
+            report_file_name,
+            path_main_report,
+            title_main_report):
+        """
+        Report chapters of this report!
+        """
+        if report.chapters:
+            chapter_reporter =\
+                self.with_fields(
+                    template=self.template_main)
+            return OrderedDict(
+                (make_name(chapter.label, separator='-'),
+                 os.path.join(
+                     chapter_reporter.post(chapter,
+                                           path_output_folder=output_uri,
+                                           report_file_name=report_file_name,
+                                           path_main_report=path_main_report,
+                                           title_main_report=title_main_report,
+                                           chapter_index=index,
+                                           with_time_stamp=False),
+                     report_file_name))
+                for index, chapter in enumerate(report.chapters))
+        return NA
 
     def post(self,
             report,
@@ -343,6 +388,7 @@ class CheetahReporter(Reporter):
             path_main_report=None,
             title_main_report=None,
             section_index=None,
+            chapter_index=None,
             *args, **kwargs):
         """
         Post the report.
@@ -352,15 +398,43 @@ class CheetahReporter(Reporter):
         strict : If `True`, a backup text report will not be generated.
         """
         LOGGER.debug(
-            """
-            Post report {}
-            """.format(report.label))
+            """.post(report={},
+                   template={},
+                   path_output_folder={},
+                   output_subfolder={},
+                   report_file_name={},
+                   strict={},
+                   with_time_stamp={},
+                   path_main_report={},
+                   title_main_report={},
+                   section_index={},
+                   chapter_index={})""".format(
+                       report,
+                       template,
+                       path_output_folder,
+                       output_subfolder,
+                       report_file_name,
+                       strict,
+                       with_time_stamp,
+                       path_main_report,
+                       title_main_report,
+                       section_index,
+                       chapter_index))
+        if section_index is not None and chapter_index is not None:
+            raise TypeError(
+                """
+                `CheetahReporter.post(...)` cannot a report that is both a
+                chapter and a section.
+                """)
         output_uri =\
             self.get_output_location(
                 report,
                 path_output_folder=path_output_folder,
                 output_subfolder=output_subfolder,
                 with_time_stamp=with_time_stamp)
+        LOGGER.info(
+            "Post report {} at".format(report.label),
+            "\t {}".format(output_uri))
         base_file_name =\
             get_file_name_base(report_file_name)
         path_report_file =\
@@ -373,6 +447,8 @@ class CheetahReporter(Reporter):
 
         self._save_sections(report, output_uri)
 
+        self._save_chapters(report, output_uri)
+
         self._save_measurement(report, output_uri)
 
         sections =\
@@ -382,17 +458,32 @@ class CheetahReporter(Reporter):
                 report_file_name,
                 path_main_report=path_report_file,
                 title_main_report=report.label)
+        chapters =\
+            self._post_chapters(
+                report,
+                output_uri,
+                report_file_name,
+                path_main_report=path_report_file,
+                title_main_report=report.label)
 
+        filled_template =\
+            self.filled_template(report,
+                                 locations_figures,
+                                 path_main_report=path_main_report,
+                                 title_main_report=title_main_report,
+                                 chapters=chapters,
+                                 chapter_index=chapter_index,
+                                 sections=sections,
+                                 section_index=section_index)
+        LOGGER.debug(
+            "FILLED TEMPLATE",
+            '\n'.join(
+                "{}: {}".format(k, v) for k, v in filled_template.items()))
         try:
             report_template_filled =\
                 Template(
                     self.get_template(report),
-                    searchList=self.filled_template(report,
-                                                    locations_figures,
-                                                    sections,
-                                                    path_main_report=path_main_report,
-                                                    title_main_report=title_main_report,
-                                                    section_index=section_index))
+                    searchList=filled_template)
                                                     
             try:
                 report_html = str(report_template_filled)
