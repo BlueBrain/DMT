@@ -125,6 +125,21 @@ class CheetahReporter(Reporter):
     """
     Report with a cheetah template.
     """
+    width_page = Field(
+        """
+        Width of the page on which the report will be displayed.
+        """,
+        __default_value__=0)
+    under_line_type=Field(
+        """
+        Type of line to underline section titles.
+        """,
+        __default_value__='-')
+    end_line_type=Field(
+        """
+        Type of line to demark sections or chapters in the report. 
+        """,
+        __default_value__='=')
     template_main = Field(
         """
         Template for Cheetah that will be used to create an HTML report
@@ -134,83 +149,99 @@ class CheetahReporter(Reporter):
         <html>
           <body>
 
-            <h1>$title Analysis</h1>
+            #if $title_main_report
+              <h1>$title (<A HREF=$path_main_report>$title_main_report Analysis</A>)</h1>
+            #else
+              <h1>$title Analysis</h1>
+              <p>$endline</p>
               <h2> Author </h2>
                 <h3> $author_name </h3>
                 <h3> Affiliation: $author_affiliation </h3>
+            #end if
+            <p>$endline</p>
 
-              #if $circuit
-                <h2>Circuit Analyzed</h2>
-                  #for $key, $value in $circuit.items()
-                    <p>$(70 * '=')</p>
-                    <p><strong>$key</strong>: $value</p>
-                  #end for
-              #end if
-
-              <h2>Abstract</h2>
-                <p>$(70 * '=')</p>
-                #for $line in $abstract
-                  <p>$line</p>
+            #if $circuit
+              <h2>Circuit Analyzed</h2>
+                <p>$underline</p>
+                #for $key, $value in $circuit.items()
+                  <p><strong>$key</strong>: $value</p>
+                  <p>$underline</p>
                 #end for
+              <p>$endline</p>
+            #end if
 
-              <h2>Introduction</h2>
-                <p>$(70 * '=')</p>
-                #for $line in $introduction
-                  <p>$line</p>
-                #end for
+            <h2>Abstract</h2>
+              <p>$underline</p>
+              #for $line in $abstract
+                <p>$line</p>
+              #end for
+            <p>$endline</p>
 
-              <h2>Methods</h2>
-                <p>$(70 * '=')</p>
-                #for $line in $methods
-                  <p>$line</p>
-                #end for
+            <h2>Introduction</h2>
+              <p>$underline</p>
+              #for $line in $introduction
+                <p>$line</p>
+              #end for
+            <p>$endline</p>
 
-              <h2>Results</h2>
-                <p>$(70 * '=')</p>
-                #for $line in $results
-                  <p>$line</p>
-                #end for
+            <h2>Methods</h2>
+              <p>$underline</p>
+              #for $line in $methods
+                <p>$line</p>
+              #end for
+            <p>$endline</p>
+
+            <h2>Results</h2>
+              <p>$underline</p>
+              #for $line in $results
+                <p>$line</p>
+              #end for
 
               #if $images
                 <h3>Figures</h3>
                 <br>{}</br>
               #end if
+            <p>$endline</p>
 
-              #if $sections
-                <h2>Sections</h2>
-                  <p>$(70 * '=')</p>
-                  #for $index, $section in enumerate($sections.items())
-                    <p>$(index+1): <strong><A HREF=$section[1]>$section[0]</A></strong></p>
-                  #end for
-              #end if
-              <p>$(70 * '=')</p>
-
-              #if $chapters
-                <h2>Chapters</h2>
-                  <p>$(70 * '=')</p>
-                  #for $index, $chapter in enumerate($chapters.items())
-                    <p>$(index+1): <strong><A HREF=$chapter[1]>$chapter[0]</A></strong></p>
-                  #end for
-              #end if
-              <p>$(70 * '=')</p>
-
-
-
-              <h2>Discussion</h2>
-                <p>$(70 * '=')</p>
-                #for $line in $discussion
-                  <p>$line</p>
+            #if $sections
+              <h2>Sections</h2>
+                <p>$underline</p>
+                #for $index, $section in enumerate($sections.items())
+                  <p>$(index+1): <strong><A HREF=$section[1]>$section[0]</A></strong></p>
                 #end for
+              <p>$endline</p>
+            #end if
 
-              #if $references
-                <h2>References</h2>
-                  <p>$(70 * '=')</p>
-                  #for $label, $citation in $references.items()
-                    <p><strong>$label</strong>: $citation</p>
-                  #end for
-              #end if
-          </body>
-        </html>
+            #if $chapters
+              <h2>Chapters</h2>
+                <p>$underline</p>
+                #for $index, $chapter in enumerate($chapters.items())
+                  <p>$(index+1): <strong><A HREF=$chapter[1]>$chapter[0]</A></strong></p>
+                #end for
+              <p>$endline</p>
+            #end if
+
+            <h2>Discussion</h2>
+              <p>$underline</p>
+              #for $line in $discussion
+                <p>$line</p>
+              #end for
+              <p>$endline</p>
+
+            #if $references
+              <h2>References</h2>
+                <p>$underline</p>
+                #for $label, $citation in $references.items()
+                  <p><strong>$label</strong>: $citation</p>
+                #end for
+              <p>$endline</p>
+            #end if
+
+          #if $title_main_report
+            <p>Back to <A HREF=$path_main_report>$title_main_report Analysis</A></p>
+          #end if
+        </body>
+      </html>
         """)
     template_figures = Field(
         """
@@ -242,7 +273,7 @@ class CheetahReporter(Reporter):
             #else
               <h3>$title</h3>
             #end if
-            <p>$(70 * '-')</p>
+            <p>$underline</p>
 
             <h4>Figures</h4>
               <br>{}</br>
@@ -250,7 +281,7 @@ class CheetahReporter(Reporter):
             #for $line in $content
               <p>$line</p>
             #end for
-            <p>$(70 * '=')</p>
+            <p>$endline</p>
           </body>
         </html>
         """)
@@ -260,7 +291,7 @@ class CheetahReporter(Reporter):
         """,
         lambda self: self.template_main)
 
-    def get_template(self, report):
+    def get_html_template(self, report):
         """
         HTML template for sections.
         """
@@ -277,7 +308,7 @@ class CheetahReporter(Reporter):
             label: figure.caption
             for label, figure in report.figures.items()}
 
-    def filled_template(self,
+    def dict_template(self,
             report,
             figure_locations,
             path_main_report=None,
@@ -301,6 +332,8 @@ class CheetahReporter(Reporter):
                     separator='_',
                     keep_original_capitalization=True)
         template_dict.update(dict(
+            underline=self.width_page * self.under_line_type,
+            endline=self.width_page * self.end_line_type,
             author_name=report.author.name,
             author_affiliation=report.author.affiliation,
             images={
@@ -322,6 +355,9 @@ class CheetahReporter(Reporter):
                 template_dict["section_index"] = section_index + 1
             if chapter_index is not None:
                 template_dict["chapter_index"] = chapter_index + 1
+        else:
+            template_dict["title_main_report"] = None
+            template_dict["path_main_report"] = None
 
 
         return template_dict
@@ -400,7 +436,7 @@ class CheetahReporter(Reporter):
         ~            posted.
         strict : If `True`, a backup text report will not be generated.
         """
-        LOGGER.debug(
+        LOGGER.ignore(
             """.post(report={},
                    template={},
                    path_output_folder={},
@@ -469,8 +505,11 @@ class CheetahReporter(Reporter):
                 path_main_report=path_report_file,
                 title_main_report=report.label)
 
-        filled_template =\
-            self.filled_template(report,
+        template_html =\
+            self.get_html_template(report)
+
+        dict_template =\
+            self.dict_template(report,
                                  locations_figures,
                                  path_main_report=path_main_report,
                                  title_main_report=title_main_report,
@@ -478,15 +517,13 @@ class CheetahReporter(Reporter):
                                  chapter_index=chapter_index,
                                  sections=sections,
                                  section_index=section_index)
-        LOGGER.debug(
+        LOGGER.ignore(
             "FILLED TEMPLATE",
             '\n'.join(
-                "{}: {}".format(k, v) for k, v in filled_template.items()))
+                "{}: {}".format(k, v) for k, v in dict_template.items()))
         try:
             report_template_filled =\
-                Template(
-                    self.get_template(report),
-                    searchList=filled_template)
+                Template(template_html, searchList=dict_template)
                                                     
             try:
                 report_html = str(report_template_filled)
