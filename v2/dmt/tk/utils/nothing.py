@@ -2,9 +2,10 @@
 Another None.
 """
 
+from collections.abc import Mapping
 from .singleton import Singleton
 
-class NullType(Singleton):
+class NullType(Singleton, Mapping):
     """
     ...
     """
@@ -27,6 +28,26 @@ class NullType(Singleton):
     def __repr__(self):
         """..."""
         return self.__str__()
+
+    def __iter__(self):
+        """
+        Make `NullType` iterable.
+        Then it can be used to default an argument to not available/applicable
+        (NA) iterable.
+        """
+        return self
+
+    def __next__(self):
+        """
+        A NullType contains nothing.
+        """
+        raise StopIteration
+
+    def __getitem__(self, item):
+        return None
+
+    def __len__(self):
+        return 0
 
 
 NA = NullType()
