@@ -99,13 +99,16 @@ class CircuitAnalysisReport(Report):
             name_phenomenon = make_name(self.phenomenon, separator="-")
         return\
             dict(
-                animal=self.provenance_model.animal,
-                age=self.provenance_model.age,
-                brain_region=self.provenance_model.brain_region,
-                uri=self.provenance_model.uri,
-                references=self.references,
-                date_release=self.provenance_model.date_release,
-                authors_circuit=self.provenance_model.authors,
+                circuit=OrderedDict((
+                    ("animal", self.provenance_model.animal),
+                    ("age", self.provenance_model.age),
+                    ("brain_region", self.provenance_model.brain_region),
+                    ("uri", self.provenance_model.uri),
+                    ("references", self.references),
+                    ("date_release", self.provenance_model.date_release),
+                    ("authors", '; '.join(
+                        "{}. {}".format(i+1, a) 
+                        for i, a in enumerate(self.provenance_model.authors))))),
                 author=self.author,
                 phenomenon=name_phenomenon,
                 label=make_label(self.label, separator='-'),
@@ -116,6 +119,7 @@ class CircuitAnalysisReport(Report):
                 results=self.results,
                 content=self.content,
                 discussion=self.discussion)
+
 
 class CheetahReporter(Reporter):
     """
@@ -135,17 +139,13 @@ class CheetahReporter(Reporter):
                 <h3> $author_name </h3>
                 <h3> Affiliation: $author_affiliation </h3>
 
-              <h2>Circuit Analyzed</h2>
-                <p>$(70 * '=')</p>
-                <p><strong>Animal</strong>: $animal</p>
-                <p><strong>Age</strong>: $age</p>
-                <p><strong>Brain Region</strong>: $brain_region</p>
-                <p><strong>URI</strong>: $uri</p>
-
-                <p><strong>Authors</strong></p>
-                #for $author in $authors_circuit
-                    <p>$author</p>
-                #end for
+              #if $circuit
+                <h2>Circuit Analyzed</h2>
+                  #for $key, $value in $circuit.items()
+                    <p>$(70 * '=')</p>
+                    <p><strong>$key</strong>: $value</p>
+                  #end for
+              #end if
 
               <h2>Abstract</h2>
                 <p>$(70 * '=')</p>
@@ -291,6 +291,9 @@ class CheetahReporter(Reporter):
         """
         template_dict =\
             report.field_values
+        if chapter_index is not None or section_index is not None:
+            template_dict["circuit"] = None
+
         def _make_name(label):
             return\
                 string_utils.make_name(
