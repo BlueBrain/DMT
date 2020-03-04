@@ -67,7 +67,7 @@ class Narrative(WithFields):
             return\
                 str(Template(
                     self.content,
-                    adapter.get_provienance(adapter, model)))
+                    adapter.get_provenance(adapter, model)))
         except Exception as error:
             LOGGER.warn(
                 "Could not fill the template:",
@@ -89,15 +89,61 @@ class Data(WithFields):
         """..."""
         super().__init__(*args, measurement=m, **kwargs)
 
-    def __call__(self, adapter, model, *args, **kwargs):
-        """..."""
-        if not self.measurement:
-            return pd.DataFrame()
-        try:
-            return self.measurement(adapter, model, *args, **kwargs)
-        except TypeError:
+    def __call__(self,
+            adapter=None, model=None, parameters=None,
+            collection=measurement_collection.primitive_type,
+            *args, **kwargs):
+        """
+        Arguments
+        -----------
+        parameters :: Parameter sets to compute the measurement.
+        ~             Either of:
+        ~             1. A `pandas.DataFrame` with each row providing
+        ~                a single parameter set. Column names of this
+        ~                dataframe will be used to query the model for a
+        ~                value of the measured phenomenon for each parameter set.
+        ~             2. A callable on `(adapter, model)` that returns such a
+        ~                dataframe.
+        ~             3. None, in which case it will be assumed that either
+        ~                the this `Section`'s attribute `data` is either a
+        ~               `pandas.DataFrame` or returns one when called on
+        ~                `(adapter, model)`
+        """
+        if isinstance(self.measurement, (pd.DataFrame,)):
             return self.measurement
 
+        if isinstance(self.measurement, Mapping):
+            return self.measurement
+
+        if not self.measurement:
+            return pd.DataFrame()
+
+        assert callable(self.measurement)
+
+        if parameters is not None:
+            assert adapter is not None
+            try:
+                parameter_sets =\
+                    parameters(adapter, model, *args, **kwargs)
+            except TypeError:
+                parameter_sets =(
+                    row for _, row in parameters.iterrows())
+            data =\
+                collection(
+                    (p, self.measurement(adapter, model, *args, **p, **kwargs))
+                    for p in tqdm(parameter_sets)
+                ).assign(dataset=adapter.get_label(model)
+                ).reset_index(
+                ).set_index(["dataset", "region", "layer"])
+        else:
+            if adapter is not None:
+                data =\
+                    self.measurement(adapter, model, *args, **kwargs)
+            else:
+                data =\
+                    self.measurement(*args, **kwargs)
+
+        return data
 
 class Illustration(WithFields):
     """..."""
@@ -155,7 +201,7 @@ class Section(WithFields):
         """,
         __default_value__=NA,
         __as__=Narrative)
-    measurement = Field(
+    data = Field(
         """
         Either a `pandas.DataFrame` or a callable on a `(adapter, model)` pair
         that can produce a `pandas.DataFrame`.
@@ -176,51 +222,22 @@ class Section(WithFields):
         """
         super().__init__(*args, **kwargs)
 
-    def get_measurement(self,
-                adapter, model,
-                parameters=None,
-                collect=measurement_collection.primitive_type,
-                *args, **kwargs):
-        """
-        Arguments
-        -----------
-        parameters :: Parameter sets to compute the measurement.
-        ~             Either of:
-        ~             1. A `pandas.DataFrame` with each row providing
-        ~                a single parameter set. Column names of this
-        ~                dataframe will be used to query the model for a
-        ~                value of the measured phenomenon for each parameter set.
-        ~             2. A callable on `(adapter, model)` that returns such a
-        ~                dataframe.
-        ~             3. None, in which case it will be assumed that either
-        ~                the this `Section`'s attribute `data` is either a
-        ~               `pandas.DataFrame` or returns one when called on
-        ~                `(adapter, model)`
-        """
-        if parameters is not None:
-            try:
-                parameter_values =\
-                    parameters(adapter, model, *args, **kwargs)
-            except TypeError:
-                parameter_values =(
-                    row for _, row in parameters.iterrows())
-            measurement =\
-                collect(
-                    (p, self.measurement(adapter, model, **p, **kwargs))
-                    for p in tqdm(parameter_values))
-        else:
-            measurement =\
-                self.measurement(adapter, model, *args, **kwargs)
-        return\
-            measurement.rename(columns={"value": self.title})\
-            if self.title else\
-               measurement
-
-    def __call__(self, model, adapter, parameters=None, *args, **kwargs):
+    def __call__(self,
+            adapter=None, model=None, parameters=None,
+            *args, **kwargs):
         """Call Me"""
-        measurement =\
-            self.get_measurement(
-                adapter, model, parameters, *args, **kwargs)
+        data =\
+            self.data(adapter, model, parameters, *args, **kwargs)
+        if isinstance(data, pd.DataFrame):
+            measurement =\
+                data.rename(columns={"value": self.title})
+        elif isinstance(data, Mapping):
+            measurement ={
+                dataset: dataframe.rename(columns={"value": self.title})
+                for dataset, dataframe in data.items()}
+        else:
+            measurement = {}
+            
         return Record(
             narrative=self.narrative(
                 adapter, model, *args, **kwargs),
@@ -291,12 +308,29 @@ class Chapter(WithFields):
         """,
         __as__=Section,
         __default_value__=NA)
+    parameters = Field(
+        """
+        Parameters used to compute the measurement associated with this analysis.
+        """,
+        __as__=Section,
+        __default_value__=NA)
+    measurement = Field(
+        """
+        A section with a callable providing measurement on `(adapter, model)`
+        """,
+        __as__=Section)
     results = Field(
         """
         Result of the analysis.
         Provide a string that may have `$`-prefixed words to be filled using
         a template search-list obtained from model using the adapter method
         `get_provenance`.
+        """,
+        __as__=Section,
+        __default_value__=NA)
+    reference_data = Field(
+        """
+        Reference data to go with this analysis.
         """,
         __as__=Section,
         __default_value__=NA)
@@ -309,3 +343,28 @@ class Chapter(WithFields):
         """,
         __as__=Narrative,
         __default_value__=NA)
+
+    def __call__(self, adapter, model, *args, **kwargs):
+        """.."""
+        parameters =\
+            self.parameters(adapter, model, *args, **kwargs)
+        measurement =\
+            self.measurement(adapter, model,
+                             parameters=parameters.data,
+                             *args, **kwargs)
+        reference_data =\
+            self.reference_data(adapter, model)
+        results =\
+            self.results(
+                measurement=measurement.data,
+                reference_data=reference_data.data)
+        return Record(
+            author=self.author,
+            abstract=self.abstract(adapter, model),
+            introduction=self.introduction(adapter, model),
+            methods=self.methods(adapter, model),
+            reference_data=reference_data,
+            measurement=measurement,
+            results=results,
+            discussion=self.discussion(results=results))
+
