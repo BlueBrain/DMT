@@ -15,6 +15,8 @@ def make_text_like(
     Keep only ASCII characters, removing the provided list.
     And capitalize...
     """
+    if not isinstance(string, str):
+        string = str(string)
     if keep_original_capitalization:
         with_capitalized_words = False
     def __removed(word):
@@ -39,6 +41,8 @@ def make_name(
     Make name from a string.
     Unlike a label, a name may have spaces.
     """
+    if not isinstance(string, str):
+        string = str(string)
     if separator:
         string = string.replace(separator, ' ')
     return make_text_like(
@@ -52,6 +56,8 @@ def make_label(string, separator='_'):
     Make label from a string.
     A label cannot have any spaces.
     """
+    if not isinstance(string, str):
+        string = str(string)
     return make_text_like(
         string,
         separator=separator,
