@@ -2,10 +2,10 @@
 Abstraction of a cell type.
 """
 import functools
-from collections import OrderedDict
 from collections.abc import Mapping
 import pandas as pd
 from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
+
 
 class CellType(WithFields):
     """
@@ -43,7 +43,6 @@ class CellType(WithFields):
                 """.format(
                     type(value),
                     error))
-
 
     @lazyfield
     def specifier(self):
@@ -103,7 +102,6 @@ class CellType(WithFields):
         return\
             _at("pre_synaptic", CellType(pre_synaptic_cell_type)).append(
                 _at("post_synaptic", CellType(post_synaptic_cell_type)))
-
 
     @staticmethod
     def memoized(instance_method):
