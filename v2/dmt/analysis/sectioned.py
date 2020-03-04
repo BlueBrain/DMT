@@ -44,6 +44,7 @@ class Narrative(WithFields):
         Note that a string without any `$` prefixed words will also do, and
         may be used if you fill in the model specific details by hand.
         """)
+
     @interfacemethod
     def get_provenance(adapter, model):
         """
@@ -63,6 +64,10 @@ class Narrative(WithFields):
         """..."""
         if not self.content:
             return NA
+        LOGGER.ignore(
+            "fill template {}".format(self.content),
+            "adapter: {}".format(adapter),
+            "model: {}".format(model))
         try:
             return\
                 str(Template(
@@ -90,9 +95,10 @@ class Data(WithFields):
         super().__init__(*args, measurement=m, **kwargs)
 
     def __call__(self,
-            adapter=None, model=None, parameters=None,
+            adapter, model,
+            parameters=None,
             collection=measurement_collection.primitive_type,
-            *args, **kwargs):
+            **kwargs):
         """
         Arguments
         -----------
@@ -121,28 +127,26 @@ class Data(WithFields):
         assert callable(self.measurement)
 
         if parameters is not None:
-            assert adapter is not None
             try:
                 parameter_sets =\
-                    parameters(adapter, model, *args, **kwargs)
+                    parameters(adapter, model, **kwargs)
             except TypeError:
                 parameter_sets =(
                     row for _, row in parameters.iterrows())
             data =\
                 collection(
-                    (p, self.measurement(adapter, model, *args, **p, **kwargs))
+                    (p, self.measurement(adapter, model, **p, **kwargs))
                     for p in tqdm(parameter_sets)
                 ).assign(dataset=adapter.get_label(model)
                 ).reset_index(
                 ).set_index(["dataset", "region", "layer"])
         else:
-            if adapter is not None:
+            try:
                 data =\
-                    self.measurement(adapter, model, *args, **kwargs)
-            else:
+                    self.measurement(adapter, model, **kwargs)
+            except TypeError:
                 data =\
-                    self.measurement(*args, **kwargs)
-
+                    self.measurement(**kwargs)
         return data
 
 
@@ -160,7 +164,7 @@ class Illustration(WithFields):
         """..."""
         super().__init__(*args, figures=figures, **kwargs)
 
-    def __call__(self, adapter, model, data=None, *args, **kwargs):
+    def __call__(self, adapter, model, data, *args, **kwargs):
         """
 
         Arguments
@@ -224,19 +228,26 @@ class Section(WithFields):
         super().__init__(*args, **kwargs)
 
     def __call__(self,
-            adapter=None, model=None, parameters=None,
-            *args, **kwargs):
+            adapter, model,
+            **kwargs):
         """Call Me"""
         data =\
-            self.data(adapter, model, parameters, *args, **kwargs)
+            self.data(adapter, model, **kwargs)
+                      
+        LOGGER.ignore(
+            "Section {}".format(self.label),
+            "data {}".format(data) )
         if isinstance(data, pd.DataFrame):
             measurement =\
-                data.rename(columns={"value": self.title})
+                data.rename(columns={"value": self.label})
         elif isinstance(data, Mapping):
             measurement ={
-                dataset: dataframe.rename(columns={"value": self.title})
+                dataset: dataframe.rename(columns={"value": self.label})
                 for dataset, dataframe in data.items()}
         else:
+            LOGGER.alert(
+                LOGGER.get_source_info(),
+                "Cannot handle data of type: {}".format(type(data)))
             measurement = {}
             
         return Record(
@@ -245,7 +256,7 @@ class Section(WithFields):
             narrative=self.narrative(adapter, model),
             data=measurement,
             illustration=self.illustration(
-                adapter, model, measurement, *args, **kwargs))
+                adapter, model, measurement, **kwargs))
 
 
 class Chapter(WithFields):
@@ -332,17 +343,18 @@ class Chapter(WithFields):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """,
-        __as__=Section,
+        __as__=Narrative,
         __default_value__=NA)
 
     def __call__(self, adapter, model, *args, **kwargs):
         """.."""
         parameters =\
-            self.parameters(adapter, model, *args, **kwargs)
+            self.parameters(adapter, model,
+                            *args, **kwargs)
         measurement =\
             self.measurement(adapter, model,
                              parameters=parameters.data,
-                             *args, **kwargs)
+                             **kwargs)
         reference_data =\
             self.reference_data(adapter, model)
         try:
@@ -358,9 +370,9 @@ class Chapter(WithFields):
 
             references = {}
 
-
         results =\
             self.results(
+                adapter, model,
                 measurement=measurement.data,
                 reference_data=reference_data.data)
         return Record(
@@ -371,7 +383,7 @@ class Chapter(WithFields):
             reference_data=reference_data,
             measurement=measurement,
             results=results,
-            discussion=self.discussion(results.data),
+            discussion=self.discussion(adapter, model),
             references=references)
 
 
@@ -384,6 +396,32 @@ class StructuredAnalysis(Analysis):
         An object describing the author of this `SectionAnalysis` instance.
         """,
         __default_value__=Author.anonymous)
+    phenomenon=Field(
+        """
+        The (group) phenomenon analyzed.
+        """)
+    abstract = Field(
+        """
+        Abstract of what, and how of this analysis.
+        Provide a string that may have `$`-prefixed words to be filled using
+        a template search-list obtained from model using the adapter method
+        `get_provenance`.
+        """,
+        __as__=Narrative,
+        __default_value__=NA)
+    introduction = Field(
+        """
+        Introduction to the analysis.
+        Provide at least a  string that may have `$`-prefixed words to be filled 
+        using a template search-list obtained from model using the adapter 
+        method `get_provenance`.
+
+        To include data and, an illustration in addition to a narrative,
+        provide either a `Section` with these attributes, or a dictionary
+        with keys `narrative`, `data`, and `illustration`.
+        """,
+        __as__=Section,
+        __default_value__=NA)
     AdapterInterface = Field(
         """
         A class written as a subclass of `Interface` that declares and documents
@@ -405,8 +443,7 @@ class StructuredAnalysis(Analysis):
         """,
         __default_value__=Report)
 
-
-    def get_report(self, chapter, provenance_model):
+    def _report(self, chapter, provenance_model):
         """
         Get report for a chapter.
 
@@ -425,19 +462,29 @@ class StructuredAnalysis(Analysis):
                 measurement=chapter.measurement.data,
                 figures=chapter.results.illustration,
                 results=chapter.results.narrative,
-                discussion=chapter.discussion.narrative,
+                discussion=chapter.discussion,
                 references=chapter.references,
                 provenance_model=provenance_model)
 
-
     def __call__(self,  adapter, model, **kwargs):
         """..."""
-        provenance_model =\
+        provenance =\
             adapter.get_provenance(model)
-        return{
-            chapter.label: self.get_report(
-                chapter(adapter, model, **kwargs),
-                provenance_model)
-            for chapter in self.chapters}
-
-
+        if len(self.chapters) == 1:
+            chapter =\
+                self.chapters[0]
+            return\
+                self._report(
+                    chapter(adapter, model, **kwargs),
+                    provenance)
+        chapter_reports =[
+            self._report(chapter(adapter, model, **kwargs), provenance)
+            for chapter in self.chapters]
+        return\
+            self.report(
+                author=self.author,
+                phenomenon=self.phenomenon.label,
+                abstract=self.abstract(adapter, model),
+                introduction=self.introduction(adapter, model),
+                chapters=chapter_reports,
+                provenance_model=provenance)
