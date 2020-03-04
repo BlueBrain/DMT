@@ -69,6 +69,8 @@ def paragraphs(string):
     of a single line. It is assumed that the input string separates paragraphs
     by at least two line-end `\n` characters.
     """
+    if not isinstance(string, str):
+        string = str(string)
     return ' '.join(
         paragraph.strip()
         for paragraph in string.split('\n')
