@@ -67,7 +67,7 @@ class Narrative(WithFields):
             return\
                 str(Template(
                     self.content,
-                    adapter.get_provenance(adapter, model)))
+                    adapter.get_provenance(model)))
         except Exception as error:
             LOGGER.warn(
                 "Could not fill the template:",
@@ -144,6 +144,7 @@ class Data(WithFields):
                     self.measurement(*args, **kwargs)
 
         return data
+
 
 class Illustration(WithFields):
     """..."""
@@ -239,8 +240,9 @@ class Section(WithFields):
             measurement = {}
             
         return Record(
-            narrative=self.narrative(
-                adapter, model, *args, **kwargs),
+            title=self.title,
+            label=self.label,
+            narrative=self.narrative(adapter, model),
             data=measurement,
             illustration=self.illustration(
                 adapter, model, measurement, *args, **kwargs))
@@ -262,21 +264,10 @@ class Chapter(WithFields):
         A single word tag.
         """,
         lambda self: make_label(self.title))
-
-    author = Field(
+    phenomenon = Field(
         """
-        An object describing the author of this `SectionAnalysis` instance.
-        """,
-        __default_value__=Author.anonymous)
-    AdapterInterface = Field(
-        """
-        A class written as a subclass of `Interface` that declares and documents
-        the methods required of the adapter by this analysis.
-        You may provide the adapter interface either at instantiation of a
-        `SectionedAnalysis`, or define it inside a `SectionedAnalysis` subclass,
-        or mark methods with the decorator @interfacemethod in the subclass' body.
-        """,
-        __type__=InterfaceMeta)
+        Phenomenon studied in this chapter.
+        """)
     abstract = Field(
         """
         Abstract of what, and how of this analysis.
@@ -341,7 +332,7 @@ class Chapter(WithFields):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """,
-        __as__=Narrative,
+        __as__=Section,
         __default_value__=NA)
 
     def __call__(self, adapter, model, *args, **kwargs):
@@ -354,17 +345,99 @@ class Chapter(WithFields):
                              *args, **kwargs)
         reference_data =\
             self.reference_data(adapter, model)
+        try:
+            references ={
+                label: reference.citation
+                for label, reference in reference_data.items()}
+        except AttributeError:
+            LOGGER.info(
+                """
+                Could not retrieve citations from reference data of type {}.
+                """.format(
+                    type(reference_data)))
+
+            references = {}
+
+
         results =\
             self.results(
                 measurement=measurement.data,
                 reference_data=reference_data.data)
         return Record(
-            author=self.author,
+            phenomenon=self.phenomenon.label,
             abstract=self.abstract(adapter, model),
             introduction=self.introduction(adapter, model),
             methods=self.methods(adapter, model),
             reference_data=reference_data,
             measurement=measurement,
             results=results,
-            discussion=self.discussion(results=results))
+            discussion=self.discussion(results.data),
+            references=references)
+
+
+class StructuredAnalysis(Analysis):
+    """
+    An analysis structured with chapters and sections.
+    """
+    author = Field(
+        """
+        An object describing the author of this `SectionAnalysis` instance.
+        """,
+        __default_value__=Author.anonymous)
+    AdapterInterface = Field(
+        """
+        A class written as a subclass of `Interface` that declares and documents
+        the methods required of the adapter by this analysis.
+        You may provide the adapter interface either at instantiation of a
+        `SectionedAnalysis`, or define it inside a `SectionedAnalysis` subclass,
+        or mark methods with the decorator @interfacemethod in the subclass' body.
+        """,
+        __type__=InterfaceMeta)
+    chapters = Field(
+        """
+        A list of chapters.
+        """)
+    report = Field(
+        """
+        A callable that will generate a report for a chapter in this analysis.
+        The callable should be able to take arguments listed in `get_report(...)`
+        method defined below.
+        """,
+        __default_value__=Report)
+
+
+    def get_report(self, chapter, provenance_model):
+        """
+        Get report for a chapter.
+
+        Arguments
+        ------------
+        chapter :: A `Record` instance produced by calling this analysis'
+        ~         `Chapter` instances.
+        """
+        return\
+            self.report(
+                author=self.author,
+                phenomenon=chapter.phenomenon,
+                abstract=chapter.abstract,
+                introduction=chapter.introduction.narrative,
+                methods=chapter.methods.narrative,
+                measurement=chapter.measurement.data,
+                figures=chapter.results.illustration,
+                results=chapter.results.narrative,
+                discussion=chapter.discussion.narrative,
+                references=chapter.references,
+                provenance_model=provenance_model)
+
+
+    def __call__(self,  adapter, model, **kwargs):
+        """..."""
+        provenance_model =\
+            adapter.get_provenance(model)
+        return{
+            chapter.label: self.get_report(
+                chapter(adapter, model, **kwargs),
+                provenance_model)
+            for chapter in self.chapters}
+
 
