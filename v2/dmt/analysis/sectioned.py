@@ -11,10 +11,10 @@ from collections import OrderedDict, namedtuple
 from tqdm import tqdm
 import warnings
 from dmt.tk.journal import Logger
-from dmt.data.observation.measurement.collection\
-    import primitive_type as primitive_type_measurement_collection
 from dmt.analysis import Analysis
 from dmt.model.interface import InterfaceMeta, interfacemethod
+from dmt.data.observation.measurement\
+    import collection as measurement_collection
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, WithFields, Record
 from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
@@ -25,6 +25,7 @@ from dmt.tk.reporting.section import Section as ReportSection
 from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.collections.dataframes import make_dataframe_hashable
 from dmt.tk import terminology
+from dmt.tk.utils.string_utils import make_label
 
 
 LOGGER = Logger(client=__file__)
@@ -70,7 +71,7 @@ class Narrative(WithFields):
         except Exception as error:
             LOGGER.warn(
                 "Could not fill the template:",
-                error)
+                "{}".format(error))
         return self.content
 
 
@@ -93,7 +94,7 @@ class Data(WithFields):
         if not self.measurement:
             return pd.DataFrame()
         try:
-            return self.measurment(adapter, model, *args, **kwargs)
+            return self.measurement(adapter, model, *args, **kwargs)
         except TypeError:
             return self.measurement
 
@@ -137,6 +138,16 @@ class Section(WithFields):
     A section of an analysis, that must be callable on a
     `(circuit_model, adapter)` pair.
     """
+    title = Field(
+        """
+        A title for this `Section` instance.
+        """,
+        __default_value__=NA)
+    label = LambdaField(
+        """
+        A single word tag.
+        """,
+        lambda self: make_label(self.title))
     narrative = Field(
         """
         A formattable string providing a story about a model, that can
@@ -144,7 +155,7 @@ class Section(WithFields):
         """,
         __default_value__=NA,
         __as__=Narrative)
-    data = Field(
+    measurement = Field(
         """
         Either a `pandas.DataFrame` or a callable on a `(adapter, model)` pair
         that can produce a `pandas.DataFrame`.
@@ -165,15 +176,51 @@ class Section(WithFields):
         """
         super().__init__(*args, **kwargs)
 
-    def get_measurement(self, adapter, model, *args, **kwargs):
+    def get_measurement(self,
+                adapter, model,
+                parameters=None,
+                collect=measurement_collection.primitive_type,
+                *args, **kwargs):
+        """
+        Arguments
+        -----------
+        parameters :: Parameter sets to compute the measurement.
+        ~             Either of:
+        ~             1. A `pandas.DataFrame` with each row providing
+        ~                a single parameter set. Column names of this
+        ~                dataframe will be used to query the model for a
+        ~                value of the measured phenomenon for each parameter set.
+        ~             2. A callable on `(adapter, model)` that returns such a
+        ~                dataframe.
+        ~             3. None, in which case it will be assumed that either
+        ~                the this `Section`'s attribute `data` is either a
+        ~               `pandas.DataFrame` or returns one when called on
+        ~                `(adapter, model)`
+        """
+        if parameters is not None:
+            try:
+                parameter_values =\
+                    parameters(adapter, model, *args, **kwargs)
+            except TypeError:
+                parameter_values =(
+                    row for _, row in parameters.iterrows())
+            measurement =\
+                collect(
+                    (p, self.measurement(adapter, model, **p, **kwargs))
+                    for p in tqdm(parameter_values))
+        else:
+            measurement =\
+                self.measurement(adapter, model, *args, **kwargs)
         return\
-            self.data(adapter, model, *args, **kwargs)
+            measurement.rename(columns={"value": self.title})\
+            if self.title else\
+               measurement
 
-    def __call__(self, model, adapter, *args, **kwargs):
+    def __call__(self, model, adapter, parameters=None, *args, **kwargs):
         """Call Me"""
         measurement =\
             self.get_measurement(
-                adapter, model, *args, **kwargs)
+                adapter, model, parameters, *args, **kwargs)
         return Record(
             narrative=self.narrative(
                 adapter, model, *args, **kwargs),
@@ -188,6 +235,17 @@ class Chapter(WithFields):
     When called on a `(circuit, adapter)` pair, each section will be output
     as a section in a report.
     """
+    title = Field(
+        """
+        A title for this `Section` instance.
+        """,
+        __default_value__=NA)
+    label = LambdaField(
+        """
+        A single word tag.
+        """,
+        lambda self: make_label(self.title))
+
     author = Field(
         """
         An object describing the author of this `SectionAnalysis` instance.
