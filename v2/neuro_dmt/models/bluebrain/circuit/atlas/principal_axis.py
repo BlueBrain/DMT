@@ -5,6 +5,7 @@ Here we provide code that documents and provides tools to work
 with the principal axis.
 """
 
+from collections import OrderedDict
 import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
 from collections.abc import Mapping
@@ -89,7 +90,19 @@ class PrincipalAxis(WithFields):
     @lazyfield
     def thickness(self):
         """
-        Thickness, according to each voxcell.
+        Thickness of layers as seen by each voxel.
+        """
+        return\
+            OrderedDict((
+                (layer, intersection.top - intersection.bottom)
+                for (layer, intersection) in (
+                        (layer, self.intersection[layer])
+                        for layer in self.layer)))
+
+    @lazyfield
+    def cortical_chickness(self):
+        """
+        Total (cortical)-thickness, according to each voxcell.
         """
         return self.top - self.bottom
 

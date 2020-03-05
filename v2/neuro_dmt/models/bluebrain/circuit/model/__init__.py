@@ -740,3 +740,18 @@ class BlueBrainCircuitModel(WithFields):
                         ]).values / region_of_interest.volume
                 }
             )
+        raise NotImplementedError
+
+    def thickness(self, positions):
+        """
+        Layer thickness as measured at a position.
+
+        Arguments
+        ------------
+        position :: np.ndarray<x, y, z>
+        """
+        voxel_indices =\
+            self.atlas.position_to_indices(positions)
+        return\
+            self.atlas.layer_thicknesses(voxel_indices)
+

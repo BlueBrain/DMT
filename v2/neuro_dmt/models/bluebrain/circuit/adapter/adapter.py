@@ -191,7 +191,6 @@ class BlueBrainCircuitAdapter(WithFields):
     #          for key, value in kwargs.items()
     #          if value is not None),
     #         key=lambda xy: xy[0])))
-
     def _resolve_sample_cells(self,
             circuit_model,
             cell_type,
@@ -533,6 +532,19 @@ class BlueBrainCircuitAdapter(WithFields):
             positions.sample(n=1).iloc[0]\
             if not positions.empty\
                else None
+
+    def get_thickness(self, circuit_model, **spatial_query):
+        """
+        Get layer thickness sample for regions specified by a spatial query.
+        Thicknesses will be computed for all voxels visible for the spatial
+        query. Another possibility is to compute thickness for a random sample
+        of visible voxels.
+        """
+        positions =\
+            self.visible_voxels(circuit_model, spatial_query)\
+                .positions
+        return\
+            self.circuit_model.thickness(positions)
 
     def random_region_of_interest(self,
             circuit_model,
@@ -992,7 +1004,6 @@ class BlueBrainCircuitAdapter(WithFields):
                 with_soma_distance=False
             ).probability_connection
 
-
     def get_connection_probability_by_soma_distance(self,
             circuit_model=None,
             pre_synaptic={},
@@ -1221,7 +1232,6 @@ class BlueBrainCircuitAdapter(WithFields):
         return\
             dataframe.number_connections_afferent\
             if as_series else dataframe
-
 
     def get_column(self, circuit_model, target=None, axcell=None, radius=250.):
         """

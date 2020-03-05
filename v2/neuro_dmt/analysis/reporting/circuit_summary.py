@@ -12,4 +12,3 @@ class Point(namedtuple("Point", "x y z")):
         return 'Point: x=%6.3f  y=%6.3f  hypot=%6.3f' % (
             self.x, self.y, self.z, self.hypot)
 
-class 

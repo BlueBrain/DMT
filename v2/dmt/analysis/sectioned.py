@@ -43,6 +43,8 @@ class Narrative(WithFields):
         a story about the model.
         Note that a string without any `$` prefixed words will also do, and
         may be used if you fill in the model specific details by hand.
+
+        Or a callable on `(adapter, circuit)`
         """)
 
     @interfacemethod
@@ -60,10 +62,16 @@ class Narrative(WithFields):
         """..."""
         super().__init__(*args, content=content, **kwargs)
 
-    def __call__(self, adapter, model):
+    def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         if not self.content:
             return NA
+
+        try:
+            return self.content(adapter, model, *args, **kwargs)
+        except TypeError:
+            pass
+
         LOGGER.ignore(
             "fill template {}".format(self.content),
             "adapter: {}".format(adapter),
@@ -345,6 +353,40 @@ class Chapter(WithFields):
         """,
         __as__=Narrative,
         __default_value__=NA)
+
+    def __init__(self, analysis):
+        """
+        Initialize a `Chapter` instance with an analysis.
+        """
+        self.analysis = analysis
+
+        def method_measurement(adapter, model, *args, **kwargs):
+            return analysis.get_measurment_method(adapter)
+
+        super().__init__(
+            title=analysis.phenomenon.label,
+            phenomenon=analysis.phenomenon,
+            abstract=analysis.abstract,
+            introduction=analysis.introduction,
+            methods=analysis.methods,
+            parameters=Section(
+                data=lambda *a, **kw: pd.DataFrame(
+                    analysis.parameters.for_sampling(*a, **kw))),
+            measurement=Section(
+                title=analysis.phenomenon.name,
+                label=analysis.phenomenon.label,
+                narrative=analysis.description_measurement,
+                data=method_measurement),
+            reference_data=Section(
+                title="Reference Data",
+                label=analysis.phenomenon.label,
+                narrative=analysis.description_reference_data,
+                data=analysis.reference_data),
+            results=Section(
+                title="Results",
+                narrative=analysis.results,
+                data=analysis.append_reference_data,
+                illustration=analysis.figures))
 
     def __call__(self, adapter, model, *args, **kwargs):
         """.."""

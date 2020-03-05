@@ -9,7 +9,7 @@ from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
 from dmt import analysis
 from dmt.model.interface import InterfaceMeta
-from dmt.tk.field import Field, LambdaField, lazyfield
+from dmt.tk.field import NA, Field, LambdaField, lazyfield
 from dmt.tk.author import Author
 from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
@@ -54,7 +54,7 @@ class StructuredAnalysis(
         Each dataset in the dataframe must be annotated with index level
         'dataset', in addition to levels that make sense for the measurements.
         """,
-        __default_value__={})
+        __default_value__=NA)
 
     @property
     def _has_reference_data(self):
@@ -108,7 +108,7 @@ class StructuredAnalysis(
         raise RuntimeError(
             "Unreachable point in code.")
 
-    def _get_measurement_method(self, adapter=None):
+    def get_measurement_method(self, adapter=None):
         """
         Makes sense for analysis of a single phenomenon.
 
@@ -168,6 +168,19 @@ class StructuredAnalysis(
         raise RuntimeError(
             "Unreachable point in code.")
 
+
+    @lazyfield
+    def description_measurement(self):
+        """
+        This attribute will be NA if the method is implemented and
+        described in the adapter.
+        """
+        try:
+            return self.sample_measurement.__method__
+        except AttributeError:
+            return NA
+        raise RuntimeError("Execution cannot reach here.")
+
     def get_measurement(self,
             circuit_model,
             adapter=None,
@@ -185,7 +198,7 @@ class StructuredAnalysis(
                     circuit_model,
                     sample_size=self.sample_size if using_random_samples else 1)
         get_measurement =\
-            self._get_measurement_method(adapter)
+            self.get_measurement_method(adapter)
         measured_values = self\
             .measurement_collection(
                 (p, get_measurement(circuit_model,
@@ -208,9 +221,17 @@ class StructuredAnalysis(
             "data": measurement,
             "method": method}
 
+    @lazyfield
+    def description_reference_data(self):
+        """
+        TODO: return a string describing the reference data.
+        """
+        return NA
+
     def append_reference_data(self,
             measurement,
-            reference_data={}):
+            reference_data={},
+            **kwargs):
         """
         Append reference datasets.
 

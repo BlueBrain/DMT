@@ -149,3 +149,35 @@ class SSCxDisseminationCircuit(WithFields):
             mock="MOCK")
 
 
+class AnalysisParameterization(WithFields):
+    """
+    Parameterize an analysis.
+    "    """
+    sample_size = Field(
+        """
+        Number of individual sample measurements for each set of parameter
+        values.
+        """,
+        __default_value__=100)
+    size_roi = Field(
+        """
+        Size of ROIs that composition phenomena will be computed in.
+        """,
+        __default_value__ = 50. * np.ones(3))
+    path_reports = Field(
+        """
+        Location where the reports will be posted.
+        """,
+        __default_value__=os.path.join(os.getcwd(), "reports"))
+    morphologies_interneurons = Field(
+        """
+        Interneuron morphologies that are stained by markers",
+        """,
+        __default_value__=["BP", "BTC", "CHC", "DB", "LBC", "NBC", "MC", "SBC", "SSC"])
+    number_cortical_thickness_bins = Field(
+        """
+        Number of bins for by depth / height analyses.
+        """,
+        __default_value__=50)
+
+""

@@ -225,7 +225,7 @@ class PathwayMeasurement(WithFields):
                     return\
                         cells.sample(n_cells)\
                              .assign(group=group_id)
-
+                
                 cell_types =\
                     adapter.get_cell_types(
                         circuit_model, self.specifiers_cell_type)
@@ -669,7 +669,6 @@ class PathwayMeasurement(WithFields):
                         bin_size_soma_distance=bin_size_soma_distance)
             cells_connected =\
                 cells_connected.assign(soma_distance=_soma_distance)
-
         if self.filter_by_upper_bound_soma_distance:
             cells_connected =\
                 cells_connected[

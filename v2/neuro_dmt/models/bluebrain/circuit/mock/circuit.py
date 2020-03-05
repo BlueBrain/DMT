@@ -207,3 +207,14 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
             index=pd.MultiIndex.from_arrays(
                 [voxel_ids[:,0], voxel_ids[:, 1], voxel_ids[:, 2]],
                 names=["i", "j", "k"]))
+
+    @lazyfield
+    def volume_voxel(self):
+        return 100.
+
+    def get_voxel_count(self, **spatial_query):
+        """..."""
+        mean = 2000 * 200 * 200 #um
+        stdev = np.sqrt(mean)
+        return np.random.normal(mean, stdev) / self.volume_voxel
+

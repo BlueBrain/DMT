@@ -221,3 +221,26 @@ class BlueBrainCircuitAtlas(WithFields):
         while True:
             yield self.voxel_data.indices_to_positions(
                 voxel_indices[numpy.random.randint(len(voxel_indices))])
+
+    def layer_thicknesses(self, voxel_indices):
+        """..."""
+        def _get(thickness, voxel_indices):
+            try:
+                return thickness[voxel_indices]
+            except IndexError as error_i:
+                try:
+                    return thickness[list(zip(*voxel_indices))]
+                except Exception as error_e:
+                    raise ValueError(
+                        """
+                        Argument voxel_indices may not be of good shape to extract
+                        thicknesses. Tried both input, and its transform:
+                        \t {}
+                        \t {}
+                        """.format(error_i, error_e))
+
+        return\
+            pd.DataFrame({
+                "thickness": _get(thickness[layer], voxel_indices)
+                "layer": layer
+                for layer, thickness in self.principal_axis.thickness.items()})
