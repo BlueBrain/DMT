@@ -289,6 +289,7 @@ class ConnectomeAnalysesSuite(WithFields):
                 cell_type,
                 number=1
             ).iloc[0]
+
     @measurement_method("""
     Number of afferent connections are computed as a function of the
     post-synaptic cell type. Cell-type can be any defined by the values of

@@ -47,6 +47,9 @@ class PathwayQuery(WithFields):
         `afferent` or `efferent`
         """)
 
+    def __repr__(self):
+        return "{}".format(self.field_dict)
+
     @lazyfield
     def cell_group(self):
         """
@@ -243,18 +246,20 @@ class PathwayMeasurement(WithFields):
 
         return self.target[circuit_model]
 
-    def get_target(self, circuit_model, adapter, query=None):
+    def get_target(self, circuit_model, adapter, query):
         """
         Population of cells in the circuit model to work with.
         """
         target_pool = self._load_target(circuit_model, adapter)
 
-        if query is None:
-            return target
-
         def _get(position_query):
             group = getattr(query.cell_group, position_query)
             pool  = getattr(target_pool, position_query)
+
+            LOGGER.debug(
+                "PathwayMeasurement.get_target(...)",
+                "position_query {}".format(position_query),
+                "group: {}".format(group))
 
             if isinstance(group, (Mapping, pd.Series)):
                 all_cells =\
@@ -298,6 +303,9 @@ class PathwayMeasurement(WithFields):
         """
         Primary and secondary cell samples.
         """
+        LOGGER.debug(
+            "PathwayMeasurement._sample_target(...)",
+            "{}".format(query))
         exhaustive =\
             self.sampling_methodology ==\
             terminology.sampling_methodology.exhaustive
@@ -451,6 +459,9 @@ class PathwayMeasurement(WithFields):
         """
         Batches of cells to process.
         """
+        LOGGER.debug(
+            "PathwayMeasurement._batches(...)",
+            "cells {}".format(cells))
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (cell for _, cell in cells.iterrows())
 

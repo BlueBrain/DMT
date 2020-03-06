@@ -164,6 +164,19 @@ class CompositionAnalysesSuite(WithFields):
             """
             raise NotImplementedError
 
+        def get_layer_thickness_values(self, circuit_model, region=None):
+            """
+            Get layer thicknness values (as a `pandas.Series`) in the given
+            region.
+            The result may hold a sample of thickness values each layer in the
+            circuit.
+
+            Returns
+            =============
+            `pandas.Series` with layer in the index.
+            """
+            raise NotImplementedError
+
 
     def _get_random_region(self, circuit_model, adapter, spatial_query):
         """
