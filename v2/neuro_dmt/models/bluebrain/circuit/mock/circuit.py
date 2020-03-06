@@ -218,3 +218,9 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
         stdev = np.sqrt(mean)
         return np.random.normal(mean, stdev) / self.volume_voxel
 
+    def get_thickness(self, *args, **kwargs):
+        """..."""
+        return\
+            pd.DataFrame({
+                layer:  np.random.uniform(0., 2000./3., size=1000)
+                for layer in self.layers})

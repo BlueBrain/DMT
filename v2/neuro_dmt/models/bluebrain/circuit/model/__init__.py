@@ -251,6 +251,7 @@ class BlueBrainCircuitModel(WithFields):
         """
         LOGGER.debug(
             """
+            LOGGER.get_source_info(),
             get_voxel_positions for voxel_ids of shape {}
             """.format(voxel_ids.shape))
 
@@ -378,6 +379,9 @@ class BlueBrainCircuitModel(WithFields):
         query : sequence of keyword arguments providing query parameters.
         with_gid_column : if True add a column for cell gids.
         """
+        LOGGER.debug(
+            "Model get cells for query",
+            "{}".format(query))
         cell_query =\
             self._get_bluepy_cell_query(
                 self._resolve_query_region(**query))
@@ -385,6 +389,7 @@ class BlueBrainCircuitModel(WithFields):
         if isinstance(target, str):
             cell_query["$target"] = target
 
+        
         cells =\
             self.cell_collection.get(
                 group=cell_query,
@@ -490,7 +495,6 @@ class BlueBrainCircuitModel(WithFields):
     #     while cells.shape[0] > 0:
     #         position = cells.sample(n=1).iloc[0]
     #         yield position.values if as_array else position
-
     def are_connected(self, pre_neuron, post_neuron):
         """
         Is pre neuron connected to post neuron.
@@ -518,7 +522,6 @@ class BlueBrainCircuitModel(WithFields):
     #         while len(post_neurons) > 0:
     #             post_neuron = np.random.sample(post_neurons)
     #             yield (pre_neuron, post_neuron)
-
     def get_cell_types(self, cell_type_specifier):
         """
         Get cells of the specified type.
@@ -599,8 +602,6 @@ class BlueBrainCircuitModel(WithFields):
             [CellType.pathway(pre_cell_type, post_cell_type)
              for _, pre_cell_type in cell_types.iterrows()
              for _, post_cell_type in cell_types.iterrows()])
-
-
 
     def get_connection_probability(self,
             pre_cell_type_specifier,
@@ -742,7 +743,7 @@ class BlueBrainCircuitModel(WithFields):
             )
         raise NotImplementedError
 
-    def thickness(self, positions):
+    def get_thickness(self, positions):
         """
         Layer thickness as measured at a position.
 
@@ -751,7 +752,10 @@ class BlueBrainCircuitModel(WithFields):
         position :: np.ndarray<x, y, z>
         """
         voxel_indices =\
-            self.atlas.position_to_indices(positions)
-        return\
-            self.atlas.layer_thicknesses(voxel_indices)
-
+            self.atlas.positions_to_indices(positions)
+        thicknesses =\
+            pd.DataFrame(self.atlas.layer_thicknesses(voxel_indices))\
+              .assign(total=lambda df: df.sum(axis=1))
+        thicknesses.columns.name = "layer"
+        return thicknesses
+                

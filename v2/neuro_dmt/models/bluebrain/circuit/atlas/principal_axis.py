@@ -6,6 +6,7 @@ with the principal axis.
 """
 
 from collections import OrderedDict
+from tqdm import tqdm
 import numpy as np
 from voxcell.nexus.voxelbrain import Atlas
 from collections.abc import Mapping
@@ -42,12 +43,22 @@ class PrincipalAxis(WithFields):
         Volumetric datasets corresponding to intersection of the principal axis
         with the layer boundaries.
         """
-        layer_boundaries = (
-            (layer, self.atlas.load_data("[PH]{}".format(layer)).raw)
-            for layer in self.layers)
-        return {
-            layer: Interval(top=boundary[..., 1], bottom=boundary[..., 0])
-            for layer, boundary in layer_boundaries}
+        return OrderedDict(
+            (layer, Interval(top=boundary[..., 1], bottom=boundary[..., 0]))
+             for layer, boundary in (
+                     (layer, self.atlas.load_data("[PH]{}".format(layer)).raw)
+                     for layer in tqdm(self.layers)))
+
+    @lazyfield
+    def thickness(self):
+        """
+        Thickness of layers as seen by each voxel.
+        """
+        return OrderedDict((
+            (layer, intersection.top - intersection.bottom)
+            for (layer, intersection) in (
+                    (layer, self.intersection[layer])
+                    for layer in self.layers)))
 
     @lazyfield
     def position(self):
@@ -86,18 +97,6 @@ class PrincipalAxis(WithFields):
         Distance from the top, according to each voxcell.
         """
         return self.top - self.position
-
-    @lazyfield
-    def thickness(self):
-        """
-        Thickness of layers as seen by each voxel.
-        """
-        return\
-            OrderedDict((
-                (layer, intersection.top - intersection.bottom)
-                for (layer, intersection) in (
-                        (layer, self.intersection[layer])
-                        for layer in self.layer)))
 
     @lazyfield
     def cortical_chickness(self):

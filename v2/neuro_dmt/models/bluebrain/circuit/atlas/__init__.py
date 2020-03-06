@@ -3,6 +3,7 @@ Code to document and deal with a circuit atlas.
 """
 
 import os
+from collections import OrderedDict
 import numpy
 import pandas
 from voxcell.nexus.voxelbrain import Atlas
@@ -103,6 +104,12 @@ class BlueBrainCircuitAtlas(WithFields):
         atlas, how their acronyms are represented in the hierarchy.
         """
         return RegionLayer(atlas=self.base_atlas)
+
+    def _label_layer(self, layer):
+        """..."""
+        if isinstance(layer, int):
+            return "L{}".format(layer)
+        return layer
 
     @lazyfield
     def principal_axis(self):
@@ -224,7 +231,21 @@ class BlueBrainCircuitAtlas(WithFields):
 
     def layer_thicknesses(self, voxel_indices):
         """..."""
-        def _get(thickness, voxel_indices):
+
+        if isinstance(voxel_indices, pandas.DataFrame):
+            voxel_indices =(
+                voxel_indices.x.to_numpy(numpy.int32),
+                voxel_indices.y.to_numpy(numpy.int32),
+                voxel_indices.z.to_numpy(numpy.int32))
+
+        assert isinstance(voxel_indices, (tuple, numpy.ndarray))
+
+        if isinstance(voxel_indices, numpy.ndarray):
+            assert voxel_indices.ndim == 2 and voxel_indices.shape[1] == 3
+            voxel_indices =\
+                (voxel_indices[:, 0], voxel_indices[:, 1], voxel_indices[:, 2])
+
+        def _get(thickness):
             try:
                 return thickness[voxel_indices]
             except IndexError as error_i:
@@ -240,7 +261,6 @@ class BlueBrainCircuitAtlas(WithFields):
                         """.format(error_i, error_e))
 
         return\
-            pd.DataFrame({
-                "thickness": _get(thickness[layer], voxel_indices)
-                "layer": layer
-                for layer, thickness in self.principal_axis.thickness.items()})
+            OrderedDict(
+                (self._label_layer(layer), _get(thickness))
+                for layer, thickness in self.principal_axis.thickness.items())

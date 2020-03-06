@@ -533,18 +533,26 @@ class BlueBrainCircuitAdapter(WithFields):
             if not positions.empty\
                else None
 
-    def get_thickness(self, circuit_model, **spatial_query):
+    def get_layer_thickness_values(self,
+            circuit_model,
+            sample_size=10000,
+            **spatial_query):
         """
         Get layer thickness sample for regions specified by a spatial query.
         Thicknesses will be computed for all voxels visible for the spatial
         query. Another possibility is to compute thickness for a random sample
         of visible voxels.
+
+        Because there can be too many (voxel) positions in a region,
+        measurement will be made on a sample of positions in the specified
+        region.
         """
         positions =\
             self.visible_voxels(circuit_model, spatial_query)\
-                .positions
+                .positions\
+                .sample(n=sample_size, replace=True)
         return\
-            self.circuit_model.thickness(positions)
+            circuit_model.get_thickness(positions)
 
     def random_region_of_interest(self,
             circuit_model,
@@ -608,6 +616,10 @@ class BlueBrainCircuitAdapter(WithFields):
             target=None,
             **query):
         """..."""
+        LOGGER.debug(
+            "Adapter get cells for query: ",
+            "target {}".format(target),
+            "{}".format(query))
         cells =\
             self._resolve(circuit_model)\
                 .get_cells(properties=properties,
