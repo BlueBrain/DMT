@@ -507,7 +507,9 @@ class PathwayMeasurement(WithFields):
                     bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs)
             yield\
-                self._prefix_secondary_synaptic_side(query, measurement)
+                self._prefix_secondary_synaptic_side(query, measurement)\
+                if measurement is not None else\
+                   None
 
     def get_soma_distance_bins(self,
             circuit_model,
@@ -659,6 +661,9 @@ class PathwayMeasurement(WithFields):
                 `cell_info` {}.
                 """.format(target.primary))
 
+        if connections.empty:
+            return None
+
         primary_gids =\
             connections[self.label_gid_primary].to_numpy(np.int32)
         secondary_gids =\
@@ -729,7 +734,8 @@ class PathwayMeasurement(WithFields):
                 circuit_model, adapter,
                 pre_synaptic_cell_group=pre_synaptic_cell_group,
                 post_synaptic_cell_group=post_synaptic_cell_group,
-                **kwargs)]
+                **kwargs)
+            if m is not None]
         try:
             return pd.concat(listed_sample)
         except TypeError:
