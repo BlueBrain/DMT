@@ -24,6 +24,12 @@ class StructuredAnalysis(
     """
     A base class for all circuit analyses.
     """
+    add_columns = Field(
+        """
+        A callable that accepts a measurement (a `pandas.DataFrame`)
+        and adds columns...
+        """,
+        __default_value__=lambda measurement: measurement)
     figures = LambdaField(
         """
         An alias for `Field plotter`, which will be deprecated.
@@ -55,6 +61,12 @@ class StructuredAnalysis(
         'dataset', in addition to levels that make sense for the measurements.
         """,
         __default_value__=NA)
+    report = Field(
+        """
+        A callable to generate a report using fields used in
+        `StructuredAnalysis.get_report(...) method.`
+        """,
+        __default_value__=CircuitAnalysisReport)
 
     @property
     def _has_reference_data(self):
@@ -207,11 +219,11 @@ class StructuredAnalysis(
                 for p in tqdm(parameter_values))\
             .rename(columns={"value": self.phenomenon.label})
         measurement =\
-              measured_values.reset_index()\
-                             .assign(
-                                 dataset=adapter.get_label(circuit_model))\
-                             .set_index(
-                                 ["dataset"] + measured_values.index.names)
+            self.add_columns(
+                measured_values.reset_index(
+                ).assign(dataset=adapter.get_label(circuit_model)
+                ).set_index(["dataset"] + measured_values.index.names))
+
         try:
             method = get_measurement.__method__
         except AttributeError:
