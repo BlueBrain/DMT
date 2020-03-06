@@ -148,7 +148,6 @@ class CheetahReporter(Reporter):
         __default_value__="""
         <html>
           <body>
-
             #if $title_main_report
               <h1>$title (<A HREF=$path_main_report>$title_main_report Analysis</A>)</h1>
             #else
@@ -320,8 +319,15 @@ class CheetahReporter(Reporter):
         """
         Fill in the template.
         """
-        template_dict =\
-            report.field_values
+        template_dict ={
+            field: value
+            for field, value in report.field_values.items()}
+
+        LOGGER.debug(
+            "CheetahReporter.dict_template(..)",
+            "report field values",
+            "{}".format(template_dict))
+
         if chapter_index is not None or section_index is not None:
             template_dict["circuit"] = None
 
@@ -436,7 +442,7 @@ class CheetahReporter(Reporter):
         ~            posted.
         strict : If `True`, a backup text report will not be generated.
         """
-        LOGGER.ignore(
+        LOGGER.debug(
             """.post(report={},
                    template={},
                    path_output_folder={},
@@ -517,7 +523,7 @@ class CheetahReporter(Reporter):
                                  chapter_index=chapter_index,
                                  sections=sections,
                                  section_index=section_index)
-        LOGGER.ignore(
+        LOGGER.debug(
             "FILLED TEMPLATE",
             '\n'.join(
                 "{}: {}".format(k, v) for k, v in dict_template.items()))
