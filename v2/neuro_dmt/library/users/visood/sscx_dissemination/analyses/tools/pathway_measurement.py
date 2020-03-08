@@ -536,16 +536,37 @@ class PathwayMeasurement(WithFields):
             if measurement is None:
                 yield None
                 continue
-            yield\
-                self._prefix_primary_synaptic_side(
-                    query,
+            if self.return_primary_info:
+                measurement =\
+                    measurement.reset_index()
+                specifiers_secondary =\
+                    measurement[
+                        self.specifiers_cell_type]\
+                        .reset_index(drop=True)
+                values =\
+                    measurement[self.variable].values
+                gids_primary =\
+                    measurement.reset_index()[self.label_gid_primary]
+                specifiers_primary =\
+                    adapter.get_cells(circuit_model)\
+                           .iloc[gids_primary]\
+                           [self.specifiers_cell_type]\
+                           .reset_index(drop=True)
+                index =\
+                    pd.concat(
+                        [specifiers_primary, specifiers_secondary],
+                        axis=1,
+                        keys=[query.primary_synaptic_side,
+                              query.secondary_synaptic_side])
+                yield\
+                    pd.DataFrame(
+                        {self.variable: values},
+                        index=pd.MultiIndex.from_frame(index))
+            else:
+                yield\
                     self._prefix_secondary_synaptic_side(
                         query,
-                        measurement))\
-                        if self.return_primary_info else\
-                           self._prefix_secondary_synaptic_side(
-                               query,
-                               measurement.droplevel(self.label_gid_primary))
+                        measurement.droplevel(self.label_gid_primary))
 
     def get_soma_distance_bins(self,
             circuit_model,
