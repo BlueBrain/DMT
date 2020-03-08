@@ -83,6 +83,15 @@ class PathwayQuery(WithFields):
         raise ValueError(
             "Unknown measurement direction {}.".format(self.direction))
 
+    @lazyfield
+    def primary_synaptic_side(self):
+        if self.direction == terminology.direction.afferent:
+            return "post_synaptic_cell"
+        if self.direction == terminology.direction.efferent:
+            return "pre_synaptic_cell"
+        raise ValueError(
+            "Unknown measurement direction {}.".format(self.direction))
+ 
 
 class PathwayMeasurement(WithFields):
     """
@@ -179,6 +188,12 @@ class PathwayMeasurement(WithFields):
         to cache for a given circuit.
         """,
         __default_value__={})
+    return_primary_info = Field(
+        """
+        Boolean indicating if the queries primary cell gid(s) should be
+        returned in the index.
+        """,
+        __default_value__=True)
 
     def _validate_fields(self):
         """..."""
@@ -298,7 +313,6 @@ class PathwayMeasurement(WithFields):
         # return\
         #     pool_cells.reindex(all_cells.index.to_numpy(np.int32))\
         #               .dropna()
-
     def _sample_target(self, circuit_model, adapter, query, size=None):
         """
         Primary and secondary cell samples.
@@ -414,6 +428,20 @@ class PathwayMeasurement(WithFields):
 
         return measured_values
 
+    def _prefix_primary_synaptic_side(self, query, measured_values):
+        """
+        Primary side cell information is just the gid of the cell,
+        either a single cell as a series or a group as a dataframe.
+        """
+        if isinstance(measured_values, (pd.Series, pd.DataFrame)):
+            if isinstance(measured_values.index, pd.MultiIndex):
+                measured_values.index.names =[
+                    ((query.primary_synaptic_side, "gid")
+                     if variable == self.label_gid_primary else variable)
+                    for variable in measured_values.index.names]
+
+        return measured_values
+
     def _prefix(self, query, variable):
         """..."""
         return\
@@ -454,7 +482,6 @@ class PathwayMeasurement(WithFields):
     #     except:
     #         return measured_values
     #     raise RuntimeError("Execution should not reach here.")
-
     def _batches(self, cells):
         """
         Batches of cells to process.
@@ -506,10 +533,19 @@ class PathwayMeasurement(WithFields):
                     by_soma_distance=self.by_soma_distance,
                     bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs)
+            if measurement is None:
+                yield None
+                continue
             yield\
-                self._prefix_secondary_synaptic_side(query, measurement)\
-                if measurement is not None else\
-                   None
+                self._prefix_primary_synaptic_side(
+                    query,
+                    self._prefix_secondary_synaptic_side(
+                        query,
+                        measurement))\
+                        if self.return_primary_info else\
+                           self._prefix_secondary_synaptic_side(
+                               query,
+                               measurement.droplevel(self.label_gid_primary))
 
     def get_soma_distance_bins(self,
             circuit_model,
@@ -553,7 +589,6 @@ class PathwayMeasurement(WithFields):
                     positions_to.values - positions_from.values,
                     axis=1))
 
-
     @lazyfield
     def label_gid_secondary(self):
         return\
@@ -573,8 +608,8 @@ class PathwayMeasurement(WithFields):
         LOGGER.debug(
             LOGGER.get_source_info(),
             "PathwayMeasurement._method(...)",
-            "primary target {}".format(target.primary.shape[0]),
-            "secondary.target {}".format(target.secondary.shape[0]))
+            "number primary.target {}".format(target.primary.shape[0]),
+            "number secondary.target {}".format(target.secondary.shape[0]))
         by_soma_distance =\
             kwargs.get("by_soma_distance", self.by_soma_distance)
         bin_size_soma_distance =\
@@ -618,51 +653,85 @@ class PathwayMeasurement(WithFields):
             return _gids(connections, self.label_gid_secondary)
 
         if isinstance(target.primary, pd.DataFrame):
-            connections =\
-                self.get_connections(
-                    circuit_model, adapter,
-                    target.primary.gid.to_numpy(np.int32),
-                    target.secondary.gid.to_numpy(np.int32))
-            variables_groupby =\
-                cell_properties_groupby +(
-                    [self.label_gid_primary, "soma_distance"]
-                    if by_soma_distance else
-                    [self.label_gid_primary])
-            columns_relevant =\
-                cell_properties_groupby + (
-                    [self.label_gid_primary, "soma_distance", self.variable]
-                    if by_soma_distance else
-                    [self.label_gid_primary, self.variable])
+            target_primary =\
+                target.primary.gid.to_numpy(np.int32)
         elif isinstance(target.primary, pd.Series):
             if not "gid" in target.primary.index:
                 raise ValueError(
-                    """
-                    `PathwayMeasurement._method(...)` got a pandas.Series
-                    as a `cell_info` that did not contain cell `gid`.
-                    """)
-            connections =\
-                self.get_connections(
-                    circuit_model, adapter,
-                    np.array([target.primary.gid]),
-                    target.secondary.gid.to_numpy(np.int32))
-            variables_groupby =\
-                cell_properties_groupby +(
-                    ["soma_distance"]
-                    if by_soma_distance else
-                    [])
-            columns_relevant =\
-                cell_properties_groupby +(
-                    ["soma_distance", self.variable] if by_soma_distance else
-                    [self.variable])
+                """
+                `PathwayMeasurement._method(...)` got a pandas.Series
+                as a `cell_info` that did not contain cell `gid`.
+                """)
+            target_primary =\
+                np.array([target.primary.gid])
         else:
             raise ValueError(
-                """
-                `PathwayMeasurement._method(...)` does not know how to handle
-                `cell_info` {}.
-                """.format(target.primary))
-
+            """
+            `PathwayMeasurement._method(...)` does not know how to handle
+            `cell_info` {}.
+            """.format(target.primary))
+        connections =\
+            self.get_connections(
+                circuit_model, adapter,
+                target_primary,
+                target.secondary.gid.to_numpy(np.int32))
         if connections.empty:
             return None
+
+        variables_groupby =\
+            cell_properties_groupby +(
+                [self.label_gid_primary, "soma_distance"]
+                if by_soma_distance else
+                [self.label_gid_primary])
+        columns_relevant =\
+            cell_properties_groupby + (
+                [self.label_gid_primary, "soma_distance", self.variable]
+                if by_soma_distance else
+                [self.label_gid_primary, self.variable])
+
+        # if isinstance(target.primary, pd.DataFrame):
+        #     connections =\
+        #         self.get_connections(
+        #             circuit_modelcircuit_model, adapter,
+        #             target.primary.gid.to_numpy(np.int32),
+        #             target.secondary.gid.to_numpy(np.int32))
+        #     variables_groupby =\
+        #         cell_properties_groupby +(
+        #             [self.label_gid_primary, "soma_distance"]
+        #             if by_soma_distance else
+        #             [self.label_gid_primary])
+        #     columns_relevant =\
+        #         cell_properties_groupby + (
+        #             [self.label_gid_primary, "soma_distance", self.variable]
+        #             if by_soma_distance else
+        #             [self.label_gid_primary, self.variable])
+        # elif isinstance(target.primary, pd.Series):
+        #     if not "gid" in target.primary.index:
+        #         raise ValueError(
+        #             """
+        #             `PathwayMeasurement._method(...)` got a pandas.Series
+        #             as a `cell_info` that did not contain cell `gid`.
+        #             """)
+        #     connections =\
+        #         self.get_connections(
+        #             circuit_model, adapter,
+        #             np.array([target.primary.gid]),
+        #             target.secondary.gid.to_numpy(np.int32))
+        #     variables_groupby =\
+        #         cell_properties_groupby +(
+        #             ["soma_distance"]
+        #             if by_soma_distance else
+        #             [])
+        #     columns_relevant =\
+        #         cell_properties_groupby +(
+        #             ["soma_distance", self.variable] if by_soma_distance else
+        #             [self.variable])
+        # else:
+        #     raise ValueError(
+        #         """
+        #         `PathwayMeasurement._method(...)` does not know how to handle
+        #         `cell_info` {}.
+        #         """.format(target.primary))
 
         primary_gids =\
             connections[self.label_gid_primary].to_numpy(np.int32)
@@ -674,7 +743,7 @@ class PathwayMeasurement(WithFields):
                    .assign(**{
                        self.label_gid_primary: primary_gids,
                        self.variable: self.value(connections)})
-                
+
         if by_soma_distance or self.filter_by_upper_bound_soma_distance:
             def _soma_distance(other_cells):
                 return\
@@ -715,11 +784,12 @@ class PathwayMeasurement(WithFields):
             value_groups = cells_connected
 
         summed_value_groups = value_groups.agg("sum")[self.variable]
-        try:
-             summed_value_groups =\
-                 summed_value_groups.droplevel(self.label_gid_primary)
-        except (KeyError, AttributeError, ValueError):
-            pass
+        
+        # try:
+        #      summed_value_groups =\
+        #          summed_value_groups.droplevel(self.label_gid_primary)
+        # except (KeyError, AttributeError, ValueError):
+        #     pass
 
         return summed_value_groups
 
