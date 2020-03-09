@@ -147,7 +147,7 @@ class StructuredAnalysis(
                     return\
                         self.sample_measurement(
                             circuit_model, adapter, **kwargs)
-                except (TypeError, AttributeError) as error_model_adapter:
+                except (TypeError, AttributeError, KeyError) as error_model_adapter:
                     try:
                         return\
                             self.sample_measurement(
@@ -358,6 +358,7 @@ class StructuredAnalysis(
         return self.report(
             author=author,
             phenomenon=self.phenomenon.label,
+            label=self.label,
             abstract=self.abstract,
             introduction=self.introduction(provenance_circuit)["content"],
             methods=self.methods(provenance_circuit)["content"],
