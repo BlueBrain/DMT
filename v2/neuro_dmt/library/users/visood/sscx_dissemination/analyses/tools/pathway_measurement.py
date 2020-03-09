@@ -272,6 +272,7 @@ class PathwayMeasurement(WithFields):
             pool  = getattr(target_pool, position_query)
 
             LOGGER.debug(
+                LOGGER.get_source_info(),
                 "PathwayMeasurement.get_target(...)",
                 "position_query {}".format(position_query),
                 "group: {}".format(group))
@@ -370,7 +371,7 @@ class PathwayMeasurement(WithFields):
         """
         Get connections...
         """
-        LOGGER.debug(
+        LOGGER.ignore(
             "PathwayMeasurement.get_connections(...)",
             "queried primary gids {}".format(len(gids_primary)),
             "queried secondary gids {}".format(len(gids_secondary)))
@@ -486,9 +487,19 @@ class PathwayMeasurement(WithFields):
         """
         Batches of cells to process.
         """
-        LOGGER.debug(
-            "PathwayMeasurement._batches(...)",
-            "cells {}".format(cells))
+        if isinstance(cells, pd.DataFrame):
+            mtypes = cells.mtype.unique()
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "PathwayMeasurement._batches(...)",
+                "cell mtypes {}".format(mtypes))
+        else:
+            mtype = cells.mtype
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "PathwayMeasurement._batches(...)",
+                "cell {}".format(cells))
+
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (cell for _, cell in cells.iterrows())
 
@@ -533,25 +544,45 @@ class PathwayMeasurement(WithFields):
                     by_soma_distance=self.by_soma_distance,
                     bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs)
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "measurement obtained: ".format(type(measurement)))
             if measurement is None:
                 yield None
                 continue
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "measurement obtained {}: ".format(measurement.shape),
+                "columns {}".format(measurement.name))
             if self.return_primary_info:
-                measurement =\
-                    measurement.reset_index()
+                # specifiers_secondary =\
+                #     measurement.index\
+                #                .to_frame()[self.specifiers_cell_type]\
+                #                .reset_index(drop=True)
                 specifiers_secondary =\
-                    measurement[
-                        self.specifiers_cell_type]\
-                        .reset_index(drop=True)
+                    pd.DataFrame({
+                        level: measurement.index.get_level_values(level).values
+                        for level in self.specifiers_cell_type})
                 values =\
-                    measurement[self.variable].values
-                gids_primary =\
-                    measurement.reset_index()[self.label_gid_primary]
-                specifiers_primary =\
+                    measurement.values
+                _gids_primary =\
+                    measurement.index.get_level_values(self.label_gid_primary)\
+                                     .to_numpy(np.int32)
+                _specifiers_primary =\
                     adapter.get_cells(circuit_model)\
-                           .iloc[gids_primary]\
+                           .iloc[_gids_primary]\
                            [self.specifiers_cell_type]\
                            .reset_index(drop=True)
+                gids_primary =\
+                    pd.Series(_gids_primary, name="gid")
+                specifiers_primary =\
+                    pd.concat(
+                        [gids_primary, _specifiers_primary],
+                        axis=1)
+                LOGGER.debug(
+                    LOGGER.get_source_info(),
+                    "specifiers primary {}".format(specifiers_primary.head()))
+
                 index =\
                     pd.concat(
                         [specifiers_primary, specifiers_secondary],
@@ -626,11 +657,22 @@ class PathwayMeasurement(WithFields):
             cell_properties_groupby,
             **kwargs):
         """..."""
+        def _get_size(t):
+            if isinstance(t, pd.DataFrame):
+                return t.shape[0]
+            if isinstance(t, pd.Series):
+                return 1
+            return np.nan
+
+        size_target =\
+            Record(primary=_get_size(target.primary),
+                   secondary=_get_size(target.secondary))
         LOGGER.debug(
             LOGGER.get_source_info(),
             "PathwayMeasurement._method(...)",
-            "number primary.target {}".format(target.primary.shape[0]),
-            "number secondary.target {}".format(target.secondary.shape[0]))
+            "number primary.target {}".format(size_target.primary),
+            "number secondary.target {}".format(size_target.secondary))
+
         by_soma_distance =\
             kwargs.get("by_soma_distance", self.by_soma_distance)
         bin_size_soma_distance =\
@@ -783,7 +825,7 @@ class PathwayMeasurement(WithFields):
         cells_connected =\
             cells_connected[columns_relevant]
 
-        LOGGER.debug(
+        LOGGER.ignore(
             LOGGER.get_source_info(),
             "PathwayMeasurement._method(...)",
             "variables_groupby {}".format(variables_groupby),
