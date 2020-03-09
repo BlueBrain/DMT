@@ -283,10 +283,14 @@ class StructuredAnalysis(Analysis):
     @property
     def _parameters(self):
         if self.measurement_parameters is not NOT_PROVIDED:
-            return Parameters(self.measurement_parameters)
+            return\
+                Parameters(self.measurement_parameters)\
+                if not isinstance(self.measurement_parameters, Parameters)\
+                   else self.measurement_parameters
         elif self.reference_data is not NOT_PROVIDED:
-            return Parameters(self.reference_data.drop(
-                columns=[self.phenomenon]))
+            return\
+                Parameters(
+                    self.reference_data.drop(columns=[self.phenomenon]))
         else:
             raise ValueError(
                 """
