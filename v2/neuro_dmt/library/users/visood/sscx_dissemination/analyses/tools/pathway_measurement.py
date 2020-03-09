@@ -2,11 +2,12 @@
 Measure pathways.
 """
 from enum import Enum
+from tqdm import tqdm
 from collections import namedtuple, Iterable, Mapping
 import numpy as np
 import pandas as pd
 from dmt.tk.collections import head, Record
-from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
+from dmt.tk.field import NA, Field, LambdaField, lazyfield, WithFields
 from dmt.tk.journal.logger import Logger 
 from neuro_dmt import terminology
 from .import count_number_calls
@@ -187,7 +188,7 @@ class PathwayMeasurement(WithFields):
         Mapping <circuit -> Record(primary, secondary) >
         to cache for a given circuit.
         """,
-        __default_value__={})
+        __default_value__=NA)
     return_primary_info = Field(
         """
         Boolean indicating if the queries primary cell gid(s) should be
@@ -221,51 +222,70 @@ class PathwayMeasurement(WithFields):
     def filter_by_upper_bound_soma_distance(self):
         return not np.isnan(self.upper_bound_soma_distance)
 
-    def _load_target(self, circuit_model, adapter):
+
+    def _default_target(self, adapter, circuit_model):
+        """
+        Default target is all cell.
+        """
+        if not self.using_subset_of_cells:
+            all_cells =\
+                adapter.get_cells(circuit_model)\
+                       .assign(group_id="Ungrouped")
+            return\
+                Record(primary=all_cells,
+                       secondary=all_cells)
+
+        def _subset_cells(group_id, cell_type):
+            cells =\
+                adapter.get_cells(circuit_model, **cell_type)
+            n_cells =\
+                np.int32(self.fraction_circuit_cells * cells_shape[0])
+            return\
+                cells.sample(n_cells).assign(group=group_id)
+        cell_types =\
+            adapter.get_cell_types(circuit_model, self.specifiers_cell_type)
+        pool_cells =\
+            pd.concat([
+                _subset_cells(group_id, cell_type)
+                for group_id, cell_type in cell_types.iterrows()])
+        self.cell_counts[circuit_model] =\
+            cell_types.assign(number=pool_cells.group.value_counts())\
+                      .set_index(self.specifiers_cell_type)\
+                      .number
+        return\
+            Record(primary=pool_cells, secondary=pool_cells)
+
+    def _load_target(self, adapter, circuit_model):
         """
         Load cells...
         """
-        if circuit_model not in self.target:
-            if not self.using_subset_of_cells:
-                all_cells =\
-                    adapter.get_cells(circuit_model)
-                self.target[circuit_model] =\
-                    Record(primary=all_cells.assign(group="Ungrouped"),
-                           secondary=all_cells.assign(group="Ungrouped"))
-            else:
-                def _subset_cells(group_id, cell_type):
-                    cells =\
-                        adapter.get_cells(
-                            circuit_model, **cell_type)
-                    n_cells =\
-                        np.int32(
-                            self.fraction_circuit_cells * cells.shape[0])
-                    return\
-                        cells.sample(n_cells)\
-                             .assign(group=group_id)
-                
-                cell_types =\
-                    adapter.get_cell_types(
-                        circuit_model, self.specifiers_cell_type)
-                pool_cells =\
-                    pd.concat([
-                        _subset_cells(group_id, cell_type)
-                        for group_id, cell_type in cell_types.iterrows()])
-                self.target[circuit_model] =\
-                    Record(primary=pool_cells,
-                           secondary=pool_cells)
-                self.cell_counts[circuit_model] =\
-                    cell_types.assign(number=pool_cells.group.value_counts())\
-                              .set_index(self.specifiers_cell_type)\
-                              .number
-
-        return self.target[circuit_model]
-
-    def get_target(self, circuit_model, adapter, query):
+        target =\
+            self.target(adapter, circuit_model)\
+            if self.target is not NA else\
+               self._default_target(adapter, circuit_model)
+        if isinstance(target, (pd.Series, pd.DataFrame)):
+            return\
+                Record(primary=target, secondary=target)
+        if not (hasattr(target, "primary") and hasattr(target, "secondary")):
+            raise TypeError(
+                "Circuit model target does not have primary and secondary.")
+        primary_target =\
+            target.primary\
+            if isinstance(target.primary, (pd.Series, pd.DataFrame)) else\
+               target.primary(adapter, circuit_model)
+        secondary_target =\
+            target.secondary \
+            if isinstance(target.secondary, (pd.Series, pd.DataFrame)) else\
+               target.secondary(adapter, circuit_model)
+        return\
+            Record(primary=primary_target,
+                   secondary=secondary_target)
+            
+    def get_target(self, adapter, circuit_model, query):
         """
         Population of cells in the circuit model to work with.
         """
-        target_pool = self._load_target(circuit_model, adapter)
+        target_pool = self._load_target(adapter, circuit_model)
 
         def _get(position_query):
             group = getattr(query.cell_group, position_query)
@@ -314,7 +334,7 @@ class PathwayMeasurement(WithFields):
         # return\
         #     pool_cells.reindex(all_cells.index.to_numpy(np.int32))\
         #               .dropna()
-    def _sample_target(self, circuit_model, adapter, query, size=None):
+    def _sample_target(self, adapter, circuit_model, query, size=None):
         """
         Primary and secondary cell samples.
         """
@@ -325,7 +345,7 @@ class PathwayMeasurement(WithFields):
             self.sampling_methodology ==\
             terminology.sampling_methodology.exhaustive
         target =\
-            self.get_target(circuit_model, adapter, query)
+            self.get_target(adapter, circuit_model, query)
 
         def _sample(cells):
             if exhaustive and size is None:
@@ -450,7 +470,8 @@ class PathwayMeasurement(WithFields):
             if variable in self.specifiers_cell_type\
                else variable
 
-    # def sample_one(self, circuit_model, adapter,
+
+    # def sample_one(self, adapter, circuit_model,
     #         pre_synaptic_cell=None,
     #         post_synaptic_cell=None,
     #         **kwargs):
@@ -514,7 +535,7 @@ class PathwayMeasurement(WithFields):
                 for (begin_batch, end_batch) in batches)
 
     def sample(self,
-            circuit_model, adapter,
+            adapter, circuit_model,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
             **kwargs):
@@ -533,9 +554,14 @@ class PathwayMeasurement(WithFields):
                 direction=self.direction)
         target =\
             self._sample_target(
-                circuit_model, adapter, query)
+                adapter, circuit_model, query)
 
-        for batch in self._batches(target.primary):
+        batches =\
+            self._batches(target.primary)
+        for n_batch, batch in tqdm(enumerate(batches)):
+            LOGGER.info(
+                LOGGER.get_source_info(),
+                "batch {} / {}: {}".format(n_batch, len(batches), batch))
             measurement =\
                 self._method(
                     circuit_model, adapter,
@@ -856,7 +882,7 @@ class PathwayMeasurement(WithFields):
 
         return summed_value_groups
 
-    def collect(self, circuit_model, adapter,
+    def collect(self, adapter, circuit_model,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
             **kwargs):
@@ -874,7 +900,7 @@ class PathwayMeasurement(WithFields):
         except TypeError:
             return pd.Series(listed_sample, name=self.variable)
 
-    def summary(self, circuit_model, adapter,
+    def summary(self, adapter, circuit_model,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
             aggregators=None,
