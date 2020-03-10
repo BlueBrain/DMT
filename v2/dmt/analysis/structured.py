@@ -75,7 +75,17 @@ class StructuredAnalysis(Analysis):
         and the experimental measurement reported in this analysis.
         """,
         __as__=Section.methods,
-        __default_value__=Section.methods("Not Provided."))
+       __default_value__=Section.methods("Not Provided."))
+    measurement_parameters = Field(
+        """
+        An object providing a collection of parameters to measure with.
+        This object may be of  type:
+        1. either `pandas.DataFrame`,
+        2. or `adapter, model -> Collection<MeasurementParameters>`,
+        3. or dmt.tk.Parameters.
+        """,
+        __as__=Parameters,
+        __default_value__=nothing)
     sampling_methodology = Field(
         """
         A tag indicating whether this analysis will make measurements on
@@ -103,16 +113,6 @@ class StructuredAnalysis(Analysis):
         This field may also be implemented as a method in a subclass.
         """,
         __required__=False)
-    measurement_parameters = Field(
-        """
-        An object providing a collection of parameters to measure with.
-        This object may be of  type:
-        1. either `pandas.DataFrame`,
-        2. or `adapter, model -> Collection<MeasurementParameters>`,
-        3. or dmt.tk.Parameters.
-        """,
-        __as__=Parameters,
-        __default_value__=nothing)
     measurement_collection = Field(
         """
         A callable that will collect measurements passed as an iterable.
