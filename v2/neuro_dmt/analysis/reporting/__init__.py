@@ -3,9 +3,10 @@ Infrastructure for neuroscience analyses reports.
 """
 
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, Generator
 from collections import OrderedDict
 from Cheetah.Template import Template
+from dmt.tk.utils import timestamp
 from dmt.tk.field import Field, LambdaField, lazyfield
 from dmt.tk.journal import Logger
 from dmt.tk.reporting import Report, Reporter
@@ -442,6 +443,45 @@ class CheetahReporter(Reporter):
         ~            posted.
         strict : If `True`, a backup text report will not be generated.
         """
+        if isinstance(report, Generator):
+            output_uri = {}
+            if with_time_stamp:
+                daytime = timestamp()
+                time_stamp =\
+                    os.path.join(
+                        daytime.day, daytime.time)
+            else:
+                time_stamp = None
+
+            for subreport in report:
+                if output_subfolder is not None:
+                    folder_subreport =\
+                        os.path.join(subreport.label, output_subfolder)
+                else:
+                    folder_subreport=\
+                        subreport.label
+                output_uri[subreport.label] =\
+                    self.post(
+                        subreport.sub_report,
+                        template=template,
+                        path_output_folder=path_output_folder,
+                        output_subfolder=folder_subreport,
+                        report_file_name=report_file_name,
+                        strict=strict,
+                        with_time_stamp=time_stamp,
+                        path_main_report=path_main_report,
+                        title_main_report=title_main_report,
+                        section_index=section_index,
+                        chapter_index=chapter_index,
+                        *args, **kwargs)
+                LOGGER.info(
+                    LOGGER.get_source_info(),
+                    "Post sub-report",
+                    "\t {}: {}".format(
+                        subreport.label, output_uri[subreport.label]))
+
+            return output_uri
+
         LOGGER.debug(
             """.post(report={},
                    template={},

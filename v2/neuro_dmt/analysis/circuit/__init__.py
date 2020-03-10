@@ -12,7 +12,7 @@ from dmt import analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, Record
 from dmt.tk.author import Author
-from dmt.tk.utils.string_utils import paragraphs
+from dmt.tk.utils.string_utils import paragraphs, make_label
 from neuro_dmt import terminology
 from neuro_dmt.analysis.reporting import\
     CircuitAnalysisReport
@@ -98,15 +98,19 @@ class StructuredAnalysis(
             if isinstance(parameter_label, str):
                 return parameter_label
             if isinstance(parameter_label, tuple):
-                return '_'.join(parameter_label)
+                return '-'.join(parameter_label)
             raise TypeError(
                 "Parameter labels should be either string or tuple of strings.")
 
-        return "{}_by_{}".format(
-            self.phenomenon.label,
-            '_'.join(
-                _as_label(parameter_label) 
-                for parameter_label in self.names_measurement_parameters))
+        names_parameters =\
+            self.names_measurement_parameters
+        return\
+            self.phenomenon.label\
+            if not self.names_measurement_parameters else\
+               "-by-".join((
+                   self.phenomenon.label,
+                   '_'.join(_as_label(label) 
+                            for label in self.names_measurement_parameters)))
 
     def _get_adapter_measurement_method(self, adapter):
         """..."""
@@ -234,14 +238,15 @@ class StructuredAnalysis(
         """
         Compute the measurement, on parameter set at a time...
         """
+        get_measurement =\
+            self.get_measurement_method(adapter)
+
         for parameter_set in tqdm(self.parameter_sets(adapter, circuit_model)):
             measured_value =\
-                self.get_measurement(
+                get_measurement(
                     circuit_model,
-                    adapter,
-                    *args,
-                    parameter_set=parameter_set,
-                    **kwargs)
+                    sampling_methodology=self.sampling_methodology,
+                    **parameter_set, **kwargs)
 
             if not isinstance(measured_value, pd.Series):
                 try:
@@ -262,17 +267,21 @@ class StructuredAnalysis(
             indexes =\
                 ["dataset"] + list(parameter_set.keys()) + indexes
 
-            yield\
+            data =\
                 pd.DataFrame(measured_value)\
                   .assign(**parameter_set)\
                   .assign(dataset=adapter.get_label(circuit_model))\
                   .set_index(indexes)
+            yield\
+                Record(
+                    parameter_set=parameter_set,
+                    data=data,
+                    method=get_measurement.__method__)
             
     def get_measurement(self,
             circuit_model,
             adapter=None,
             *args,
-            parameter_set=None,
             **kwargs):
         """
         Get a statistical measurement.
@@ -281,13 +290,6 @@ class StructuredAnalysis(
             self._resolve_adapter(adapter)
         get_measurement =\
             self.get_measurement_method(adapter)
-
-        if parameter_set is not None:
-            return\
-                get_measurement(
-                    circuit_model,
-                    sampling_methodology=self.sampling_methodology,
-                    **parameter_set, **kwargs)
 
         measured_values =\
             self.measurement_collection(
@@ -404,6 +406,7 @@ class StructuredAnalysis(
                 caption=caption)
 
     def get_report(self,
+            label,
             measurement,
             author=Author.anonymous,
             figures=None,
@@ -431,7 +434,7 @@ class StructuredAnalysis(
         return self.report(
             author=author,
             phenomenon=self.phenomenon.label,
-            label=self.label,
+            label=label,
             abstract=self.abstract,
             introduction=self.introduction(provenance_circuit)["content"],
             methods=self.methods(provenance_circuit)["content"],
@@ -458,19 +461,43 @@ class StructuredAnalysis(
         Make this `Analysis` masquerade as a function.
 
         """
-        measurement =\
-            self.get_measurement(
-                model,
-                adapter=adapter,
-                **kwargs)
         reference_data =\
             kwargs.pop(
                 "reference_data",
                 self.reference_data)
         provenance_circuit =\
             adapter.get_provenance(model)
+
+        def _get_label(measurement_serial):
+            return\
+                '-'.join(
+                    "{}_{}".format(make_label(key), make_label(value))
+                    for key, value in measurement_serial.parameter_set.items())
+
+        if self.processing_methodology == terminology.processing_methodology.serial:
+            return (
+                Record(
+                    label=_get_label(measurement),
+                    sub_report=self.get_report(
+                        self.label,
+                        measurement.data,
+                        author=author,
+                        figures=self.get_figures(
+                            measurement,
+                            reference_data,
+                            caption=measurement.method),
+                        reference_data=reference_data,
+                        provenance_circuit=provenance_circuit))
+                for measurement in self._get_measurement_serially(
+                        model, adapter, **kwargs))
+        measurement =\
+            self.get_measurement(
+                model,
+                adapter=adapter,
+                **kwargs)
         report =\
             self.get_report(
+                self.label,
                 measurement.data,
                 author=author,
                 figures=self.get_figures(
