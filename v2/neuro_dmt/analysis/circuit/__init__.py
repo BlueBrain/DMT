@@ -4,12 +4,13 @@ Brain circuit analyses and validations.
 
 import os
 from tqdm import tqdm
+import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection\
     import primitive_type as primitive_type_measurement_collection
 from dmt import analysis
 from dmt.model.interface import InterfaceMeta
-from dmt.tk.field import NA, Field, LambdaField, lazyfield
+from dmt.tk.field import NA, Field, LambdaField, lazyfield, Record
 from dmt.tk.author import Author
 from dmt.tk.utils.string_utils import paragraphs
 from neuro_dmt import terminology
@@ -48,7 +49,22 @@ class StructuredAnalysis(
         or on the entire population. The circuit constituents population to be
         measured will be determined by a query.
         """,
-        __default_value__=terminology.sampling_methodology.random)
+        __default_value__=terminology.sampling_methodology.random) 
+    processing_methodology = Field(
+        """
+        How to make measurements?
+        `batch` :: Process all the parameter sets as a batch.
+        ~          A single measurement on all the parameter sets will be
+        ~          dispatched to the plotter and attached to the report.
+        ~          Thus a single report will be saved at the end of the
+        ~          analysis run.
+        `serial` :: Process a single parameter set at a time.
+        ~           For each parameter set, make a measurement, generate a
+        ~           figure and attach to the report.
+        ~           Save the report and return a dict mapping parameter set
+        ~           to its report.
+        """,
+        __default_value__=terminology.processing_methodology.batch)
     phenomenon = Field(
         """
         An object providing the phenomenon analyzed.
@@ -165,17 +181,20 @@ class StructuredAnalysis(
 
             try:
                 _adapter_measurement_method.__method__ =\
-                    paragraphs(
-                        self.sample_measurement.__method__)
+                    paragraphs(self.sample_measurement.__method__)
+                        
             except AttributeError:
                 _adapter_measurement_method.__method__ =\
-                    "Not provided in the sample measurement method."
+                    "Measurement method description not provided."
 
             return\
                 _adapter_measurement_method
         else:
-            return\
+            method =\
                 self._get_adapter_measurement_method(adapter)
+            if not hasattr(method, "__method__"):
+                method.__method__ =\
+                    "Measurement method description not provided."
 
         raise RuntimeError(
             "Unreachable point in code.")
@@ -193,45 +212,99 @@ class StructuredAnalysis(
             return NA
         raise RuntimeError("Execution cannot reach here.")
 
+
+    def parameter_sets(self,
+            adapter,
+            circuit_model):
+        """
+        Get parameter sets from self.Parameters
+        """
+        using_random_samples=\
+            self.sampling_methodology == terminology.sampling_methodology.random
+        return\
+            self.measurement_parameters(
+                    adapter,
+                    circuit_model,
+                    sample_size=self.sample_size if using_random_samples else 1)
+
+    def _get_measurement_serially(self,
+            circuit_model,
+            adapter,
+            *args, **kwargs):
+        """
+        Compute the measurement, on parameter set at a time...
+        """
+        for parameter_set in tqdm(self.parameter_sets(adapter, circuit_model)):
+            measured_value =\
+                self.get_measurement(
+                    circuit_model,
+                    adapter,
+                    *args,
+                    parameter_set=parameter_set,
+                    **kwargs)
+
+            if not isinstance(measured_value, pd.Series):
+                try:
+                    measured_value =\
+                        pd.DataFrame(
+                            {self.phenomenon.label: measured_value})
+                except ValueError:
+                    measured_value =\
+                        pd.DataFrame(
+                            {self.phenomenon.label: measured_value},
+                            index=[0])
+                    indexes = []
+            else:
+                indexes = measured_value.index.names
+                measured_value =\
+                    measured_value.reset_index()
+
+            indexes =\
+                ["dataset"] + list(parameter_set.keys()) + indexes
+
+            yield\
+                pd.DataFrame(measured_value)\
+                  .assign(**parameter_set)\
+                  .assign(dataset=adapter.get_label(circuit_model))\
+                  .set_index(indexes)
+            
     def get_measurement(self,
             circuit_model,
             adapter=None,
-            *args, **kwargs):
+            *args,
+            parameter_set=None,
+            **kwargs):
         """
         Get a statistical measurement.
         """
         adapter =\
             self._resolve_adapter(adapter)
-        using_random_samples=\
-            self.sampling_methodology == terminology.sampling_methodology.random
-        parameter_values =\
-            self.measurement_parameters(
-                    adapter,
-                    circuit_model,
-                    sample_size=self.sample_size if using_random_samples else 1)
         get_measurement =\
             self.get_measurement_method(adapter)
-        measured_values = self\
-            .measurement_collection(
+
+        if parameter_set is not None:
+            return\
+                get_measurement(
+                    circuit_model,
+                    sampling_methodology=self.sampling_methodology,
+                    **parameter_set, **kwargs)
+
+        measured_values =\
+            self.measurement_collection(
                 (p, get_measurement(circuit_model,
                                     sampling_methodology=self.sampling_methodology,
                                     **p, **kwargs))
-                for p in tqdm(parameter_values))\
-            .rename(columns={"value": self.phenomenon.label})
+                for p in tqdm(self.parameter_sets(adapter, circuit_model))
+            ).rename(columns={"value": self.phenomenon.label})
         measurement =\
             self.add_columns(
                 measured_values.reset_index(
                 ).assign(dataset=adapter.get_label(circuit_model)
                 ).set_index(["dataset"] + measured_values.index.names))
-
-        try:
-            method = get_measurement.__method__
-        except AttributeError:
-            method = "Measurement method description not provided."
-
-        return {
-            "data": measurement,
-            "method": method}
+        return\
+            Record(
+                data=measurement,
+                method=get_measurement.__method__)
 
     @lazyfield
     def description_reference_data(self):
@@ -323,7 +396,7 @@ class StructuredAnalysis(
         """
         plotting_data =\
             self.append_reference_data(
-                measurement_model["data"],
+                measurement_model.data,
                 reference_data)
         return\
             self.figures(
@@ -398,12 +471,12 @@ class StructuredAnalysis(
             adapter.get_provenance(model)
         report =\
             self.get_report(
-                measurement["data"],
+                measurement.data,
                 author=author,
                 figures=self.get_figures(
                     measurement,
                     reference_data,
-                    caption=measurement["method"]),
+                    caption=measurement.method),
                 reference_data=reference_data,
                 provenance_circuit=provenance_circuit)
 
