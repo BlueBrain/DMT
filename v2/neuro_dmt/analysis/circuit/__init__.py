@@ -6,8 +6,10 @@ import os
 from tqdm import tqdm
 import pandas as pd
 from dmt.tk.journal import Logger
-from dmt.data.observation.measurement.collection\
-    import primitive_type as primitive_type_measurement_collection
+from dmt.data.observation.measurement.collection import\
+    primitive_type as primitive_type_measurement_collection
+from dmt.data.observation.measurement.collection import\
+    series_type as series_type_measurement_collection
 from dmt import analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, Record
@@ -241,40 +243,41 @@ class StructuredAnalysis(
         get_measurement =\
             self.get_measurement_method(adapter)
 
-        for parameter_set in tqdm(self.parameter_sets(adapter, circuit_model)):
+        for p in tqdm(self.parameter_sets(adapter, circuit_model)):
             measured_value =\
                 get_measurement(
                     circuit_model,
                     sampling_methodology=self.sampling_methodology,
-                    **parameter_set, **kwargs)
+                    **p, **kwargs)
+
+            if isinstance(measured_value, pd.DataFrame):
+                measured_value =\
+                    measured_value[self.phenomenon.label]
 
             if not isinstance(measured_value, pd.Series):
                 try:
                     measured_value =\
-                        pd.DataFrame(
-                            {self.phenomenon.label: measured_value})
+                        pd.Series(
+                            measured_value,
+                            name=self.phenomenon.label)
                 except ValueError:
                     measured_value =\
-                        pd.DataFrame(
-                            {self.phenomenon.label: measured_value},
-                            index=[0])
-                    indexes = []
-            else:
-                indexes = measured_value.index.names
-                measured_value =\
-                    measured_value.reset_index()
+                        pd.Series(
+                            [measured_value],
+                            name=self.phenomenon.label)
 
-            indexes =\
-                ["dataset"] + list(parameter_set.keys()) + indexes
+            measured_value =\
+                series_type_measurement_collection([(p, measured_value)]
+                ).rename(columns={"value": self.phenomenon.label})
 
             data =\
-                pd.DataFrame(measured_value)\
-                  .assign(**parameter_set)\
-                  .assign(dataset=adapter.get_label(circuit_model))\
-                  .set_index(indexes)
+                self.add_columns(
+                    measured_value.reset_index(
+                    ).assign(dataset=adapter.get_label(circuit_model)
+                    ).set_index(["dataset"] + measured_value.index.names))
             yield\
                 Record(
-                    parameter_set=parameter_set,
+                    parameter_set=p,
                     data=data,
                     method=get_measurement.__method__)
             

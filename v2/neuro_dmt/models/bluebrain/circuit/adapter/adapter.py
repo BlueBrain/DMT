@@ -617,6 +617,7 @@ class BlueBrainCircuitAdapter(WithFields):
             **query):
         """..."""
         LOGGER.debug(
+            LOGGER.get_source_info(),
             "Adapter get cells for query: ",
             "target {}".format(target),
             "{}".format(query))
