@@ -25,6 +25,3 @@ def Record(**kwargs):
             (WithFields,),
             attributes)
     return record_type(**kwargs)
-
-    
-
