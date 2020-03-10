@@ -711,7 +711,7 @@ class PathwayMeasurement(WithFields):
                by_soma_distance=by_soma_distance,
                bin_size_soma_distance=bin_size_soma_distance,
                **kwargs)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, KeyError):
             pass
 
         def _get_value(connections):

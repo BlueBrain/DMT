@@ -28,10 +28,135 @@ from  ..tools import count_number_calls, PathwayMeasurement
 LOGGER = Logger(client=__file__, level="DEBUG")
 
 
+class ConnectomeAdapterInterface(Interface):
+    """
+    Document the methods that will be used by this analysis to measure a
+    circuit model. Users must adapt the functionality of their circuit model
+    to provide the methods defined in this `Interface`. They may implement
+    their adapter as a class or a module.
+    """
+    def get_provenance(self, circuit_model):
+        """
+        Provide a dictionary with following keys:
+
+        1. label: that names the circuit model
+        2. authors: group that built the circuit model
+        3. release_date: when the circuit model was released in its final form
+        4. location: a URI from where the circuit model can be loaded
+        5. animal: whose brain was modeled
+        6  age: of the animal at which the brain was modeled
+        7. brain_region: name of the region in the brain modeled
+        """
+        raise NotImplementedError
+
+    def get_brain_regions(self, circuit_model):
+        """
+        A list of named regions in the `circuit_model`.
+        """
+        raise NotImplementedError
+
+    def get_layers(self, circuit_model):
+        """
+        A list of layers in the `circuit_model`
+        """
+        raise NotImplementedError
+
+    def get_mtypes(self, circuit_model):
+        """
+        Get a 1D numpy array that provides the mtypes in the circuit model.
+
+        Arugments
+        ---------------
+        circuit_model :: The circuit model to analyze.
+        """
+        raise NotImplementedError
+
+    def get_pathways(self,
+            circuit_model=None,
+            pre_synaptic_cell_type=None,
+            post_synaptic_cell_type=None):
+        """
+        Arguments
+        ------------
+        pre_synaptic_cell_type ::  An object describing the group of
+        ~  pre-synaptic cells to be investigated in these analyses.
+        ~  Interpretation of the data in this object 
+        ~  will be  delegated to the adapter used for the model analyzed.
+        ~  Here are some guidelines when this object may is a dictionary. 
+        ~  Such a dictionary will have cell properties such as region, ,
+        ~  layer mtype,  and etype as keys. Each key may be given either a 
+        ~  single value or an iterable of values. Phenomena must be 
+        ~  evaluated for each of these values and collected as a 
+        ~  pandas.DataFrame.
+        post_synaptic_cell_type :: An object describing the group of
+        ~  post-synaptic cells to be investigated in these analyses.
+        ~  Interpretation of the data in this object 
+        ~  will be  delegated to the adapter used for the model analyzed.
+        ~  Here are some guidelines when this object may is a dictionary. 
+        ~  Such a dictionary will have cell properties such as region, ,
+        ~  layer mtype,  and etype as keys. Each key may be given either a 
+        ~  single value or an iterable of values. Phenomena must be 
+        ~  evaluated for each of these values and collected as a 
+        ~  pandas.DataFrame.
+
+        Returns
+        ------------
+        pandas.DataFrame with nested columns, with two columns
+        `pre_synaptic` and `post_synaptic` at the 0-th level.
+        Under each of these two columns should be one column each for the
+        cell properties specified in the `cell_group` when it is a set,
+        or its keys if a mapping.
+        ~   1. When `cell_group` is a set of cell properties, pathways
+        ~      between all possible values of these cell properties.
+        ~   2. When `cell_group` is a mapping, pathways between cell groups
+        ~      that satisfy the mapping's values.
+        """
+        raise NotImplementedError
+
+    def get_adjacency_list(self,
+            pre_synaptic_cells,
+            post_synaptic_cells,
+            upper_bound_soma_distance=None,
+            with_soma_distance=False):
+        """
+        Arguments
+        --------------
+        pre_synaptic_cells : pandas.dataframe
+        post_synaptic_cells : pandas.dataframe
+        
+        Returns
+        --------------
+        A generator of data-frames that provides values for individual
+        pairs `(pre_synaptic_cell, post_synaptic_cell)`.
+        """
+        raise NotImplementedError
+
+    def get_soma_distance(self,
+            circuit_model,
+            cell,
+            cell_group):
+        """
+        Soma distance of a cell from a group of cells.
+        """
+        raise NotImplementedError
+
+    def get_afferent_gids(self,
+            circuit_model,
+            post_synaptic_cell):
+        """
+        Get ids of the cells afferently connected to a post-synaptic cell.
+
+        """
+        raise NotImplementedError
+
+
 class ConnectomeAnalysesSuite(WithFields):
     """
     Analyze the connectome of a brain circuit model.
     """
+
+    AdapterInterface = ConnectomeAdapterInterface
+
     sample_size = Field(
         """
         Number of individual sample measurements for each set of parameter
@@ -58,128 +183,6 @@ class ConnectomeAnalysesSuite(WithFields):
         Post synaptic cell type for which pathways will be analyzed.
         """,
         lambda self: self.cell_mtypes)
-
-    class AdapterInterface(Interface):
-        """
-        Document the methods that will be used by this analysis to measure a
-        circuit model. Users must adapt the functionality of their circuit model
-        to provide the methods defined in this `Interface`. They may implement
-        their adapter as a class or a module.
-        """
-        def get_provenance(self, circuit_model):
-            """
-            Provide a dictionary with following keys:
-            
-            1. label: that names the circuit model
-            2. authors: group that built the circuit model
-            3. release_date: when the circuit model was released in its final form
-            4. location: a URI from where the circuit model can be loaded
-            5. animal: whose brain was modeled
-            6  age: of the animal at which the brain was modeled
-            7. brain_region: name of the region in the brain modeled
-            """
-            raise NotImplementedError
-
-        def get_brain_regions(self, circuit_model):
-            """
-            A list of named regions in the `circuit_model`.
-            """
-            raise NotImplementedError
-
-        def get_layers(self, circuit_model):
-            """
-            A list of layers in the `circuit_model`
-            """
-            raise NotImplementedError
-
-        def get_mtypes(self, circuit_model):
-            """
-            Get a 1D numpy array that provides the mtypes in the circuit model.
-
-            Arugments
-            ---------------
-            circuit_model :: The circuit model to analyze.
-            """
-            raise NotImplementedError
-
-        def get_pathways(self,
-                circuit_model=None,
-                pre_synaptic_cell_type=None,
-                post_synaptic_cell_type=None):
-            """
-            Arguments
-            ------------
-            pre_synaptic_cell_type ::  An object describing the group of
-            ~  pre-synaptic cells to be investigated in these analyses.
-            ~  Interpretation of the data in this object 
-            ~  will be  delegated to the adapter used for the model analyzed.
-            ~  Here are some guidelines when this object may is a dictionary. 
-            ~  Such a dictionary will have cell properties such as region, ,
-            ~  layer mtype,  and etype as keys. Each key may be given either a 
-            ~  single value or an iterable of values. Phenomena must be 
-            ~  evaluated for each of these values and collected as a 
-            ~  pandas.DataFrame.
-            post_synaptic_cell_type :: An object describing the group of
-            ~  post-synaptic cells to be investigated in these analyses.
-            ~  Interpretation of the data in this object 
-            ~  will be  delegated to the adapter used for the model analyzed.
-            ~  Here are some guidelines when this object may is a dictionary. 
-            ~  Such a dictionary will have cell properties such as region, ,
-            ~  layer mtype,  and etype as keys. Each key may be given either a 
-            ~  single value or an iterable of values. Phenomena must be 
-            ~  evaluated for each of these values and collected as a 
-            ~  pandas.DataFrame.
-
-            Returns
-            ------------
-            pandas.DataFrame with nested columns, with two columns
-            `pre_synaptic` and `post_synaptic` at the 0-th level.
-            Under each of these two columns should be one column each for the
-            cell properties specified in the `cell_group` when it is a set,
-            or its keys if a mapping.
-            ~   1. When `cell_group` is a set of cell properties, pathways
-            ~      between all possible values of these cell properties.
-            ~   2. When `cell_group` is a mapping, pathways between cell groups
-            ~      that satisfy the mapping's values.
-            """
-            raise NotImplementedError
-
-        def get_adjacency_list(self,
-                pre_synaptic_cells,
-                post_synaptic_cells,
-                upper_bound_soma_distance=None,
-                with_soma_distance=False):
-            """
-            arguments
-            --------------
-            pre_synaptic_cells : pandas.dataframe
-            post_synaptic_cells : pandas.dataframe
-            
-            returns
-            --------------
-            a generator of data-frames that provides values for individual
-            pairs `(pre_synaptic_cell, post_synaptic_cell)`.
-            """
-            raise NotImplementedError
-
-        def get_soma_distance(self,
-                circuit_model,
-                cell,
-                cell_group):
-            """
-            Soma distance of a cell from a group of cells.
-            """
-            raise NotImplementedError
-
-        def get_afferent_gids(self,
-                circuit_model,
-                post_synaptic_cell):
-            """
-            Get ids of the cells afferently connected to a post-synaptic cell.
-
-            """
-            raise NotImplementedError
-
 
     def pre_synaptic_cell_type(self,
             circuit_model,
