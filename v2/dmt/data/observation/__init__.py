@@ -22,7 +22,7 @@ def get_variables(phenomenon):
     except AttributeError:
         try:
             return phenomenon["variables"]
-        except TypeError:
+        except (TypeError, AttributeError):
             return [get_label(phenomenon)]
         except KeyError:
             return [get_label(phenomenon)]
