@@ -561,7 +561,7 @@ class PathwayMeasurement(WithFields):
         for n_batch, batch in tqdm(enumerate(batches)):
             LOGGER.info(
                 LOGGER.get_source_info(),
-                "batch {} / {}: {}".format(n_batch, len(batches), batch))
+                "batch {}: {}".format(n_batch,  batch))
             measurement =\
                 self._method(
                     circuit_model, adapter,
