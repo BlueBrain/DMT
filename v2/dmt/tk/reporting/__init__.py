@@ -150,20 +150,27 @@ class Reporter(WithFields):
             os.path.join(
                 path_parent,
                 make_label(report.label))
+
+        if with_time_stamp:
+            if isinstance(with_time_stamp, str):
+                path_report_folder =\
+                    os.path.join(
+                        path_report_folder,
+                        with_time_stamp)
+            else:
+                daytime =\
+                    timestamp()
+                path_report_folder =\
+                    os.path.join(
+                        path_report_folder,
+                        daytime.day,
+                        daytime.time)
+
         if output_subfolder is not None:
             path_report_folder =\
                 os.path.join(
                     path_report_folder,
                     output_subfolder)
-        if with_time_stamp:
-            daytime =\
-                timestamp()
-            path_report_folder =\
-                os.path.join(
-                    path_report_folder,
-                    daytime.day,
-                    daytime.time)
-
         if not os.path.exists(path_report_folder):
             os.makedirs(path_report_folder)
         return path_report_folder
