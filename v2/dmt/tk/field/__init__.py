@@ -12,6 +12,7 @@ Further reading: https://docs.python.org/3/howto/descriptor.html
 from sys import stdout
 from abc import ABC
 from collections.abc import Mapping
+from dmt.tk.utils.nothing import NA
 from .field import Field, LambdaField
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
@@ -267,6 +268,17 @@ class WithFields:
         """
         return self.with_fields(**field_values)
 
+
+    def __getitem__(self, item):
+        """
+        Get item if it is a field.
+        """
+        if item in self.get_fields():
+            try:
+                return getattr(self, item)
+            except AttributeError:
+                return NA
+        raise AttributeError("{} is not a field".format(item))
 
 ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})
 
