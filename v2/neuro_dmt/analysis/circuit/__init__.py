@@ -14,6 +14,7 @@ from dmt import analysis
 from dmt.model.interface import InterfaceMeta
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, Record
 from dmt.tk.author import Author
+from dmt.tk.parameters import index_tree
 from dmt.tk.utils.string_utils import paragraphs, make_label
 from neuro_dmt import terminology
 from neuro_dmt.analysis.reporting import\
@@ -473,9 +474,12 @@ class StructuredAnalysis(
 
         def _get_label(measurement_serial):
             return\
-                '-'.join(
-                    "{}_{}".format(make_label(key), make_label(value))
-                    for key, value in measurement_serial.parameter_set.items())
+                '-'.join("{}_{}".format(make_label(key), make_label(value))
+                         for key, value in index_tree.as_unnested_dict(
+                                 measurement_serial.parameter_set.items()))\
+                   .replace('{', '')\
+                   .replace('}', '')\
+                   .replace("'", "")
 
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (
