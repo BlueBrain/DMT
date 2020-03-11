@@ -205,7 +205,7 @@ class BlueBrainCircuitModel(WithFields):
         """
         All the mtypes used in this circuit.
         """
-        return self.cells.mtype.unique().to_list()
+        return list(self.cells.mtype.unique())
 
     @lazyfield
     def etypes(self):
