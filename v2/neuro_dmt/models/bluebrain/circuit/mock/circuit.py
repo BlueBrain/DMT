@@ -16,7 +16,7 @@ from .connectome import Connectome
 from .composition import CircuitComposition
 from .builder import CircuitBuilder
 
-logger = Logger(client=__file__)
+LOGGER = Logger(client=__file__)
 
 class MockCircuit(WithFields):
     """
@@ -44,6 +44,9 @@ class MockCircuit(WithFields):
         composition :: An object parameterizing a circuit's composition.
         connectivity :: An object parameterizing a circuit's connectivity
         """
+
+        LOGGER.status("Build a Mock Circuit.")
+        
         circuit_builder =\
             CircuitBuilder(
                 composition=composition,
