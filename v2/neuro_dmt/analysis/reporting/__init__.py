@@ -474,11 +474,6 @@ class CheetahReporter(Reporter):
                         section_index=section_index,
                         chapter_index=chapter_index,
                         *args, **kwargs)
-                LOGGER.info(
-                    LOGGER.get_source_info(),
-                    "Post sub-report",
-                    "\t {}: {}".format(
-                        subreport.label, output_uri[subreport.label]))
 
             return output_uri
 
@@ -518,6 +513,7 @@ class CheetahReporter(Reporter):
                 output_subfolder=output_subfolder,
                 with_time_stamp=with_time_stamp)
         LOGGER.info(
+            LOGGER.get_source_info(),
             "Post report {} at".format(report.label),
             "\t {}".format(output_uri))
         base_file_name =\
