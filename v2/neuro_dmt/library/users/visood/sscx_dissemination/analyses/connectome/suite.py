@@ -28,7 +28,7 @@ from  ..tools import count_number_calls, PathwayMeasurement
 LOGGER = Logger(client=__file__, level="DEBUG")
 
 
-class ConnectomeAdapterInterface(Interface):
+class AdapterInterface(Interface):
     """
     Document the methods that will be used by this analysis to measure a
     circuit model. Users must adapt the functionality of their circuit model
@@ -155,7 +155,7 @@ class ConnectomeAnalysesSuite(WithFields):
     Analyze the connectome of a brain circuit model.
     """
 
-    AdapterInterface = ConnectomeAdapterInterface
+    AdapterInterface = AdapterInterface
 
     sample_size = Field(
         """

@@ -318,22 +318,12 @@ class PathwayMeasurement(WithFields):
             primary=_get("primary"),
             secondary=_get("secondary"))
 
-        # if isinstance(cell_group, (Mapping, pd.Series)):
-        #     all_cells =\
-        #         adapter.get_cells(circuit_model, **cell_group)
-        # elif isinstance(cell_group, pd.DataFrame):
-        #     all_cells =\
-        #         cell_group.copy()
-        # elif isinstance(cell_group, Iterable):
-        #     all_cells =\
-        #         adapter.get_cells(circuit_model, target=cell_group)
-        # else:
-        #     all_cells =\
-        #         adapter.get_cells(circuit_model)
+    def with_target(self, target):
+        """
+        Replace the target.
+        """
+        return self.with_fields(target=target)
 
-        # return\
-        #     pool_cells.reindex(all_cells.index.to_numpy(np.int32))\
-        #               .dropna()
     def _sample_target(self, adapter, circuit_model, query, size=None):
         """
         Primary and secondary cell samples.
@@ -509,11 +499,11 @@ class PathwayMeasurement(WithFields):
         Batches of cells to process.
         """
         if isinstance(cells, pd.DataFrame):
-            mtypes = cells.mtype.unique()
+            mtypes = list(cells.mtype.unique())
             LOGGER.debug(
                 LOGGER.get_source_info(),
                 "PathwayMeasurement._batches(...)",
-                "cell mtypes {}".format(mtypes))
+                "cell mtypes {}".format(len(mtypes)))
         else:
             mtype = cells.mtype
             LOGGER.debug(
@@ -561,7 +551,7 @@ class PathwayMeasurement(WithFields):
         for n_batch, batch in tqdm(enumerate(batches)):
             LOGGER.info(
                 LOGGER.get_source_info(),
-                "batch {}: {}".format(n_batch,  batch))
+                "batch {}: {}".format(n_batch,  batch.shape[0]))
             measurement =\
                 self._method(
                     circuit_model, adapter,
@@ -572,19 +562,17 @@ class PathwayMeasurement(WithFields):
                     **kwargs)
             LOGGER.debug(
                 LOGGER.get_source_info(),
-                "measurement obtained: ".format(type(measurement)))
+                "measurement obtained {}: ".format(type(measurement.shape)))
+
             if measurement is None:
                 yield None
                 continue
+
             LOGGER.debug(
                 LOGGER.get_source_info(),
                 "measurement obtained {}: ".format(measurement.shape),
                 "columns {}".format(measurement.name))
             if self.return_primary_info:
-                # specifiers_secondary =\
-                #     measurement.index\
-                #                .to_frame()[self.specifiers_cell_type]\
-                #                .reset_index(drop=True)
                 specifiers_secondary =\
                     pd.DataFrame({
                         level: measurement.index.get_level_values(level).values
@@ -778,50 +766,6 @@ class PathwayMeasurement(WithFields):
                 if by_soma_distance else
                 [self.label_gid_primary, self.variable])
 
-        # if isinstance(target.primary, pd.DataFrame):
-        #     connections =\
-        #         self.get_connections(
-        #             circuit_modelcircuit_model, adapter,
-        #             target.primary.gid.to_numpy(np.int32),
-        #             target.secondary.gid.to_numpy(np.int32))
-        #     variables_groupby =\
-        #         cell_properties_groupby +(
-        #             [self.label_gid_primary, "soma_distance"]
-        #             if by_soma_distance else
-        #             [self.label_gid_primary])
-        #     columns_relevant =\
-        #         cell_properties_groupby + (
-        #             [self.label_gid_primary, "soma_distance", self.variable]
-        #             if by_soma_distance else
-        #             [self.label_gid_primary, self.variable])
-        # elif isinstance(target.primary, pd.Series):
-        #     if not "gid" in target.primary.index:
-        #         raise ValueError(
-        #             """
-        #             `PathwayMeasurement._method(...)` got a pandas.Series
-        #             as a `cell_info` that did not contain cell `gid`.
-        #             """)
-        #     connections =\
-        #         self.get_connections(
-        #             circuit_model, adapter,
-        #             np.array([target.primary.gid]),
-        #             target.secondary.gid.to_numpy(np.int32))
-        #     variables_groupby =\
-        #         cell_properties_groupby +(
-        #             ["soma_distance"]
-        #             if by_soma_distance else
-        #             [])
-        #     columns_relevant =\
-        #         cell_properties_groupby +(
-        #             ["soma_distance", self.variable] if by_soma_distance else
-        #             [self.variable])
-        # else:
-        #     raise ValueError(
-        #         """
-        #         `PathwayMeasurement._method(...)` does not know how to handle
-        #         `cell_info` {}.
-        #         """.format(target.primary))
-
         primary_gids =\
             connections[self.label_gid_primary].to_numpy(np.int32)
         secondary_gids =\
@@ -874,12 +818,6 @@ class PathwayMeasurement(WithFields):
 
         summed_value_groups = value_groups.agg("sum")[self.variable]
         
-        # try:
-        #      summed_value_groups =\
-        #          summed_value_groups.droplevel(self.label_gid_primary)
-        # except (KeyError, AttributeError, ValueError):
-        #     pass
-
         return summed_value_groups
 
     def collect(self, adapter, circuit_model,

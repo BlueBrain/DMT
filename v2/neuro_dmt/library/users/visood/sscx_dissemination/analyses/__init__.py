@@ -1,13 +1,16 @@
 """
 Analyses, designed for the SSCx Dissemination circuits.
 """
+import sys
 import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from dmt.data.observation import measurement
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.parameters import Parameters
 from dmt.tk.plotting import Bars, LinePlot, HeatMap
+from dmt.tk.plotting.multi import MultiPlot
 from dmt.tk.field import NA, Record, Field, LambdaField, lazyfield, WithFields
 from neuro_dmt import terminology
 from neuro_dmt.models.bluebrain.circuit.atlas import\
@@ -20,13 +23,14 @@ from neuro_dmt.analysis.circuit import\
     BrainCircuitAnalysis
 from neuro_dmt.analysis.reporting import\
     CircuitProvenance,\
-    CircuitAnalysisReport
+    CircuitAnalysisReport,\
+    CheetahReporter
 from .tools import PathwayMeasurement
 from .composition import CompositionAnalysesSuite
 from .connectome import ConnectomeAnalysesSuite
 
 
-class SSCxDisseminationCircuit(WithFields):
+class SSCxDisseminationCircuits(WithFields):
     """
     A class to help with loading SSCx Dissemination circuits.
     """
@@ -114,13 +118,19 @@ class SSCxDisseminationCircuit(WithFields):
                 circuit_connectivity,
                 label="SSCxMockCircuit")
 
-    def circuit(self, circuit):
+    def get(self, circuit):
+
+        try:
+            circuit = getattr(self.variations, circuit)
+        except AttributeError:
+            pass
 
         if circuit == "MOCK":
             return self.mock_circuit
 
         path_circuit = self.path_circuit(circuit)
         variation_circuit = self._get_variation(circuit)
+
         return BlueBrainCircuitModel(
             path_circuit_data=self.path_circuit(circuit),
             provenance=CircuitProvenance(
@@ -149,7 +159,7 @@ class SSCxDisseminationCircuit(WithFields):
             mock="MOCK")
 
 
-class AnalysisParameterization(WithFields):
+class AnalysisSpec(WithFields):
     """
     Parameterize an analysis.
     "    """
