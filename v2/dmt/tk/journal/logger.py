@@ -47,7 +47,7 @@ class Logger:
     def err_print(
             *args, **kwargs):
         """Print to stderr"""
-        print(*args, file=sys.stdout, **kwargs)
+        print(*args, file=sys.stderr, **kwargs)
 
     def __init__(self,
             client,
@@ -159,7 +159,8 @@ class Logger:
 
     def _log_message(self,
             message,#: Message
-            color=None):
+            color=None,
+            out=sys.stderr):
         """Log message with a time stamp."""
         if message.level.value >= self._level.value:
             if self._in_file:
@@ -168,9 +169,8 @@ class Logger:
                         self._pretty_message_string(
                             message, color))
             else:
-                print(
-                    self._pretty_message_string(message, color),
-                    file=sys.stdout)
+                out.write(
+                    self._pretty_message_string(message, color))
         self._statistics[message.label] += 1
         return self._statistics
 
@@ -234,7 +234,8 @@ class Logger:
     def warning(self, *messages):
         """..."""
         return self._log_message(
-            Alert(*messages))
+            Alert(*messages),
+            out=sys.stderr)
     
     def beware(self, *messages):
         """..."""
@@ -246,6 +247,12 @@ class Logger:
         return self.warning(
             *messages)
     
+    def status(self, *messages):
+        """..."""
+        return self._log_message(
+            Status(*messages),
+            out=sys.stderr)
+
     def alert(self, *messages):
         """..."""
         return self.warning(
@@ -254,7 +261,8 @@ class Logger:
     def error(self, *messages):
         """..."""
         return self._log_message(
-            Error(*messages))
+            Error(*messages),
+            out=sys.stderr)
     
     def test(self, *messages):
         """..."""
@@ -271,13 +279,15 @@ class Logger:
         """..."""
         return self._log_message(
             Failure(*messages),
-            color=Color.FAIL)
+            color=Color.FAIL,
+            out=sys.stderr)
     
     def dialog(self, *messages):
         """..."""
         return self._log_message(
             Dialog(*messages),
-            color=Color.OKBLUE)
+            color=Color.OKBLUE,
+            out=sys.stdout)
     
     def assertion(self, success, *messages):
         """Assert, and then log 
@@ -285,7 +295,8 @@ class Logger:
            ~   success :: Boolean"""
         assert success, messages[0]
         return self._log_message(
-            Assertion(*messages))
+            Assertion(*messages),
+            out=sys.stderr)
     
 
 class LazyLogger(Logger):

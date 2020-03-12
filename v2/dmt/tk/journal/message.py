@@ -121,6 +121,11 @@ class DebugInfo(Message):
     level = Level.DEBUG
     label = "DEBUGINFO"
 
+class Status(Message):
+    """..."""
+    level = Level.PROD
+    label = "ALERT"
+
 class Alert(Message):
     """..."""
     level = Level.PROD
