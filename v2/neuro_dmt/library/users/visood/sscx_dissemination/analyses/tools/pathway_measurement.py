@@ -533,9 +533,12 @@ class PathwayMeasurement(WithFields):
         Sample of measurements.
 
         """
-        LOGGER.debug(
+        LOGGER.status(
             "PathwayMeasurement.sample(...)",
-            "with sampling methodology {}".format(self.sampling_methodology))
+            "with sampling methodology {}".format(self.sampling_methodology),
+            "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
+            "post-synaptic cell group {}".format(post_synaptic_cell_group ))
+           
         self._check_sampling_methodology(kwargs)
         query =\
             PathwayQuery(
@@ -549,9 +552,9 @@ class PathwayMeasurement(WithFields):
         batches =\
             self._batches(target.primary)
         for n_batch, batch in tqdm(enumerate(batches)):
-            LOGGER.info(
+            LOGGER.status(
                 LOGGER.get_source_info(),
-                "batch {}: {}".format(n_batch,  batch.shape[0]))
+                "batch {}: number cells:  {}".format(n_batch,  batch.shape[0]))
             measurement =\
                 self._method(
                     circuit_model, adapter,
@@ -560,18 +563,24 @@ class PathwayMeasurement(WithFields):
                     by_soma_distance=self.by_soma_distance,
                     bin_size_soma_distance=self.bin_size_soma_distance,
                     **kwargs)
-            LOGGER.debug(
-                LOGGER.get_source_info(),
-                "measurement obtained {}: ".format(type(measurement.shape)))
 
             if measurement is None:
+                LOGGER.status(
+                    LOGGER.get_source_info(),
+                    "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
+                    "post-synaptic cell group {}".format(post_synaptic_cell_group),
+                    "measurement obtained NONE")
                 yield None
                 continue
 
-            LOGGER.debug(
+            LOGGER.status(
                 LOGGER.get_source_info(),
-                "measurement obtained {}: ".format(measurement.shape),
-                "columns {}".format(measurement.name))
+                "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
+                "post-synaptic cell group {}".format(post_synaptic_cell_group),
+                "measurement obtained {}".format(type(measurement)),
+                "\t{}".format(measurement.name),
+                "\t shape {}".format(measurement.shape))
+
             if self.return_primary_info:
                 specifiers_secondary =\
                     pd.DataFrame({
@@ -595,7 +604,10 @@ class PathwayMeasurement(WithFields):
                         axis=1)
                 LOGGER.debug(
                     LOGGER.get_source_info(),
-                    "specifiers primary {}".format(specifiers_primary.head()))
+                    "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
+                    "post-synaptic cell group {}".format(post_synaptic_cell_group),
+                    "specifiers primary: {}".format(specifiers_primary.columns),
+                    "size {}".format(specifiers_primary.shape))
 
                 index =\
                     pd.concat(
@@ -818,25 +830,37 @@ class PathwayMeasurement(WithFields):
 
         summed_value_groups = value_groups.agg("sum")[self.variable]
         
-        return summed_value_groups
+        return summed_value_groups.fillna(0.)
 
-    def collect(self, adapter, circuit_model,
-            pre_synaptic_cell_group={},
-            post_synaptic_cell_group={},
-            **kwargs):
-        """"..."""
-        listed_sample =[
-            m for m in
-            self.sample(
-                circuit_model, adapter,
-                pre_synaptic_cell_group=pre_synaptic_cell_group,
-                post_synaptic_cell_group=post_synaptic_cell_group,
-                **kwargs)
+    def collect(self,
+            aggregated=lambda sample: sample):
+        """..."""
+
+        def _collect(adapter, circuit_model,
+                pre_synaptic_cell_group={},
+                post_synaptic_cell_group={},
+                **kwargs):
+            """"..."""
+            listed_sample =[
+                aggregated(m) for m in
+                self.sample(
+                    circuit_model, adapter,
+                    pre_synaptic_cell_group=pre_synaptic_cell_group,
+                    post_synaptic_cell_group=post_synaptic_cell_group,
+                    **kwargs)
             if m is not None]
-        try:
-            return pd.concat(listed_sample)
-        except TypeError:
-            return pd.Series(listed_sample, name=self.variable)
+            try:
+                result = pd.concat(listed_sample)
+            except TypeError:
+                result = pd.Series(listed_sample, name=self.variable)
+                
+                LOGGER.status(
+                    LOGGER.get_source_info(),
+                    "Collected measurement of size: {}".format(result.shape))
+                
+            return result
+
+        return _collect
 
     def summary(self, adapter, circuit_model,
             pre_synaptic_cell_group={},

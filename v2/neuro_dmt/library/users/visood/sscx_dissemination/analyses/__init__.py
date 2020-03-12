@@ -26,8 +26,8 @@ from neuro_dmt.analysis.reporting import\
     CircuitAnalysisReport,\
     CheetahReporter
 from .tools import PathwayMeasurement
-from .composition import CompositionAnalysesSuite
-from .connectome import ConnectomeAnalysesSuite
+from .import composition
+from .import connectome
 
 
 class SSCxDisseminationCircuits(WithFields):
