@@ -7,6 +7,7 @@ Custom collection classes and methods.
 Utilities to deal with collections.
 """
 
+from collections.abc import Iterable
 import collections
 from itertools import *
 
@@ -43,7 +44,7 @@ def check(xs):
     Check xs is a collection.
     """
     return(
-        isinstance(xs, collections.Iterable) and
+        isinstance(xs, Iterable) and
         not isinstance(xs, (str, bytes)) )
 
 def get_list(head, *tail):
