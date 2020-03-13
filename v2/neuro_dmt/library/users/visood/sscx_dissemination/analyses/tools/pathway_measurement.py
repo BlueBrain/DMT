@@ -174,6 +174,7 @@ class Pandamonad(WithFields):
         return value.apply(operation, axis=1)
 
 
+
 class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
@@ -311,8 +312,7 @@ class PathwayMeasurement(WithFields):
     def filter_by_upper_bound_soma_distance(self):
         return not np.isnan(self.upper_bound_soma_distance)
 
-
-    def _default_target(self, adapter, circuit_model):
+    def _default_target(self, circuit_model, adapter):
         """
         Default target is all cell.
         """
@@ -328,9 +328,10 @@ class PathwayMeasurement(WithFields):
             cells =\
                 adapter.get_cells(circuit_model, **cell_type)
             n_cells =\
-                np.int32(self.fraction_circuit_cells * cells_shape[0])
+                np.int32(self.fraction_circuit_cells * cells.shape[0])
             return\
                 cells.sample(n_cells).assign(group=group_id)
+
         cell_types =\
             adapter.get_cell_types(circuit_model, self.specifiers_cell_type)
         pool_cells =\
@@ -344,14 +345,14 @@ class PathwayMeasurement(WithFields):
         return\
             Record(primary=pool_cells, secondary=pool_cells)
 
-    def _load_target(self, adapter, circuit_model):
+    def _load_target(self, circuit_model, adapter):
         """
         Load cells...
         """
         target =\
-            self.target(adapter, circuit_model)\
+            self.target(circuit_model, adapter)\
             if self.target is not NA else\
-               self._default_target(adapter, circuit_model)
+               self._default_target(circuit_model, adapter)
         if isinstance(target, (pd.Series, pd.DataFrame)):
             return\
                 Record(primary=target, secondary=target)
@@ -361,20 +362,19 @@ class PathwayMeasurement(WithFields):
         primary_target =\
             target.primary\
             if isinstance(target.primary, (pd.Series, pd.DataFrame)) else\
-               target.primary(adapter, circuit_model)
+               target.primary(circuit_model, adapter)
         secondary_target =\
             target.secondary \
             if isinstance(target.secondary, (pd.Series, pd.DataFrame)) else\
-               target.secondary(adapter, circuit_model)
+               target.secondary(circuit_model, adapter)
         return\
-            Record(primary=primary_target,
-                   secondary=secondary_target)
-            
-    def get_target(self, adapter, circuit_model, query):
+            Record(primary=primary_target, secondary=secondary_target)
+
+    def get_target(self, circuit_model, adapter, query):
         """
         Population of cells in the circuit model to work with.
         """
-        target_pool = self._load_target(adapter, circuit_model)
+        target_pool = self._load_target(circuit_model, adapter)
 
         def _get(position_query):
             group = getattr(query.cell_group, position_query)
@@ -413,7 +413,7 @@ class PathwayMeasurement(WithFields):
         """
         return self.with_fields(target=target)
 
-    def _sample_target(self, adapter, circuit_model, query, size=None):
+    def _sample_target(self, circuit_model, adapter, query, size=None):
         """
         Primary and secondary cell samples.
         """
@@ -424,7 +424,7 @@ class PathwayMeasurement(WithFields):
             self.sampling_methodology ==\
             terminology.sampling_methodology.exhaustive
         target =\
-            self.get_target(adapter, circuit_model, query)
+            self.get_target(circuit_model, adapter, query)
 
         def _sample(cells):
             if exhaustive and size is None:
@@ -550,7 +550,7 @@ class PathwayMeasurement(WithFields):
                else variable
 
 
-    # def sample_one(self, adapter, circuit_model,
+    # def sample_one(self, circuit_model, adapter,
     #         pre_synaptic_cell=None,
     #         post_synaptic_cell=None,
     #         **kwargs):
@@ -614,7 +614,7 @@ class PathwayMeasurement(WithFields):
                 for (begin_batch, end_batch) in batches)
 
     def sample(self,
-            adapter, circuit_model,
+            circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
             prefixed=True,
@@ -642,7 +642,7 @@ class PathwayMeasurement(WithFields):
                 direction=self.direction)
         target =\
             self._sample_target(
-                adapter, circuit_model, query)
+                circuit_model, adapter, query)
         batches =\
             self._batches(target.primary)
 
@@ -682,14 +682,11 @@ class PathwayMeasurement(WithFields):
                 if prefixed else measurement
 
     def _prefixed_with_synaptic_roles(self,
-            adapter, circuit_model,
+            circuit_model, adapter,
             query, measurement):
         """
         Add indexes, prefix columns...
         """
-        print(
-            "prefix with synaptic roles measurement: {} ".format(
-                measurement.head()))
         if self.return_primary_info:
             specifiers_secondary =\
                 pd.DataFrame({
@@ -948,17 +945,17 @@ class PathwayMeasurement(WithFields):
                 prefixed=True):
         """"..."""
         def _collect(
-                adapter, circuit_model,
+                circuit_model, adapter,
                 pre_synaptic_cell_group={},
                 post_synaptic_cell_group={},
                 **kwargs):
             """"..."""
             sample =\
                 self.sample(
-                    adapter, circuit_model,
+                    circuit_model, adapter,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     post_synaptic_cell_group=post_synaptic_cell_group,
-                    prefixed=prefixed,
+                    prefixed=False,
                     **kwargs)
             query =\
                 PathwayQuery(
@@ -979,7 +976,7 @@ class PathwayMeasurement(WithFields):
                 def _prefixed(measurement):
                     return\
                         self._prefixed_with_synaptic_roles(
-                            adapter, circuit_model, query, measurement)\
+                            circuit_model, adapter, query, measurement)\
                         if prefixed else measurement
                 listed_sample =[
                     _prefixed(measurement) for measurement in sample]
@@ -1011,39 +1008,8 @@ class PathwayMeasurement(WithFields):
 
         return _collect
 
-    def combine(self, aggregators, dataframe_left, dataframe_right):
-        """
-        Combine two dataframes.
-        """
-        if not isinstance(aggregators, Iterable) or isinstance(aggregators, str):
-            aggregators = [aggregators]
-
-        
-
-    def reduce(self, aggregators, samples):
-        """
-        Arguments
-        --------------
-        samples :: a generator of samples.
-        """
-        if not isinstance(aggregators, Iterable) or isinstance(aggregators, str):
-            aggregators = [aggregators]
-
-        try:
-            head_sample =\
-                next(iter(samples)).groupby(self.specifiers_cell_type)\
-                                   .agg(aggregators)
-        except StopIteration:
-            return pd.DataFrame()
-
-        return\
-            self.combine(aggregators,
-                         head_sample,
-                         self.reduce(aggregators, samples))
-
-
-
-    def summary(self, adapter, circuit_model,
+    def summary(self,
+            circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
             aggregators=None,

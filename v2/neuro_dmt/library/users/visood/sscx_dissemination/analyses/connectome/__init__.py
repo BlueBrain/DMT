@@ -27,7 +27,7 @@ def number_connections_afferent(circuit_model, adapter, target):
                 processing_methodology=terminology.processing_methodology.batch,
                 batch_size=1000,
                 return_primary_info=True,
-                target=lambda adapter, model: adapter.get_cells(model, **target))
+                target=lambda model, adapter: adapter.get_cells(model, **target))
     introduction =\
         """
         Number of afferent connections of a cell.
@@ -83,7 +83,7 @@ def strength_connections_afferent(circuit_model, adapter, target):
                 sampling_methodology=terminology.sampling_methodology.exhaustive,
                 batch_size=1000,
                 return_primary_info=True,
-                target=lambda adapter, model: adapter.get_cells(model, **target))
+                target=lambda model, adapter: adapter.get_cells(model, **target))
     introduction =\
         """
         Strength of afferent connections of a cell.
