@@ -512,7 +512,7 @@ class CheetahReporter(Reporter):
                 path_output_folder=path_output_folder,
                 output_subfolder=output_subfolder,
                 with_time_stamp=with_time_stamp)
-        LOGGER.info(
+        LOGGER.status(
             LOGGER.get_source_info(),
             "Post report {} at".format(report.label),
             "\t {}".format(output_uri))
