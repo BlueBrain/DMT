@@ -94,6 +94,86 @@ class PathwayQuery(WithFields):
             "Unknown measurement direction {}.".format(self.direction))
  
 
+
+class Pandamonad(WithFields):
+    """
+    Sort of a monad for `pandas.DataFrame`.
+
+    To help us obtain folds of sequence of dataframes.
+
+    Use Cases
+    --------------
+    Summarizing a computation that generates dataframes.
+    """
+    index = Field(
+        """
+        List of column names / index levels that will be grouped together.
+        """)
+    value = Field(
+        """
+        List of column names that together constitute the values...
+        """)
+
+    @lazyfield
+    def moments(self):
+        """
+        Moments of a pandas.Series
+
+        Arguments
+        ------------------
+        series :: numpy.ndarray<1D> or pandas.Series
+        """
+        def _apply(func, xs):
+            try:
+                return func(xs.to_numpy(np.float))
+            except AttributeError:
+                return func(xs)
+
+        def _count(series):
+            return _apply(lambda xs: xs.shape[0], series)
+        def _sum_1(series):
+            return _apply(np.sum, series)
+        def _sum_2(series):
+            return _apply(lambda xs: np.sum(xs ** 2), series)
+
+        return [_count, _sum_1, _sum_2]
+
+
+    def combine(self, x, y, operation):
+        """
+        Combine two dataframes with a given operation.
+        """
+        if x is None:
+            return y
+        if y is None:
+            return x
+        return operation(x, y)
+
+    def reduce(self,
+               dataframes,
+               aggregators,
+               combinator=lambda u, v: u + v):
+        """
+        Reduce a sequence of dataframes.
+        """
+        ditr = iter(dataframes)
+        try:
+            head = next(ditr)
+        except StopIteration:
+            return None
+        return\
+            self.combine(
+                head.groupby(self.index).agg(aggregators),
+                self.reduce(ditr, aggregators, combinator),
+                operation=combinator)
+
+    def transform(self, value, operation):
+        """
+        Transform a dataframe.
+        """
+        return value.apply(operation, axis=1)
+
+
 class PathwayMeasurement(WithFields):
     """
     Measure pathways in a circuit.
@@ -195,6 +275,15 @@ class PathwayMeasurement(WithFields):
         returned in the index.
         """,
         __default_value__=True)
+
+    @lazyfield
+    def pandamonad(self):
+        """
+        Get help to process a sequence of dataframes.
+        """
+        return Pandamonad(
+            index=self.specifiers_cell_type,
+            value=self.variable)
 
     def _validate_fields(self):
         """..."""
@@ -528,10 +617,16 @@ class PathwayMeasurement(WithFields):
             adapter, circuit_model,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
+            prefixed=True,
             **kwargs):
         """
         Sample of measurements.
 
+        Arguments
+        ------------------
+        prefixed :: Boolean
+        ~           indicating if index names should be prefixed by their
+        ~           synaptic role.
         """
         LOGGER.status(
             "PathwayMeasurement.sample(...)",
@@ -548,9 +643,9 @@ class PathwayMeasurement(WithFields):
         target =\
             self._sample_target(
                 adapter, circuit_model, query)
-
         batches =\
             self._batches(target.primary)
+
         for n_batch, batch in tqdm(enumerate(batches)):
             LOGGER.status(
                 LOGGER.get_source_info(),
@@ -581,49 +676,63 @@ class PathwayMeasurement(WithFields):
                 "\t{}".format(measurement.name),
                 "\t shape {}".format(measurement.shape))
 
-            if self.return_primary_info:
-                specifiers_secondary =\
-                    pd.DataFrame({
-                        level: measurement.index.get_level_values(level).values
-                        for level in self.specifiers_cell_type})
-                values =\
-                    measurement.values
-                _gids_primary =\
-                    measurement.index.get_level_values(self.label_gid_primary)\
-                                     .to_numpy(np.int32)
-                _specifiers_primary =\
-                    adapter.get_cells(circuit_model)\
-                           .iloc[_gids_primary]\
-                           [self.specifiers_cell_type]\
-                           .reset_index(drop=True)
-                gids_primary =\
-                    pd.Series(_gids_primary, name="gid")
-                specifiers_primary =\
-                    pd.concat(
-                        [gids_primary, _specifiers_primary],
-                        axis=1)
-                LOGGER.debug(
-                    LOGGER.get_source_info(),
-                    "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
-                    "post-synaptic cell group {}".format(post_synaptic_cell_group),
-                    "specifiers primary: {}".format(specifiers_primary.columns),
-                    "size {}".format(specifiers_primary.shape))
+            yield\
+                self._prefixed_with_synaptic_roles(
+                    circuit_model, adapter, query, measurement)\
+                if prefixed else measurement
 
-                index =\
-                    pd.concat(
-                        [specifiers_primary, specifiers_secondary],
-                        axis=1,
-                        keys=[query.primary_synaptic_side,
-                              query.secondary_synaptic_side])
-                yield\
-                    pd.DataFrame(
-                        {self.variable: values},
-                        index=pd.MultiIndex.from_frame(index))
-            else:
-                yield\
-                    self._prefix_secondary_synaptic_side(
-                        query,
-                        measurement.droplevel(self.label_gid_primary))
+    def _prefixed_with_synaptic_roles(self,
+            adapter, circuit_model,
+            query, measurement):
+        """
+        Add indexes, prefix columns...
+        """
+        print(
+            "prefix with synaptic roles measurement: {} ".format(
+                measurement.head()))
+        if self.return_primary_info:
+            specifiers_secondary =\
+                pd.DataFrame({
+                    level: measurement.index.get_level_values(level).values
+                    for level in self.specifiers_cell_type})
+            values =\
+                measurement.values
+            _gids_primary =\
+                measurement.index.get_level_values(self.label_gid_primary)\
+                                 .to_numpy(np.int32)
+            _specifiers_primary =\
+                adapter.get_cells(circuit_model)\
+                       .iloc[_gids_primary]\
+                       [self.specifiers_cell_type]\
+                       .reset_index(drop=True)
+            gids_primary =\
+                pd.Series(_gids_primary, name="gid")
+            specifiers_primary =\
+                pd.concat(
+                    [gids_primary, _specifiers_primary],
+                    axis=1)
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "pre-synaptic cell group {}".format(query.pre_synaptic_cell_group),
+                "post-synaptic cell group {}".format(query.post_synaptic_cell_group),
+                "specifiers primary: {}".format(specifiers_primary.columns),
+                "size {}".format(specifiers_primary.shape))
+            
+            index =\
+                pd.concat(
+                    [specifiers_primary, specifiers_secondary],
+                    axis=1,
+                    keys=[query.primary_synaptic_side,
+                          query.secondary_synaptic_side])
+            return\
+                pd.DataFrame(
+                    {self.variable: values},
+                    index=pd.MultiIndex.from_frame(index))
+        else:
+            return\
+                self._prefix_secondary_synaptic_side(
+                    query,
+                    measurement.droplevel(self.label_gid_primary))
 
     def get_soma_distance_bins(self,
             circuit_model,
@@ -832,35 +941,107 @@ class PathwayMeasurement(WithFields):
         
         return summed_value_groups.fillna(0.)
 
-    def collect(self,
-            aggregated=lambda sample: sample):
-        """..."""
-
-        def _collect(adapter, circuit_model,
+    def collector(self,
+                aggregate=None,
+                combine=lambda u, v: u + v,
+                transform=None,
+                prefixed=True):
+        """"..."""
+        def _collect(
+                adapter, circuit_model,
                 pre_synaptic_cell_group={},
                 post_synaptic_cell_group={},
                 **kwargs):
             """"..."""
-            listed_sample =[
-                aggregated(m) for m in
+            sample =\
                 self.sample(
-                    circuit_model, adapter,
+                    adapter, circuit_model,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     post_synaptic_cell_group=post_synaptic_cell_group,
+                    prefixed=prefixed,
                     **kwargs)
-            if m is not None]
+            query =\
+                PathwayQuery(
+                    post_synaptic_cell_group=post_synaptic_cell_group,
+                    pre_synaptic_cell_group=pre_synaptic_cell_group,
+                    direction=self.direction)
+            def _prefixed(measurement):
+                return\
+                    self._prefix_secondary_synaptic_side(query, measurement)\
+                    if prefixed else measurement
+                        
+            def _transformed(measurement):
+                return\
+                    measurement if transform is None\
+                    else self.pandamonad.transform(measurement, transform)
+
+            if aggregate is None:
+                def _prefixed(measurement):
+                    return\
+                        self._prefixed_with_synaptic_roles(
+                            adapter, circuit_model, query, measurement)\
+                        if prefixed else measurement
+                listed_sample =[
+                    _prefixed(measurement) for measurement in sample]
+                try:
+                    return pd.concat(listed_sample)
+                except TypeError:
+                    return pd.Series(listed_sample, name=self.variable)
+                    
+                    LOGGER.status(
+                        LOGGER.get_source_info(),
+                        "Collected measurement of size: {}".format(result.shape))
             try:
-                result = pd.concat(listed_sample)
-            except TypeError:
-                result = pd.Series(listed_sample, name=self.variable)
-                
-                LOGGER.status(
-                    LOGGER.get_source_info(),
-                    "Collected measurement of size: {}".format(result.shape))
-                
-            return result
+                return\
+                    _prefixed(
+                        _transformed(
+                            self.pandamonad.reduce(
+                                sample, aggregate, combine)))
+            except Exception as error:
+                LOGGER.alert(
+                    """
+                    Apologies that this did not work out for your use-case.
+                    The current version is designed for a sequence
+                    pandas.Dataframe that contain a duplicate axis, i.e.
+                    multiple values for the same index.
+                    This is the expected behavior of pathway measurements
+                    made on a batch of queried primary cells.
+                    """)
+                raise error
 
         return _collect
+
+    def combine(self, aggregators, dataframe_left, dataframe_right):
+        """
+        Combine two dataframes.
+        """
+        if not isinstance(aggregators, Iterable) or isinstance(aggregators, str):
+            aggregators = [aggregators]
+
+        
+
+    def reduce(self, aggregators, samples):
+        """
+        Arguments
+        --------------
+        samples :: a generator of samples.
+        """
+        if not isinstance(aggregators, Iterable) or isinstance(aggregators, str):
+            aggregators = [aggregators]
+
+        try:
+            head_sample =\
+                next(iter(samples)).groupby(self.specifiers_cell_type)\
+                                   .agg(aggregators)
+        except StopIteration:
+            return pd.DataFrame()
+
+        return\
+            self.combine(aggregators,
+                         head_sample,
+                         self.reduce(aggregators, samples))
+
+
 
     def summary(self, adapter, circuit_model,
             pre_synaptic_cell_group={},
@@ -874,7 +1055,7 @@ class PathwayMeasurement(WithFields):
                 if len(self.summaries) == 1 else\
                 self.summaries
         collection =\
-            self.collect(
+            self.collector()(
                 circuit_model, adapter,
                 pre_synaptic_cell_group=pre_synaptic_cell_group,
                 post_synaptic_cell_group=post_synaptic_cell_group,
