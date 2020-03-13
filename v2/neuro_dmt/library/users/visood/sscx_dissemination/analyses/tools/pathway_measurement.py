@@ -138,7 +138,6 @@ class Pandamonad(WithFields):
 
         return [_count, _sum_1, _sum_2]
 
-
     def combine(self, x, y, operation):
         """
         Combine two dataframes with a given operation.
@@ -150,9 +149,9 @@ class Pandamonad(WithFields):
         return operation(x, y)
 
     def reduce(self,
-               dataframes,
-               aggregators,
-               combinator=lambda u, v: u + v):
+            dataframes,
+            aggregators,
+            combinator=lambda u, v: u + v):
         """
         Reduce a sequence of dataframes.
         """
@@ -172,7 +171,6 @@ class Pandamonad(WithFields):
         Transform a dataframe.
         """
         return value.apply(operation, axis=1)
-
 
 
 class PathwayMeasurement(WithFields):
@@ -283,7 +281,8 @@ class PathwayMeasurement(WithFields):
         Get help to process a sequence of dataframes.
         """
         return Pandamonad(
-            index=self.specifiers_cell_type,
+            index=self.specifiers_cell_type + (
+                ["soma_distance"] if self.by_soma_distance else []),
             value=self.variable)
 
     def _validate_fields(self):
@@ -979,7 +978,7 @@ class PathwayMeasurement(WithFields):
                             circuit_model, adapter, query, measurement)\
                         if prefixed else measurement
                 listed_sample =[
-                    _prefixed(measurement) for measurement in sample]
+                    _prefixed(measurement.dropna()) for measurement in sample]
                 try:
                     return pd.concat(listed_sample)
                 except TypeError:
@@ -993,7 +992,8 @@ class PathwayMeasurement(WithFields):
                     _prefixed(
                         _transformed(
                             self.pandamonad.reduce(
-                                sample, aggregate, combine)))
+                                sample, aggregate, combine))
+                    ).dropna()
             except Exception as error:
                 LOGGER.alert(
                     """
