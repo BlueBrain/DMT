@@ -949,13 +949,13 @@ class PathwayMeasurement(WithFields):
     def collector(self,
                 aggregate=None,
                 combine=lambda u, v: u + v,
-                transform=None,
-                prefixed=True):
+                transform=None):
         """"..."""
         def _collect(
                 circuit_model, adapter,
                 pre_synaptic_cell_group={},
                 post_synaptic_cell_group={},
+                prefixed=True,
                 **kwargs):
             """"..."""
             samples =\
@@ -1016,56 +1016,59 @@ class PathwayMeasurement(WithFields):
                 raise error
         return _collect
 
-    def summary(self,
+    def norm_per_pair(self,
             circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
+            prefixed=True,
             **kwargs):
-        """..."""
-        if aggregators is None:
-            aggregators =\
-                self.summaries
-        get_summary =\
-            self.collector(self.summaries)
-        
-        collection =\
-            self.collector()(
-                circuit_model, adapter,
-                pre_synaptic_cell_group=pre_synaptic_cell_group,
-                post_synaptic_cell_group=post_synaptic_cell_group,
-                **kwargs)
-        query =\
-            PathwayQuery(
-                post_synaptic_cell_group=post_synaptic_cell_group,
-                pre_synaptic_cell_group=pre_synaptic_cell_group,
-                direction=self.direction)
-        variables_groupby =[
-            self._prefix(query, variable)
-            for variable in (self.specifiers_cell_type+(
-                ["soma_distance"] if self.by_soma_distance else []))]
-        try:
-            return\
-                collection.groupby(variables_groupby).agg(aggregators)
-        except ValueError:
-            return\
-                collection.agg(aggregators)
-
-        raise RuntimeError(
-            "Execution should not reach here.")
-
-    def norm_per_pair(self, *args, **kwargs):
         """
         Get a norm for the summaries...
         Will be used to measure connection probability.
         """
 
+        query =\
+            PathwayQuery(
+                post_synaptic_cell_group=post_synaptic_cell_group,
+                pre_synaptic_cell_group=pre_synaptic_cell_group,
+                direction=self.direction)
+        target =\
+            self._sample_target(
+                circuit_model, adapter, query)
         number_connections_pathway =\
-            self.summary(*args, aggregators="sum", **kwargs)
+            self.collector("sum")(
+                circuit_model, adapter,
+                pre_synaptic_cell_group=pre_synaptic_cell_group,
+                post_synaptic_cell_group=post_synaptic_cell_group,
+                prefixed=False,
+                **kwargs)
 
-        number_pairs_pathway =\
-            self.with_field_values(connectivity=Connectivity.COMPLETE,
-                                   target=self.target)\
-                .summary(*args, aggregators="sum", **kwargs)
+        if not self.by_soma_distance:
+            number_pairs_pathway =\
+                target.primary.shape[0] *\
+                target.secondary\
+                      .groupby(self.specifiers_cell_type)\
+                      .agg("size")\
+
+        else:
+            if target.primary.shape[0] * target.secondary.shape[0] > 1e9:
+                raise ValueError(
+                    """
+                    A target of size priaary: {}, secondary {}
+                    is too big to process.
+                    \t choose a smaller target.
+                    """.format(target.primary.shape[0],
+                               target.secondary.shape[0]))
+            number_pairs_pathway =\
+                self.with_field_values(
+                    connectivity=Connectivity.COMPLETE,
+                    target=self.target
+                ).collector("sum")(
+                    circuit_model, adapter,
+                    pre_synaptic_cell_group=pre_synaptic_cell_group,
+                    post_synaptic_cell_group=post_synaptic_cell_group,
+                    prefixed=False,
+                    **kwargs)
 
         return\
-            number_connections_pathway / number_pairs_pathway
+            (number_connections_pathway / number_pairs_pathway).dropna()
