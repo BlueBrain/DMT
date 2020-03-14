@@ -548,7 +548,6 @@ class PathwayMeasurement(WithFields):
             if variable in self.specifiers_cell_type\
                else variable
 
-
     # def sample_one(self, circuit_model, adapter,
     #         pre_synaptic_cell=None,
     #         post_synaptic_cell=None,
@@ -713,13 +712,23 @@ class PathwayMeasurement(WithFields):
                 "post-synaptic cell group {}".format(query.post_synaptic_cell_group),
                 "specifiers primary: {}".format(specifiers_primary.columns),
                 "size {}".format(specifiers_primary.shape))
-            
+
+                
             index =\
                 pd.concat(
                     [specifiers_primary, specifiers_secondary],
                     axis=1,
                     keys=[query.primary_synaptic_side,
                           query.secondary_synaptic_side])
+            index.columns =\
+                pd.Index(index.columns.values)
+
+            if self.by_soma_distance:
+                index =\
+                    index.assign(
+                        soma_distance=measurement.index.get_level_values(
+                            "soma_distance"))
+            print(index.head())
             return\
                 pd.DataFrame(
                     {self.variable: values},
@@ -949,7 +958,7 @@ class PathwayMeasurement(WithFields):
                 post_synaptic_cell_group={},
                 **kwargs):
             """"..."""
-            sample =\
+            samples =\
                 self.sample(
                     circuit_model, adapter,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
@@ -965,7 +974,7 @@ class PathwayMeasurement(WithFields):
                 return\
                     self._prefix_secondary_synaptic_side(query, measurement)\
                     if prefixed else measurement
-                        
+
             def _transformed(measurement):
                 return\
                     measurement if transform is None\
@@ -977,22 +986,22 @@ class PathwayMeasurement(WithFields):
                         self._prefixed_with_synaptic_roles(
                             circuit_model, adapter, query, measurement)\
                         if prefixed else measurement
-                listed_sample =[
-                    _prefixed(measurement.dropna()) for measurement in sample]
+                listed_samples =[
+                    _prefixed(measurement.dropna()) for measurement in samples]
                 try:
-                    return pd.concat(listed_sample)
+                    result = pd.concat(listed_samples)
                 except TypeError:
-                    return pd.Series(listed_sample, name=self.variable)
-                    
-                    LOGGER.status(
-                        LOGGER.get_source_info(),
-                        "Collected measurement of size: {}".format(result.shape))
+                    result = pd.Series(listed_samples, name=self.variable)
+                LOGGER.status(
+                    LOGGER.get_source_info(),
+                    "Collected measurement of size: {}".format(result.shape))
+                return result
             try:
                 return\
                     _prefixed(
                         _transformed(
                             self.pandamonad.reduce(
-                                sample, aggregate, combine))
+                                samples, aggregate, combine))
                     ).dropna()
             except Exception as error:
                 LOGGER.alert(
@@ -1005,21 +1014,20 @@ class PathwayMeasurement(WithFields):
                     made on a batch of queried primary cells.
                     """)
                 raise error
-
         return _collect
 
     def summary(self,
             circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
-            aggregators=None,
             **kwargs):
         """..."""
         if aggregators is None:
             aggregators =\
-                self.summaries[0]\
-                if len(self.summaries) == 1 else\
                 self.summaries
+        get_summary =\
+            self.collector(self.summaries)
+        
         collection =\
             self.collector()(
                 circuit_model, adapter,
@@ -1061,7 +1069,3 @@ class PathwayMeasurement(WithFields):
 
         return\
             number_connections_pathway / number_pairs_pathway
-
-
-
-
