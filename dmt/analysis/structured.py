@@ -31,8 +31,6 @@ def nothing(*args, **kwargs):
 def always_pass(*args, **kwargs):
     return True
 
-NP = "Not-Provided"
-
 NOT_PROVIDED = "Not-Provided"
 
 LOGGER = Logger(client=__file__)
