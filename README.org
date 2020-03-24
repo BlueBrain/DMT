@@ -43,6 +43,9 @@ then
 from models import MyModel, TheirModel
 from analyses import SomeValueAnalysis
 
+my_model = MyModel()
+their_model = TheirModel()
+
 class InvalidAdapter():
    pass
 
@@ -57,11 +60,11 @@ class TheirModelAdapter():
        return model.get_somevalue('someparameter')
 
 # produces a report
-report_mine = SomeValueAnalysis(my_model, MyModelAdapter())
+report_mine = some_value_analysis(my_model, MyModelAdapter())
 # produces a report
-report_theirs = SomeValueAnalysis(their_model, TheirModelAdapter())
+report_theirs = some_value_analysis(their_model, TheirModelAdapter())
 # raises an informative error
-SomeValueAnalysis(InvalidAdapter())
+some_value_analysis(InvalidAdapter())
 #+END_SRC
 
 
