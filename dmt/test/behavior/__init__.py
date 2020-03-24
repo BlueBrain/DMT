@@ -1,3 +1,0 @@
-"""
-Specify expected behavior.
-"""

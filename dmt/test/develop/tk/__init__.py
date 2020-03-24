@@ -1,3 +1,0 @@
-"""
-Test develop DMT toolkit
-"""
