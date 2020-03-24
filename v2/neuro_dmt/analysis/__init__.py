@@ -1,3 +1,0 @@
-"""
-Neuroscience analyses and validations.
-"""

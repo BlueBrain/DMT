@@ -1,1 +1,3 @@
-"""Analyses for neuroscience."""
+"""
+Neuroscience analyses and validations.
+"""

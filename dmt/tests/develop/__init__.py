@@ -1,2 +1,0 @@
-"""Test and develop DMT.
-"""

@@ -1,1 +1,0 @@
-"""Test develop measurement parameters"""

@@ -1,2 +1,0 @@
-"""Validations of composition phenomena"""
-

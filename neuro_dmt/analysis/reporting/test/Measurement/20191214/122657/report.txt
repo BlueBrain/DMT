@@ -1,0 +1,30 @@
+INTRODUCTION
+------------
+['This is an introduction.\n            A single paragraph can have lines ending in at most a single endline\n            marker. If you insert two line breaks, such as follows', 'a new paragraph should start...']
+----------------------------------------------------------------------
+METHODS
+-------
+Not provided
+----------------------------------------------------------------------
+RESULTS
+-------
+Not provided
+----------------------------------------------------------------------
+DISCUSSION
+----------
+Not provided
+----------------------------------------------------------------------
+FIGURES
+-------
+/Users/vishalsoodmuchu/work/bbp/work/validations/dmt/v2/neuro_dmt/analysis/reporting/test/Measurement/20191214/122657/figures
+----------------------------------------------------------------------
+FIGURE CAPTIONS
+---------------
+(random_walk_1). 
+                    Random Walk
+                    ================
+                    Each random walk step size is uniformly drawn from [0, 1).
+                    The individual steps are added up cummulatively to obtain
+                    the location of the walk at a given time.
+                    
+----------------------------------------------------------------------

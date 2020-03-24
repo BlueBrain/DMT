@@ -1,77 +1,72 @@
-"""According to Plone(https://docs.plone.org)
-Adapters make it possible to extend the behavior of a class without modifying
-the class itself.
-According to Zope(http://zopecomponent.readthedocs.io/en/latest/narr.html#adapters)
-Adapters are components that are computed from other components to adapt them
-to some interface.
-
-An Adapter is an implementation of an interface of a special kind.
-An Interface implementation may be a stand-alone class, while an implementation
-that 'adapts' another class to the Interface is an Adapter.
 """
+Adapt a model to an interface.
+An analysis/validation will measure phenomena on a model.
+A model can be adapted for an analysis/validation's requirements by
+implementing methods computing these measurements.
+"""
+from abc import  ABC
+from ..tk.field import\
+    ClassAttribute,\
+    ClassAttributeMetaBase
 
-from abc import ABC
-from dmt.model.interface import Interface
-from dmt.vtk.utils.descriptor import ClassAttribute
-    
 class Adapter(ABC):
-    """"Base for a class that adapts another class to an Interface.
-
-    Implementation Notes
-    ----------------------------------------------------------------------------
-    Setting 'metaclass = ClassAttributeMeta' will ensure that the two class
-    attributes have been set by a deriving class (subclass).
+    """Base class for a model adapter class.
+    This base class defines the protocol.
+    An Adapter adapts a model by implementing an Interface for it.
     """
 
-    __adapted_types__ = ClassAttribute(
-        __name__ = "__adapted_types__",
-        __type__ = dict,
-        __doc__ = """A dict mapping a name to the class that this Adapter
-        adapts to an Interface. An Adapter can adapt more than classes.""")
-    
+    __adapted_models__ = ClassAttribute(
+        """
+        A dict mapping name to the class representing the model
+        that this Adapter adapts to an Interface. An Adapter may adapt more
+        than one model.
+        """)
     __implemented_interfaces__ = ClassAttribute(
-        __name__ = "__implemented_interfaces__",
-        __type__ = dict,
-        __doc__  = "Interface implemented by this Adapter class.")
+        """
+        Adapter Interfaces implemented by this adapter.
+        """)
 
-    def __init__(self, *args, **kwargs):
-        """..."""
-        super().__init__(*args, **kwargs)
-    
 
-def adapter(adapted_cls):
-    """A class decorator to declare that a class adapts class 'adapted_cls'."""
-    def effective(cls):
-        """The effective decorator method.
+def adapts(model):
+    """
+    A class decorator to declare that a class adapts a class model.
+    You may use this decorator to mark the classes that adapt models,
+    instead of basing your implementation on the base class Adapter.
 
-        Parameters
-        ------------------------------------------------------------------------
-        cls :: type #that is the adapter of class 'adapted_cls'"""
-        aname = adapted_cls.__name__
+    Arguments
+    ~   model :: A Python Class that represents the adapted model.
+    """
+    def decorated(adapting_class):
+        """
+        The effective decorator method.
+
+        Arguments
+        ~   adapting_class :: Class that adapts --- to be decorated.
+        """
+
         try:
-            cls.__adapted_types__[aname] = adapted_cls
+            adapting_class.__adapted_models__[model.__name__] = model
         except AttributeError:
-            cls.__adapted_types__ = {aname: adapted_cls}
+            adapting_class.__adapted_models__ = {model.__name__: model}
 
-        if not hasattr(cls, "__implemented_interfaces__"):
-            cls.__implemented_interfaces__ = {}
-        Adapter.register(cls)
+        if not hasattr(adapting_class, "__implemented_interfaces__"):
+            adapting_class.__implemented_interfaces__ = {}
 
-        return cls
+        Adapter.register(adapting_class)
 
-    return effective
+        return adapting_class
 
-def get_interfaces_implemented(impl):
-    """Get interfaces implemented by an implementation.
-    We assume that one implementation will implement one interface."""
-    return getattr(impl, '__implemented_interfaces__', None)
+    return decorated
 
-def get_entities_adapted(impl):
-    """Get the entity adapted by implementation 'impl'.
-    We assume that one implementation will adapt one model type."""
-    return get_types_adapted(impl)
 
-def get_types_adapted(cls):
-    """Get the type / class adapted by implementation 'impl'.
-    We assume that one implementation will adapt one model type."""
-    return getattr(cls, '__adapted_types__', None)
+def get_interfaces_implemented(model_adapter):
+    """
+    Get interfaces implemented by Adapter.
+    """
+    return getattr(model_adapter,  "__implemented_interfaces__", None)
+
+def get_models_adapted(model_adapter):
+    """
+    Get models adapted.
+    """
+    return getattr(model_adapter, "__adapted_models__", None)

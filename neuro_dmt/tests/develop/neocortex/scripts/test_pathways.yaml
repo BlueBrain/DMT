@@ -1,5 +1,0 @@
-"pathways":
-  "L5_TPC:A":
-    - "L5_TPC:B"
-  "L5_TPC:B":
-    - "L5_TPC:A"
