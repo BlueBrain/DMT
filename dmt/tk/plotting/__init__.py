@@ -193,3 +193,4 @@ from .crosses import Crosses
 from .heatmap import HeatMap
 from .heat import HeatPlot
 from .lines import LinePlot
+from .multi import MultiPlot
