@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # pylint: disable=F0401,E0611,W0142
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 if sys.version_info < (3, 6):
     sys.exit("Sorry, Python < 3.6 is not supported.")
@@ -9,7 +9,7 @@ if sys.version_info < (3, 6):
 setup(
     name="DataModelsAndTests",
     version="0.0.1",
-    packages=["dmt", "neuro_dmt"],
+    packages=find_packages(),
     install_requires=[
         "numpy>=1.18.0",
         "pandas>=0.25.1",
