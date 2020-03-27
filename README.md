@@ -9,21 +9,29 @@ any model can be analyzed by all applicable analyses.
 
 # Usage
 
-``` pythons
-from dmt_core import AdapterInterface 
+``` python
+from dmt import AdapterInterface 
 
 class SomeValueAnalysisInterface(AdapterInterface):
+    """
+    Methods documented in this class must be provided
+    by an adapter.
+    """
+    def get_somevalue(self, model):
+      """
+      Get some value for a model.
+      """
+      raise NotImplementedError
 
-    def get_somevalue(self):
-    pass
-
-@AnAnalysisInterface()
-def SomeValueAnalysis(adapter):
-    model_prediction = adapter.get_somevalue()
-    threshold = 123456
+def some_value_analysis(model, adapter, threshold=123456):
+  """
+  Analysis for a model using a given adapter.
+  An analysis may be a simple function.
+  """
+    model_prediction = adapter.get_somevalue(model)
     report = dict(
-    measurement=model_prediction,
-    verdict=model_prediction > threshold)
+        measurement=model_prediction,
+        verdict=model_prediction > threshold)
     return report
 ```
 
@@ -33,33 +41,32 @@ then
 from models import MyModel, TheirModel
 from analyses import SomeValueAnalysis
 
+my_model = MyModel()
+their_model = TheirModel()
+
 class InvalidAdapter():
    pass
 
 class MyModelAdapter():
 
-   def __init__(model):
-       self._model = model
-
-   def get_somevalue(self):
-       return self.model.something / self.model.someotherthing
+   def get_somevalue(self, model):
+       return model.something / model.someotherthing
 
 class TheirModelAdapter():
 
-   def __init__(model):
-       self._model = model
-
-   def get_somevalue(self):
-       return theirmodel.get_somevalue('someparameter')
+   def get_somevalue(self, model):
+       return model.get_somevalue('someparameter')
 
 # produces a report
-report_mine = SomeValueAnalysis(MyModelAdapter(MyModel()))
+report_mine = some_value_analysis(my_model, MyModelAdapter())
 # produces a report
-report_theirs = SomeValueAnalysis(TheirModelAdapter(TheirModel()))
+report_theirs = some_value_analysis(their_model, TheirModelAdapter())
 # raises an informative error
-SomeValueAnalysis(InvalidAdapter())
+some_value_analysis(InvalidAdapter())
 ```
 
 # Installation
 
-Place `dmt` and `neuro_dmt` somewhere in your path.
+Download the repository, `cd` to it's directory, and
+
+    pip install  .
