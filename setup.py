@@ -34,7 +34,7 @@ setup(
     classifiers=[
         'Development Status :: Alpha',
         'Environment :: Console',
-        'License :: GPL',
+        'License :: LGPL',
         'Operating System :: POSIX',
         'Topic :: Scientific/Engineering',
         'Topic :: Utilities'],
