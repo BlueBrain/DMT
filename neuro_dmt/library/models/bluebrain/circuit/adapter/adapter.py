@@ -31,10 +31,10 @@ from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
 from neuro_dmt.analysis.circuit.connectome.interfaces import\
     AfferentConnectionCountInterface
-from neuro_dmt.models.bluebrain.circuit.model import\
+from neuro_dmt.library.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
-from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
+from neuro_dmt.library.models.bluebrain.circuit.geometry import Cuboid
 from ..model.cell_type import CellType
 from ..model.pathway import PathwaySummary
 from .query import QueryDB, SpatialQueryData
