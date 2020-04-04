@@ -33,7 +33,6 @@ cell_properties =[
     terminology.bluebrain.cell.morphology,
     terminology.bluebrain.cell.morph_class,
     terminology.bluebrain.cell.me_combo,
-    terminology.bluebrain.region,
     terminology.bluebrain.cell.x,
     terminology.bluebrain.cell.y,
     terminology.bluebrain.cell.z,

@@ -22,12 +22,17 @@ from collections import OrderedDict
 import numpy
 import pandas
 from voxcell.nexus.voxelbrain import Atlas
-from bluepy.v2.enums import Cell
 from dmt.tk import collections
 from dmt.tk.field import Field, lazyfield, WithFields
+from neuro_dmt import terminology
 from neuro_dmt.terminology.atlas import translate
 from .region_layer import RegionLayer
 from .principal_axis import PrincipalAxis
+
+
+X = terminology.circuit.position.x
+Y = terminology.circuit.position.y
+Z = terminology.circuit.position.z
 
 
 class BlueBrainCircuitAtlas(WithFields):
@@ -196,14 +201,14 @@ class BlueBrainCircuitAtlas(WithFields):
         ~           or a pandas.DataFrame containing columns <x, y, z>
         """
         if not isinstance(positions, numpy.ndarray):
-            positions = positions[[Cell.X, Cell.Y, Cell.Z]].values
+            positions = positions[[X, Y, Z]].values
 
         voxel_counts =\
             pandas.DataFrame(
                 self.voxel_data.positions_to_indices(positions),
-                columns=[Cell.X, Cell.Y, Cell.Z]
+                columns=[X, Y, Z]
             ).apply(
-                lambda row: (row[Cell.X], row[Cell.Y], row[Cell.Z]),
+                lambda row: (row[X], row[Y], row[Z]),
                 axis=1
             ).value_counts(
             ).reset_index(
