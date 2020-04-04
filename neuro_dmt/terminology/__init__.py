@@ -2,10 +2,8 @@
 Neuroscience terminology used.
 """
 from enum import Enum
-from bluepy.v2.enums import Cell, Synapse
 from dmt.tk.terminology import *
 from dmt.tk.utils.singleton import Singleton
-
 
 
 class circuit(TermCollection):
@@ -38,6 +36,7 @@ class circuit(TermCollection):
         Region of interest packaged as a bounding-box or a type
         that will return a bounding-box on invocation of `.bbox`.
         """)
+
     class atlas(TermCollection):
         """
         Terminology relevant to, specific to, or to be used with
@@ -73,6 +72,20 @@ class circuit(TermCollection):
         mesocolumn,
         hypercolumn,
         roi)
+
+    class position(TermCollection):
+        """
+        Position in circuit's physical space.
+        """
+        x = Term(
+            "x",
+            "X component of  position.")
+        y = Term(
+            "y",
+            "Y component of  position.")
+        z = Term(
+            "z",
+            "Z component of  position.")
 
     @classmethod
     def get_spatial_query(cls, query_dict):
@@ -141,8 +154,13 @@ class synapse(TermCollection):
     """
     A collection of terms used in neuroscience.
     """
-    post_gid = Synapse.POST_GID
-    pre_gid = Synapse.PRE_GID
+    post_gid = Term(
+        "post_gid",
+        "Name of the column containing ids of the post-synaptic cell.")
+    pre_gid = Term(
+        "pre_gid",
+        "Name of the column containing ids of the pre-synaptic cell.")
+    pre_gid = "pre_gid"
     afferent = Term(
         "AFF",
         "An afferent synapse, or connection, enters a cell.")
@@ -231,12 +249,14 @@ class direction(TermCollection):
     exhaustive = 2
 
 
-class bluepy(Singleton):
+class bluebrain(Singleton):
     """
-    Terms defined in BluePy enums
+    Terms used in BlueBrain Project circuits.
     """
     class cell(TermCollection):
-        """Terms found in bluepy.enums.Cell"""
+        index = Term(
+            "gid",
+            "Label used for cell index.")
         morphology = Term(
             "morphology",
             "Morphology of the cell.")
@@ -298,3 +318,12 @@ class bluepy(Singleton):
             x, y, z,
             orientation,
             target)
+
+
+    class direction(TermCollection):
+        afferent = Term(
+            "afferent",
+            "An incoming synapse, or connection.")
+        efferent = Term(
+            "efferent",
+            "An outgoing synapse, or connection")

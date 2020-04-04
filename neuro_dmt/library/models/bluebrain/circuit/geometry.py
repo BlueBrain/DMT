@@ -17,10 +17,9 @@
 Code for manipulating geometric features of Blue Brain Project circuits.
 """
 import numpy as np
-from bluepy.geometry.roi import ROI
-from bluepy.v2.enums import Cell
 from dmt.tk.field import Field, lazyproperty, WithFields
-
+from neuro_dmt import terminology
+from neuro_dmt.utils.geometry.roi import Cuboid
 
 class Position(WithFields):
     """
@@ -104,50 +103,6 @@ class Position(WithFields):
         return np.array(self.as_tuple)
 
 
-class Cuboid(ROI):
-    """
-    A box with different side lengths as a region of interest.
-    """
-    def __init__(self,
-            p0, #point_left_bottom_away,
-            p1, #point_right_top_towards,
-            closed=True):
-        """
-        A cuboid can be specified by two points, which relative to the center of
-        the cuboid are at the negative most axis values and positive most axis
-        values. So if the sides of the cuboid are u, v, and w, the points are
-        1. np.array((-u/2, -v/2, -w/2))
-        2. np.array((u/2, v/2, w/2))
-        """
-        self.p0 = p0
-        self.p1 = p1
-        self.center = (p0 + p1) / 2.
-        self.closed = closed
-
-    @property
-    def volume(self):
-        """
-        Volumne of this cuboid
-        """
-        return np.abs(np.prod(self.p1 - self.p0))
-
-    @property
-    def bbox(self):
-        """
-        Bounding box.
-        """
-        return (self.p0, self.p1)
-
-    def contains(self, point):
-        """
-        Does this Cuboid contain 'point'?
-        """
-        check = np.less_equal if self.closed else np.less
-        return np.all(
-            np.logical_and(
-                check(self.p0, point),
-                check(self.p1, point)))
-
 
 def rectangular_column(center, cross_section, height, axis=2):
     """
@@ -161,7 +116,9 @@ def rectangular_column(center, cross_section, height, axis=2):
     """
     try:
         center = np.array([
-            center[Cell.X], center[Cell.Y], center[Cell.Z]])
+            center[terminology.bluebrain.cell.X],
+            center[terminology.bluebrain.cell.Y],
+            center[terminology.bluebrain.cell.Z]])
     except TypeError:
         pass
 
@@ -177,7 +134,7 @@ def random_location(box, n=None, dim=3):
 
     Parameters
     ----------------------------------------------------------------------------
-    box :: bluepy.geometry.ROI / 2-tuple[3D-vector]
+    box :: RegionOfInterest or 2-tuple[3D-vector]
     n :: int #number of samples to collect
 
     Return
@@ -187,7 +144,10 @@ def random_location(box, n=None, dim=3):
     """
 
     r = np.random.random(dim if n is None else [n, dim])
-    p0, p1 = box.bbox if isinstance(box, ROI) else box
+    try:
+        p0, p1 = box.bbox
+    except AttributeError:
+        p0, p1 = box
     return p0 + r * (p1 - p0) 
 
 def collect_sample(measurement,
