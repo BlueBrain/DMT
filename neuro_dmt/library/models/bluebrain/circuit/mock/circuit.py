@@ -18,11 +18,11 @@ Circuit specific code.
 """
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Cell as CellProperty
 from dmt.tk.journal import Logger
 from dmt.tk.field import Field, lazyfield, WithFields
-from neuro_dmt.models.bluebrain.circuit.geometry import Cuboid
-from neuro_dmt.models.bluebrain.circuit.model import\
+from neuro_dmt import terminology
+from neuro_dmt.library.models.bluebrain.circuit.geometry import Cuboid
+from neuro_dmt.library.models.bluebrain.circuit.model import\
     CircuitProvenance,\
     BlueBrainCircuitModel
 from .cell import CellCollection
@@ -130,9 +130,10 @@ class MockBlueBrainCircuitModel(BlueBrainCircuitModel):
         Minimum values of cell positions x, y, z components.
         """
         return np.floor(
-            np.min(self.cells[
-                [CellProperty.X, CellProperty.Y, CellProperty.Z]
-            ])
+            np.min(self.cells[[
+                terminology.bluebrain.cell.x,
+                terminology.bluebrain.cell.y,
+                terminology.bluebrain.cell.z]])
         ).values
 
     @lazyfield

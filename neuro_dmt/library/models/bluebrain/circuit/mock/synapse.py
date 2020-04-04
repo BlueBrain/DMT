@@ -19,8 +19,6 @@ Deifinitions and methods for synapses in a MockCircuit.
 from collections import Mapping
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Synapse as SynapseProperty
-from bluepy.v2.enums import Direction
 from dmt.tk.field import Field, Property, WithFields, lazy
 from .composition import CircuitComposition
 
@@ -503,5 +501,4 @@ class SynapseCollection(WithFields):
     direction = Field(
         """
         Direction of the connections in 'adjacency' data.
-        """,
-        __type__=Direction)
+        """)

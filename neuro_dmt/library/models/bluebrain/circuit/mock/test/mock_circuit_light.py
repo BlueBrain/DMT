@@ -19,7 +19,6 @@ Test develop mock circuit.
 """
 
 import pandas as pd
-from bluepy.v2.enums import Synapse
 from dmt.tk.journal import Logger
 from .. import\
     CircuitComposition,\

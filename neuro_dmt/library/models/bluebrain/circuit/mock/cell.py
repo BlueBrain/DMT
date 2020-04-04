@@ -20,21 +20,24 @@ Definitions and methods for cells in a MockCircuit.
 from collections import Mapping
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Cell as CellProperty
+from neuro_dmt import terminology
 from dmt.tk.field import Field, Property, WithFields, lazy
 from . import CircuitComposition
 
 cell_properties =[
-    CellProperty.ID,
-    CellProperty.LAYER,
-    CellProperty.MTYPE,
-    CellProperty.ETYPE,
-    CellProperty.MORPHOLOGY,
-    CellProperty.MORPH_CLASS,
-    CellProperty.ME_COMBO,
-    CellProperty.REGION,
-    CellProperty.X, CellProperty.Y, CellProperty.Z,
-    CellProperty.SYNAPSE_CLASS]
+    terminology.bluebrain.cell.index,
+    terminology.bluebrain.cell.layer,
+    terminology.bluebrain.cell.region,
+    terminology.bluebrain.cell.mtype,
+    terminology.bluebrain.cell.etype,
+    terminology.bluebrain.cell.morphology,
+    terminology.bluebrain.cell.morph_class,
+    terminology.bluebrain.cell.me_combo,
+    terminology.bluebrain.region,
+    terminology.bluebrain.cell.x,
+    terminology.bluebrain.cell.y,
+    terminology.bluebrain.cell.z,
+    terminology.bluebrain.cell.synapse_class]
 
 
 class Cell(WithFields):

@@ -17,7 +17,6 @@
 Use mocks to test.
 """
 import pandas as pd
-from bluepy.v2.enums import Synapse
 from dmt.tk.journal import Logger
 from . import MockCircuitAdapter, MockCircuit
 from neuro_dmt.models.bluebrain.circuit.model import BlueBrainCircuitModel

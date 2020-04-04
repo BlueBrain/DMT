@@ -20,7 +20,7 @@ Build a mock circuit.
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from bluepy.v2.enums import Cell as CellProperty
+from neuro_dmt import terminology
 from dmt.tk.field import Field, WithFields
 from dmt.tk.journal import Logger
 from ..geometry import Position
@@ -29,9 +29,9 @@ from .composition import CircuitComposition
 from .connectivity import CircuitConnectivity
 from .connectome import Connectome
 
-MTYPE = CellProperty.MTYPE
-REGION = CellProperty.REGION
-LAYER = CellProperty.LAYER
+MTYPE = terminology.bluebrain.cell.mtype
+REGION = terminology.bluebrain.cell.region
+LAYER = terminology.bluebrain.cell.layer
 
 LOGGER = Logger(client=__file__)
 

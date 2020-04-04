@@ -20,9 +20,9 @@ The connectome of a circuit.
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-from bluepy.v2.enums import Direction
 from dmt.tk.field import Field, WithFields, lazyfield
 from dmt.tk.journal import Logger
+from neuro_dmt import terminology
 from .synapse import Synapse
 
 LOGGER = Logger(client=__file__)
@@ -45,7 +45,7 @@ class Connection(WithFields):
         """
         number of synapses in this Connection.
         """)
-
+    
 
 class Connectome(WithFields):
     """
@@ -398,14 +398,14 @@ class Connectome(WithFields):
     def _filter_connected(self,
             gid,
             candidate_gids,
-            direction=Direction.AFFERENT):
+            direction=terminology.direction.afferent):
         """
         Filter gids from  list of 'possible_pre_gids' that make a synapse
         onto the post-synaptic neuron with given 'gid'.
         """
         connected_gids =\
             self.afferent_gids(gid)\
-            if direction == Direction.AFFERENT else\
+            if direction == terminology.bluebrain.afferent else\
                self.efferent_gids(gid)
         return\
             candidate_gids[
