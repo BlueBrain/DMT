@@ -158,13 +158,12 @@ class StructuredAnalysis(
         raise RuntimeError(
             "Unreachable point in code.")
 
-    def get_measurement_method(self, adapter=None):
+    def get_measurement_method(self, adapter):
         """
         Makes sense for analysis of a single phenomenon.
 
         Some changes below provide backward compatibility.
         """
-        adapter = self._resolve_adapter(adapter)
         if hasattr(self, "sample_measurement"):
             def _adapter_measurement_method(
                     circuit_model,
@@ -184,13 +183,13 @@ class StructuredAnalysis(
                 try:
                     return\
                         self.sample_measurement(
-                            circuit_model, adapter, **kwargs)
-                except (TypeError, AttributeError, KeyError) as error_model_adapter:
+                            adapter, circuit_model, **kwargs)
+                except (TypeError, AttributeError, KeyError) as error_adapter_model:
                     try:
                         return\
                             self.sample_measurement(
                                 adapter, circuit_model, **kwargs)
-                    except Exception as error_adapter_model:
+                    except Exception as error_model_adapter:
                         raise TypeError(
                             """
                             sample_measurement(...) failed with arguments
@@ -198,8 +197,8 @@ class StructuredAnalysis(
                             \t {}
                             \t {}
                             """.format(
-                                error_model_adapter,
-                                error_adapter_model))
+                                error_adapter_model,
+                                error_model_adapter))
 
             try:
                 _adapter_measurement_method.__method__ =\
@@ -241,7 +240,7 @@ class StructuredAnalysis(
         """
         Get parameter sets from self.Parameters
         """
-        using_random_samples=\
+        using_random_samples =\
             self.sampling_methodology == terminology.sampling_methodology.random
         return\
             self.measurement_parameters(
@@ -298,15 +297,12 @@ class StructuredAnalysis(
                     method=get_measurement.__method__)
             
     def get_measurement(self,
-            circuit_model,
-            adapter=None,
+            adapter, circuit_model,
             *args,
             **kwargs):
         """
         Get a statistical measurement.
         """
-        adapter =\
-            self._resolve_adapter(adapter)
         get_measurement =\
             self.get_measurement_method(adapter)
 
@@ -465,15 +461,8 @@ class StructuredAnalysis(
             references=reference_citations,
             provenance_model=provenance_circuit)
 
-    def _resolve_adapter(self, adapter=None):
-        """
-        Resolve which adapter to use.
-        """
-        return adapter if adapter else self.adapter
-
     def __call__(self,
-            model,
-            adapter=None,
+            adapter, model,
             author=Author.anonymous,
             **kwargs):
         """
