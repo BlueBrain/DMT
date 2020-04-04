@@ -223,3 +223,47 @@ class CompositionAnalysisSuite(WithFields):
         return Parameters(_regions_and_depths, labels=("regions", "depth"))
 
 
+    phenomena_analyzed = Record(
+        cell_density = Phenomenon(
+            "Cell Density",
+            "Number of cells in a unit volume (mm^3)",
+            group="Composition"),
+        fraction_inhibitory = Phenomenon(
+            "Inhibitory Cell Fraction",
+            "Fraction of inhibitory cells",
+            group="Composition"),
+        marker_stain_density = Phenomenon(
+            "Density of marker stains",
+            "Density of cells in a unit of volume stained by markers.",
+            group="Composition"))
+
+    reference_data = Record(
+        cell_density = OrderedDict(),
+        fraction_inhibitory=OrderedDict(),
+        marker_stain_density=OrderedDict())
+
+    def measurement_cell_density_using_sampling(self,
+            adapter,
+            circuit_model,
+            **query):
+        """
+        Get cell density by sampling random regions in circuit space
+        specified by a query.
+        """
+        spatial_query =\
+            terminology.circuit.get_spatial_query(query)
+        cuboid_to_measure =\
+            self._get_random_region(
+                adapter, circuit_model, spatial_query)
+
+        if cuboid_to_measure is None:
+            return 0.
+
+        cell_count =\
+            adapter.get_cells(
+                circuit_model, roi=cuboid_to_measure
+            ).shape[0]
+        spatial_volume =\
+            cuboid_to_measure.volume
+
+        return 1.e9 * cell_count / spatial_volume

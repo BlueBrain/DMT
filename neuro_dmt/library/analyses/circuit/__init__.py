@@ -19,6 +19,7 @@ Analyses and validations for brain circuits
 
 import sys
 import os
+from collections import OrderedDict
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
