@@ -26,43 +26,43 @@ class Cuboid(WithFields):
     """
     A region.
     """
-   position_corner_0 = Field(
-       """
-       A corner of this cuboid.
-       """)
-   position_corner_1 = Field(
-       """
-       Another corner of this cuboid, diagonally opposite to the other.
-       """)
+    position_corner_0 = Field(
+        """
+        A corner of this cuboid.
+        """)
+    position_corner_1 = Field(
+        """
+        Another corner of this cuboid, diagonally opposite to the other.
+        """)
     closed = Field(
         """
         Is the geometry closed?
         """,
         __default_value__=True)
 
-   @property
-   def volume(self):
-       """
-       Volume of this cuboid.
-       """
-       return np.abs(np.prod(self.position_corner_0, self.position_corner_1))
+    @property
+    def volume(self):
+        """
+        Volume of this cuboid.
+        """
+        return np.abs(np.prod(self.position_corner_0, self.position_corner_1))
 
-   @property
-   def bbox(self):
-       """
-       A box that bounds this cuboid.
-       """
-       return (self.position_corner_0, self.position_corner_1)
+    @property
+    def bbox(self):
+        """
+        A box that bounds this cuboid.
+        """
+        return (self.position_corner_0, self.position_corner_1)
 
-   def contains(self, position):
-       """???"""
-       check = np.less_equal if self.closed else np.less
-       return np.all(
-           np.logical_and(
-               check(self.position_corner_0, position),
-               check(self.position_corner_1, position)),
-           axis=1)
-   
+    def contains(self, position):
+        """???"""
+        check = np.less_equal if self.closed else np.less
+        return np.all(
+            np.logical_and(
+                check(self.position_corner_0, position),
+                check(self.position_corner_1, position)),
+        axis=1)
+    
    
 class Cube(Cuboid):
     def __init__(self, position_center, length_side, closed=True):
