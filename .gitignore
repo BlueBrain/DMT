@@ -29,3 +29,4 @@ doc/build/
 *.png
 scratch
 .ipynb_checkpoints
+.mypy_cache/
