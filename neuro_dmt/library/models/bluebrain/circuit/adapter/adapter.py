@@ -3,8 +3,8 @@
 # This file is part of BlueBrain DMT <https://github.com/BlueBrain/DMT>
 
 # This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License version 3.0 as published by the 
-# Free Software Foundation.
+# the terms of the GNU Lesser General Public License version 3.0 as published 
+# by the Free Software Foundation.
 
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
@@ -19,7 +19,6 @@ Adapters for circuits from the Blue Brain Project.
 
 from copy import deepcopy
 from collections.abc import Set, Mapping
-from functools import wraps
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger 
@@ -29,8 +28,6 @@ from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.collections import get_list
 from neuro_dmt.analysis.circuit.composition.interfaces import\
     CellDensityAdapterInterface
-from neuro_dmt.analysis.circuit.connectome.interfaces import\
-    AfferentConnectionCountInterface
 from neuro_dmt.library.models.bluebrain.circuit.model import\
     BlueBrainCircuitModel
 from neuro_dmt import terminology
@@ -79,13 +76,6 @@ class BlueBrainCircuitAdapter(WithFields):
         the circuit.
         """,
         __default_value__=50. * np.ones(3))
-
-    # @lazyfield
-    # def _random_position_generator_cache(self):
-    #     """
-    #     Cache random position generators.
-    #     """
-    #     return {}
 
     def for_circuit_model(self, circuit_model, **kwargs):
         """
@@ -355,7 +345,7 @@ class BlueBrainCircuitAdapter(WithFields):
         else:
             if post_synaptic is None:
                 post_synaptic = pre_synaptic
-        
+
         def _at(synaptic_location, cell_type):
             return\
                 pd.concat(
@@ -1264,7 +1254,7 @@ class BlueBrainCircuitAdapter(WithFields):
     def get_column(self, circuit_model, target=None, axcell=None, radius=250.):
         """
         Get a (cortical) column with the argumented `axcell` on its axis.
-        
+
         Returns
         -------------
         A subset of all cells in the argumented circuit model that lie in the
@@ -1278,20 +1268,20 @@ class BlueBrainCircuitAdapter(WithFields):
                     arguments. Only one of are accepted.
                     """)
             return self.get_cells(circuit_model, target=target)
-        
+
         cells = self.get_cells(circuit_model)
         if isinstance(axcell, (float, np.float)):
             axcell = all_cells.iloc[axcell]
-            
+
         def _axis(orientation):
             """..."""
             return np.dot(orientation, np.array([0., 1., 0.]))
-        
+
         try:
             axis_column = _axis(axcell.orientation)
         except AttributeError:
             axis_column = np.array([0., 1., 0.])
-            
+
 
         position =\
             lambda cell: cell[XYZ].to_numpy(np.float64)
@@ -1306,6 +1296,6 @@ class BlueBrainCircuitAdapter(WithFields):
         distance_axis =\
             np.sqrt(
                 distance_axcell ** 2 - component_axis ** 2)
-        
+
         return\
             cells[distance_axis < radius]

@@ -99,6 +99,18 @@ class SonataCircuitModel(WithFields):
         """,
         __default_value__=20)
 
+    def __init__(self, circuit=None, *args, **kwargs):
+        """
+        Initialize with a circuit.
+
+        Arguments
+        ----------
+        circuit: BluePySNAP.Circuit
+        """
+        if circuit is not None:
+            self._bluepysnap_circuit = circuit
+        super().__init__(*args, **kwargs)
+
     @lazyfield
     def bluepysnap_circuit(self):
         """

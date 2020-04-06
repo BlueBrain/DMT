@@ -15,5 +15,5 @@
 # DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
 
 """
-Atlas terminology
+Mock of a brain-circuit.
 """
