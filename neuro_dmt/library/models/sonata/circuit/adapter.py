@@ -60,6 +60,10 @@ class SonataCircuitAdapter(WithFields):
         """..."""
         return circuit_model.provenance.field_dict
 
+    def get_label(self, circuit_model):
+        """..."""
+        return circuit_model.label
+
     def get_brain_regions(self, circuit_model):
         """..."""
         return circuit_model.cells.region.unique()

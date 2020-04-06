@@ -75,7 +75,7 @@ def as_nested_dict(row):
             level_value : as_nested_dict(_extract_level_zero(level_value))
             for level_value in zero_level_values}
     
-    assert isinstance(row, pandas.Series)
+    assert isinstance(row, pandas.Series), type(row)
     
     if not isinstance(row.index, pandas.MultiIndex):
         if len(row) == 1 and row.index.values[0] == "":

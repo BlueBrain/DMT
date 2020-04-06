@@ -288,7 +288,7 @@ class StructuredAnalysis(
             data =\
                 self.add_columns(
                     measured_value.reset_index(
-                    ).assign(dataset=adapter.get_label(circuit_model)
+                    ).assign(dataset=adapter.get_label(circuit_model),
                     ).set_index(["dataset"] + measured_value.index.names))
             yield\
                 Record(
@@ -315,9 +315,10 @@ class StructuredAnalysis(
             ).rename(columns={"value": self.phenomenon.label})
         measurement =\
             self.add_columns(
-                measured_values.reset_index(
-                ).assign(dataset=adapter.get_label(circuit_model)
-                ).set_index(["dataset"] + measured_values.index.names))
+                measured_values
+                .reset_index()
+                .assign(dataset=adapter.get_label(circuit_model))
+                .set_index(["dataset"] + measured_values.index.names))
         return\
             Record(
                 data=measurement,
@@ -503,8 +504,8 @@ class StructuredAnalysis(
                         model, adapter, **kwargs))
         measurement =\
             self.get_measurement(
+                adapter,
                 model,
-                adapter=adapter,
                 **kwargs)
         report =\
             self.get_report(
