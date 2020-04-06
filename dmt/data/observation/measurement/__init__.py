@@ -555,5 +555,3 @@ def concat_as_summaries(data):
     Concat as summary dataframes.
     """
     return concat(data, loader=get_summary)
-
-
