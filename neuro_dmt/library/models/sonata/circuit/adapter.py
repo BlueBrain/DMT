@@ -34,10 +34,20 @@ from neuro_dmt.library.models.sonata.circuit.model import\
 from neuro_dmt import terminology
 from neuro_dmt.utils.geometry.roi import Cuboid
 
+X = terminology.bluebrain.cell.x
+Y = terminology.bluebrain.cell.y
+Z = terminology.bluebrain.cell.z
+XYZ =[X, Y, Z]
 
-XYZ =[terminology.bluebrain.cell.x,
-      terminology.bluebrain.cell.y,
-      terminology.bluebrain.cell.z]
+def _get_bounding_box(region_of_interest):
+    """
+    Extract the bounding box of region of interest.
+    """
+    try:
+        return region_of_interest.bbox
+    except AttributeError:
+        return region_of_interest
+
 
 @adapts(SonataCircuitModel)
 class SonataCircuitAdapter(WithFields):

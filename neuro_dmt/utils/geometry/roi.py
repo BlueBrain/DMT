@@ -40,6 +40,20 @@ class Cuboid(WithFields):
         """,
         __default_value__=True)
 
+    def __init__(self,
+            positions_corner_0,
+            positions_corner_1,
+            closed=False,
+            *args, **kwargs):
+        """..."""
+        super().__init__(
+            *args,
+            position_corner_0=positions_corner_0,
+            position_corner_1=positions_corner_1,
+            closed=closed,
+            **kwargs)
+
+
     @property
     def volume(self):
         """
