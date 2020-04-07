@@ -45,10 +45,9 @@ class StructuredAnalysis(
     """
     add_columns = Field(
         """
-        A callable that accepts a measurement (a `pandas.DataFrame`)
-        and adds columns...
+        A callable that adds  columns to a measurement (a `pandas.DataFrame`)
         """,
-        __default_value__=lambda measurement: measurement)
+        __default_value__=lambda adapter, circuit_model, measurement: measurement)
     figures = LambdaField(
         """
         An alias for `Field plotter`, which will be deprecated.
@@ -287,6 +286,7 @@ class StructuredAnalysis(
 
             data =\
                 self.add_columns(
+                    adapter, circuit_model,
                     measured_value.reset_index(
                     ).assign(dataset=adapter.get_label(circuit_model),
                     ).set_index(["dataset"] + measured_value.index.names))
@@ -315,6 +315,7 @@ class StructuredAnalysis(
             ).rename(columns={"value": self.phenomenon.label})
         measurement =\
             self.add_columns(
+                adapter, circuit_model,
                 measured_values
                 .reset_index()
                 .assign(dataset=adapter.get_label(circuit_model))
