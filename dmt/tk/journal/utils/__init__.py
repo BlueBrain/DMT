@@ -55,8 +55,8 @@ def timestamp(time_value=None):
 
 COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
 def count_number_calls(logger):
-  """decorate..."""
-  def decorator(method):
+    """decorate..."""
+    def decorator(method):
         method.n_calls = 0
         def _decorated(*args, **kwargs):
             result = method(*args, **kwargs)
