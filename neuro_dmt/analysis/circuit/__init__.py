@@ -70,11 +70,11 @@ class StructuredAnalysis(
     processing_methodology = Field(
         """
         How to make measurements?
-        `batch` :: Process all the parameter sets as a batch.
-        ~          A single measurement on all the parameter sets will be
-        ~          dispatched to the plotter and attached to the report.
-        ~          Thus a single report will be saved at the end of the
-        ~          analysis run.
+        `batch`  :: Process all the parameter sets as a batch.
+        ~           A single measurement on all the parameter sets will be
+        ~           dispatched to the plotter and attached to the report.
+        ~           Thus a single report will be saved at the end of the
+        ~           analysis run.
         `serial` :: Process a single parameter set at a time.
         ~           For each parameter set, make a measurement, generate a
         ~           figure and attach to the report.
@@ -380,7 +380,6 @@ class StructuredAnalysis(
 
         The implementation below uses the implementation of
         `self.measurement_parameters`. However, if you change the type of that
-        component, you will have to override However, if you change the type of that
         component, you will have to override.
         """
         try:
