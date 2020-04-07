@@ -28,16 +28,12 @@ import pandas as pd
 import neurom
 from bluepysnap.circuit import Circuit as SnapCircuit
 from bluepysnap.exceptions import BluepySnapError
-from bluepy.exceptions import BluePyError
-from bluepy.v2.enums import Cell, Segment, Section
 from dmt.tk import collections
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, WithFields
 from dmt.tk.journal import Logger
 from dmt.tk.collections import take
 from neuro_dmt import terminology
 from neuro_dmt.analysis.reporting import CircuitProvenance
-#from .cell_type import CellType
-#from .pathway import PathwaySummary
 
 X = terminology.bluebrain.cell.x
 Y = terminology.bluebrain.cell.y
