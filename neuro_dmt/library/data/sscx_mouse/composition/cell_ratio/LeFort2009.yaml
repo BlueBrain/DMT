@@ -1,0 +1,25 @@
+short_name: "LeFort2009"
+uri: "<none>"
+citation: "LeFort et. al. 2009"
+what: "cell ratio: INH/TOTAL, ask for details, brain area S1"
+animal: "mouse? or scaled?"
+brainArea: "S1"
+sampleSize: "unknown"
+age: "unknown"
+notes: "ask Dan Keller for details"
+
+count_all:
+  - 10000.0 #this is fictitious; layer 1 counts not provided; big to make err 0.01
+  - 648.19
+  - 1265.84
+  - 1788.46
+  - 1316.74
+  - 1421.94
+
+count_inh:
+  - 10000.0 #this is fictitious; layer 1 counts not provided; big to make err 0.01
+  - 105.20
+  - 118.78
+  - 139.14
+  - 220.59
+  - 132.35

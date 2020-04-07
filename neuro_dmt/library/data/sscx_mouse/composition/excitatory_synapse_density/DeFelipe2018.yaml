@@ -1,0 +1,30 @@
+short_name: "DeFelipe2018"
+
+# TODO: put the spreadsheet online somewhere
+uri: ""
+citation: "De Felipe et al. (2018 unpublished).  'Synapse Densities per Layer', Unpublished. brain-area S1-hindlimb"
+what: "excitatory synaptic densities"
+animal: "mouse"
+brainArea: "S1 hindlimb"
+sampleSize: "various"
+age: ""
+
+# mean and std were derived from em reconstruction of tissue
+density_means:
+  - 1.52288128
+  - 1.24516915
+  - 1.18536133
+  - 1.34310283
+  - 1.088029
+  - 0.82219090
+  # a std of zero means only one observation
+  #density_stds = numpy.array([0.100247,0.249871,0.12041,0.0,0.104365,0.0])
+
+  # Give those with only 1 obsv a relative error 1.5 * avg of the others (15.2%) ->
+density_stds:
+  - 0.20061812
+  - 0.18958949
+  - 0.30400289
+  - 0.33444615
+  - 0.3578375
+  - 0.19526226

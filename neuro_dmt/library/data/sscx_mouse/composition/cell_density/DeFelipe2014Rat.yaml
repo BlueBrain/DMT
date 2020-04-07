@@ -1,0 +1,126 @@
+# Vishal Sood: 2017-10-09
+# We have to decide the format of the datasets used for validations.
+# Current CircuitValidations assume a YAML, which I am porting the existing
+# datasets to, from Python classes in the legacy ValidationFramework.
+
+short_name: "DeFelipe2017RatData"
+uri: >-
+  ssh://ebmuller@bbpgit.epfl.ch/user/ebmuller/
+  recipe-generation.git/data_archive/P14 NEUN-September-2014.xlsx
+
+citation: >-
+  De Felipe et al. (2014 unpublished).
+  'Cell Counts per Layer', Unpublished.
+
+what: >-
+  number of neurons for a given volume (100x100xlayer thickness [um3])
+  of each cortical layer for rat somatosensory cortex.
+
+animal: "wistar rat"
+brainArea: "S1 hindlimb"
+sampleSize: 6
+age: "P14-16"
+notes: "this is a rat data set, used to compare against mouse cell density."
+
+circuits:
+  "P14-12":
+    thicknesses:
+      - 122.3
+      - 113.5
+      - 302.9
+      - 176.4
+      - 477.9
+      - 647.3
+    densities:
+      - 17218
+      - 122006
+      - 75306
+      - 169828
+      - 90956
+      - 108090
+
+  "P14-13":
+    thicknesses:
+      - 148.5
+      - 121.7
+      - 303.7
+      - 159.2
+      - 412.,8
+      - 627.1
+
+    densities:
+      - 7040
+      - 169299
+      - 81310
+      - 172339
+      - 71296
+      - 111238
+
+  "P14-14":
+    thicknesses:
+      - 160.5
+      - 126.4
+      - 303.8
+      - 161.2
+      - 442.6
+      - 536.6
+
+    densities:
+      - 15337
+      - 171045
+      - 74956
+      - 150973
+      - 80783
+      - 135638
+
+  "P14-15":
+    thicknesses:
+      - 143.2
+      - 135.4
+      - 296.5
+      - 160.9
+      - 447.7
+      - 603.5
+
+    densities:
+      - 17290
+      - 162856
+      - 78259
+      - 178580
+      - 84361
+      - 134840
+
+  "P14-16":
+    thicknesses:
+      - 146.6
+      - 144.5
+      - 319.7
+      - 168.9
+      - 486.9
+      - 670.2
+
+    densities:
+      - 13190
+      - 151972
+      - 80528
+      - 166547
+      - 71168
+      - 135599
+
+  "P14-17":
+    thicknesses:
+      - 147.1
+      - 141.9
+      - 331.2
+      - 171.2
+      - 496.1
+      - 601.8
+
+    densities:
+      - 9100
+      - 167304
+      - 76077
+      - 149437
+      - 68655
+      - 106430
+

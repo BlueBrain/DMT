@@ -1,0 +1,40 @@
+#Vishal Sood: 2018-03-02
+#Adapted from the Dan Keller's xlsx sheet
+#TODO: Ask DK to provide a little description of this data's provenance.
+
+short_name: "Keller2018"
+
+uri: "path/to/parent/directory/C57-NeuN-Feb-2018.xlsx"
+
+citation: "Ask Dan Keller"
+
+what: >-
+  Ask Dan Keller (Reportedly, obtained mouse SSCx densities from DeFelipe)
+
+animal: "Ask Dan (Could be scaled rat)"
+
+brainArea: "S1 hindlimb"
+
+sampleSize: 6
+
+age: "Ask Dan"
+
+notes: "Ask Dan"
+
+#units: #1000 cells / mm3
+
+density_means:
+  - 18.3092
+  - 141.745
+  - 73.4301
+  - 105.262
+  - 65.955
+  - 89.3954
+
+density_stds:
+  - 1.910
+  - 8.136
+  - 6.822
+  - 3.778
+  - 4.138
+  - 4.060
