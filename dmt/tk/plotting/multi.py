@@ -56,9 +56,7 @@ class MultiPlot(WithFields):
             *args,
             caption=caption,
             title="{} {}".format(self.mvar, value_mvar),
-            **kwargs
-        )
-
+            **kwargs)
 
     def get_figures(self,
             data,

@@ -95,6 +95,7 @@ class LinePlot(BasePlotter):
             *args,
             dataset=None,
             caption="Caption not provided",
+            title=None,
             **kwargs):
         """
         Plot the data.
@@ -141,7 +142,7 @@ class LinePlot(BasePlotter):
             grid.set(
                 xlabel=self.xlabel,
                 ylabel=self.ylabel,
-                title=self.title),
+                title=self.title if title is None else title),
             caption=caption)
 
     def plot(self,
