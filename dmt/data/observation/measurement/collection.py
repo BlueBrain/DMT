@@ -20,13 +20,13 @@ from collections.abc import Mapping
 import pandas as pd
 from dmt.tk.parameters import index_tree
 
-def _with_index(dataframe):
+def _with_index(dataframe, value="value"):
     """..."""
     return\
         dataframe.set_index([
             column
             for column in dataframe.columns
-            if column != "value"])
+            if column != value])
 
 def primitive_type(measurement_generator):
     """
@@ -47,10 +47,38 @@ def primitive_type(measurement_generator):
         return\
             parameters_measurement.append(
                 pd.Series({"value": value_measurement}))
+        
     return _with_index(
         pd.DataFrame([
             _join(parameters, value)
             for parameters, value in measurement_generator]))
+
+def vector_type(measurement_generator):
+    """
+    Use when individual measurements are vectorial --- i.e. the
+    measured phenomenon is vector valued, for example center of mass of
+    a population of cells.
+    """
+    def _join(parameters_measurement, value_measurement):
+        if isinstance(parameters_measurement, Mapping):
+            parameters_measurement =\
+                pd.Series(
+                    index_tree_as_unnested_dict(
+                        parameters_measurement))
+
+        assert isinstance(value_measurement, pd.Series),\
+            "Measurement must be a pandas.Series, not {}".format(
+                type(value_measurement))
+
+        return\
+            pd.DataFrame(
+                [value_measurement.values],
+                columns=pd.MultiIndex.from_tuples([
+                    ("value", c) for c in value_measurement.index]))
+
+    return _with_index(
+        pd.cocnat([
+            _join(*args) for args in measurement_generator]))
 
 def series_type(measurement_generator):
     """
@@ -107,5 +135,45 @@ def summary_primitive_type(
                      primitive_type,
                      summary_variable)
 
+def multi_type(measurement_generator):
+    """
+    Use when an individual measurement contains several sub-measurements,
+    and is packaged as a mapping `label --> value`.
+    """
+    def _join(parameters_measurement, value_measurement, label):
+        """..."""
+        if isinstance(parameters_measurement, Mapping):
+            parameters_measurement =\
+                pd.Series(
+                    index_tree.as_unnested_dict(
+                        parameters_measurement))
+        try:
+            return\
+                value_measurement.rename(label)\
+                                 .reset_index()\
+                                 .apply(parameters_measurement.append, axis=1)
+        except AttributeError:
+            return\
+                pd.DataFrame([
+                    parameters_measurement.append(
+                        pd.Series({label: value_measurement}))])
+
+    labeled_measurements = {}
+    labels_parameters = set()
+    for parameters, labeled_values in measurement_generator:
+        labels_parameters = labels_parameters.union(parameters.keys())
+        for label, value in labeled_values.items():
+            value_joined = _join(parameters, value, label)
+            try:
+                labeled_measurements[label].append(value_joined)
+            except KeyError:
+                labeled_measurements[label] = [value_joined]
 
 
+    return {
+        label: _with_index(pd.concat(measurements), value=label)
+        for label, measurements in labeled_measurements.items()}
+    return pd.concat(
+        [pd.concat(measurements).set_index(list(labels_parameters))
+         for measurements in labeled_measurements.values()],
+        axis=1)
