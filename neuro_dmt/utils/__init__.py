@@ -16,3 +16,14 @@
 """
 Generic, utilities to handle geomtries.
 """
+def measurement_method(description):
+    """
+    Decorator to provide description about how an adapter method makes 
+    measurements on the circuit model.
+    """
+    def decorated(adapter_method):
+        adapter_method.__method__ = description
+        return adapter_method
+
+    return decorated
+
