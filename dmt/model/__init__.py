@@ -22,7 +22,7 @@ from abc import ABC, ABCMeta
 from types import FunctionType
 from .interface import\
     interfacemethod,\
-    get_interface,\
+    extract_interface,\
     get_implementations
 from .adapter import\
     get_models_adapted
@@ -44,6 +44,7 @@ def adaptermethod(method):
     return method
 
 
+
 class AIMeta(ABCMeta):
     """
     A metaclass that will add an AdapterInterface
@@ -55,13 +56,14 @@ class AIMeta(ABCMeta):
         """
         if "AdapterInterface" not in attribute_dict:
             ainame = "{}AdapterInterface".format(name)
-            adapter_interface = get_interface(attribute_dict, name=ainame)
-            if adapter_interface is not None:
-                attribute_dict["AdapterInterface"] = adapter_interface
-            else:
-                pass
+            adapter_interface, attributes =\
+                extract_interface(attribute_dict, name=ainame)
+            if adapter_interface:
+                attributes["AdapterInterface"] = adapter_interface
+        else:
+            attributes = attribute_dict
         return super().__new__(
-            mcs, name, bases, attribute_dict)
+            mcs, name, bases, attributes)
 
     def __init__(cls, name, bases, attribute_dict):
         """

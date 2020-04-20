@@ -218,7 +218,6 @@ def specifies_interface(client_cls):
           is_interface_required(getattr(client_cls, attr))
           for attr in dir(client_cls)])
 
-
 def get_interface(attributes_or_class, name=None):
      """
      Get an interface from a class's attribute dict.
@@ -252,6 +251,29 @@ def get_interface(attributes_or_class, name=None):
           else "{}Interface".format(name)
      return type(name, (Interface,), required)
 
+def extract_interface(attributes, name):
+     """
+     Extract an interface from a class's attribute dict,
+     and throw the interface methods
+
+     Arguments
+     -----------
+     attributes :: dict #that contains the attributes defined in a class body.
+     name :: str #desired name of the class.
+     """
+     attributes_interface_required ={
+          attr_name: attr_value
+          for attr_name, attr_value in attributes.items()
+          if is_interface_required(attr_value)}
+     attributes_other = {
+          attr_name: attr_value
+          for attr_name, attr_value in attributes.items()
+          if not is_interface_required(attr_value)}
+     interface =\
+          None if not attributes_interface_required\
+          else type(name, (Interface,), attributes_interface_required)
+     return\
+          (interface, attributes_other)
 
 def implements(an_interface):
      """
