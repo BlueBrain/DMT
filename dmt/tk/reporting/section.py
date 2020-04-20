@@ -32,7 +32,7 @@ class Section(WithFields):
     content = Field(
         """
         A string contaning text for this `Section` instance.
-        This string may required formatting, and can hence be treated
+        This string may require formatting, and can hence be treated
         as a template to be filled in...
         """)
     def __init__(self, title, content, *args, **kwargs):
