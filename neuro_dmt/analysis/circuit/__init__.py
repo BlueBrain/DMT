@@ -19,6 +19,7 @@ Brain circuit analyses and validations.
 
 import os
 from tqdm import tqdm
+import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.data.observation.measurement.collection import\
@@ -26,7 +27,7 @@ from dmt.data.observation.measurement.collection import\
 from dmt.data.observation.measurement.collection import\
     series_type as series_type_measurement_collection
 from dmt import analysis
-from dmt.model.interface import InterfaceMeta
+from dmt.model.interface import InterfaceMeta, interfacemethod
 from dmt.tk.field import NA, Field, LambdaField, lazyfield, Record
 from dmt.tk.author import Author
 from dmt.tk.parameters import index_tree
@@ -111,6 +112,7 @@ class StructuredAnalysis(
         """
         A label for this analysis.
         """
+        return self.phenomenon.label
         def _as_label(parameter_label):
             if isinstance(parameter_label, str):
                 return parameter_label
@@ -123,11 +125,11 @@ class StructuredAnalysis(
             self.names_measurement_parameters
         return\
             self.phenomenon.label\
-            if not self.names_measurement_parameters else\
+            if not names_parameters else\
                "-by-".join((
                    self.phenomenon.label,
                    '_'.join(_as_label(label) 
-                            for label in self.names_measurement_parameters)))
+                            for label in names_parameters)))
 
     def _get_adapter_measurement_method(self, adapter):
         """..."""
@@ -397,7 +399,7 @@ class StructuredAnalysis(
         """
         try:
             return self.measurement_parameters.variables
-        except TypeError:
+        except (TypeError, AttributeError):
             return []
         return None
 
@@ -461,6 +463,21 @@ class StructuredAnalysis(
             conclusion=self.conclusion(provenance_circuit)["content"],
             references=reference_citations,
             provenance_model=provenance_circuit)
+
+    @interfacemethod
+    def get_provenance(adapter, model, **kwargs):
+        """
+        Get a mapping providing provenance of circuit model.
+        Following keys are expected:
+        1. animal: String #animal species whose  brain was modeled
+        2. age: String #age of the animal individual at which brain was modeled
+        3. brain_region: String #that was modeled
+        4. data_release: String #when the model was released
+        5. label: String #to use in documentation
+        6. uri: String #Universal Resource Identifier for the model
+        7. authors: List[String] #who built the model
+        """
+        pass
 
     def __call__(self,
             adapter, model,
