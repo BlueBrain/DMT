@@ -21,9 +21,12 @@ Classes and methods for models.
 from abc import ABC, ABCMeta
 from types import FunctionType
 from .interface import\
+    Interface,\
+    InterfaceMeta,\
     interfacemethod,\
     extract_interface,\
-    get_implementations
+    get_implementations,\
+    is_interface_required
 from .adapter import\
     get_models_adapted
 from ..tk.field import Field, WithFields
@@ -44,7 +47,6 @@ def adaptermethod(method):
     return method
 
 
-
 class AIMeta(ABCMeta):
     """
     A metaclass that will add an AdapterInterface
@@ -55,13 +57,32 @@ class AIMeta(ABCMeta):
         already.
         """
         if "AdapterInterface" not in attribute_dict:
-            ainame = "{}AdapterInterface".format(name)
+            ainame =\
+                "{}AdapterInterface".format(name)
             adapter_interface, attributes =\
                 extract_interface(attribute_dict, name=ainame)
-            if adapter_interface:
-                attributes["AdapterInterface"] = adapter_interface
+            attributes["AdapterInterface"] =\
+                adapter_interface
         else:
             attributes = attribute_dict
+
+        #print(mcs, name, attributes["AdapterInterface"])
+        #print("-----------------------------------------")
+
+        if isinstance(attributes["AdapterInterface"], InterfaceMeta):
+            for base in bases:
+                if "AdapterInterface" in dir(base):
+                    BaseAdapterInterface = base.AdapterInterface
+                    if not isinstance(BaseAdapterInterface, InterfaceMeta):
+                        continue
+                    for attribute in dir(BaseAdapterInterface):
+                        value = getattr(BaseAdapterInterface, attribute)
+                        attributes["AdapterInterface"].append(attribute, value)
+
+                    # if is_interface_required(value):
+                    #     setattr(attributes["AdapterInterface"],
+                    #             attribute, value)
+
         return super().__new__(
             mcs, name, bases, attributes)
 
@@ -84,16 +105,17 @@ class AIBase(metaclass=AIMeta):
         """..."""
         self.logger =\
             Logger(client=self.__class__.__name__)
-        self._adapter =\
-            kwargs.get(
-                "model_adapter",
-                kwargs.get(
-                    "adapter",
+        self.logger.debug(
+            self.logger.get_source_info(),
+            "initialize an analysis with: {}".format(kwargs))
+        adapter =\
+            kwargs.pop(
+                "adapter",
+                kwargs.pop(
+                    "model_adapter",
                     None))
-        if self._adapter:
-            self.adapter = self._adapter #validate and assign
-        super().__init__(
-            *args, **kwargs)
+        self.adapter = adapter
+        super().__init__(*args, **kwargs)
 
     @property
     def adapter(self):
@@ -117,11 +139,15 @@ class AIBase(metaclass=AIMeta):
         else:
             self.logger.suggest(
                 self.logger.get_source_info(),
-                self.AdapterInterface.__implementation_guide__)
+                self.AdapterInterface.guide_implementation())
             raise ValueError(
                 """
                 {} does not implement {}'s AdapterInterface.
-                """.format(value, self.__class__.__name__))
+                Look above for how to implement this interface,
+                or get help: `{}.AdapterInterface.help()`)
+                """.format(value,
+                           self.__class__.__name__,
+                           self.__class__.__name__))
         pass
 
     def unset_adapter(self):

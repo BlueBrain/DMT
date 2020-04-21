@@ -19,6 +19,9 @@ Field with description
 import sys
 import copy
 import collections
+from dmt.tk.journal import Logger
+
+LOGGER = Logger(client=__file__)
 
 class Field:
     """

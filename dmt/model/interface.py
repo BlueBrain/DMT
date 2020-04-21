@@ -33,6 +33,9 @@ from types import FunctionType
 from ..tk.journal import *
 
 
+LOGGER = Logger(client=__file__)
+
+
 class InterfaceMeta(type):
      """
      A metaclass to create Classes representing interfaces.
@@ -135,6 +138,12 @@ class Interface(
                if not hasattr(implementation, method)]
 
      @classmethod
+     def append(cls, attribute, value_attribute):
+          if is_interface_required(value_attribute):
+               setattr(cls, attribute, value_attribute)
+               cls.__requiredmethods__.add(attribute)
+
+     @classmethod
      def register(cls, implementation):
           """
           Register an implementation of this Interface.
@@ -188,6 +197,38 @@ class Interface(
           Return `adapter` as implementation of this `Interface`.
           """
           return implements(cls)(adapter)
+
+     @classmethod
+     def guide_implementation(cls):
+          suggestion = Suggestion(
+               """
+               To adapt to {} you must implement:
+               """.format(cls.__name__))
+          attr_index = 1
+          for attr_name in cls.__requiredmethods__:
+               attr_value = getattr(cls, attr_name)
+               suggestion =\
+                    suggestion + Suggestion(
+                         """{}\n\t({}) {}\n{} {}""".format(
+                              70 * '=',
+                              attr_index,
+                              attr_name,
+                              70 * '=',
+                              getattr(
+                                   attr_value,
+                                   "__doc__",
+                                   "no documentation!")))
+               attr_index += 1
+          return suggestion.formatted()
+
+     @classmethod
+     def help(cls):
+          """
+          Help on how to implement this interface.
+          """
+          LOGGER.suggest(
+               LOGGER.get_source_info(),
+               cls.guide_implementation())
 
 
 def interfacemethod(method):
@@ -269,11 +310,9 @@ def extract_interface(attributes, name):
           attr_name: attr_value
           for attr_name, attr_value in attributes.items()
           if not is_interface_required(attr_value)}
-     interface =\
-          None if not attributes_interface_required\
-          else type(name, (Interface,), attributes_interface_required)
-     return\
-          (interface, attributes_other)
+     return(
+          type(name, (Interface,), attributes_interface_required),
+          attributes_other)
 
 def implements(an_interface):
      """
@@ -343,7 +382,7 @@ def implementation_guide(an_interface):
      Instructions on how to implement the Interface 'an_interface'.
      """
      try:
-          return an_interface.__implementation_guide__
+          return an_interface.guide_implementation()
      except AttributeError:
           raise TypeError(
                """
@@ -353,6 +392,7 @@ def implementation_guide(an_interface):
                     an_interface,
                     an_interface))
      return None
+
 
 def get_required_methods(cls):
      return getattr(cls, "__interfacemethods__", [])

@@ -32,6 +32,8 @@ from .field import Field, LambdaField
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
 from ..journal import Logger
 
+LOGGER = Logger(client=__file__)
+
 def set_name(
         field_or_class_attribute,
         name):
@@ -81,6 +83,9 @@ class WithFields:
 
         def __check_validity(field, value):
             """..."""
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "check validity of field '{}' value '{}'".format(field.__attr_name__, value))
             try:
                 field.assert_validity(value)
             except TypeError as error:
@@ -108,18 +113,22 @@ class WithFields:
 
         def __get_value(field):
             """..."""
+            LOGGER.debug(
+                LOGGER.get_source_info(),
+                "Get value for {} Field '{}'".format(
+                    self.__class__.__name__, field))
             if not hasattr(self.__class__, field):
                 raise TypeError(
                     "{} is not a field of class {}".format(
                         field,
                         self.__class__.__name__))
-            class_field = getattr(self.__class__, field, None)
+            class_field = getattr(self.__class__, field)
             if hasattr(self, field):
                 instance_field = getattr(self, field)
                 if not isinstance(instance_field, Field):
                     #Field value already assigned
                     #before initialization chain hits WithFields.__init__
-                    __check_validity(field, instance_field)
+                    __check_validity(class_field, instance_field)
                     return instance_field
                 else:
                     #instance's Field has not been set
@@ -297,7 +306,6 @@ class WithFields:
 
 ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})
 
-LOGGER = Logger(client=__file__)
 
 class ClassAttributeMetaBase(type):
     """
