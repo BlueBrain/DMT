@@ -31,8 +31,6 @@ from dmt.tk.field import Field, lazyfield, WithFields
 from dmt.tk.plotting import Bars
 from dmt.tk.reporting.section import Section
 from neuro_dmt import terminology
-from neuro_dmt.library.models.bluebrain.circuit.adapter import\
-    BlueBrainCircuitAdapter
 from neuro_dmt.analysis.reporting import CircuitAnalysisReport
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 
