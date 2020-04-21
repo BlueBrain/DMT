@@ -23,6 +23,7 @@ develop circuit analyses.
 import numpy as np
 import pandas as pd
 from dmt.model.interface import interfacemethod, get_interface
+from dmt.analysis import Adapted
 from dmt.data.observation import measurement
 from dmt.tk.journal import Logger
 from dmt.tk.parameters import Parameters
@@ -48,37 +49,6 @@ def adaptedmethod(m):
 
     return effective
         
-
-class Adapted:
-    """
-    A base mix in to define an analysis that has been adapted...
-    """
-    # def __init__(self, adapter, **kwargs):
-    #     """
-    #     Adapter cannot be a Field.
-    #     If we set it as a Field, __getattr__ gets into infinite recursion
-    #     during instantiation.
-    #     """
-    #     super().__init__(**kwargs)
-    #     self._adapter = adapter
-
-    def __getattr__(self, method):
-        """
-        Delegate method to the adapter.
-        """
-        LOGGER.debug(
-            LOGGER.get_source_info(),
-            "Get attribute {}".format(method))
-        adapter = self._adapter
-        return getattr(adapter, method)
-
-    def __call__(self, circuit_model, **kwargs):
-        """
-        Run this analysis on a circuit.
-        """
-        #return self._runner(self.adapter, circuit_model, **kwargs)
-        return super().__call__(self._adapter, circuit_model, **kwargs)
-
 
 class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
     """
@@ -180,6 +150,9 @@ class MockCircuit:
 
 class MockAdapter:
     """..."""
+    def get_label(self, circuit_model):
+        return "MockCircuit"
+
     def get_provenance(self, circuit_model, **kwargs):
         return dict(
             animal="mock",
