@@ -32,7 +32,7 @@ class Analysis(WithFields, AIBase):
     def __init__(self, *args, **kwargs):
         """
         We expect the user to initialize in their subclasses,
-        or use fields.
+        or use fields3.
         """
         super().__init__(*args, **kwargs)
 
@@ -98,3 +98,43 @@ class Suite(WithFields):
             for label, analysis in self._analyses.items()}
 
 from .structured import StructuredAnalysis
+
+
+class Adapted:
+    """
+    A mixin to define an analysis that has been adapted...
+    """
+    def __init__(self, adapter, *args, **kwargs):
+        """..."""
+        kwargs["adapter"] = adapter
+        super().__init__(*args, **kwargs)
+
+    def __getattr__(self, method):
+        """
+        Delegate method to the adapter.
+        """
+        try:
+            AdapterInterface = self.AdapterInterface
+        except AttributeError:
+            raise AttributeError(
+                """
+                {} has no such attribute: {}
+                """.format(self, method))
+                    
+        if method in dir(AdapterInterface):
+            try:
+                return getattr(self._adapter, method)
+            except AttributeError:
+                pass
+        raise AttributeError(
+            """
+            Attribute {} not available on {} or it's adapter {}.
+            """.format(method, self, self._adapter))
+                        
+
+    def __call__(self, circuit_model, **kwargs):
+        """
+        Run this analysis on a circuit.
+        """
+        #return self._runner(self.adapter, circuit_model, **kwargs)
+        return super().__call__(self._adapter, circuit_model, **kwargs)
