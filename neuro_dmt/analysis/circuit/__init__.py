@@ -297,7 +297,15 @@ class StructuredAnalysis(
                     parameter_set=p,
                     data=data,
                     method=get_measurement.__method__)
-            
+
+    @interfacemethod
+    def get_label(adapter, circuit_model):
+        """
+        Get a label for the circuit model that can be used for documenting
+        and saving results of an analysis in folders.
+        """
+        pass
+
     def get_measurement(self,
             adapter, circuit_model,
             *args,
