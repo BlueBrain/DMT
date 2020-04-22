@@ -20,6 +20,7 @@ develop circuit analyses.
 """
 
 
+import functools
 import numpy as np
 import pandas as pd
 from dmt.model.interface import interfacemethod, get_interface
@@ -38,17 +39,16 @@ from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 
 LOGGER = Logger(client=__file__)
 
-def adaptedmethod(m):
-    """
-    Define an analysis' method to be adapted...
 
-    i.e insert `adapter, method,` before `method` arguments.
+def adapted_model_callable(method):
     """
-    def effective(self, adapter, model, **kwargs):
-        return m(self, model, **kwargs)
+    Change `method`'s call signature so that it can be called
+    with `adapter, model` as the first two arguments
+    """
+    @functools.wraps(method)
+    def callable(adapter, model, *args, **kwargs):
+        return method(*args, )
 
-    return effective
-        
 
 class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
     """
@@ -67,7 +67,15 @@ class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
         A method to collect measurements for individual parameter set values.
         """,
         __default_value__=measurement.collection.series_type)
-    plotter = Field(
+
+    sample_size = Field(
+        """
+        Number of samples to make.
+        For the peculiar case of this class, this value should be 1.
+        """,
+        __default_value__=1)
+
+    figures = Field(
         """
         A callable on plotting data that produces figures...
         """,
@@ -97,14 +105,30 @@ class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
         passing through each voxel in the circuit's physical space.
         """)
     
-    @lazyfield
-    def measurement_parameters(self):
-        return lambda *args, **kwargs: [{"region": r} for r in self.regions]
+    # @lazyfield
+    # def measurement_parameters(self):
+    #     return lambda *args, **kwargs: [{"region": r} for r in self.regions]
     
+    def get_parameter_sets(self, *args, **kwargs):
+        """
+        Parameters to compute this analysis for.
+        """
+        return [{"region": r} for r in self.regions]
+
+    def get_figures(self, measurement_data, caption=None, **kwargs):
+        """..."""
+        plot_type =\
+            Bars(
+                xvar="layer",
+                xlabel="Layer",
+                yvar="thickness",
+                ylabel="Thickness",
+                gvar="region")
+        return plot_type.get_figures(measurement_data, caption=caption)
+
     @interfacemethod
     def get_layer_thickness_values(self,
             circuit_model,
-            relative=False,
             region=None,
             **kwargs):
         """
@@ -124,24 +148,14 @@ class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
         a sample of values for each layer in the named region.
         """
 
-    @adaptedmethod
-    def sample_measurement(self, circuit_model, **kwargs):
+    def get_measurement(self, circuit_model, **parameters):
         """
-        Measure a sample to use for analysis.
-
-        Arguments
-        -----------
-        kwargs : Keyword arguments containing a circuit query,
-        ~        and other specification...
+        Measurement to be made on `circuit_model` for given `parameters`
         """
-        wide =\
-          self.get_layer_thickness_values(circuit_model, **kwargs)
-        wide.columns.name =\
-            "layer"
-        return\
-            pd.concat([wide.iloc[i] for i in range(wide.shape[0])])\
-              .rename("thickness")
-
+        wide = self.get_layer_thickness_values(circuit_model, **parameters)
+        wide.columns.name = "layer"
+        return pd.concat([wide.iloc[i] for i in range(wide.shape[0])])\
+                 .rename("thickness")
 
 
 class MockCircuit:

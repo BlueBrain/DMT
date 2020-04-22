@@ -508,6 +508,16 @@ class StructuredAnalysis(
         value_meaurement =\
             self.get_measurement_method(adapter)
 
+        def get_figures(measurement):
+            plotting_data=\
+                self.append_reference_data(
+                    measurement.data,
+                    reference_data)
+            return\
+                self.figures(
+                    plotting_data,
+                    caption=measurement.method)
+
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (
                 Record(
@@ -516,10 +526,7 @@ class StructuredAnalysis(
                         self.label,
                         measurement.data,
                         author=author,
-                        figures=self.get_figures(
-                            measurement,
-                            reference_data,
-                            caption=measurement.method),
+                        figures=get_figures(measurement),
                         reference_data=reference_data,
                         provenance_circuit=provenance_circuit))
                 for measurement in self.collect_serially(
@@ -536,10 +543,7 @@ class StructuredAnalysis(
                 self.label,
                 measurement.data,
                 author=author,
-                figures=self.get_figures(
-                    measurement,
-                    reference_data,
-                    caption=measurement.method),
+                figures=get_figures(measurement),
                 reference_data=reference_data,
                 provenance_circuit=provenance_circuit)
 
