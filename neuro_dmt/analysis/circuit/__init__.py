@@ -221,7 +221,6 @@ class StructuredAnalysis(
         raise RuntimeError(
             "Unreachable point in code.")
 
-
     @lazyfield
     def description_measurement(self):
         """
@@ -233,7 +232,6 @@ class StructuredAnalysis(
         except AttributeError:
             return NA
         raise RuntimeError("Execution cannot reach here.")
-
 
     def parameter_sets(self,
             adapter,
@@ -249,19 +247,16 @@ class StructuredAnalysis(
                     circuit_model,
                     sample_size=self.sample_size if using_random_samples else 1)
 
-    def _get_measurement_serially(self,
-            circuit_model,
-            adapter,
+    def collect_serially(self,
+            adapter, circuit_model, 
+            value_measurement, 
             *args, **kwargs):
         """
         Compute the measurement, on parameter set at a time...
         """
-        get_measurement =\
-            self.get_measurement_method(adapter)
-
         for p in tqdm(self.parameter_sets(adapter, circuit_model)):
             measured_value =\
-                get_measurement(
+                value_measurement(
                     circuit_model,
                     sampling_methodology=self.sampling_methodology,
                     **p, **kwargs)
@@ -296,7 +291,7 @@ class StructuredAnalysis(
                 Record(
                     parameter_set=p,
                     data=data,
-                    method=get_measurement.__method__)
+                    method=value_measurement.__method__)
 
     @interfacemethod
     def get_label(adapter, circuit_model):
@@ -306,34 +301,33 @@ class StructuredAnalysis(
         """
         pass
 
-    def get_measurement(self,
+    def collect(self,
             adapter, circuit_model,
-            *args,
-            **kwargs):
+            value_measurement,
+            *args, **kwargs):
         """
-        Get a statistical measurement.
-        """
-        get_measurement =\
-            self.get_measurement_method(adapter)
+        Collect a measurement on a circuit model
 
-        measured_values =\
-            self.measurement_collection(
-                (p, get_measurement(circuit_model,
-                                    sampling_methodology=self.sampling_methodology,
-                                    **p, **kwargs))
-                for p in tqdm(self.parameter_sets(adapter, circuit_model))
-            ).rename(columns={"value": self.phenomenon.label})
+        Arguments
+        ------------
+        value_measurement: Mapping parameters -> value
+        ~                  for the measurement to be collected.
+        """
+        v = value_measurement
         measurement =\
-            self.add_columns(
-                adapter, circuit_model,
-                measured_values
-                .reset_index()
-                .assign(dataset=adapter.get_label(circuit_model))
-                .set_index(["dataset"] + measured_values.index.names))
+            self.measurement_collection(
+                (p, v(circuit_model,
+                      sampling_methodology=self.sampling_methodology,
+                      **p, **kwargs))
+                for p in tqdm(self.parameter_sets(adapter, circuit_model))
+            ).rename(
+                columns={"value": self.phenomenon.label})
+        dataset =\
+            adapter.get_label(circuit_model)
         return\
             Record(
-                data=measurement,
-                method=get_measurement.__method__)
+                data=pd.concat([measurement], keys=[dataset], names=["dataset"]),
+                method=value_measurement.__method__)
 
     @lazyfield
     def description_reference_data(self):
@@ -511,6 +505,9 @@ class StructuredAnalysis(
                    .replace('}', '')\
                    .replace("'", "")
 
+        value_meaurement =\
+            self.get_measurement_method(adapter)
+
         if self.processing_methodology == terminology.processing_methodology.serial:
             return (
                 Record(
@@ -525,12 +522,14 @@ class StructuredAnalysis(
                             caption=measurement.method),
                         reference_data=reference_data,
                         provenance_circuit=provenance_circuit))
-                for measurement in self._get_measurement_serially(
-                        model, adapter, **kwargs))
+                for measurement in self.collect_serially(
+                        adapter, model,
+                        value_measurement,
+                        **kwargs))
         measurement =\
-            self.get_measurement(
-                adapter,
-                model,
+            self.collect(
+                adapter, model,
+                value_meaurement,
                 **kwargs)
         report =\
             self.get_report(
