@@ -244,7 +244,8 @@ class Logger:
     def debug(self, *messages):
         """..."""
         return self._log_message(
-            DebugInfo(*messages))
+            DebugInfo(*messages),
+            out=sys.stderr)
     
     def warning(self, *messages):
         """..."""

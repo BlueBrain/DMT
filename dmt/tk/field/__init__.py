@@ -83,9 +83,6 @@ class WithFields:
 
         def __check_validity(field, value):
             """..."""
-            LOGGER.debug(
-                LOGGER.get_source_info(),
-                "check validity of field '{}' value '{}'".format(field.__attr_name__, value))
             try:
                 field.assert_validity(value)
             except TypeError as error:

@@ -20,6 +20,7 @@ A model can be adapted for an analysis/validation's requirements by
 implementing methods computing these measurements.
 """
 from abc import  ABC
+import functools
 from ..tk.field import\
     ClassAttribute,\
     ClassAttributeMetaBase
@@ -51,6 +52,7 @@ def adapts(model):
     Arguments
     ~   model :: A Python Class that represents the adapted model.
     """
+    @functools.wraps(model)
     def decorated(adapting_class):
         """
         The effective decorator method.

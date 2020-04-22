@@ -17,8 +17,11 @@
 Base classes for analyses
 """
 
+from abc import abstractmethod
 import os
+import functools
 from abc import ABC, abstractmethod
+from dmt.tk.parameters import Parameters
 from ..model import AIBase
 from ..tk.field import Field, WithFields
 
@@ -100,13 +103,31 @@ class Suite(WithFields):
 from .structured import StructuredAnalysis
 
 
-class Adapted:
+def _adapted(method):
+    """
+    Wrap a method defined in an `Adapted` subclass
+    such that it can be called with `adapter` as the first argument.
+    """
+    @functools.wraps(method)
+    def wrapped(adapter, model, **kwargs):
+        """
+        Wrapped methodthod that will be used.
+        """
+        return method(model, **kwargs)
+    return wrapped
+
+
+class Adapted(ABC):
     """
     A mixin to define an analysis that has been adapted...
     """
     def __init__(self, adapter, *args, **kwargs):
         """..."""
-        kwargs["adapter"] = adapter
+        kwargs.update({
+            "adapter": adapter,
+            "measurement_parameters": _adapted(self.get_parameter_sets),
+            "sample_measurement": _adapted(self.get_measurement),
+            "figures": self.get_figures})
         super().__init__(*args, **kwargs)
 
     def __getattr__(self, method):
@@ -130,7 +151,38 @@ class Adapted:
             """
             Attribute {} not available on {} or it's adapter {}.
             """.format(method, self, self._adapter))
-                        
+
+    @abstractmethod
+    def get_parameter_sets(self, model, *args, **kwargs):
+        """
+        Get measurement parameters.
+        This method should expect at least two 
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_measurement(self, model, **parameters):
+        """
+        Get measurement for a single set of parameters.
+
+        Arguments
+        ---------------
+        parameters :: key-word arguments carrying all the parameter names and
+        ~             values at which the measurement will be made.
+        ~             Elements in these key-word arguments are expected to have 
+        ~             been obtained from `self.measurement_parameters` or
+        ~             been measurement specification that will be handled by 
+        ~             the concrete implementation of this method.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_figures(self, measurement, *args, **kwargs):
+        """
+        A method that takes a measurement and some plotting specification,
+        to produce figures!
+        """
+        raise NotImplementedError
 
     def __call__(self, circuit_model, **kwargs):
         """
