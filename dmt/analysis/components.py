@@ -14,6 +14,7 @@
 # DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
 
 """
+Components to compose an analysis with.
 A circuit analysis with sections.
 Each section corresponds to a section in the report that will be produced when
 a `SectionedAnalysis` instance is called on a `(model, adapter)` pair.

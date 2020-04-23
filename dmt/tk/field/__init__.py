@@ -134,10 +134,11 @@ class WithFields:
                 #unassigned Field, read its value from kwargs
                 pass
 
-            if field in kwargs:
-                return class_field.cast(kwargs[field])
-
-            return class_field.default_value
+            return\
+                class_field.cast(
+                    kwargs.get(
+                        field,
+                        class_field.default_value))
 
         for field in self.get_fields():
             class_field =\

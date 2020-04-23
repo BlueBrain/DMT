@@ -20,6 +20,7 @@ import sys
 import copy
 import collections
 from dmt.tk.journal import Logger
+from .import NA
 
 LOGGER = Logger(client=__file__)
 
@@ -98,16 +99,20 @@ class Field:
 
     def cast(self, value):
         """..."""
-        return value\
-            if isinstance(self._cast, type) and isinstance(value, self._cast)\
-               else self._cast(value)
+        if value is NA:
+            return NA
+        if isinstance(self._cast, type) and isinstance(value, self._cast):
+            return value
+        return self._cast(value)
 
     @property
     def default_value(self):
         """
         Get default value.
         """
-        return self._cast(copy.deepcopy(self._default_value))
+        return\
+            NA if self._default_value is NA\
+            else copy.deepcopy(self._default_value)
 
     @property
     def description(self):

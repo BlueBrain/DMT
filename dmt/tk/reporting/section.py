@@ -81,4 +81,3 @@ class Section(WithFields):
                     defaultdict(
                         lambda: "<Not Provided>",
                         description_model))}
-

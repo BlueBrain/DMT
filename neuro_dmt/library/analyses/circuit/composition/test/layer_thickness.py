@@ -20,10 +20,9 @@ develop circuit analyses.
 """
 
 
-import functools
 import numpy as np
 import pandas as pd
-from dmt.model.interface import interfacemethod, get_interface
+from dmt.model.interface import interfacemethod
 from dmt.analysis import Adapted
 from dmt.data.observation import measurement
 from dmt.tk.journal import Logger
@@ -38,16 +37,6 @@ from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 
 
 LOGGER = Logger(client=__file__)
-
-
-def adapted_model_callable(method):
-    """
-    Change `method`'s call signature so that it can be called
-    with `adapter, model` as the first two arguments
-    """
-    @functools.wraps(method)
-    def callable(adapter, model, *args, **kwargs):
-        return method(*args, )
 
 
 class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
@@ -91,24 +80,34 @@ class LayerThicknessAnalysis(Adapted, BrainCircuitAnalysis):
         """,
         __default_value__=CircuitAnalysisReport)
 
+    # class introduction(self):
+    #     """
+    #     The cortex consists of layers of cells. Here we analyze how layer
+    #     thicknesses vary over a brain region.
+    #     """
+    #     pass
+
+    # @section
+    # def methods(self):
+    #     """
+    #     Thickness of layers were measured as the shortest top-bottom line
+    #     passing through each voxel in the circuit's physical space.
+    #     """
+
     @lazyfield
     def introduction(self):
         return Section.introduction("""
         The cortex consists of layers of cells. Here we analyze how
         layer thicknesses vary over a brain region.
         """)
-    
+
     @lazyfield
     def methods(self):
         return Section.methods("""
         Thickness of layers were measured as the shortest top-bottom line 
         passing through each voxel in the circuit's physical space.
         """)
-    
-    # @lazyfield
-    # def measurement_parameters(self):
-    #     return lambda *args, **kwargs: [{"region": r} for r in self.regions]
-    
+
     def get_parameter_sets(self, *args, **kwargs):
         """
         Parameters to compute this analysis for.
