@@ -32,7 +32,6 @@ from dmt.tk.field import Field, LambdaField, lazyfield, WithFields
 from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
 from dmt.tk.stats import Statistics
-from dmt.tk.plotting import BasePlotter
 from dmt.tk.reporting import Report, Reporter
 from dmt.tk.reporting.section import Section
 from dmt.tk.utils.string_utils import paragraphs
