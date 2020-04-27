@@ -1110,3 +1110,21 @@
 * Presentations
   Talk about validations.
 ** <2019-03-01 Fri>
+* Issues
+** ~TemplateTaggedString~
+   We are greedy, we want everything.
+   A string representing, for example, the abstract, may contain tags to be
+   filled by method calls on ~(adapter, model, *args, **kwargs)~.
+   How can we then distinguish any other word from a template tag?
+   We could use ` ~$~, but we want to allow latex!
+   Allowing latex also overrules using native python string templates that use
+   ~{template-tag}~ syntax.
+   We have to think of a /latexical/ way.
+   Possibilities:
+   1. ~\tag{word}~ too latexy? plus the word ~tag~ may clash...
+   2. ~\dmtag{word}~_ too latexy? ~am~? really?
+   3. ~<<word>>~ (problem with latex, though rarer than ~{word}~
+   4. ~__word__~ sorta-pythonic. user does not have to know latex
+   5. ~\query{word}~ meh
+   6. ~\ttag{word}~ whatever
+   7. a mix of latex sorta approach, and pythonic dunders.

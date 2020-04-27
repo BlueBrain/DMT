@@ -99,8 +99,9 @@ class Field:
 
     def cast(self, value):
         """..."""
-        if value is NA:
-            return NA
+        LOGGER.debug(
+            "Field cast `{}`".format(value),
+            "To `{}`".format(self._cast))
         if isinstance(self._cast, type) and isinstance(value, self._cast):
             return value
         return self._cast(value)
@@ -182,10 +183,26 @@ class LambdaField(Field):
     """
     A lazy field that must be provided a lambda over self as its value.
     """
-    def __init__(self, __doc__, value):
-        super().__init__(__doc__, __default_value__=value)
+    def __init__(self, __doc__, value, __as__=lambda x: x):
+        super().__init__(__doc__, __default_value__=value, __as__=__as__)
         
+    def cast(self, value):
+        """..."""
+        try:
+            return super().cast(value)
+        except TypeError:
+            return  super().cast(value(None))
+        pass
+
     def __set__(self, instance, value):
+        """..."""
+        LOGGER.debug(
+            LOGGER.get_source_info(),
+            """
+            Set `LambdaField {}` to value `{}`
+            """.format(
+                self.__attr_name__,
+                value))
         if callable(value):
             super().__set__(instance, _from_self(value))
         else:
@@ -199,4 +216,3 @@ class LambdaField(Field):
             return instance_attr(instance, owner)
         except TypeError:
             return instance_attr
-  

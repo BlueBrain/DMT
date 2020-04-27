@@ -38,7 +38,7 @@ class NullType(Singleton, Mapping):
 
     def __str__(self):
         """..."""
-        return "Not Available"
+        return "<<<Not Available>>>"
 
     def __repr__(self):
         """..."""
@@ -63,6 +63,12 @@ class NullType(Singleton, Mapping):
 
     def __len__(self):
         return 0
+
+    def __contains__(self, x):
+        """
+        A null-type should not contain anything.
+        """
+        return False
 
 
 NA = NullType()

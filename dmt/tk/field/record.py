@@ -23,7 +23,8 @@ from .import Field, WithFields
 def Record(**kwargs):
     attributes = {
         key: Field("record field {}".format(key))
-        for key in kwargs.keys()}
+        for key, value in kwargs.items()
+        if value is not None}
 
     def __repr__(self):
         return\
@@ -31,8 +32,15 @@ def Record(**kwargs):
                 "{}: {}".format(field, repr(value).replace('\n', "; "))
                 for field, value in self.field_dict.items())
 
+    def assign(self, **new_fields):
+        """
+        Create a new record with additional fields.
+        """
+        return Record(**self.field_dict, **new_fields)
+
     attributes["__str__"] = __repr__
     attributes["__repr__"] = __repr__
+    attributes["assign"] = assign
 
     record_type =\
         type(
@@ -40,3 +48,5 @@ def Record(**kwargs):
             (WithFields,),
             attributes)
     return record_type(**kwargs)
+
+

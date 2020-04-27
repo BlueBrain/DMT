@@ -18,5 +18,5 @@
 Exceptions for fields.
 """
 
-class FieldNotSetError(TypeError):
+class FieldIsRequired(TypeError):
     pass

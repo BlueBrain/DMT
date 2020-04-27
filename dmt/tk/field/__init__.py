@@ -30,6 +30,7 @@ from collections.abc import Mapping
 from dmt.tk.utils.nothing import NA
 from .field import Field, LambdaField
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
+from .exceptions import FieldIsRequired
 from ..journal import Logger
 
 LOGGER = Logger(client=__file__)
@@ -70,11 +71,32 @@ class WithFields:
 
     __description__ = {} #description of Fields and ClassAttributes
 
+
+    @property
+    def logger(self):
+        """
+        Every `WithFields` has a logger.
+        """
+        return self._logger
+
+    def __new__(cls, *args, **kwargs):
+        """..."""
+        for field in cls.get_fields():
+            attr_field = getattr(cls, field)
+            set_name(attr_field, field)
+
+        return super().__new__(cls)
+
     def __init__(self,
             *args, **kwargs):
         """
         Initialize Me
         """
+        if not hasattr(self, "_logger"):
+            self._logger = Logger(
+                client=self.__class__.__name__,
+                level=kwargs.get("log_level", None))
+
         if len(args) == 1 and isinstance(args[0], Mapping):
             kwargs.update({
                 label: value
@@ -134,11 +156,10 @@ class WithFields:
                 #unassigned Field, read its value from kwargs
                 pass
 
-            return\
-                class_field.cast(
-                    kwargs.get(
-                        field,
-                        class_field.default_value))
+            value = kwargs.get(field, class_field.default_value)
+            if value is None or class_field.cast is None:
+                return None
+            return class_field.cast(value)
 
         for field in self.get_fields():
             class_field =\
@@ -149,9 +170,8 @@ class WithFields:
             class_field\
                 .set_defining_class(
                     self.__class__)
-            set_name(
-                class_field,
-                field)
+            #set_name(class_field, field)
+                
             self.__description__[field] = class_field.description
             if isinstance(class_field, ClassAttribute):
                 self._check_class_attribute(class_field)
@@ -165,24 +185,24 @@ class WithFields:
                     documentation = class_field\
                         .documentation\
                         .replace('\n', "\n\t\t")
-                    print(
-                        """Please provide Field '{}':
-                        {}""".format(
-                            field,
-                            documentation),
-                        file=stdout)
+                    self._logger.alert(
+                        self._logger.get_source_info(),
+                        """
+                        Please provide Field `{}`:
+                        {}
+                        """.format(field, documentation))
                     raise ValueError(
-                    """
-                    Cannot create '{}' instance without required Field '{}'.
-                    Please provide a value as a keyword argument in your 
-                    instance initialization.
-                    Missing Field '{}':
-                    \t{}
-                    """.format(
-                        self.__class__.__name__,
-                        field,
-                        field,
-                        documentation))
+                        """
+                        Cannot create '{}' instance without required Field '{}'.
+                        Please provide a value as a keyword argument in your 
+                        instance initialization.
+                        Missing Field '{}':
+                        \t{}
+                        """.format(
+                            self.__class__.__name__,
+                            field,
+                            field,
+                            documentation))
                 setattr(self, field, value)
             elif value is None:
                 #Value is not required
@@ -190,10 +210,6 @@ class WithFields:
             else:
                 setattr(self, field, value)
 
-        if not hasattr(self, "_logger"):
-            self._logger = Logger(
-                client=self.__class__.__name__,
-                level=kwargs.get("log_level", None))
         try:
             super().__init__(
                 *args, **kwargs)
@@ -290,6 +306,14 @@ class WithFields:
         """
         return self.with_fields(**field_values)
 
+    def assign(self, **update_fields):
+        """
+        Update values of the fields provided as keywords `update_fields`
+        """
+        for field, value in self.field_dict.items():
+            if field in update_fields:
+                setattr(self, field, update_fields[field])
+        return self
 
     def __getitem__(self, item):
         """
@@ -301,6 +325,11 @@ class WithFields:
             except AttributeError:
                 return NA
         raise AttributeError("{} is not a field".format(item))
+
+    def __contains__(self, item):
+        """..."""
+        return item in self.get_fields()
+
 
 ABCWithFields = type("ABCWithFields", (WithFields, ABC), {})
 
@@ -371,7 +400,8 @@ class ClassAttributeMetaBase(type):
                                 metaclass_field.__doc__.replace('\n', "\n\t\t")),
                             file=stdout)
                         raise ValueError(
-                            """Cannot create '{}' instance without required Field '{}'.
+                            """
+                            Cannot create '{}' instance without required Field '{}'.
                             Please provide a value as a keyword argument in your 
                             instance initialization.
                             Missing Field '{}':
@@ -400,7 +430,10 @@ class ClassAttributeMetaBase(type):
             name, bases, namespace)
 
 
-def lazyfield(instance_field):
+def get_field_name_for_storage(attribute):
+    return "_{}".format(attribute.__name__)
+
+def lazyfield(class_method):
     """
     Make an 'instance_field' lazy.
 
@@ -409,30 +442,57 @@ def lazyfield(instance_field):
     instance_field:
     ~   a method attribute of a class decorated @lazyfield
     """
-    field_name_for_storage = "_{}".format(instance_field.__name__)
+    #field_name_for_storage = "_{}".format(instance_field.__name__)
+    name_storage = get_field_name_for_storage(class_method)
 
     @property
-    def effective(instance):
+    def effective(self):
         """
         The effective method, resulting from the decoration `@lazyfield`.
         """
-        if not hasattr(
-                instance,
-                field_name_for_storage):
-            setattr(
-                instance,
-                field_name_for_storage,
-                instance_field(instance))
+        if not hasattr(self, name_storage):
+            setattr(self, name_storage,
+                    class_method(self))
         return\
-            getattr(
-                instance,
-                field_name_for_storage)
+            getattr(self, name_storage)
 
     return effective
 
 lazy = lazyfield
 
 lazyproperty = lazyfield
+
+def field_as(cast_as):
+    """
+    Cast a field...
+    """
+    def _decorator(class_method):
+        """
+        Make a  `Field` like object from a property like method.
+        """
+        try:
+            default_value = class_method(None)
+        except FieldIsRequired:
+            default_value = None
+        return Field(
+            class_method.__doc__,
+            __default_value__=default_value,
+            __as__=cast_as)
+
+    return _decorator
+
+def field(class_method):
+    """
+        Make a  `Field` like object from a property like method.
+        """
+    return  field_as(lambda x: x)(class_method)
+field.cast = field_as
+
+def lambdafield(class_method):
+    return LambdaField(
+        class_method.__doc__,
+        class_method)
+
 
 from .prop import Property
 from .record import Record

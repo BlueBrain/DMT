@@ -21,10 +21,10 @@ Test develop a documented analysis.
 from collections import OrderedDict
 from scipy import stats
 from dmt.model.interface import interfacemethod
-from dmt.tk.field import Record
+from dmt.tk.field import Record, NA
 from dmt.tk.plotting import Bars
 #from ..components import *
-from ..document import Introduction
+from ..document import Abstract, Introduction
 
 
 class LayerThicknessIntroduction(Introduction):
@@ -42,12 +42,50 @@ class LayerThicknessIntroduction(Introduction):
     """
     pass
 
+
+class MockModel:
+    pass
+
+
+class MockAdapter:
+    """..."""
+    def get_label(self, model):
+        return "MockModel"
+
+    def get_provenance(self, model, **kwargs):
+        return dict(
+            animal="mock",
+            age="mock",
+            brain_region="mock",
+            data_release="mock",
+            label="mock",
+            uri="mock",
+            authors=["mock"])
+
+
+
+def test_abstract():
+    """
+    Specify and test `Abstract`.
+    """
+    adapter = MockAdapter()
+    model = MockModel()
+    abstract = Abstract("abstract $animal $label")
+    assert abstract.narrative.content == "abstract $animal $label"
+    abstract_mock = abstract(adapter, model)
+    assert abstract_mock == "abstract mock mock", abstract_mock
+    provenance = {"animal": "NA", "label": "NA"}
+    abstract_na = abstract(adapter, model, provenance)
+    assert abstract_na == "abstract NA NA", abstract_na
+
 def test_introduction():
     """
     Specify and test different ways in which an introduction can be set.
     """
     intro = Introduction("An introduction")
-
+    assert intro.narrative.content == "An introduction"
+    assert intro.data.value is NA
+    assert intro.illustration.figures is NA
 
 
 

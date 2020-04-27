@@ -18,6 +18,7 @@
 Document an analysis.
 """
 
+import re
 from Cheetah.Template import Template
 from dmt.model import AIBase
 from dmt.model.interface import interfacemethod
@@ -31,7 +32,6 @@ from dmt.tk.field import\
     lazyfield,\
     NA, Record,\
     WithFields
-from dmt.tk.field.exceptions import FieldNotSetError
 from dmt.tk.utils.string_utils import make_label
 from neuro_dmt import terminology
 
@@ -119,7 +119,7 @@ class Data(WithFields, AIBase):
 
     """
     @field
-    def value(self, ):
+    def value(self):
         """
         Either:
         1. `Callable` on `(adapter, model)`
@@ -212,52 +212,52 @@ class Illustration(WithFields, AIBase):
         """
         super().__init__(figures=figures, **kwargs)
 
-        def __call__(self, adapter, model, data, *args, **kwargs):
-            """
-            Get an illustration...
-            """
-            try:
-                graphic = self.figures(data, adapter, model, *args, **kwargs)
-                return {"figure": graphic}
-            except TypeError:
-                figures = {}
-                for label, figure in self.figures.items():
-                    try:
-                        data_figure = data[label]
-                    except TypeError:
-                        LOGGER.warn(
-                            LOGGER.get_source_info(),
-                            """
-                            Data type {} for an illustration with
-                            multi-figures.  Ideally, use a mapping with
-                            same keys as `self.figures`:
-                            \t {}.
-                            Will attempt by using the entire data object
-                            for figure {}.
-                            """.format(
-                                type(data),
-                                list(self.figures.keys()),
-                                label))
-                        data_figure = data
-                        pass
-                    except KeyError:
-                        LOGGER.warn(
-                            LOGGER.get_source_info(),
-                            """
-                            No data for figure {}.
-                            Will attempt by using the entire data object.
-                            """.format(label))
-                        data_figure = data
-                        pass
-
-                    try:
-                        figures[label] =\
-                            figure(data_figure, adapter, model, *args, **kwargs)
-                    except TypeError:
-                        figures[label] = figure
+    def __call__(self, adapter, model, data=None, *args, **kwargs):
+        """
+        Get an illustration...
+        """
+        try:
+            graphic = self.figures(data, adapter, model, *args, **kwargs)
+            return {"figure": graphic}
+        except TypeError:
+            figures = {}
+            for label, figure in self.figures.items():
+                try:
+                    data_figure = data[label]
+                except TypeError:
+                    LOGGER.warn(
+                        LOGGER.get_source_info(),
+                        """
+                        Data type {} for an illustration with
+                        multi-figures.  Ideally, use a mapping with
+                        same keys as `self.figures`:
+                        \t {}.
+                        Will attempt by using the entire data object
+                        for figure {}.
+                        """.format(
+                            type(data),
+                            list(self.figures.keys()),
+                            label))
+                    data_figure = data
+                    pass
+                except KeyError:
+                    LOGGER.warn(
+                        LOGGER.get_source_info(),
+                        """
+                        No data for figure {}.
+                        Will attempt by using the entire data object.
+                        """.format(label))
+                    data_figure = data
+                    pass
+                
+                try:
+                    figures[label] =\
+                        figure(data_figure, adapter, model, *args, **kwargs)
+                except TypeError:
+                    figures[label] = figure
                 return figures
-
-            return self.figures
+                
+        return self.figures
 
 
 class Document(WithFields, AIBase):
@@ -360,9 +360,16 @@ class Section(Document):
             illustration=self.illustration(adapter, model, data=data, **kwargs))
 
 
-class Abstract(Narrative):
-    pass
-
+class Abstract(DocumentElement):
+    def __init__(self, content, **kwargs):
+        super().__init__(
+            title="Abstract",
+            label="abstract",
+            narrative=content,
+            data=NA,
+            illustration=NA,
+            **kwargs)
+    
 
 class Introduction(Section):
     """
@@ -515,7 +522,7 @@ class Conclusion(Section):
     pass
 
 
-class Chapter(Document):
+class Chapter(DocumentElement):
     """
     An analysis with sections.
     When called on a `(circuit, adapter)` pair, each section will be output
