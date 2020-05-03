@@ -53,15 +53,16 @@ def timestamp(time_value=None):
     """..."""
     return Time(time_value).stamp
 
-COUNTERBASE = int(os.environ.get("COUNTERBASE", "100"))
-def count_number_calls(logger):
+def count_number_calls(
+        logger,
+        counter_base=int(os.environ.get("COUNTERBASE", "100"))):
     """decorate..."""
     def decorator(method):
         method.n_calls = 0
         def _decorated(*args, **kwargs):
             result = method(*args, **kwargs)
             method.n_calls += 1
-            if method.n_calls % COUNTERBASE == 0:
+            if method.n_calls % counter_base == 0:
                 logger.info(
                     """{} call count : {}""".format(
                         method.__name__,
