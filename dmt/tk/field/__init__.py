@@ -473,7 +473,16 @@ def field_as(cast_as):
         try:
             default_value = class_method(None)
         except FieldIsRequired:
-            default_value = None
+            return Field(
+                class_method.__doc__,
+                __as__=cast_as)
+
+        if default_value is None:
+            return Field(
+                class_method.__doc__,
+                __as__=cast_as,
+                __required__=False)
+        
         return Field(
             class_method.__doc__,
             __default_value__=default_value,

@@ -73,6 +73,7 @@ class LayerThicknessAnalysis(Chapter):
 
        TODO: place parameters and measurement here
        """
+
        def parameters(self, *args, **kwargs):
            """
            Layer thickness is measured for brain-regions,
@@ -221,17 +222,10 @@ class LayerThicknessAnalysis(Chapter):
        """
        pass
 
+
    class ReferenceData(document.Section):
        """
        List and discuss all the reference data used...
        Pass on this one before developing other sections
        """
        pass
-
-
-
-
-
-
-
-

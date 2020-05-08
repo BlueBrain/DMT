@@ -38,9 +38,14 @@ def Record(**kwargs):
         """
         return Record(**self.field_dict, **new_fields)
 
+    @property
+    def empty(self):
+        return len(self.field_dict) == 0
+
     attributes["__str__"] = __repr__
     attributes["__repr__"] = __repr__
     attributes["assign"] = assign
+    attributes["empty"] = empty
 
     record_type =\
         type(

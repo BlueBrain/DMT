@@ -100,11 +100,21 @@ class AIBase(metaclass=AIMeta):
 
     _adapter = None
 
+    @property
+    def logger(self):
+        """
+        Every `WithFields` has a logger.
+        """
+        try:
+            return self._logger
+        except AttributeError:
+            self._logger =\
+                LOGGER(client=self.__class__.__name__)
+        return self._logger
+
     def __init__(self,
         *args, **kwargs):
         """..."""
-        self.logger =\
-            Logger(client=self.__class__.__name__)
         self.logger.debug(
             self.logger.get_source_info(),
             "initialize an analysis with: {}".format(kwargs))

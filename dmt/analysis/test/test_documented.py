@@ -63,7 +63,6 @@ class MockAdapter:
             authors=["mock"])
 
 
-
 def test_abstract():
     """
     Specify and test `Abstract`.
@@ -71,12 +70,14 @@ def test_abstract():
     adapter = MockAdapter()
     model = MockModel()
     abstract = Abstract("abstract $animal $label")
-    assert abstract.narrative.content == "abstract $animal $label"
+    assert abstract.content == "abstract $animal $label"
     abstract_mock = abstract(adapter, model)
     assert abstract_mock == "abstract mock mock", abstract_mock
     provenance = {"animal": "NA", "label": "NA"}
     abstract_na = abstract(adapter, model, provenance)
     assert abstract_na == "abstract NA NA", abstract_na
+    
+
 
 def test_introduction():
     """
@@ -84,8 +85,9 @@ def test_introduction():
     """
     intro = Introduction("An introduction")
     assert intro.narrative.content == "An introduction"
-    assert intro.data.value is NA
-    assert intro.illustration.figures is NA
+    assert intro.data is NA
+    assert intro.illustration is NA
+
 
 
 
