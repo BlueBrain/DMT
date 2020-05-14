@@ -237,7 +237,7 @@ class Parameters(WithFields):
             raise TypeError("Parameters lack labels.")
         return list(self.labels)
 
-    def __call__(self, *args, sample_size=1):
+    def __call__(self, *args, sample_size=1, **kwargs):
         """
 
         Returns
