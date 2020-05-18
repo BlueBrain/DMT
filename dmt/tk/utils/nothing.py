@@ -59,7 +59,10 @@ class NullType(Singleton, Mapping):
         raise StopIteration
 
     def __getitem__(self, item):
-        return None
+        raise KeyError(
+            """
+            Null Type NA cannot contain any item.
+            """)
 
     def __len__(self):
         return 0

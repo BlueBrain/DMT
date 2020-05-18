@@ -22,9 +22,20 @@ from abc import abstractmethod
 import os
 import functools
 from abc import ABC, abstractmethod
+import pandas as pd
 from dmt.tk.parameters import Parameters
 from ..model import AIBase
 from ..tk.field import Field, WithFields
+
+def _flattened_columns(dataframe):
+    """
+    Flatten MultiIndexed columns...
+    """
+    return pd.DataFrame(
+        dataframe.values,
+        columns=pd.Index([
+            '_'.join(t) if isinstance(t, tuple) else t
+            for t in dataframe.columns.values]))
 
 
 class Analysis(WithFields, AIBase):

@@ -18,5 +18,9 @@
 Exceptions for fields.
 """
 
+class MissingFieldError(TypeError):
+    pass
+
+
 class FieldIsRequired(TypeError):
     pass

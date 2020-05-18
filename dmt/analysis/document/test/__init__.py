@@ -68,12 +68,14 @@ def mock_cell_density(*args, **kwargs):
     """
     sample_size =\
         kwargs.get("sample_size", 20)
+    label =\
+        kwargs.get("label", None)
     mean_cell_density =\
         kwargs.get("mean_cell_density", [1., 3., 2., 4., 2., 3.])
     std_cell_density =\
         kwargs.get("std_cell_density", 6 * [0.1])
 
-    return pd.concat([
+    data =  pd.concat([
         pd.DataFrame({
             "layer": "L{}".format(layer + 1),
             "cell_density": np.random.normal(
@@ -81,6 +83,34 @@ def mock_cell_density(*args, **kwargs):
                 std_cell_density[layer],
                 sample_size)})
         for layer in range(6)])
+    if label:
+        return data.assign(sample=label)[["sample", "layer", "cell_density"]]
+    return data
+
+def mock_thickness(*args, **kwargs):
+    """
+    Create a mock cortical layer cell density
+    """
+    sample_size =\
+        kwargs.get("sample_size", 20)
+    label =\
+        kwargs.get("label", None)
+    mean_thickness =\
+        kwargs.get("mean_thickness", [122.3, 113.5, 302.9, 176.4, 477.9, 647.3])
+    std_thickness =\
+        kwargs.get("std_thickness", 6 * [10.])
+
+    data =  pd.concat([
+        pd.DataFrame({
+            "layer": "L{}".format(layer + 1),
+            "thickness": np.random.normal(
+                mean_thickness[layer],
+                std_thickness[layer],
+                sample_size)})
+        for layer in range(6)])
+    if label:
+        return data.assign(sample=label)[["sample", "layer", "thickness"]]
+    return data
 
 def mock_inh_fraction(*args, **kwargs):
     """
@@ -155,4 +185,67 @@ def regions_and_layers(adapter, model):
         columns=["region", "layer"])
 
 
-path_save = Path(os.getcwd()).joinpath("folder_test")
+def get_path_save():
+    path_save = Path(os.getcwd()).joinpath("folder_test")
+    path_save.mkdir(parents=False, exist_ok=True)
+    return path_save
+
+def mock_reference_data_cell_density():
+    """
+    Mock some reference data for cell density.
+    """
+
+    def _get(sample):
+        """
+        data for a single sample individual
+        """
+        return mock_cell_density(
+            sample_size=1, label=sample
+        ).merge(
+            mock_thickness(sample_size=1, label=sample),
+            on=["sample", "layer"]
+        )
+    data =\
+        pd.concat([
+            mock_cell_density(sample_size=5).assign(region=region)
+            for region in MockModel.subregions])\
+          .set_index(["region", "layer"])
+              
+    return Record(
+        label="MockData",
+        object_of_observation="A population of mock animals",
+        procedure="Random generation",
+        citation="This code, right here",
+        uri=__file__,
+        data=data)
+        
+
+def mock_reference_data_inhibitory_fraction():
+    """
+    Mock some reference data for cell density.
+    """
+
+    def _get(sample):
+        """
+        data for a single sample individual
+        """
+        return mock_inh_fraction(
+            sample_size=1, label=sample
+        ).merge(
+            mock_thickness(sample_size=1, label=sample),
+            on=["sample", "layer"]
+        )
+
+    data =\
+        pd.concat([
+            mock_inh_fraction(sample_size=5).assign(region=region)
+            for region in MockModel.subregions])\
+          .set_index(["region", "layer"])
+    return Record(
+        label="MockData",
+        object_of_observation="A population of mock animals",
+        procedure="Random generation",
+        citation="This code, right here",
+        uri=__file__,
+        data=data)
+

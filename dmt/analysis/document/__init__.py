@@ -18,7 +18,7 @@
 Document an analysis.
 """
 
-from abc import abstractmethod
+from abc import abstractmethod, abstractclassmethod
 from collections import OrderedDict
 from collections.abc import Mapping
 import pickle
@@ -32,6 +32,7 @@ from dmt.data.observation.measurement import\
     collection as measurement_collection
 from dmt.data.observation.measurement.collection import\
     primitive_type, series_type, vector_type, summary_type, multi_type
+from dmt.tk.author import Author
 from dmt.tk.journal import Logger
 from dmt.tk.parameters import Parameters
 from dmt.tk.field import\
@@ -43,7 +44,9 @@ from dmt.tk.field import\
     FieldIsRequired
 from dmt.tk.utils.string_utils import make_label
 from neuro_dmt import terminology
+from ..import _flattened_columns
 from .template import TaggedTemplateString
+
 
 LOGGER = Logger(client=__file__)
 
@@ -100,7 +103,7 @@ class Narrative(WithFields):
             value_narrative = value
 
         path_folder = Path(path_folder)
-        path_folder.mkdir(parents=True, exist_ok=True)
+        path_folder.mkdir(parents=False, exist_ok=True)
 
         path_file = path_folder.joinpath("narrative.txt")
 
@@ -197,7 +200,6 @@ class Data(WithFields):
                     columns={"value": self.label}
                 )
 
-
     @field
     def measurement(self):
         """
@@ -228,16 +230,6 @@ class Data(WithFields):
 
     def save(self, value, path_folder, *args, **kwargs):
         """..."""
-        def _flattened_columns(dataframe):
-            """
-            Flatten MultiIndexed columns...
-            """
-            return pd.DataFrame(
-                dataframe.values,
-                columns=pd.Index([
-                    '_'.join(t) if isinstance(t, tuple) else t
-                    for t in dataframe.columns.values]))
-
         try:
             save_super = super().save
         except AttributeError:
@@ -265,7 +257,7 @@ class Data(WithFields):
 
         if isinstance(value_data, Mapping):
             path_data = Path(path_folder).joinpath("data")
-            path_data.mkdir(parents=True, exist_ok=True)
+            path_data.mkdir(parents=False, exist_ok=True)
             for label, sub_data in value_data.items():
                 if isinstance(sub_data, pd.DataFrame):
                     _flattened_columns(
@@ -275,12 +267,12 @@ class Data(WithFields):
                         index=False, index_label=False
                     )
                 else:
-                    path_file = path_folder.joinpath("{}.pickle".format(label))
+                    path_file = path_data.joinpath("{}.pickle".format(label))
                     with open(path_file, 'w') as jar:
                         pickle.dump(sub_data, jar)
         else:
             path_folder = Path(path_folder)
-            path_folder.mkdir(parents=True, exist_ok=True)
+            path_folder.mkdir(parents=False, exist_ok=True)
             if isinstance(value_data, pd.DataFrame):
                 _flattened_columns(
                     value_data.reset_index()
@@ -398,7 +390,7 @@ class Illustration(WithFields):
         ~          or a Mapping{caption, figures}
         ~          or a Record{caption, figures}
         """
-        print(figures_and_caption)
+        #print(figures_and_caption)
         if figures_and_caption is not NA:
             try:
                 figures_and_caption = figures_and_caption.field_dict
@@ -443,7 +435,7 @@ class Illustration(WithFields):
             value_illustration = value
 
         path_folder = Path(path_folder).joinpath("illustration")
-        path_folder.mkdir(parents=True, exist_ok=True)
+        path_folder.mkdir(parents=False, exist_ok=True)
 
         name_file_caption = "caption.txt"
         path_caption = path_folder.joinpath(name_file_caption)
@@ -454,7 +446,7 @@ class Illustration(WithFields):
             if isinstance(figure, Mapping):
                 path_group_figures =\
                     path_folder.joinpath(label)
-                path_group_figures.mkdir(parents=True, exist_ok=True)
+                path_group_figures.mkdir(parents=False, exist_ok=True)
                 for sub_label, sub_figure in figure.items():
                     path_graphic =\
                         path_group_figures.joinpath(sub_label + ".png")
@@ -582,7 +574,6 @@ class Illustration(WithFields):
         except AttributeError:
             get_super_record = None
 
-
         figures = self._get_figures(adapter, model, *args, **kwargs)
         caption = self._get_caption(adapter, model, *args, **kwargs)
 
@@ -659,13 +650,37 @@ class Document(WithFields):
         """
         Title of this document element.
         """)
+    author = Field(
+        """
+        Author of this document.
+        """,
+        __default_value__=Author.anonymous)
 
     def __init__(self, title, *args, **kwargs):
+        kwargs["parent"] = self
+        for section in self.get_class_sections():
+            name_section = section.__attr_name__
+            if name_section in kwargs:
+                try:
+                    kwargs[name_section]["parent"] = self
+                except TypeError:
+                    pass
         super().__init__(title=title, *args, **kwargs)
 
     @field
-    def elements(self):
+    def sections(self):
         """
         An ordered sequence of elements contained in this document.
         """
         return OrderedDict()
+
+    @abstractclassmethod
+    def get_class_sections(cls):
+        """
+        Sections defined in this `Document class`
+        """
+        return []
+    
+
+from .components import *
+from .report import LabReport

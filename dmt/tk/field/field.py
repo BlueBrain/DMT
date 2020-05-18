@@ -99,12 +99,18 @@ class Field:
 
     def cast(self, value):
         """..."""
-        LOGGER.debug(
-            "Field cast `{}`".format(value),
-            "To `{}`".format(self._cast))
+        # LOGGER.debug(
+        #     "Field cast `{}`".format(value),
+        #     "To `{}`".format(self._cast))
         if isinstance(self._cast, type) and isinstance(value, self._cast):
             return value
-        return self._cast(value)
+        try:
+            return self._cast(value)
+        except Exception as error:
+            LOGGER.alert(
+                "Exception while casting value {}".format(value))
+            raise error
+        raise RuntimeError("Unreachable code")
 
     @property
     def default_value(self):

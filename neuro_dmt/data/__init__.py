@@ -18,11 +18,13 @@
 """
 Neuroscience experimental data.
 """
+from collections import OrderedDict
+from dmt.tk.phenomenon import Phenomenon
 from dmt.data.observation import SampleMeasurement, Summary
 
 class ByLayerCellDensityMeasurement(SampleMeasurement):
     """
-    Measurement of cell density, by 
+    Measurement of cell density, by cortical layer.
     """
     phenomenon = Phenomenon(
         "Cell Density",
@@ -30,3 +32,15 @@ class ByLayerCellDensityMeasurement(SampleMeasurement):
         group="Composition")
     parameters = OrderedDict(
         layer="Cortical layer where to count the cells in.")
+
+
+class ByLayerInhibitoryCellFractionMeasurement(SampleMeasurement):
+    """
+    Measurement of inhibitory cell fraction, by cortical layer.
+    """
+    phenomenon = Phenomenon(
+        "Inhibitory Cell Fraction",
+        description="Fraction of inhibitory cells in a population.",
+        group="Composition")
+    parameters = OrderedDict(
+        layer="Cortical layer where the inhibitory cell fraction was measured.")

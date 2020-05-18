@@ -30,7 +30,7 @@ from collections.abc import Mapping
 from dmt.tk.utils.nothing import NA
 from .field import Field, LambdaField
 from .class_attribute import ClassAttribute, UndefinedClassAttribute
-from .exceptions import FieldIsRequired
+from .exceptions import FieldIsRequired, MissingFieldError
 from ..journal import Logger
 
 LOGGER = Logger(client=__file__)
@@ -159,7 +159,17 @@ class WithFields:
             value = kwargs.get(field, class_field.default_value)
             if value is None or class_field.cast is None:
                 return None
-            return class_field.cast(value)
+            try:
+                return class_field.cast(value)
+            except Exception as error:
+                self.logger.alert(
+                    self.logger.get_source_info(),
+                    """
+                    Exception while getting value of `Field` {}
+                    """.format(field))
+                raise error
+            raise RuntimeError("Unreachable code")
+
 
         for field in self.get_fields():
             class_field =\
@@ -191,7 +201,7 @@ class WithFields:
                         Please provide Field `{}`:
                         {}
                         """.format(field, documentation))
-                    raise ValueError(
+                    raise MissingFieldError(
                         """
                         Cannot create '{}' instance without required Field '{}'.
                         Please provide a value as a keyword argument in your 

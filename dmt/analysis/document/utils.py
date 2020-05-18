@@ -29,4 +29,3 @@ def get_phenomenon(cls):
     description = cls.__doc__
     return\
         Phenomenon(name, description=description, group=NA)
-lllllllllllllkkUUuuu

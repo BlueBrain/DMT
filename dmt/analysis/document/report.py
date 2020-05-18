@@ -18,27 +18,53 @@
 A type of document.
 """
 
+from dmt.tk.utils.string_utils import make_label
 from .import *
+
+def _get_label(x):
+    try:
+        return x.label
+    except AttributeError:
+        return make_label(x)
+    return None
 
 class LabReport(Document):
     """
     A specialize type of report.
     """
-    @field
-    def title(self):
-        """
-        A title for this `Section` instance.
-        """
-        return NA
+    @lazyfield
+    def sections(self):
+        """A list of sections in this report."""
+        return OrderedDict([
+            (section.label, section)
+            for section in [
+                    self.abstract,
+                    self.introduction,
+                    self.methods,
+                    self.results,
+                    self.discussion,
+                    self.conclusion]
+            if section is not NA])
 
-    @field
+    @classmethod
+    def get_class_sections(cls):
+        """..."""
+        return [
+            cls.abstract,
+            cls.introduction,
+            cls.methods,
+            cls.results,
+            cls.discussion,
+            cls.conclusion]
+
+    @lazyfield
     def label(self):
         """
         A single word label.
         """
         return make_label(self.title)
 
-    @field.cast(Phenomenon)
+    #@field.cast(Phenomenon)
     def phenomenon(self):
         """
         Phenomenon studied in this lab-report. 
@@ -53,7 +79,7 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        return NA
+        raise FieldIsRequired
 
     @field.cast(Introduction)
     def introduction(self):
@@ -67,7 +93,7 @@ class LabReport(Document):
         provide either a `Section` with these attributes, or a dictionary
         with keys `narrative`, `data`, and `illustration`.
         """
-        return NA
+        raise FieldIsRequired
 
     @field.cast(Methods)
     def methods(self):
@@ -77,7 +103,7 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        return NotImplementedError
+        raise FieldIsRequired
 
     @field.cast(Results)
     def results(self):
@@ -87,65 +113,52 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        return NotImplementedError
+        raise FieldIsRequired
 
-    @field.cast(ReferenceData)
-    def reference_data(self):
-        """
-        Reference data to go with this analysis.
-        """
-        return NA
 
-    @field.cast(Discussion)
+    @field.cast(Section)
     def discussion(self):
         """
         Discussion about the implications of the analysis.
         Provide a string that may have `$`-prefixed words to be filled using
         a template search-list obtained from model using the adapter method
         """
-        return NA
+        return None
 
-    @field.cast(Conclusion)
+    @field.cast(Section)
     def conclusion(self):
         """
         Conclusions that can be drawn from the results presented here.
         Provide a string that may have `$`-prefixed words to be filled using
         a template search-list obtained from model using the adapter method
         """
-        return NA
+        return None
+
+    def save(self, value_report, path_parent):
+        """
+        """
+        path_report = path_parent.joinpath("report")
+        path_report.mkdir(parents=False, exist_ok=True)
+
+        self.abstract.save(value_report.abstract, path_report)
+        self.introduction.save(value_report.introduction, path_report)
+        self.methods.save(value_report.methods, path_report)
+        self.results.save(value_report.results, path_report)
+
+        return path_report
 
     def __call__(self, adapter, model, *args, **kwargs):
         """
         Call me!!!
         """
-        parameters = self.methods.parameters(adapter, model, *args, **kwargs)
-        measurement = self.results.collect(adaprer, model, *args,  **kwargs)
-
-        reference_data = self.rerference_data
-        try:
-            references = {
-                label: reference.citation
-                for label, reference in reference_data.items()}
-        except AttributeError:
-            LOGGER.info(
-                """
-                Could not retrieve citations from reference data of type {}.
-                """.format(
-                    type(reference_data)))
-            references = {}
-
-        provenance_model =\
-            adapter.get_provenance(model)
-
         return Record(
-            phenomenon=self.phenomenon.label,
-            abstract=self.abstract(adapter, label, provenance_model),
-            introduction=self.introduction(adapter, model, provenance_model),
-            methods=self.methods(adapter, model, provenance_model),
-            results=self.result(adapter, model, provenance_model),
-            reference_data=self.reference_data(adapter, model, provenance_model),
-            discussion=self.discussion(adapter, model, provenance_model),
-            conclusion=self.conclusion(adapter, model, provenance_model))
+            phenomenon=_get_label(self.phenomenon),
+            abstract=self.abstract(adapter, model),
+            introduction=self.introduction(adapter, model),
+            methods=self.methods(adapter, model),
+            results=self.results(adapter, model))
+            #discussion=self.discussion(adapter, model),
+            #conclusion=self.conclusion(adapter, model))
 
 
     @classmethod
@@ -187,7 +200,6 @@ class LabReport(Document):
             narrative=analysis.results,
             data=analysis.append_reference_data,
             illustration=analysis.figures))
-
 
 
     def analysis(self):

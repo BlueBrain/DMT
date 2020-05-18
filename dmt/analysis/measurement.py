@@ -21,6 +21,7 @@ An `Analysis` will be that of one or more instances of `Measurement`.
 
 from collections.abc import Mapping
 from collections import OrderedDict
+import json
 import numpy as np
 import pandas as pd
 from dmt.model import AIBase
@@ -38,8 +39,8 @@ from dmt.tk.field import\
     NA, Record,\
     WithFields,\
     FieldIsRequired
-
 from .document import Narrative
+from .import _flattened_columns
 
 class Measurement(WithFields, AIBase):
     """
@@ -106,6 +107,12 @@ class Measurement(WithFields, AIBase):
         You can provide this as a field, or override by implementing this as a
         function in a subclass.
         """
+        if self and self.parameters is None:
+            raise AttributeError(
+                """
+                `Measurement.collection(...)` does not apply if the instance
+                does not have `parameters`.
+                """)
         return measurement_collection.primitive_type
 
     def __init__(self, measurement, **kwargs):
@@ -126,21 +133,145 @@ class Measurement(WithFields, AIBase):
         """
         Collect a measurement
         """
-        if self.parameters is not None:
-            collected =\
-                self.collection(
-                    (p, self.method(adapter, model, **p, **kwargs))
-                    for p in self.parameters(
-                            adapter, model,
-                            sample_size=self.sample_size,
-                            **kwargs
-                    )
+        if self.parameters is None:
+            raise AttributeError(
+                """
+                `Measurement.collect(...)` does not apply if the instance
+                does not have `parameters`.
+                """)
+        collected =\
+            self.collection(
+                (p, self.method(adapter, model, **p, **kwargs))
+                for p in self.parameters(
+                        adapter, model,
+                        sample_size=self.sample_size,
+                        **kwargs
                 )
+            )
+        try:
+            return collected.rename(columns={"value": self.label})
+        except:
+            return collected
+
+    def __call__(self, adapter, model, **kwargs):
+        """
+        Get a measurement value
+        """
+        return self.collect(adapter, model, **kwargs)\
+            if self.parameters is not None else\
+               self.method(adapter, model, **kwargs)
+
+
+
+def save_elemental(sub_data, sub_label, path_folder, meta_data=None):
+    """
+    Save data that does not contain nested data.
+    """
+    if meta_data is not None:
+        try:
+            path_meta_data = path_folder.joinpath(
+                "{}.json".format(sub_label))
+            with open(path_meta_data, 'w') as outfile:
+                json.dump(meta_data, outfile)
+        except TypeError:
+            pass
+
+    if isinstance(sub_data, pd.DataFrame):
+        path_saved = path_folder.joinpath(
+            "{}.csv".format(sub_label)
+        )
+        _flattened_columns(
+            sub_data.reset_index()
+        ).to_csv(
+            path_saved,
+            index=False,
+            index_label=False
+        )
+        return path_saved
+    try:
+        sub_data = sub_data.field_dict
+    except AttributeError:
+        pass
+    try:
+        record_data = sub_data.pop("data")
+    except TypeError:
+        record_data = None
+    if record_data is not NA and record_data is not None:
+        return save_elemental(record_data, sub_label, path_folder, sub_data)
+    if isinstance(sub_data, str):
+        path_saved = path_folder.joinpath("{}.txt".format(label))
+        with open(path_saved, 'w') as file:
+            file.write(sub_data)
+        return path_saved
+    path_saved = path_folder.joinpath("{}.pickle".format(sub_label))
+    with open(path_saved, 'w') as jar:
+        pickle.dump(sub_data, jar)
+    return path_saved
+
+
+class CompositeData(Mapping):
+    """
+    Either Data Or `Mapping{label->CompositeData}`
+
+    TODO: Allow this class to be immutable / frozen.
+    If frozen (OrderedDict) like, then assignment should not work.
+    Then use method `assign` to copy with the additional elements,
+    and get a new instance.
+    """
+    def __init__(self, value):
+        self._value = OrderedDict(value)
+
+    def __getitem__(self, label):
+        """..."""
+        try:
+            return self._value[label]
+        except KeyError as error:
+            raise KeyError(
+                """
+                {}: No such data.
+                \t {}.
+                """.format(label, error))
+        return None
+    
+    def __iter__(self):
+        """..."""
+        return self._value.__iter__()
+
+    def __len__(self):
+        """..."""
+        return len(self._value)
+
+    def save(self, path_parent, label="data"):
+        """
+        Save data...
+
+        Arguments
+        ----------------
+        path_parent :: Path to the folder under which data will be saved.
+
+        Returns
+        -----------------
+        `Mapping{label -> path}` corresponding to `self.value`
+        """
+        path_folder = path_parent.joinpath(label)
+        path_folder.mkdir(parents=False, exist_ok=True)
+
+        def _save(sub_data, sub_label):
             try:
-                return collected.rename(columns={"value": self.label})
-            except:
-                return collected
-        return self.method(adapter, model, **kwargs)
+                return sub_data.save(path_folder, sub_label)
+            except AttributeError:
+                return save_elemental(sub_data, sub_label, path_folder)
+            raise RuntimeError(
+                "Unreachable code.")
+
+        return OrderedDict([
+            (sub_label, _save(sub_data, sub_label))
+            for sub_label, sub_data in self._value.items()])
+
+    def assign(self, **label_data):
+        """..."""
+        self._value.update(label_data)
+        return self
 
 
 class MeasurementSuite(Mapping):
@@ -171,7 +302,7 @@ class MeasurementSuite(Mapping):
             raise KeyError(
                 """
                 {}: No such measurement.
-                \t
+                \t {}.
                 """.format(label_measurement, error))
         return None
 
@@ -185,11 +316,11 @@ class MeasurementSuite(Mapping):
 
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
-        return OrderedDict([
+        return CompositeData([
             (
                 label,
                 measurement.assign(label=label).collect(
                     adapter, model, *args, **kwargs)
             ) for label, measurement in self.measurements.items()])
-            
+
 
