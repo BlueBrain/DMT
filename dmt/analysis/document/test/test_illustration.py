@@ -29,7 +29,9 @@ def test_illustration_empty():
 
     illustration = Illustration()
     value = illustration(adapter, model)
+    path_save = get_path_save()
     path_test = path_save.joinpath("empty")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_save)
 
     path_illustration = path_test.joinpath("illustration")
@@ -55,7 +57,9 @@ def test_illustration_single_graphic_figure():
     assert value.caption == "Mock cell density for cortical layers.",\
         value.caption
 
+    path_save = get_path_save()
     path_test = path_save.joinpath("illustration_single_graphic_figure")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_test, "cell_density")
 
     path_illustration = path_test.joinpath("illustration")
@@ -84,8 +88,10 @@ def test_illustration_single_graphic_callable_figure():
     assert value.caption == "Mock cell density for cortical layers.",\
         value.caption
 
+    path_save = get_path_save()
     path_test = path_save.joinpath(
         "illustration_single_graphic_callable_figure")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_test, "cell_density")
 
     path_illustration = path_test.joinpath("illustration")
@@ -119,8 +125,10 @@ def test_illustration_multi_graphic_figure():
     assert value.caption == "Mock composition for cortical layers.",\
         value.caption
 
+    path_save = get_path_save()
     path_test = path_save.joinpath(
         "illustration_multi_graphic_figure")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_test)
 
     path_illustration = path_test.joinpath("illustration")
@@ -174,8 +182,10 @@ def test_illustration_multi_nested_graphic_figure():
     assert value.caption == "Mock composition for cortical layers.",\
         value.caption
 
+    path_save = get_path_save()
     path_test = path_save.joinpath(
         "illustration_multi_nested_graphic_figure")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_test)
 
     path_illustration = path_test.joinpath("illustration")
@@ -236,8 +246,10 @@ def test_illustration_multi_nested_graphic_callable_figure():
     assert value.caption == "Mock composition for cortical layers.",\
         value.caption
 
+    path_save = get_path_save()
     path_test = path_save.joinpath(
         "illustration_multi_nested_graphic_callable_figure")
+    path_test.mkdir(parents=False, exist_ok=True)
     illustration.save(value, path_test)
 
     path_illustration = path_test.joinpath("illustration")

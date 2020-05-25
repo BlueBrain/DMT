@@ -30,8 +30,10 @@ def test_data_empty():
     data = Data()
     value = data(adapter, model)
     assert value is None
+    path_save = get_path_save()
     path_test = path_save.joinpath("empty")
-    data.save(value, path_save)
+    path_test.mkdir(parents=False, exist_ok=True)
+    data.save(value, path_test)
 
     path_data = path_test.joinpath("data")
     assert not os.path.exists(path_data)
@@ -50,6 +52,7 @@ def test_data_single_dataframe():
     assert "layer" in value_data.columns
     assert "cell_density" in value_data.columns
 
+    path_save = get_path_save()
     data.save(value_data, path_save)
     assert os.path.isfile(path_save.joinpath("data.csv"))
     return True
@@ -80,6 +83,7 @@ def test_data_multiple_dataframes():
     assert "inhibitory_fraction" in inhibitory_fraction.columns,\
         inhibitory_fraction.columns
 
+    path_save = get_path_save()
     data.save(value_data, path_save)
     path_data = path_save.joinpath("data")
     assert os.path.isfile(path_data.joinpath("cell_density.csv"))
@@ -113,6 +117,7 @@ def test_data_multiple_callables():
     assert "inhibitory_fraction" in inhibitory_fraction.columns,\
         inhibitory_fraction.columns
 
+    path_save = get_path_save()
     data.save(value_data, path_save)
     path_data = path_save.joinpath("data")
     assert os.path.isfile(path_data.joinpath("cell_density.csv"))

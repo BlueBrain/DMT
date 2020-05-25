@@ -36,6 +36,7 @@ def test_narrative():
     for l in adapter.get_layers(model):
         assert l in story, story
 
+    path_save = get_path_save()
     narrative.save(story, path_save)
 
     assert os.path.isfile(path_save.joinpath("narrative.txt"))

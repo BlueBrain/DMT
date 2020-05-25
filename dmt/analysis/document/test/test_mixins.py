@@ -74,6 +74,7 @@ def test_abstract():
     for l in adapter.get_layers(model):
         assert l in value_abstract.narrative, value_abstract
 
+    path_save = get_path_save()
     abstract.save(value_abstract, path_save)
 
     path_abstract = path_save.joinpath("abstract")
@@ -124,6 +125,7 @@ def test_introduction():
     assert value.label == "introduction", value.label
     assert value.illustration.caption.startswith("Experimentally measured")
 
+    path_save = get_path_save()
     introduction.save(value, path_save)
 
     path_introduction = path_save.joinpath("introduction")
@@ -190,6 +192,7 @@ def test_methods():
 
     #TODO: test that the methods value is as expected
 
+    path_save = get_path_save()
     methods.save(value_methods, path_save)
 
     path_methods = path_save.joinpath("methods")
@@ -239,7 +242,9 @@ def test_methods_no_data():
 
     #TODO: test that the methods value is as expected
 
+    path_save = get_path_save()
     path_this = path_save.joinpath("no_data")
+    path_this.mkdir(parents=False, exist_ok=True)
     methods.save(value_methods, path_this)
 
     path_methods = path_this.joinpath("methods")
@@ -317,6 +322,7 @@ def test_results():
     assert value_results.narrative.startswith("Mock results for")
     assert value_results.illustration.caption.startswith("Mock figures")
 
+    path_save = get_path_save()
     results.save(value_results, path_save)
 
     path_results = path_save.joinpath("results")
@@ -402,7 +408,9 @@ def test_results_no_data():
     assert value_results.narrative.startswith("Mock results for")
     assert value_results.illustration.caption.startswith("Mock figures")
 
+    path_save = get_path_save()
     path_test = path_save.joinpath("no_data")
+    path_test.mkdir(parents=False, exist_ok=True)
     results.save(value_results, path_test)
 
     path_results = path_test.joinpath("results")
@@ -487,7 +495,9 @@ def test_results_no_illusrtration():
     except AttributeError:
         pass
 
+    path_save = get_path_save()
     path_test = path_save.joinpath("no_illustration")
+    path_test.mkdir(parents=False, exist_ok=True)
     results.save(value_results, path_test)
 
     path_results = path_test.joinpath("results")
