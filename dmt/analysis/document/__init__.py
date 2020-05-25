@@ -381,7 +381,6 @@ class Illustration(WithFields):
         """
         return NA
 
-
     def __init__(self, figures_and_caption=NA, *args, **kwargs):
         """
         Arguments
@@ -434,8 +433,8 @@ class Illustration(WithFields):
         except AttributeError:
             value_illustration = value
 
-        path_folder = Path(path_folder).joinpath("illustration")
-        path_folder.mkdir(parents=False, exist_ok=True)
+       # path_folder = Path(path_folder).joinpath("illustration")
+       # path_folder.mkdir(parents=False, exist_ok=True)
 
         name_file_caption = "caption.txt"
         path_caption = path_folder.joinpath(name_file_caption)
@@ -459,7 +458,6 @@ class Illustration(WithFields):
         if not save_super:
             return path_folder
         return save_super(value, path_folder)
-
 
     def _get_figures(self, adapter, model, *args, **kwargs):
         """..."""
@@ -560,9 +558,7 @@ class Illustration(WithFields):
         else:
             return str(NA)
 
-    def __call__(self,
-            adapter, model, *args,
-            **kwargs):
+    def __call__(self, adapter, model, *args, **kwargs):
         """
         Get an illustration...
 
@@ -593,6 +589,76 @@ class Illustration(WithFields):
         if record:
             return super_record.assign(illustration=record)
         return super_record
+
+
+class CompositeIllustration(Mapping):
+    """
+    A suite of illustrations.
+    """
+    def __init__(self, value):
+        """..."""
+        self._value = OrderedDict([
+            (label, Illustration(illustration))
+            for label, illustration in value.items()
+        ])
+
+    def __getitem__(self, label):
+        """..."""
+        try:
+            return self._value[label]
+        except KeyError as error:
+            raise KeyError(
+            """
+            {}: No such illustration.
+            \t {}
+            """.format(label, error))
+        return None
+
+    def __iter__(self):
+        """..."""
+        return self._value.__iter__()
+
+    def __len__(self):
+        return len(self._value)
+
+    def save(self, value, path_parent, label="illustration"):
+        """
+        Save a value of this `CompositeIllustration` for some (adapter, model).
+        """
+        path_folder = path_parent.joinpath(label)
+        path_folder.mkdir(parents=False, exist_ok=True)
+
+        assert isinstance(value, OrderedDict)
+
+        for label, illustration in value.items():
+            if label not in self._value:
+                continue
+            path_illustration = path_folder.joinpath(label)
+            path_illustration.mkdir(parents=False, exist_ok=True)
+            self._value[label].save(illustration, path_illustration)
+
+    def __call__(self, adapter, model, *args, **kwargs):
+        """..."""
+        try:
+            data = kwargs.pop("data")
+        except KeyError:
+            data = None
+
+        def _get_data(label):
+            try:
+                return data[label]
+            except TypeError:
+                return data
+            except KeyError:
+                return data
+            return None
+
+        return OrderedDict([
+            (label, illustration(
+                adapter, model, *args,
+                data=_get_data(label), **kwargs))
+            for label, illustration in self._value.items()])
+
 
 
 class DocElem(WithFields, AIBase):

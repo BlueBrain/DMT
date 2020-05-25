@@ -97,23 +97,29 @@ def test_abstract(test_object = None):
     return True
 
 def get_introduction(document=None):
-    mock_experimental_figures = Bars(
+    cell_density_experimental_figures = Bars(
         xvar="layer", xlabel="Layer",
         yvar="cell_density", ylabel="Cell Density"
-    )(mock_cell_density())
-    mock_experimental_figures.update(Bars(
+    )(
+        mock_cell_density()
+    )
+    inh_fraction_experimental_figures = Bars(
         xvar="layer", xlabel="Layer",
         yvar="inhibitory_fraction", ylabel="Inhibitory Fraction"
-    )(mock_inh_fraction()))
-
+    )(
+        mock_inh_fraction()
+    )
     kwargs = dict(
-        narrative="""Cortical area such as the \model{brain_region} is composed of layers of cells with different cell densities. In this report we analyze circuit composition of cortical layers \model{layer_values}, focusing on total cell density and the fraction of inhibitory neurons in each layer. In our model of the \model{brain_region} we have reconstructed the sub-regions \model{sub_brain_regions}. Experimental measurements for cell densities for these sub-regions were not available. Hence we have used the same cell densities presented in the figure for each of the these regions.
+        narrative="""
+        Cortical area such as the \model{brain_region} is composed of layers of cells with different cell densities. In this report we analyze circuit composition of cortical layers \model{layer_values}, focusing on total cell density and the fraction of inhibitory neurons in each layer. In our model of the \model{brain_region} we have reconstructed the sub-regions \model{sub_brain_regions}. Experimental measurements for cell densities for these sub-regions were not available. Hence we have used the same cell densities presented in the figure for each of the these regions.
         """,
-        illustration=Record(
-            figures=mock_experimental_figures,
-            caption="""
-            Experimentally measured cell densities used to reconstruct sub-regions \model{sub_brain_regions} of the \model{animal} \model{brain_region}.
-            """))
+        illustration=OrderedDict([
+            ("cell_density", {
+                "figures": cell_density_experimental_figures,
+                "caption": "Mock cell density experimental figure."}),
+            ("inhibitory_fraction", {
+                "figures": inh_fraction_experimental_figures,
+                "caption": "Mock inhibitory fraction experimental figure."})]))
     if document:
         kwargs["parent"] = document
         return Introduction(**kwargs)
@@ -131,9 +137,13 @@ def _test_introduction_instance(introduction, adapter, model):
 def _test_introduction_value(value, adapter, model):
     assert value.title == "Introduction", value.title
     assert value.label == "introduction", value.label
-    assert value.illustration.caption.strip().startswith(
-        "Experimentally measured"
-    ), value.illustration.caption
+    assert isinstance(value.illustration, Mapping)
+    assert "cell_density" in value.illustration
+    assert value.illustration["cell_density"].caption.strip().startswith(
+        "Mock cell density experimental figure")
+    assert "inhibitory_fraction" in value.illustration
+    assert value.illustration["inhibitory_fraction"].caption.strip().startswith(
+        "Mock inhibitory fraction experimental figure")
     return True
 
 def _test_introduction_save(path_save, adapter, model):
@@ -144,10 +154,16 @@ def _test_introduction_save(path_save, adapter, model):
     path_illustration = path_introduction.joinpath("illustration")
     assert os.path.exists(
         path_illustration)
+    path_cd = path_illustration.joinpath("cell_density")
     assert os.path.isfile(
-        path_illustration.joinpath("cell_density.png"))
+        path_cd.joinpath("cell_density.png"))
     assert os.path.isfile(
-        path_illustration.joinpath("inhibitory_fraction.png"))
+        path_cd.joinpath("caption.txt"))
+    path_if = path_illustration.joinpath("inhibitory_fraction")
+    assert os.path.isfile(
+        path_if.joinpath("inhibitory_fraction.png"))
+    assert os.path.isfile(
+        path_if.joinpath("caption.txt"))
     return True
 
 def test_introduction(test_object=None):
@@ -352,12 +368,23 @@ def get_results(document=None):
         and layers \\model{layer_values}, for the purposes of mocking the
         behavior of a `methods` instance.
         """,
-        illustration=dict(
-            figures=dict(
-                cell_density=plotter_cd,
-                inhibitory_fraction=plotter_if),
-            caption="""Mock figures for the purpose of test developing `Results` do not deserved a caption.
-            """))
+        illustration=OrderedDict([
+            (
+                "cell_density", {
+                    "figures": plotter_cd,
+                    "caption": """
+                    Mock cell density for a cortical circuit.
+                    """}
+             ),
+            (
+                "inhibitory_fraction", {
+                    "figures": plotter_if,
+                    "caption": """
+                    Mock inhibitory fraction for a cortical circuit.
+                    """}
+            )
+        ])
+    )
             
     if document:
         return Results(parent=document, **kwargs)
@@ -414,7 +441,14 @@ def _test_results_value(value, adapter, model):
     assert "inhibitory_fraction" in value.measurements.keys()
     assert isinstance(value.measurements["inhibitory_fraction"], pd.DataFrame)
     assert value.narrative.strip().startswith("Random cell densities")
-    assert value.illustration.caption.strip().startswith("Mock figures")
+
+    assert isinstance(value.illustration, Mapping)
+    assert "cell_density" in value.illustration
+    assert value.illustration["cell_density"].caption.strip().startswith(
+        "Mock cell density")
+    assert "inhibitory_fraction" in value.illustration
+    assert value.illustration["inhibitory_fraction"].caption.strip().startswith(
+        "Mock inhibitory fraction")
 
     return True
 
@@ -431,16 +465,18 @@ def _test_results_save(path_save, adapter, model):
 
     path_illustration = path_results.joinpath("illustration")
     assert os.path.exists(path_illustration)
-    assert os.path.isfile(path_illustration.joinpath("caption.txt"))
     path_cd = path_illustration.joinpath("cell_density")
     assert os.path.exists(path_cd)
+    assert os.path.isfile(path_cd.joinpath("caption.txt"))
     path_if = path_illustration.joinpath("inhibitory_fraction")
     assert os.path.exists(path_if)
+    assert os.path.isfile(path_if.joinpath("caption.txt"))
     for region in model.subregions:
         assert os.path.isfile(path_cd.joinpath(region + ".png"))
         assert os.path.isfile(path_if.joinpath(region + ".png"))
 
     return True
+
 def test_results(test_object=None):
     """
     Results section of a document.

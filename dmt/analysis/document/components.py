@@ -65,7 +65,7 @@ class Section(DocElem):
         """
         return NA
 
-    @field.cast(Illustration)
+    @field.cast(CompositeIllustration)
     def illustration(self):
         """
         Illustration for this section.
