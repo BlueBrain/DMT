@@ -115,18 +115,19 @@ class Measurement(WithFields, AIBase):
                 """)
         return measurement_collection.primitive_type
 
-    def __init__(self, measurement, **kwargs):
+    def __init__(self, measurement=None, **kwargs):
         """
         Initialize with either keyword arguments,
         1. or a callable
         """
-        if callable(measurement):
-            kwargs["method"] = measurement
-        else:
-            try:
-                kwargs.update(measurement.field_dict)
-            except AttributeError:
-                kwargs.update(measurement)
+        if measurement:
+            if callable(measurement):
+                kwargs["method"] = measurement
+            else:
+                try:
+                    kwargs.update(measurement.field_dict)
+                except AttributeError:
+                    kwargs.update(measurement)
         return super().__init__(**kwargs)
 
     def collect(self, adapter, model, **kwargs):
@@ -157,10 +158,11 @@ class Measurement(WithFields, AIBase):
         """
         Get a measurement value
         """
-        return self.collect(adapter, model, **kwargs)\
-            if self.parameters is not None else\
-               self.method(adapter, model, **kwargs)
-
+        try:
+            parameters = self.parameters
+        except AttributeError:
+            return self.method(adapter, model, **kwargs)
+        return self.collect(adapter, model, **kwargs)
 
 
 def save_elemental(sub_data, sub_label, path_folder, meta_data=None):
@@ -218,8 +220,8 @@ class CompositeData(Mapping):
     Then use method `assign` to copy with the additional elements,
     and get a new instance.
     """
-    def __init__(self, value):
-        self._value = OrderedDict(value)
+    def __init__(self, value=None):
+        self._value = OrderedDict(value) if value else OrderedDict()
 
     def __getitem__(self, label):
         """..."""

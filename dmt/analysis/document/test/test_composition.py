@@ -97,29 +97,19 @@ def test_abstract(test_object = None):
     return True
 
 def get_introduction(document=None):
-    cell_density_experimental_figures = Bars(
-        xvar="layer", xlabel="Layer",
-        yvar="cell_density", ylabel="Cell Density"
-    )(
-        mock_cell_density()
-    )
-    inh_fraction_experimental_figures = Bars(
-        xvar="layer", xlabel="Layer",
-        yvar="inhibitory_fraction", ylabel="Inhibitory Fraction"
-    )(
-        mock_inh_fraction()
-    )
     kwargs = dict(
         narrative="""
         Cortical area such as the \model{brain_region} is composed of layers of cells with different cell densities. In this report we analyze circuit composition of cortical layers \model{layer_values}, focusing on total cell density and the fraction of inhibitory neurons in each layer. In our model of the \model{brain_region} we have reconstructed the sub-regions \model{sub_brain_regions}. Experimental measurements for cell densities for these sub-regions were not available. Hence we have used the same cell densities presented in the figure for each of the these regions.
         """,
         illustration=OrderedDict([
-            ("cell_density", {
-                "figures": cell_density_experimental_figures,
-                "caption": "Mock cell density experimental figure."}),
-            ("inhibitory_fraction", {
-                "figures": inh_fraction_experimental_figures,
-                "caption": "Mock inhibitory fraction experimental figure."})]))
+            ("neocortical_scaffold",
+             dict(
+                 figures={
+                     "neocortical_scaffold": "resources/neocortical_scaffold.png"},
+                 caption="""
+                 The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
+                 """))
+        ]))
     if document:
         kwargs["parent"] = document
         return Introduction(**kwargs)
@@ -138,12 +128,10 @@ def _test_introduction_value(value, adapter, model):
     assert value.title == "Introduction", value.title
     assert value.label == "introduction", value.label
     assert isinstance(value.illustration, Mapping)
-    assert "cell_density" in value.illustration
-    assert value.illustration["cell_density"].caption.strip().startswith(
-        "Mock cell density experimental figure")
-    assert "inhibitory_fraction" in value.illustration
-    assert value.illustration["inhibitory_fraction"].caption.strip().startswith(
-        "Mock inhibitory fraction experimental figure")
+    assert len(value.illustration) == 1
+    assert "neocortical_scaffold" in value.illustration
+    assert value.illustration["neocortical_scaffold"].caption.strip().startswith(
+        "The neocortex is a 2-3")
     return True
 
 def _test_introduction_save(path_save, adapter, model):
@@ -154,16 +142,11 @@ def _test_introduction_save(path_save, adapter, model):
     path_illustration = path_introduction.joinpath("illustration")
     assert os.path.exists(
         path_illustration)
-    path_cd = path_illustration.joinpath("cell_density")
+    path_cd = path_illustration.joinpath("neocortical_scaffold")
     assert os.path.isfile(
-        path_cd.joinpath("cell_density.png"))
+        path_cd.joinpath("neocortical_scaffold.png"))
     assert os.path.isfile(
         path_cd.joinpath("caption.txt"))
-    path_if = path_illustration.joinpath("inhibitory_fraction")
-    assert os.path.isfile(
-        path_if.joinpath("inhibitory_fraction.png"))
-    assert os.path.isfile(
-        path_if.joinpath("caption.txt"))
     return True
 
 def test_introduction(test_object=None):
