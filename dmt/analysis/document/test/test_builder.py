@@ -64,7 +64,7 @@ def test_context_management():
 
         assert document.abstract.content
         assert '_' in document.abstract.content
-        abstract = document.abstract.get(report)
+        abstract = document.abstract.with_parent(report)
         value_abstract = abstract(adapter, model)
         path_abstract = abstract.save(value_abstract, path_save)
         test_abstract(Record(
@@ -91,7 +91,7 @@ def test_context_management():
         assert "_" in document.introduction.content.narrative
         assert document.introduction.illustration
 
-        introduction = document.introduction.get(report)
+        introduction = document.introduction.with_parent(report)
         value_introduction = introduction(adapter, model)
         path_introduction = introduction.save(value_introduction, path_save)
         test_introduction(Record(
@@ -188,7 +188,7 @@ def test_context_management():
                 method=_inhibitory_fraction,
                 sample_size=20)
         
-        methods = document.methods.get(report)
+        methods = document.methods.with_parent(report)
         test_composition._test_methods_instance(methods, adapter, model)
 
         value_methods = methods(adapter, model)
@@ -237,7 +237,7 @@ def test_context_management():
                     yvar="inhibitory_fraction", ylabel="Inhibitory Fraction",
                     gvar="dataset"))
 
-        results = document.results.get(report)
+        results = document.results.with_parent(report)
         test_composition._test_results_instance(results, adapter, model)
 
         value_results = results(adapter, model)
@@ -248,4 +248,31 @@ def test_context_management():
             results=results,
             value=value_results,
             path_save=path_save))
+
+
+        @document.section("Conclusions")
+        def _():
+            """
+            This is an example of starting a document with a provided title.
+            Once again, the narrative of the section is provided as the doc-string.
+
+            TODO: Use order of the declarations to sequence content in the final
+            ~     document.
+            ~     For example, we could start discussing the conclusion right here.
+            ~     Then enter an illustration.
+            ~     Followed by titled paragraph narratives --- more than one.
+            ~     Each decorated with `document.section("Conclusions")`,
+            ~     the title provided in the method name.
+            """
+            pass
+
+        conclusions = document.section("Conclusions").with_parent(report)
+        value_conclusions = conclusions(adapter, model)
+        LOGGER.alert(
+            LOGGER.get_source_info(),
+            "Concluding narrative.",
+            value_conclusions.narrative)
+        assert value_conclusions.narrative.strip().startswith(
+            "This is an example "),\
+            value_conclusions.narrative
 

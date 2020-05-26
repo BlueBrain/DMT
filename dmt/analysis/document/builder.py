@@ -45,7 +45,8 @@ class _SectionBuilder:
     """
     Build a document's section.
     """
-    def __init__(self, document_builder):
+    def __init__(self, title, document_builder):
+        self.title = title
         self.document_builder = document_builder
         self.content = Record(
             narrative=OrderedDict(),
@@ -89,6 +90,19 @@ class _SectionBuilder:
         self.content.narrative[narrative.__name__] = narrative.__doc__
         return narrative
 
+    def with_parent(self, document=None):
+        """..."""
+        if document:
+            return Section(
+                parent=document,
+                title=self.title,
+                narrative=paragraphs(self.content.narrative),
+                illustration=self.content.illustration)
+        return dict(
+            narrative=paragraphs(self.content.narrative),
+            illustration=self.content.illustration)
+
+
 
 class _AbstractBuilder:
     def __init__(self, document_builder):
@@ -102,7 +116,7 @@ class _AbstractBuilder:
         self.content[narrative.__name__] = narrative.__doc__
         return narrative
 
-    def get(self, document=None):
+    def with_parent(self, document=None):
         """..."""
         if document:
             return Abstract(
@@ -113,7 +127,10 @@ class _AbstractBuilder:
 
 class _IntroductionBuilder(_SectionBuilder):
 
-    def get(self, document=None):
+    def __init__(self, document_builder):
+        super().__init__("Introduction", document_builder)
+
+    def with_parent(self, document=None):
         """..."""
         if document:
             return Introduction(
@@ -131,6 +148,7 @@ class _MethodsBuilder(_SectionBuilder):
     """
     def __init__(self, document_builder):
         """..."""
+        self.title = "Methods"
         self.document_builder = document_builder
         self.content = Record(narrative=OrderedDict(),
                                data=OrderedDict(),
@@ -181,7 +199,7 @@ class _MethodsBuilder(_SectionBuilder):
                 "method": measurement}
         return measurement
 
-    def get(self, document=None):
+    def with_parent(self, document=None):
         if document:
             return Methods(
                 parent=document,
@@ -198,7 +216,10 @@ class _ResultsBuilder(_SectionBuilder):
     """
     Build a Results section
     """
-    def get(self, document=None):
+    def __init__(self, document_builder):
+        super().__init__("Results", document_builder)
+
+    def with_parent(self, document=None):
         """..."""
         if document:
             return Results(
@@ -221,6 +242,8 @@ class DocumentBuilder:
         self.methods = _MethodsBuilder(self)
         self.results = _ResultsBuilder(self)
 
+        self._sections = OrderedDict()
+
     @property
     def title(self):
         return self._title
@@ -235,3 +258,9 @@ class DocumentBuilder:
         if type_exception:
             raise value_exception
         return True
+
+    def section(self, title):
+        if title not in self._sections:
+            self._sections[title] =\
+                _SectionBuilder(title=title, document_builder=self)
+        return self._sections[title]
