@@ -42,6 +42,7 @@ from dmt.tk.field import\
     NA, Record,\
     WithFields,\
     FieldIsRequired
+from dmt.tk.plotting.figure import Figure
 from dmt.tk.utils.string_utils import make_label
 from neuro_dmt import terminology
 from ..import _flattened_columns
@@ -416,7 +417,7 @@ class Illustration(WithFields):
         """
         raise NotImplementedError
 
-    def save(self, value, path_folder, *args, **kwargs):
+    def save(self, value, path_folder, label="illustration", *args, **kwargs):
         """..."""
         try:
             save_super = super().save
@@ -433,18 +434,18 @@ class Illustration(WithFields):
         except AttributeError:
             value_illustration = value
 
-       # path_folder = Path(path_folder).joinpath("illustration")
-       # path_folder.mkdir(parents=False, exist_ok=True)
+        path_illustration = Path(path_folder).joinpath(label)
+        path_illustration.mkdir(parents=False, exist_ok=True)
 
         name_file_caption = "caption.txt"
-        path_caption = path_folder.joinpath(name_file_caption)
+        path_caption = path_illustration.joinpath(name_file_caption)
         with open(path_caption, 'w') as output_file:
             output_file.write(str(value_illustration.caption))
 
         for label, figure in value_illustration.figures.items():
             if isinstance(figure, Mapping):
                 path_group_figures =\
-                    path_folder.joinpath(label)
+                    path_illustration.joinpath(label)
                 path_group_figures.mkdir(parents=False, exist_ok=True)
                 for sub_label, sub_figure in figure.items():
                     path_graphic =\
@@ -452,11 +453,11 @@ class Illustration(WithFields):
                     sub_figure.save(path_graphic)
             else:
                 path_graphic =\
-                    path_folder.joinpath(label + ".png")
+                    path_illustration.joinpath(label + ".png")
                 figure.save(path_graphic, dpi=100)
 
         if not save_super:
-            return path_folder
+            return path_illustration
         return save_super(value, path_folder)
 
     def _get_figures(self, adapter, model, *args, **kwargs):
@@ -535,6 +536,8 @@ class Illustration(WithFields):
                             model=model,
                             **kwargs)
                 else:
+                    if isinstance(figure, (str, Path)):
+                        figure = Figure(Path(figure))
                     figures[label] = figure
         else:
             raise ValueError(
@@ -595,17 +598,17 @@ class CompositeIllustration(Mapping):
     """
     A suite of illustrations.
     """
-    def __init__(self, value):
+    def __init__(self, illustrations):
         """..."""
-        self._value = OrderedDict([
+        self._illustrations = OrderedDict([
             (label, Illustration(illustration))
-            for label, illustration in value.items()
+            for label, illustration in illustrations.items()
         ])
 
     def __getitem__(self, label):
         """..."""
         try:
-            return self._value[label]
+            return self._illustrations[label]
         except KeyError as error:
             raise KeyError(
             """
@@ -616,27 +619,28 @@ class CompositeIllustration(Mapping):
 
     def __iter__(self):
         """..."""
-        return self._value.__iter__()
+        return self._illustrations.__iter__()
 
     def __len__(self):
-        return len(self._value)
+        return len(self._illustrations)
 
     def save(self, value, path_parent, label="illustration"):
         """
         Save a value of this `CompositeIllustration` for some (adapter, model).
         """
-        path_folder = path_parent.joinpath(label)
-        path_folder.mkdir(parents=False, exist_ok=True)
+        path_illustrations = path_parent.joinpath(label)
+        path_illustrations.mkdir(parents=False, exist_ok=True)
 
         assert isinstance(value, OrderedDict)
 
-        for label, illustration in value.items():
-            if label not in self._value:
+        for sub_label, sub_value in value.items():
+            try:
+                illustration = self._illustrations[sub_label]
+            except KeyError:
                 continue
-            path_illustration = path_folder.joinpath(label)
-            path_illustration.mkdir(parents=False, exist_ok=True)
-            self._value[label].save(illustration, path_illustration)
-
+            else:
+                illustration.save(sub_value, path_illustrations, sub_label)
+                
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         try:
@@ -657,7 +661,7 @@ class CompositeIllustration(Mapping):
             (label, illustration(
                 adapter, model, *args,
                 data=_get_data(label), **kwargs))
-            for label, illustration in self._value.items()])
+            for label, illustration in self._illustrations.items()])
 
 
 

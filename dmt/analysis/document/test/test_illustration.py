@@ -18,6 +18,7 @@
 Test develop `Illustration`.
 """
 
+from dmt.tk.plotting.figure import Figure
 from .import *
 
 def test_illustration_empty():
@@ -37,6 +38,43 @@ def test_illustration_empty():
     path_illustration = path_test.joinpath("illustration")
     assert not os.path.exists(path_illustration)
 
+def test_illustration_png():
+    """
+    An `Illustration` can be created from a PNG file sitting in the working
+    directory.
+    """
+    adapter = MockAdapter()
+    model = MockModel()
+
+    illustration = Illustration(
+        figures={"neocortical_scaffold": "resources/neocortical_scaffold.png"},
+        caption="""
+        The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
+        """)
+    assert illustration.figures
+    assert "neocortical_scaffold" in illustration.figures
+    value = illustration(adapter, model)
+
+    assert isinstance(value.figures, Mapping)
+    assert "neocortical_scaffold" in value.figures
+    assert isinstance(value.figures["neocortical_scaffold"], Figure)
+    assert value.caption.strip().startswith(
+        "The neocortex is a 2-")
+
+    path_save = get_path_save()
+    path_test = path_save.joinpath("illustration_png")
+    path_test.mkdir(parents=False, exist_ok=True)
+    illustration.save(value, path_test)
+
+    path_illustration = path_test.joinpath("illustration")
+    assert os.path.exists(
+        path_illustration)
+    assert os.path.isfile(
+        path_illustration.joinpath("neocortical_scaffold.png"))
+    assert os.path.isfile(
+        path_illustration.joinpath("caption.txt"))
+
+
 def test_illustration_single_graphic_figure():
     """
     An `Illustration` can be created from a figure object (not a callable).
@@ -49,7 +87,9 @@ def test_illustration_single_graphic_figure():
     plotter = Bars(xvar="layer", xlabel="Layer",
                    yvar="cell_density", ylabel="Cell Density")
     mock_bars = plotter(mock_cell_density())
-    illustration = Illustration(figures=mock_bars, caption=caption)
+    illustration = Illustration(
+        figures=mock_bars,
+        caption=caption)
     assert illustration.figures
     value = illustration(adapter, model)
 
@@ -60,9 +100,11 @@ def test_illustration_single_graphic_figure():
     path_save = get_path_save()
     path_test = path_save.joinpath("illustration_single_graphic_figure")
     path_test.mkdir(parents=False, exist_ok=True)
-    illustration.save(value, path_test, "cell_density")
+    illustration.save(value, path_test)
 
     path_illustration = path_test.joinpath("illustration")
+    assert os.path.exists(
+        path_illustration)
     assert os.path.isfile(
         path_illustration.joinpath("cell_density.png"))
     assert os.path.isfile(
@@ -92,7 +134,7 @@ def test_illustration_single_graphic_callable_figure():
     path_test = path_save.joinpath(
         "illustration_single_graphic_callable_figure")
     path_test.mkdir(parents=False, exist_ok=True)
-    illustration.save(value, path_test, "cell_density")
+    illustration.save(value, path_test)
 
     path_illustration = path_test.joinpath("illustration")
     assert os.path.isfile(
