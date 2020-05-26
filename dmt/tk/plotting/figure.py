@@ -16,7 +16,8 @@
 """
 A figure is a graphic with a caption.
 """
-
+from pathlib import Path
+import shutil
 from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.field import Field, lazyproperty, WithFields
 
@@ -35,7 +36,7 @@ class Figure(WithFields):
         __as__=paragraphs)
 
     def __init__(self,
-            figure_graphic,
+            figure,
             caption="No caption provided",
             *args, **kwargs):
         """
@@ -48,8 +49,12 @@ class Figure(WithFields):
         We still allow `*args, **kwargs` that will allow `class Figure` to be
         mixed in some other class.
         """
+        try:
+            graphic = figure.graphic
+        except AttributeError:
+            graphic = figure
         super().__init__(
-            graphic=figure_graphic,
+            graphic=graphic,
             caption=caption,
             *args, **kwargs)
 
@@ -58,6 +63,9 @@ class Figure(WithFields):
         """
         Save the figure.
         """
+        if isinstance(self.graphic, (str, Path)):
+            shutil.copy(self.graphic, path)
+            return path
         try:
             return self.graphic.savefig(path, dpi=dpi)
         except AttributeError:
@@ -67,3 +75,4 @@ class Figure(WithFields):
                 raise TypeError(
                     "Figure type {} not supported".format(
                         self.graphic.__class__))
+        return None
