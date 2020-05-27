@@ -29,7 +29,9 @@ def get_abstract(document=None):
         """)
     if document:
         kwargs["parent"] = document
-        return Abstract(**kwargs)
+        abstract = Abstract(**kwargs)
+        document.abstract = abstract
+        return abstract
     return kwargs
 
 def _test_abstract_instance(abstract, adapter, model):
@@ -77,13 +79,13 @@ def test_abstract(test_object = None):
         _test_abstract_save(path_save, abstract, model)
     else:
         try:
-            abstract = test_object.abstract
+            abstract = test_object.instance
         except AttributeError:
             abstract = test_object
         _test_abstract_instance(abstract, adapter, model)
 
         try:
-            value = test_object.value_abstract
+            value = test_object.value
         except AttributeError:
             value = abstract(adapter, model)
         _test_abstract_value(value, adapter, model)
@@ -96,11 +98,15 @@ def test_abstract(test_object = None):
         _test_abstract_save(path_save, abstract, model)
     return True
 
-def get_introduction(document=None):
-    kwargs = dict(
-        narrative="""
+def get_introduction(document=None, from_file=False):
+    if from_file:
+        narrative = Path.cwd().joinpath("resources/introduction.txt")
+    else:
+        narrative = """
         Cortical area such as the \model{brain_region} is composed of layers of cells with different cell densities. In this report we analyze circuit composition of cortical layers \model{layer_values}, focusing on total cell density and the fraction of inhibitory neurons in each layer. In our model of the \model{brain_region} we have reconstructed the sub-regions \model{sub_brain_regions}. Experimental measurements for cell densities for these sub-regions were not available. Hence we have used the same cell densities presented in the figure for each of the these regions.
-        """,
+        """
+    kwargs = dict(
+        narrative=narrative,
         illustration=OrderedDict([
             ("neocortical_scaffold",
              dict(
@@ -112,7 +118,9 @@ def get_introduction(document=None):
         ]))
     if document:
         kwargs["parent"] = document
-        return Introduction(**kwargs)
+        introduction = Introduction(**kwargs)
+        document.introduction = introduction
+        return introduction
     return kwargs
 
 def _test_introduction_instance(introduction, adapter, model):
@@ -173,12 +181,12 @@ def test_introduction(test_object=None):
         _test_introduction_save(path_save, adapter, model)
     else:
         try:
-            introduction = test_object.introduction
+            introduction = test_object.instance
         except AttributeError:
             introduction = test_object
         _test_introduction_instance(introduction, adapter, model)
         try:
-            value = test_object.value_abstract
+            value = test_object.value
         except AttributeError:
             value = introduction(adapter, model)
         _test_introduction_value(value, adapter, model)
@@ -190,13 +198,36 @@ def test_introduction(test_object=None):
         _test_introduction_save(path_save, adapter, model)
     return True
 
-def get_methods(document=None):
-    kwargs_methods = dict(
-        narrative="""Random cell densities were assigned to each pair of
+def test_introduction_from_file():
+    """
+    Load `Introduction` narrative from a file.
+    """
+    adapter = MockAdapter()
+    model = MockModel()
+    introduction = get_introduction(
+        Document("Test"), from_file=True)
+    value = introduction(
+        adapter, model)
+    path_save = get_path_save().joinpath(
+        "from_file")
+    path_save.mkdir(parents=False, exist_ok=True)
+    introduction.save(value, path_save)
+    return test_introduction(Record(
+        instance=introduction,
+        value=value,
+        path_save=path_save))
+
+def get_methods(document=None, from_file=False):
+    if from_file:
+        narrative = Path.cwd().joinpath("resources/methods.txt")
+    else:
+        narrative = """Random cell densities were assigned to each pair of
         (sub-region, layer) for sub-regions \\model{sub_brain_regions}
         and layers \\model{layer_values}, for the purposes of mocking the
         behavior of a `methods` instance.
-        """,
+        """ 
+    kwargs_methods = dict(
+        narrative=narrative,
         reference_data=CompositeData({
             "cell_density": CompositeData({
                 "abcYYYY": mock_reference_data_cell_density(),
@@ -220,7 +251,9 @@ def get_methods(document=None):
                 "method": inhibitory_fraction,
                 "sample_size": 20})]))
     if document:
-        return Methods(parent=document,**kwargs_methods)
+        methods = Methods(parent=document,**kwargs_methods)
+        document.methods = methods
+        return methods
     return kwargs_methods
 
 def _test_methods_instance(methods, adapter, model):
@@ -313,7 +346,7 @@ def test_methods(test_object=None):
         _test_methods_save(path_save, adapter, model)
     else:
         try:
-            methods = test_object.methods
+            methods = test_object.instance
         except AttributeError:
             methods = test_object
         _test_methods_instance(methods, adapter, model)
@@ -332,7 +365,32 @@ def test_methods(test_object=None):
         _test_methods_save(path_save, adapter, model)
     return True
 
-def get_results(document=None):
+def test_methods_from_file():
+    """
+    `Methods` should be able to load narrative from a file.
+    """
+    adapter = MockAdapter()
+    model = MockModel()
+    methods = get_methods(Document("TesT"), from_file=True)
+    value = methods(adapter, model)
+    path_save = get_path_save().joinpath("from_file")
+    path_save.mkdir(parents=False, exist_ok=True)
+    methods.save(value, path_save)
+    return test_methods(Record(
+        instance=methods,
+        value=value,
+        path_save=path_save))
+
+def get_results(document=None, from_file=False):
+    if from_file:
+        narrative = Path.cwd().joinpath(
+            "resources", "results.txt")
+    else:
+        narrative = """Random cell densities were assigned to each pair of
+        (sub-region, layer) for sub-regions \\model{sub_brain_regions}
+        and layers \\model{layer_values}, for the purposes of mocking the
+        behavior of a `methods` instance.
+        """
     plotter_cd = MultiPlot(
         mvar="region",
         plotter=Bars(
@@ -346,11 +404,7 @@ def get_results(document=None):
             yvar="inhibitory_fraction", ylabel="Inhibitory Fraction",
             gvar="dataset"))
     kwargs = dict(
-        narrative="""Random cell densities were assigned to each pair of
-        (sub-region, layer) for sub-regions \\model{sub_brain_regions}
-        and layers \\model{layer_values}, for the purposes of mocking the
-        behavior of a `methods` instance.
-        """,
+        narrative=narrative,
         illustration=OrderedDict([
             (
                 "cell_density", {
@@ -370,7 +424,9 @@ def get_results(document=None):
     )
             
     if document:
-        return Results(parent=document, **kwargs)
+        results = Results(parent=document, **kwargs)
+        document.results = results
+        return results
     return kwargs
 
 def _test_results_instance(results, adapter, model):
@@ -482,7 +538,7 @@ def test_results(test_object=None):
         _test_results_save(path_save, adapter, model)
     else:
         try:
-            results = test_object.results
+            results = test_object.instance
         except AttributeError:
             results = test_object
         _test_results_instance(results, adapter, model)
@@ -500,3 +556,22 @@ def test_results(test_object=None):
             path_save = results.save(path_save)
         _test_results_save(path_save, adapter, model)
     return True
+
+def test_results_from_file():
+    """
+    `Methods` should be able to load narrative from a file.
+    """
+    adapter = MockAdapter()
+    model = MockModel()
+
+    document = Document("Test")
+    methods = get_methods(document, from_file=True)
+    results = get_results(document, from_file=True)
+    value = results(adapter, model)
+    path_save = get_path_save().joinpath("from_file")
+    path_save.mkdir(parents=False, exist_ok=True)
+    results.save(value, path_save)
+    return test_results(Record(
+        instance=results,
+        value=value,
+        path_save=path_save))

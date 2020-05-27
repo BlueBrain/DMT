@@ -70,18 +70,18 @@ def test_lab_report():
 
     assert path_report == path_save.joinpath("report")
     test_abstract(Record(
-        abstract=report.abstract,
+        instance=report.abstract,
         value=value_report.abstract,
         path_save=path_report))
     test_introduction(Record(
-        introduction=report.introduction,
+        instance=report.introduction,
         value=value_report.introduction,
         path_save=path_report))
     test_methods(Record(
-        methods=report.methods,
+        instance=report.methods,
         value=value_report.methods,
         path_save=path_report))
     test_results(Record(
-        results=report.results,
+        instance=report.results,
         value=value_report.results,
         path_save=path_report))
