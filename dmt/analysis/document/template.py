@@ -38,6 +38,7 @@ Templated string that can be filled in with a namespace.
 from collections import OrderedDict
 import re
 from Cheetah.Template import Template
+from pathlib import Path
 from dmt.model import AIBase
 from dmt.model.interface import interfacemethod
 from dmt.data.observation.measurement import\
@@ -75,6 +76,16 @@ class TaggedTemplateString(WithFields):
 
     def __init__(self, text, *args, **kwargs):
         """..."""
+        if not isinstance(text, (str, Path)):
+            raise TypeError(
+                """
+                Bad type {} to construct `TemplateTaggedString` from.
+                Argument `text` should be a string containing the text,
+                or path to the file containing intended text.
+                """.format(type(text)))
+        if isinstance(text, Path):
+            with open(text, 'r') as file_text:
+                text = file_text.read()
         self._text = text
         super().__init__(*args, **kwargs)
 
