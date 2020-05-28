@@ -68,7 +68,7 @@ def test_context_management():
         value_abstract = abstract(adapter, model)
         path_abstract = abstract.save(value_abstract, path_save)
         test_abstract(Record(
-            abstract=abstract,
+            instance=abstract,
             value=value_abstract,
             path_save=path_save))
 
@@ -95,7 +95,7 @@ def test_context_management():
         value_introduction = introduction(adapter, model)
         path_introduction = introduction.save(value_introduction, path_save)
         test_introduction(Record(
-            introduction=introduction,
+            instance=introduction,
             value=value_introduction,
             path_save=path_save))
 
@@ -196,7 +196,7 @@ def test_context_management():
         test_composition._test_methods_value(value_methods, adapter, model)
         path_methods = methods.save(value_methods, path_save)
         test_methods(Record(
-            methods=methods,
+            instance=methods,
             value=value_methods,
             path_save=path_save))
 
@@ -245,7 +245,7 @@ def test_context_management():
         test_composition._test_results_value(value_results, adapter, model)
         path_results = results.save(value_results, path_save)
         test_results(Record(
-            results=results,
+            instance=results,
             value=value_results,
             path_save=path_save))
 
@@ -266,6 +266,7 @@ def test_context_management():
             """
             pass
 
+
         conclusions = document.section("Conclusions").with_parent(report)
         value_conclusions = conclusions(adapter, model)
         LOGGER.alert(
@@ -276,3 +277,27 @@ def test_context_management():
             "This is an example "),\
             value_conclusions.narrative
 
+
+        report = document.get_report()
+
+        path_save = get_path_save()
+        value_report = report(adapter, model)
+        path_report = report.save(value_report, path_save)
+        
+        assert path_report == path_save.joinpath("report")
+        test_abstract(Record(
+            instance=report.abstract,
+            value=value_report.abstract,
+            path_save=path_report))
+        test_introduction(Record(
+            instance=report.introduction,
+            value=value_report.introduction,
+            path_save=path_report))
+        test_methods(Record(
+            instance=report.methods,
+            value=value_report.methods,
+            path_save=path_report))
+        test_results(Record(
+            instance=report.results,
+            value=value_report.results,
+            path_save=path_report))

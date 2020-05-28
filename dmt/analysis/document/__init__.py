@@ -528,7 +528,7 @@ class Illustration(WithFields):
                         value_data = data_figure(adapter, model, label=label)
                     else:
                         value_data = data_figure
-                        
+
                     figures[label] =\
                         figure(
                             value_data, *args,

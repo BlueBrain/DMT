@@ -79,7 +79,8 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        raise FieldIsRequired
+        #raise FieldIsRequired
+        return None
 
     @field.cast(Introduction)
     def introduction(self):
@@ -93,7 +94,8 @@ class LabReport(Document):
         provide either a `Section` with these attributes, or a dictionary
         with keys `narrative`, `data`, and `illustration`.
         """
-        raise FieldIsRequired
+        #raise FieldIsRequired
+        return None
 
     @field.cast(Methods)
     def methods(self):
@@ -103,7 +105,8 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        raise FieldIsRequired
+        #raise FieldIsRequired
+        return None
 
     @field.cast(Results)
     def results(self):
@@ -113,8 +116,8 @@ class LabReport(Document):
         a template search-list obtained from model using the adapter method
         `get_provenance`.
         """
-        raise FieldIsRequired
-
+        #raise FieldIsRequired
+        return None
 
     @field.cast(Section)
     def discussion(self):

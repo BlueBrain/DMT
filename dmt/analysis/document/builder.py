@@ -90,18 +90,19 @@ class _SectionBuilder:
         self.content.narrative[narrative.__name__] = narrative.__doc__
         return narrative
 
-    def with_parent(self, document=None):
-        """..."""
-        if document:
-            return Section(
-                parent=document,
-                title=self.title,
-                narrative=paragraphs(self.content.narrative),
-                illustration=self.content.illustration)
+    def with_parent(self, document):
+        """
+        TODO: What about Section data? Think about it.
+        """
+        return Section(
+            parent=document,
+            title=self.title,
+            narrative=paragraphs(self.content.narrative),
+            illustration=self.content.illustration)
+    def get_content(self):
         return dict(
             narrative=paragraphs(self.content.narrative),
             illustration=self.content.illustration)
-
 
 
 class _AbstractBuilder:
@@ -116,13 +117,14 @@ class _AbstractBuilder:
         self.content[narrative.__name__] = narrative.__doc__
         return narrative
 
-    def with_parent(self, document=None):
+    def with_parent(self, document):
         """..."""
-        if document:
-            return Abstract(
-                parent=self.document_builder.document,
-                narrative=paragraphs(self.content))
-        return dict(narrative=paragraphs(self.content))
+        return Abstract(
+            parent=self.document_builder.document,
+            narrative=paragraphs(self.content))
+    def get_content(self):
+        return dict(
+            narrative=paragraphs(self.content))
 
 
 class _IntroductionBuilder(_SectionBuilder):
@@ -130,17 +132,17 @@ class _IntroductionBuilder(_SectionBuilder):
     def __init__(self, document_builder):
         super().__init__("Introduction", document_builder)
 
-    def with_parent(self, document=None):
+    def with_parent(self, document):
         """..."""
-        if document:
-            return Introduction(
-                parent=document,
-                narrative=paragraphs(self.content.narrative),
-                illustration=self.content.illustration)
+        return Introduction(
+            parent=document,
+            narrative=paragraphs(self.content.narrative),
+            illustration=self.content.illustration)
+    def get_content(self):
         return dict(
             narrative=paragraphs(self.content.narrative),
             illustration=self.content.illustration)
-
+    
 
 class _MethodsBuilder(_SectionBuilder):
     """
@@ -152,7 +154,7 @@ class _MethodsBuilder(_SectionBuilder):
         self.document_builder = document_builder
         self.content = Record(narrative=OrderedDict(),
                                data=OrderedDict(),
-                               reference_data=OrderedDict(),
+                               reference_data=CompositeData(),
                                measurements=OrderedDict(),
                                illustration=OrderedDict())
 
@@ -163,8 +165,9 @@ class _MethodsBuilder(_SectionBuilder):
         """
         argspec = inspect.getfullargspec(reference_data)
         if not argspec.args and not argspec.varargs and not argspec.varkw:
-            self.content.reference_data[reference_data.__name__] =\
-                reference_data()
+            self.content.reference_data.assign(**{
+                reference_data.__name__: reference_data()
+            })
         else:
             raise NotImplementedError(
                 """
@@ -199,13 +202,13 @@ class _MethodsBuilder(_SectionBuilder):
                 "method": measurement}
         return measurement
 
-    def with_parent(self, document=None):
-        if document:
-            return Methods(
-                parent=document,
-                narrative=paragraphs(self.content.narrative),
-                reference_data=CompositeData(self.content.reference_data),
-                measurements=self.content.measurements)
+    def with_parent(self, document):
+        return Methods(
+            parent=document,
+            narrative=paragraphs(self.content.narrative),
+            reference_data=CompositeData(self.content.reference_data),
+            measurements=self.content.measurements)
+    def get_content(self):
         return {
             "narrative": paragraphs(self.content.narrative),
             "reference_data": self.content.reference_data,
@@ -219,16 +222,19 @@ class _ResultsBuilder(_SectionBuilder):
     def __init__(self, document_builder):
         super().__init__("Results", document_builder)
 
-    def with_parent(self, document=None):
+    def get_content(self):
         """..."""
-        if document:
-            return Results(
-                parent=document,
-                narrative=paragraphs(self.content.narrative),
-                illustration=self.content.illustration)
         return dict(
             narrative=paragraphs(self.content.narrative),
             illustration=self.content.illustration)
+
+    def with_parent(self, document):
+        """..."""
+        return Results(
+            parent=document,
+            narrative=paragraphs(self.content.narrative),
+            illustration=self.content.illustration)
+
 
 class DocumentBuilder:
     """
@@ -264,3 +270,14 @@ class DocumentBuilder:
             self._sections[title] =\
                 _SectionBuilder(title=title, document_builder=self)
         return self._sections[title]
+
+    def get_report(self):
+        return LabReport(
+            title="MockAnalysis",
+            abstract=self.abstract.get_content(),
+            introduction=self.introduction.get_content(),
+            methods=self.methods.get_content(),
+            results=self.results.get_content(),
+            sections=OrderedDict([
+                (title, section.get_content())
+                for title, section in self._sections.items()]))

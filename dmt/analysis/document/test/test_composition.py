@@ -108,13 +108,12 @@ def get_introduction(document=None, from_file=False):
     kwargs = dict(
         narrative=narrative,
         illustration=OrderedDict([
-            ("neocortical_scaffold",
-             dict(
-                 figures={
-                     "neocortical_scaffold": "resources/neocortical_scaffold.png"},
-                 caption="""
-                 The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
-                 """))
+            ("neocortical_scaffold", dict(
+                figures={
+                    "neocortical_scaffold": "resources/neocortical_scaffold.png"},
+                caption="""
+                The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
+                """))
         ]))
     if document:
         kwargs["parent"] = document
@@ -125,7 +124,8 @@ def get_introduction(document=None, from_file=False):
 
 def _test_introduction_instance(introduction, adapter, model):
     """..."""
-    assert isinstance(introduction, Introduction)
+    assert isinstance(introduction, Introduction) or\
+        isinstance(introduction, Section)
     assert hasattr(introduction, "narrative")
     assert introduction.narrative
     assert hasattr(introduction, "illustration")
@@ -575,3 +575,67 @@ def test_results_from_file():
         instance=results,
         value=value,
         path_save=path_save))
+
+
+def get_section(title, document=None, from_file=False):
+    label = make_label(title)
+    if from_file:
+        kwargs = dict(
+            title=title,
+            narrative=Path.cwd().joinpath(
+                "resources", "{}.txt".format(label)
+            ),
+            illustration=OrderedDict([
+                ("neocortical_scaffold", dict(
+                    figures={
+                        "neocortical_scaffold": "resources/neocortical_scaffold.png"},
+                    caption="""
+                    The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
+                    """))
+            ]))
+    else:
+         kwargs = dict(
+            title=title,
+            narrative="""
+            Cortical area such as the \model{brain_region} is composed of layers of cells with different cell densities. In this report we analyze circuit composition of cortical layers \model{layer_values}, focusing on total cell density and the fraction of inhibitory neurons in each layer. In our model of the \model{brain_region} we have reconstructed the sub-regions \model{sub_brain_regions}. Experimental measurements for cell densities for these sub-regions were not available. Hence we have used the same cell densities presented in the figure for each of the these regions.
+            """,
+            illustration=OrderedDict([
+                ("neocortical_scaffold", dict(
+                    figures={
+                        "neocortical_scaffold": "resources/neocortical_scaffold.png"},
+                    caption="""
+                    The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
+                    """))
+            ]))
+
+    if document:
+        kwargs["parent"] = document
+        section = Section(**kwargs)
+        setattr(document, title, section)
+        document.sections[title] = section
+        return section
+    return kwargs
+
+def test_section(test_object=None):
+    if test_object:
+        return test_introduction(test_object)
+    adapter = MockAdapter()
+    model = MockModel()
+    document = Document("Test")
+    for from_file in [True, False]:
+        introduction_section = get_section(
+            "Introduction",
+            document=document,
+            from_file=from_file)
+        value = introduction_section(adapter, model)
+        path_save = get_path_save().joinpath(
+            "section" if not from_file
+            else "from_file/section")
+
+        path_save.mkdir(parents=False, exist_ok=True)
+        introduction_section.save(value, path_save)
+        test_introduction(Record(
+            instance=introduction_section,
+            value=value,
+            path_save=path_save))
+    

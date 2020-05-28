@@ -1,0 +1,4 @@
+Random cell densities were assigned to each pair of
+(sub-region, layer) for sub-regions \\model{sub_brain_regions}
+and layers \\model{layer_values}, for the purposes of mocking the
+behavior of a `methods` instance.

@@ -192,7 +192,7 @@ class Methods(Section):
         """
         return NA
 
-    @field
+    @field.cast(CompositeData)
     def reference_data(self):
         """
         Reference data to be used for analysis.

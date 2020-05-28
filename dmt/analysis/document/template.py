@@ -76,16 +76,17 @@ class TaggedTemplateString(WithFields):
 
     def __init__(self, text, *args, **kwargs):
         """..."""
-        if not isinstance(text, (str, Path)):
-            raise TypeError(
-                """
-                Bad type {} to construct `TemplateTaggedString` from.
-                Argument `text` should be a string containing the text,
-                or path to the file containing intended text.
-                """.format(type(text)))
-        if isinstance(text, Path):
-            with open(text, 'r') as file_text:
-                text = file_text.read()
+        if text:
+            if not isinstance(text, (str, Path)):
+                raise TypeError(
+                    """
+                    Bad type {} to construct `TemplateTaggedString` from.
+                    Argument `text` should be a string containing the text,
+                    or path to the file containing intended text.
+                    """.format(type(text)))
+            if isinstance(text, Path):
+                with open(text, 'r') as file_text:
+                    text = file_text.read()
         self._text = text
         super().__init__(*args, **kwargs)
 
