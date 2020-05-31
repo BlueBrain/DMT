@@ -271,7 +271,7 @@ class DocumentBuilder:
                 _SectionBuilder(title=title, document_builder=self)
         return self._sections[title]
 
-    def get_report(self):
+    def get(self, *args, **kwargs):
         return LabReport(
             title="MockAnalysis",
             abstract=self.abstract.get_content(),
@@ -281,3 +281,16 @@ class DocumentBuilder:
             sections=OrderedDict([
                 (title, section.get_content())
                 for title, section in self._sections.items()]))
+
+    def chapter(self, chapter):
+        """
+        chapter :: A callable...
+        """
+        document_builder = DocumentBuilder(
+            chapter.__name__
+        )
+        document_builder.abstract = Abstract(
+            parent=document_builder,
+            narrative=chapter.__doc__
+        )
+        return document_builder

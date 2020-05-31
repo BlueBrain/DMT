@@ -212,7 +212,6 @@ def test_context_management():
             """
             pass
 
-
         @document.results.illustration
         def cell_density():
             """
@@ -223,7 +222,7 @@ def test_context_management():
                 plotter=Bars(
                     xvar="layer", xlabel="Layer",
                     yvar="cell_density", ylabel="Cell Density",
-                gvar="dataset"))
+                    gvar="dataset"))
 
         @document.results.illustration
         def inhibitory_fraction():
@@ -278,7 +277,7 @@ def test_context_management():
             value_conclusions.narrative
 
 
-        report = document.get_report()
+        report = document.get()
 
         path_save = get_path_save()
         value_report = report(adapter, model)

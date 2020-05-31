@@ -202,7 +202,7 @@ class SonataCircuitAdapter(WithFields):
                 for _, post in post_synaptic_cell_types.iterrows()])\
               .reset_index(drop=True)
 
-    def get_layer_thickness(self,
+    def get_layer_thickness_values(self,
             circuit_model,
             sample_size=10000,
             **spatial_query):
@@ -223,11 +223,11 @@ class SonataCircuitAdapter(WithFields):
         Change this for an atlas based circuit.
         """
         return\
-            circuit_model.cells\
-                         .groupby(terminology.bluebrain.cell.layer)\
-                         .agg(["min", "max"])\
-                         .y\
-                         .apply(lambda ys: ys["max"] - ys["min"], axis=1)
+            self.get_cells(circuit_model, **spatial_qyer)\
+                .groupby(terminology.bluebrain.cell.layer)\
+                .agg(["min", "max"])\
+                .y\
+                .apply(lambda ys: ys["max"] - ys["min"], axis=1)
     
     @terminology.use(*(
         terminology.circuit.terms + terminology.cell.terms))

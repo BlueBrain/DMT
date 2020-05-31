@@ -30,3 +30,5 @@ doc/build/
 scratch
 .ipynb_checkpoints
 .mypy_cache/
+
+.ipynb_checkpoints

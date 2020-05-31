@@ -726,6 +726,12 @@ class Document(WithFields):
         """,
         __default_value__=Author.anonymous)
 
+    chapters = Field(
+        """
+        A chapter is any document that may have sections.
+        """,
+        __default_value__=[])
+
     def __init__(self, title, *args, **kwargs):
         kwargs["parent"] = self
         for section in self.get_class_sections():
@@ -744,12 +750,15 @@ class Document(WithFields):
         """
         return OrderedDict()
 
-    @abstractclassmethod
     def get_class_sections(cls):
         """
         Sections defined in this `Document class`
+        Override this if the behavior changes.
+
+        TODO: Figure out how to introspect attributes to automate...
         """
         return []
+
     
 
 from .components import *

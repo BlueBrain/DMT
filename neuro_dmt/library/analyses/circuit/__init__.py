@@ -34,10 +34,6 @@ from neuro_dmt import terminology
 from neuro_dmt.analysis.circuit import BrainCircuitAnalysis
 from neuro_dmt.analysis.reporting import\
     CircuitProvenance, CircuitAnalysisReport, CheetahReporter
-from ...models.bluebrain.circuit.atlas import BlueBrainCircuitAtlas
-from ...models.bluebrain.circuit.model import BlueBrainCircuitModel
-from ...models.bluebrain.circuit.adapter import BlueBrainCircuitAdapter
-
 
 
 class AnalysisSpec(WithFields):
