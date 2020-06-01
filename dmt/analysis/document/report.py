@@ -140,7 +140,7 @@ class LabReport(Document):
     def save(self, value_report, path_parent):
         """
         """
-        path_report = path_parent.joinpath("report")
+        path_report = path_parent.joinpath(self.label)
         path_report.mkdir(parents=False, exist_ok=True)
 
         self.abstract.save(value_report.abstract, path_report)

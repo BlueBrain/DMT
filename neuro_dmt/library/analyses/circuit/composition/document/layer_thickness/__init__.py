@@ -17,7 +17,9 @@
 """
 Document layer thickness of a circuit.
 """
+import pandas as pd
 from dmt.model.interface import interfacemethod
+from dmt.data.observation import measurement
 from pathlib import Path
 from dmt.tk.plotting import Bars, MultiPlot
 from dmt.analysis.document.builder import DocumentBuilder
@@ -28,6 +30,7 @@ def get():
     """
 
     document = DocumentBuilder("Layer Thickness")
+
     @document.introduction
     def _():
         """
@@ -82,45 +85,51 @@ def get():
         """
         raise NotImplementedError
 
-    def layer_thickness(adapter, circuit_model, **parameters):
-        wide = adapter.get_layer_thickness_values(circuit_model, **parameters)
-        wide.columns.name = "layer"
-        return pd.concat(
-            [wide.iloc[i] for i in range(wide.shape[0])]
-        ).rename(
-            "thickness"
-        )
-
     @document.methods.measurements
-    def cortical_thickness(adapter, circuit_model, **parameters):
+    def cortical_thickness(adapter, circuit_model, *args, **kwargs):
         """
         Measurement to be made on `circuit_model` for given `parameters`
         """
-        raise NotImplementedError(
-            """
-            Do not worry about the adapter before  starting to implement.
-            Assume it does not exist, and work your way through the logic
-            by coding away.
-            Once the code is written, all of it right here inside the body
-            of this function, take another look at it and factor away the
-            common adaptable code.
-            """)
+        def _in(region):
+            thicknesses = adapter.get_layer_thickness_values(
+                circuit_model, region=region, **kwargs
+            )
+            return thicknesses.sum(axis=1).values
+        return pd.concat([
+            pd.DataFrame({
+                "region": region,
+                "cortical_thickness": _in(region)})
+            for region in adapter.get_sub_regions(circuit_model)]
+        ).set_index("region")
+
     @document.methods.measurements
-    def relative_thickness(adapter, circuit_model, **parameters):
+    def relative_thickness(adapter, circuit_model, *args, **kwargs):
         """
         Measurement to be made on `adapter, circuit_model` for given
         `parameters`.
         """
-        raise NotImplementedError(
-            """
-            Do not worry about the adapter before  starting to implement.
-            Assume it does not exist, and work your way through the logic
-            by coding away.
-            Once the code is written, all of it right here inside the body
-            of this function, take another look at it and factor away the
-            common adaptable code.
-            """)
-
+        layers = adapter.get_layers(circuit_model)
+        def _in(region):
+            wide = adapter.get_layer_thickness_values(
+                circuit_model, region=region, **kwargs
+            ).assign(
+                total=lambda df: df.sum(axis=1)
+            ).apply(
+                lambda row: row[layers] / row.total,
+                axis=1
+            )
+            wide.columns.name = "layer"
+            return pd.concat(
+                [wide.iloc[i] for i in range(wide.shape[0])]
+            ).rename(
+                "relative_thickness"
+            )
+        return\
+            measurement.collection.series_type(
+                ({"region": region}, _in(region))
+                for region in adapter.get_sub_regions(circuit_model)
+            ).rename(columns={"value": "relative_thickness"})
+            
     @document.results
     def _():
         """
@@ -153,5 +162,3 @@ def get():
                 gvar="dataset"))
 
     return document.get()
-
-

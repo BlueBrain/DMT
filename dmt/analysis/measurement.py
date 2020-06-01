@@ -134,16 +134,19 @@ class Measurement(WithFields, AIBase):
         """
         Collect a measurement
         """
-        if self.parameters is None:
+        try:
+            parameters = self.parameters
+        except AttributeError as error:
             raise AttributeError(
                 """
                 `Measurement.collect(...)` does not apply if the instance
                 does not have `parameters`.
-                """)
+                \t{}
+                """.format(error))
         collected =\
             self.collection(
                 (p, self.method(adapter, model, **p, **kwargs))
-                for p in self.parameters(
+                for p in parameters(
                         adapter, model,
                         sample_size=self.sample_size,
                         **kwargs
@@ -321,8 +324,6 @@ class MeasurementSuite(Mapping):
         return CompositeData([
             (
                 label,
-                measurement.assign(label=label).collect(
+                measurement.assign(label=label)(
                     adapter, model, *args, **kwargs)
             ) for label, measurement in self.measurements.items()])
-
-

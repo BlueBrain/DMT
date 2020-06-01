@@ -38,6 +38,14 @@ class MockCircuitAdapter(WithFields):
     development of the analysis --- plotting, report generation etc.
     """
 
+    def get_namespace(self, circuit_model):
+        """
+        A dict describing the circuit.
+        """
+        return {
+            "cortical-thickness-estimated-range": "2-3mm",
+            "animal": "Mockaque"}
+
     def get_label(self,
             mock_circuit_model):
         """

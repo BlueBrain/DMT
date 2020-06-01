@@ -1,0 +1,12 @@
+Cortical area such as the \model{brain_region} is composed
+of layers of cells with different cell densities.
+In this report we analyze circuit composition
+of cortical layers \model{layer_values},
+focusing on total cell density and the fraction
+of inhibitory neurons in each layer.
+In our model of the \model{brain_region}
+we have reconstructed the sub-regions \model{sub_brain_regions}.
+Experimental measurements for cell densities
+for these sub-regions were not available.
+Hence we have used the same cell densities presented
+in the figure for each of the these regions.

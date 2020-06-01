@@ -345,12 +345,9 @@ class Results(Section):
         for label_measurement, data_measurement in measurements.items():
             reference_data =\
                 self.reference_data.get(label_measurement, NA)
-            if reference_data is NA: 
-                data_illustration[label_measurement] =\
-                    data_measurement
-            else:
-                data_illustration[label_measurement] ={
-                    adapter.get_label(model): data_measurement}
+            data_illustration[label_measurement] ={
+                adapter.get_label(model): data_measurement}
+            if reference_data is not NA:
                 if not isinstance(reference_data, Mapping):
                     reference_data = {"reference": reference_data}
                 data_illustration[label_measurement].update({

@@ -240,8 +240,8 @@ def test_context_management():
         test_composition._test_results_instance(results, adapter, model)
 
         value_results = results(adapter, model)
-
         test_composition._test_results_value(value_results, adapter, model)
+
         path_results = results.save(value_results, path_save)
         test_results(Record(
             instance=results,

@@ -18,9 +18,19 @@
 """
 Test develop documents that analyze circuit composition.
 """
+from pathlib import Path
 import numpy as np
 import pandas as pd
+from dmt.tk.journal import Logger
+from dmt.tk.field import Record
 from neuro_dmt import terminology
+
+#from neuro_dmt.library.models.mock.circuit.model import MockCircuitModel
+#from neuro_dmt.library.models.mock.circuit.adapter import MockCircuitAdapter
+#from neuro_dmt.library.models.mock.circuit.test.mock_circuit_light\
+    #import circuit_composition, circuit_connectivity
+
+LOGGER = Logger(client=__file__, level=Logger.Level.STUDY)
 
 X = terminology.bluebrain.cell.x
 Y = terminology.bluebrain.cell.y
@@ -37,7 +47,7 @@ class MockCircuitModel:
     layers = ["L1", "L2", "L3", "L4", "L5", "L6"]
     layer_type = "Cortical"
     brain_region = "SSCxO1"
-    subregions = ["mc{}_Column".format(c) for c in range(1, 7)]
+    subregions = ["mc{}_Column".format(c) for c in range(0, 7)]
 
 
 class MockCircuitAdapter:
@@ -94,3 +104,45 @@ class MockCircuitAdapter:
             columns=XYZ
         )
         return positions.apply(_thickness, axis=1)
+
+
+
+TESTOBJ = None
+
+def get_test_object(chapter):
+    """..."""
+    global TESTOBJ
+
+    if not TESTOBJ:
+        LOGGER.status(
+            LOGGER.get_source_info(),
+            """
+            Get a document builder.
+            """)
+        document = chapter.get()
+        LOGGER.status(
+            LOGGER.get_source_info(),
+            """
+            Build a circuit to work with.
+            """)
+        # circuit = MockCircuitModel(circuit_composition,
+        #                            circuit_connectivity,
+        #                            label="SSCxMockCircuit")
+        circuit = MockCircuitModel()
+        LOGGER.status(
+            LOGGER.get_source_info(),
+            """
+            Get an adapter.
+            """)
+        adapter = MockCircuitAdapter()
+        
+        TESTOBJ = Record(document=document,
+                         circuit_model=circuit,
+                         adapter=adapter)
+
+    return TESTOBJ
+
+def get_path_save():
+    folder =  Path.cwd().joinpath("folder_test")
+    folder.mkdir(parents=False, exist_ok=True)
+    return folder

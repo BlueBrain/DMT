@@ -470,7 +470,7 @@ class Illustration(WithFields):
                 pass
 
         if callable(self.figures):
-            if not data:
+            if data is None:
                 raise TypeError(
                     """
                     Argument `data` is required for a callable figure.

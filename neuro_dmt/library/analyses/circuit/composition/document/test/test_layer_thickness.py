@@ -19,55 +19,116 @@
 Test develop documents that analyze circuit composition.
 """
 
+import os
+from pathlib import Path
+import pandas as pd
 from dmt.tk.journal import Logger
-from dmt.tk.field import Record
-#from neuro_dmt.library.models.mock.circuit.model import MockCircuitModel
-#from neuro_dmt.library.models.mock.circuit.adapter import MockCircuitAdapter
-#from neuro_dmt.library.models.mock.circuit.test.mock_circuit_light\
-    #import circuit_composition, circuit_connectivity
 from .. import layer_thickness
-from .import MockCircuitAdapter, MockCircuitModel
+from .import get_test_object, get_path_save
 
 LOGGER = Logger(client=__file__, level=Logger.Level.STUDY)
 
-def get_test_object():
+def test_document_methods():
     """..."""
-    LOGGER.status(
-        LOGGER.get_source_info(),
-        """
-        Get a document builder.
-        """)
-    document = layer_thickness.get()
-    LOGGER.status(
-        LOGGER.get_source_info(),
-        """
-        Build a circuit to work with.
-        """)
-    # circuit = MockCircuitModel(circuit_composition,
-    #                            circuit_connectivity,
-    #                            label="SSCxMockCircuit")
+    test_object = get_test_object(layer_thickness)
 
-    circuit = MockCircuitModel()
-    LOGGER.status(
-        LOGGER.get_source_info(),
-        """
-        Get an adapter.
-        """)
-    adapter = MockCircuitAdapter()
+    adapter = test_object.adapter
+    circuit_model = test_object.circuit_model
 
-    return Record(
-        document=document,
-        circuit=circuit,
-        adapter=adapter)
+    methods = test_object.document.methods
 
+    assert "cortical_thickness" in methods.measurements
+    cortical_thickness =\
+        methods.measurements["cortical_thickness"]
+    value_cortical_thickness =\
+        cortical_thickness(adapter, circuit_model)
+    assert isinstance(value_cortical_thickness, pd.DataFrame)
+    assert "cortical_thickness" in value_cortical_thickness
+    assert "region" in value_cortical_thickness.index.names
+    assert "layer" not in value_cortical_thickness.index.names
 
-def test_develop():
+    assert "relative_thickness" in test_object.document.methods.measurements
+    relative_thickness =\
+        test_object.document.methods.measurements["relative_thickness"]
+    value_relative_thickness =\
+        relative_thickness(adapter, circuit_model)
+    assert isinstance(value_relative_thickness, pd.DataFrame),\
+        type(value_relative_thickness)
+    assert "relative_thickness" in value_relative_thickness
+    assert "region" in value_relative_thickness.index.names
+    assert "layer" in value_relative_thickness.index.names
+
+    value_methods = methods(adapter, circuit_model)
+    path_save = get_path_save().joinpath("layer_thickness")
+    path_save.mkdir(parents=False, exist_ok=True)
+    methods.save(value_methods, path_save)
+    path_methods = path_save.joinpath("methods")
+    assert os.path.exists(path_methods)
+    assert os.path.isfile(path_methods.joinpath("narrative.txt"))
+    assert os.path.isfile(path_methods.joinpath("measurements.json"))
+
+    return True
+
+def test_document_results():
+    """..."""
+    test_object = get_test_object(layer_thickness)
+
+    adapter = test_object.adapter
+    circuit_model = test_object.circuit_model
+
+    results = test_object.document.results
+
+    value_results = results(adapter, circuit_model)
+    path_save = get_path_save().joinpath("layer_thickness")
+    path_save.mkdir(parents=False, exist_ok=True)
+    results.save(value_results, path_save)
+    path_results = path_save.joinpath("results")
+
+    assert os.path.exists(path_results)
+    assert os.path.isfile(path_results.joinpath("narrative.txt"))
+
+    path_measurements = path_results.joinpath("measurements")
+    assert os.path.exists(path_measurements)
+    assert os.path.isfile(
+        path_measurements.joinpath("cortical_thickness.csv"))
+    assert os.path.isfile(
+        path_measurements.joinpath("relative_thickness.csv"))
+
+    path_illustration = path_results.joinpath("illustration")
+    assert os.path.exists(path_illustration)
+    path_cortical_thickness =\
+        path_illustration.joinpath("cortical_thickness")
+    assert os.path.exists(path_cortical_thickness)
+    assert os.path.isfile(path_cortical_thickness.joinpath("caption.txt"))
+    path_relative_thickness =\
+        path_illustration.joinpath("relative_thickness")
+    assert os.path.exists(path_relative_thickness)
+    assert os.path.isfile(path_relative_thickness.joinpath("caption.txt"))
+
+    return True
+
+def test_document():
     """
     A documented analysis of layer thickness should:
     1.???
     """
-    test_object = get_test_object()
+    test_object = get_test_object(layer_thickness)
 
     assert test_object.document
 
+    document = test_object.document
+    assert document.label == "layer_thickness"
 
+    report = document(
+        test_object.adapter, test_object.circuit_model)
+    path_save = get_path_save().joinpath("document")
+    path_save.mkdir(parents=False, exist_ok=True)
+    document.save(report, path_save)
+
+    assert os.path.exists(path_save.joinpath("layer_thickness"))
+
+    assert os.path.exists(path_save.joinpath("layer_thickness", "methods"))
+    assert os.path.exists(path_save.joinpath("layer_thickness", "results"))
+        
+    # test_object.document.save(
+    #     report, Path.cwd().joinpath(report.label))

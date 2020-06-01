@@ -273,7 +273,7 @@ class DocumentBuilder:
 
     def get(self, *args, **kwargs):
         return LabReport(
-            title="MockAnalysis",
+            title=self.title,
             abstract=self.abstract.get_content(),
             introduction=self.introduction.get_content(),
             methods=self.methods.get_content(),

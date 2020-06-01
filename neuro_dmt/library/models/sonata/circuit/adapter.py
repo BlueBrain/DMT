@@ -37,7 +37,8 @@ from neuro_dmt.utils.geometry.roi import Cuboid
 X = terminology.bluebrain.cell.x
 Y = terminology.bluebrain.cell.y
 Z = terminology.bluebrain.cell.z
-XYZ =[X, Y, Z]
+XYZ =[X, Y,Z]
+LAYER = terminology.bluebrain.cell.layer
 
 def _get_bounding_box(region_of_interest):
     """
@@ -202,6 +203,14 @@ class SonataCircuitAdapter(WithFields):
                 for _, post in post_synaptic_cell_types.iterrows()])\
               .reset_index(drop=True)
 
+    def get_bounding_box(self, circuit_model):
+        """
+        A bounding box containing the circuit.
+        """
+        df = self.get_cells(circuit_model)[XYZ]\
+                 .agg(["min", "max"])
+        return Cuboid(df["min"].values, df["max"].values)
+                
     def get_layer_thickness_values(self,
             circuit_model,
             sample_size=10000,
@@ -222,12 +231,44 @@ class SonataCircuitAdapter(WithFields):
         with layers along the y-axis.
         Change this for an atlas based circuit.
         """
-        return\
-            self.get_cells(circuit_model, **spatial_qyer)\
-                .groupby(terminology.bluebrain.cell.layer)\
-                .agg(["min", "max"])\
-                .y\
+        cells = self.get_cells(circuit_model, **spatial_query)
+        bbox_circuit = cells[XYZ].agg(["min", "max"]).values
+        ymin_circuit = bbox_circuit["min"].y
+        ymax_circuit = bbox_circuit["max"].y
+
+        def _get_column(position):
+            """
+            Get a column spanning the circuit with its axis passing through
+            a given position.
+            """
+            return Cuboid(
+                np.array(
+                    [position[0] - self.bounding_box_size,
+                     ymin_circuit,
+                     position[1] - self.bounding_box_size]),
+                np.array(
+                    [position[0] + self.bounding_box_size,
+                     ymax_circuit,
+                     position[1] + self.bounding_box_size]))
+
+        def _apparent_thickness(position):
+            """
+            Thickness of layers as apparent from a position in the column.
+            """
+            column = _get_column(position)
+            self.get_cells(roi=column)[[LAYER, Y]]\
+                .groupby(LAYER)\
+                .agg(["min", "max"])[Y]\
                 .apply(lambda ys: ys["max"] - ys["min"], axis=1)
+
+        positions = cells.sample(n=sample_size)[XYZ]
+        return positions.apply(_apparent_thickness, axis=1)
+        # return\
+        #     self.get_cells(circuit_model, **spatial_query)\
+        #         .groupby(terminology.bluebrain.cell.layer)\
+        #         .agg(["min", "max"])\
+        #         .y\
+        #         .apply(lambda ys: ys["max"] - ys["min"], axis=1)
     
     @terminology.use(*(
         terminology.circuit.terms + terminology.cell.terms))

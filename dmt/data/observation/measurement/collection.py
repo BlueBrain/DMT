@@ -3,15 +3,16 @@
 # This file is part of BlueBrain DMT <https://github.com/BlueBrain/DMT>
 
 # This program is free software: you can redistribute it and/or modify it under
-# the terms of the GNU Lesser General Public License version 3.0 as published by the 
-# Free Software Foundation.
+# the terms of the GNU Lesser General Public License version 3.0 as published
+#  by the Free Software Foundation.
 
-# This program is distributed in the hope that it will be useful, but WITHOUT ANY
-# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-# PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more details.
+# This program is distributed in the hope that it will be useful, 
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU Lesser General Public License for more details.
 
-# You should have received a copy of the GNU Lesser General Public License along with
-# DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
+# You should have received a copy of the GNU Lesser General Public License 
+# along with DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
 
 """
 Utiility methods to create collections of individual measurements.
@@ -28,7 +29,7 @@ def _with_index(dataframe, value="value"):
             for column in dataframe.columns
             if column != value])
 
-def primitive_type(measurement_generator):
+def primitive_type(measurement_generator, value="value"):
     """
     Use when individual measurements are primitive types...
 
@@ -51,9 +52,10 @@ def primitive_type(measurement_generator):
     return _with_index(
         pd.DataFrame([
             _join(parameters, value)
-            for parameters, value in measurement_generator]))
+            for parameters, value in measurement_generator]),
+        value=value)
 
-def vector_type(measurement_generator):
+def vector_type(measurement_generator, value="value"):
     """
     Use when individual measurements are vectorial --- i.e. the
     measured phenomenon is vector valued, for example center of mass of
@@ -78,9 +80,10 @@ def vector_type(measurement_generator):
 
     return _with_index(
         pd.cocnat([
-            _join(*args) for args in measurement_generator]))
+            _join(*args) for args in measurement_generator]),
+        value=value)
 
-def series_type(measurement_generator):
+def series_type(measurement_generator, value="value"):
     """
     Use when individual measurements are pandas.Series
     """
@@ -101,7 +104,8 @@ def series_type(measurement_generator):
     return _with_index(
         pd.concat([
             _join(*args)
-            for args in measurement_generator]))
+            for args in measurement_generator]),
+        value=value)
 
 
 def summary_type(
@@ -173,7 +177,7 @@ def multi_type(measurement_generator):
     return {
         label: _with_index(pd.concat(measurements), value=label)
         for label, measurements in labeled_measurements.items()}
-    return pd.concat(
-        [pd.concat(measurements).set_index(list(labels_parameters))
-         for measurements in labeled_measurements.values()],
-        axis=1)
+    # return pd.concat(
+    #     [pd.concat(measurements).set_index(list(labels_parameters))
+    #      for measurements in labeled_measurements.values()],
+    #     axis=1)
