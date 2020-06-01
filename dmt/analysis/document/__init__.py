@@ -442,8 +442,10 @@ class Illustration(WithFields):
         with open(path_caption, 'w') as output_file:
             output_file.write(str(value_illustration.caption))
 
+        paths_saved = {}
         for label, figure in value_illustration.figures.items():
             if isinstance(figure, Mapping):
+                paths_saved[label] = {}
                 path_group_figures =\
                     path_illustration.joinpath(label)
                 path_group_figures.mkdir(parents=False, exist_ok=True)
@@ -451,13 +453,15 @@ class Illustration(WithFields):
                     path_graphic =\
                         path_group_figures.joinpath(sub_label + ".png")
                     sub_figure.save(path_graphic)
+                    paths_saved[sub_label] = path_graphic
             else:
                 path_graphic =\
                     path_illustration.joinpath(label + ".png")
                 figure.save(path_graphic, dpi=100)
+                paths_saved[label] = path_graphic
 
         if not save_super:
-            return path_illustration
+            return paths_saved
         return save_super(value, path_folder)
 
     def _get_figures(self, adapter, model, *args, **kwargs):
@@ -631,6 +635,7 @@ class CompositeIllustration(Mapping):
         path_illustrations = path_parent.joinpath(label)
         path_illustrations.mkdir(parents=False, exist_ok=True)
 
+        path_figures = {}
         assert isinstance(value, OrderedDict)
 
         for sub_label, sub_value in value.items():
@@ -639,8 +644,10 @@ class CompositeIllustration(Mapping):
             except KeyError:
                 continue
             else:
-                illustration.save(sub_value, path_illustrations, sub_label)
-                
+                path_figures[sub_label] =\
+                    illustration.save(sub_value, path_illustrations, sub_label)
+        return path_figures
+
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         try:
@@ -733,7 +740,8 @@ class Document(WithFields):
         __default_value__=[])
 
     def __init__(self, title, *args, **kwargs):
-        kwargs["parent"] = self
+        if "parent" not in kwargs:
+            kwargs["parent"] = self
         for section in self.get_class_sections():
             name_section = section.__attr_name__
             if name_section in kwargs:
@@ -742,6 +750,16 @@ class Document(WithFields):
                 except TypeError:
                     pass
         super().__init__(title=title, *args, **kwargs)
+
+        for chapter in self.chapters:
+            chapter.parent = self
+
+    @field
+    def parent(self):
+        """
+        Parent of this document instance...
+        """
+        return None
 
     @field
     def sections(self):

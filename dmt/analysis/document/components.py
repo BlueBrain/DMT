@@ -89,17 +89,26 @@ class Section(DocElem):
         except AttributeError:
             illustration = None
 
+        record = Record(_=path_section)
         if narrative:
-            self.narrative.save(narrative, path_section)
+            record = record.assign(
+                narrative=self.narrative.save(
+                    narrative, path_section))
         if data:
-            self.data.save(data, path_section)
+            record = record.assign(
+                data=self.data.save(
+                    data, path_section))
         if illustration:
-            self.illustration.save(illustration, path_section)
+            record = record.assign(
+                illustration=self.illustration.save(
+                    illustration, path_section))
 
         for subsection in self.children:
-            subsection.save(section.children, path_section)
+            record = record.assign(**{
+                subsection.label: subsection.save(
+                    section.children, path_section)})
 
-        return path_section
+        return record
 
     def get_illustration_data(self, adapter, model, *args, **kwargs):
         """
@@ -164,8 +173,7 @@ class Abstract(DocElem):
         """
         path_abstract = path_folder.joinpath("abstract")
         path_abstract.mkdir(parents=False, exist_ok=True)
-        self.narrative.save(abstract.narrative, path_abstract)
-        return path_abstract
+        return self.narrative.save(abstract.narrative, path_abstract)
 
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
@@ -214,20 +222,23 @@ class Methods(Section):
         adapter, model
         """
         path_methods = super().save(value, path_folder)
-        path_methods.mkdir(parents=False, exist_ok=True)
         try:
             measurements = value.measurements
         except AttributeError:
             measurements = None
         if measurements:
-            with open(path_methods.joinpath("measurements.json"), 'w') as f:
+            path_measurements = path_methods._.joinpath("measurements.json")
+            with open(path_measurements, 'w') as f:
                 json.dump(measurements, f)
+            path_methods.assign(measurements=path_measurements)
         try:
             reference_data = value.reference_data
         except AttributeError:
             reference_data = None
         if reference_data is not None:
-            reference_data.save(path_methods, "reference_data")
+            path_methods.assign(
+                reference_data=reference_data.save(
+                    path_methods._, "reference_data"))
             # if isinstance(reference_data, (pd.Series, pd.DataFrame)):
             #     _flattened_columns(
             #         reference_data.reset_index()
@@ -366,16 +377,19 @@ class Results(Section):
         adapter, model
         """
         path_results = super().save(value, path_folder)
-        path_results.mkdir(parents=False, exist_ok=True)
         try:
             measurements = value.measurements
         except AttributeError:
             measurements = None
         if measurements:
             try:
-                measurements.save(path_results, "measurements")
+                path_measurements =\
+                    measurements.save(path_results._, "measurements")
             except AttributeError:
-                save_elemental(measurements)
+                path_measurements =\
+                    save_elemental(measurements, "measurement", path_folder)
+            path_results =\
+                path_results.assign(measurements=path_measurements)
         return path_results
 
     def __call__(self, adapter, model, *args, **kwargs):

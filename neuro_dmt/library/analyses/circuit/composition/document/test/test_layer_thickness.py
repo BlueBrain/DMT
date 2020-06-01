@@ -123,12 +123,15 @@ def test_document():
         test_object.adapter, test_object.circuit_model)
     path_save = get_path_save().joinpath("document")
     path_save.mkdir(parents=False, exist_ok=True)
-    document.save(report, path_save)
+    document.post(report, path_save)
 
-    assert os.path.exists(path_save.joinpath("layer_thickness"))
-
-    assert os.path.exists(path_save.joinpath("layer_thickness", "methods"))
-    assert os.path.exists(path_save.joinpath("layer_thickness", "results"))
-        
+    assert os.path.exists(
+        path_save.joinpath("layer_thickness"))
+    assert os.path.exists(
+        path_save.joinpath("layer_thickness", "methods"))
+    assert os.path.exists(
+        path_save.joinpath("layer_thickness", "results"))
+    assert os.path.isfile(
+        path_save.joinpath("layer_thickness", "report.html"))
     # test_object.document.save(
     #     report, Path.cwd().joinpath(report.label))

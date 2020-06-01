@@ -31,6 +31,12 @@ def get():
 
     document = DocumentBuilder("Layer Thickness")
 
+    @document.abstract
+    def _():
+        """
+        Total cortical, and relative layer thicknesses are analyzed.
+        """
+
     @document.introduction
     def _():
         """
