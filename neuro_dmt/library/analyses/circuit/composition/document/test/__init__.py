@@ -25,6 +25,9 @@ import pandas as pd
 from dmt.tk.journal import Logger
 from dmt.tk.field import Record
 from neuro_dmt import terminology
+from neuro_dmt.analysis.reporting import CircuitProvenance
+from neuro_dmt.library.models.sonata.circuit.model import SonataCircuitModel
+from neuro_dmt.library.models.sonata.circuit.adapter import SonataCircuitAdapter
 
 #from neuro_dmt.library.models.mock.circuit.model import MockCircuitModel
 #from neuro_dmt.library.models.mock.circuit.adapter import MockCircuitAdapter
@@ -40,6 +43,7 @@ XYZ =[X, Y,Z]
 LAYER = terminology.bluebrain.cell.layer
 REGION = terminology.bluebrain.cell.region
 
+CIRCUIT = os.environ.get("CIRCUIT", "MOCK")
 
 class MockCircuitModel:
     def __init__(self, *args, **kwargs):
@@ -130,14 +134,32 @@ def get_test_object(chapter):
         # circuit = MockCircuitModel(circuit_composition,
         #                            circuit_connectivity,
         #                            label="SSCxMockCircuit")
-        circuit = MockCircuitModel()
-        LOGGER.status(
-            LOGGER.get_source_info(),
-            """
-            Get an adapter.
-            """)
-        adapter = MockCircuitAdapter()
-        
+        if CIRCUIT == "MOCK":
+            circuit = MockCircuitModel()
+            adapter = MockCircuitAdapter()
+        else:
+            LOGGER.status(
+                LOGGER.get_source_info(),
+                """
+                Loading circuit and adapter assuming path to a circuit.
+                \t {}
+                """.format(CIRCUIT))
+            circuit =\
+                SonataCircuitModel(
+                    path_circuit_data=CIRCUIT,
+                    provenance=CircuitProvenance(
+                        label="BlueBrainCircuitModel",
+                        authors=["BBP Team"],
+                        data_release="20200330",
+                        uri=CIRCUIT,
+                        animal="Mouse",
+                        age="Not Available",
+                        brain_region="SSCx"))
+            adapter =\
+                SonataCircuitAdapter(
+                    model_has_subregions=False)
+
+            
         TESTOBJ = Record(document=document,
                          circuit_model=circuit,
                          adapter=adapter)

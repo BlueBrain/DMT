@@ -66,6 +66,29 @@ class SonataCircuitAdapter(WithFields):
         circuit's physical space.
         """,
         __default_value__=50. * np.ones(3))
+    model_has_subregions = Field(
+        """
+        Does the circuit model have subregions?
+        For example, we might have circuit that models some atlas based 
+        sub-regions of the SSCX. The `cells` dataframe will have these values
+        in column `region`.
+        Otherwise we may have a simpler circuit, like the O1, that uses
+        experimental data obtained for the SSCx, but models just a column.
+        Thus we cannot say that the circuit model has sub-regions.
+        """)
+
+    def get_namespace(self, circuit_model):
+        """
+        A namespace providing values for circuit properties required by our
+        analyses.
+        """
+        return {
+            "layer-values": self.get_layers(circuit_model),
+            "layer-type": self.get_layer_type(circuit_model),
+            "region": self.get_brain_region(circuit_model),
+            "sub-regions": self.get_sub_regions(circuit_model),
+            "animal": self.get_animal(circuit_model)
+        }
 
     def get_provenance(self, circuit_model):
         """..."""
@@ -75,12 +98,39 @@ class SonataCircuitAdapter(WithFields):
         """..."""
         return circuit_model.label
 
-    def get_brain_regions(self, circuit_model):
+    def get_animal(self, circuit_model):
+        return circuit_model.provenance.animal
+
+    def get_brain_region(self, circuit_model):
+        """
+        Label for the brain region modeled.
+        """
+        return circuit_model.provenance.brain_region
+
+    def get_sub_regions(self, circuit_model):
         """..."""
-        return circuit_model.cells.region.unique()
+        return circuit_model.cells.region.unique()\
+            if self.model_has_subregions else\
+               [self.get_brain_region(circuit_model)]
+    @staticmethod
+    def _prefix_L(layer):
+        if isinstance(layer, (int, np.int16, np.int32, np.int64, np.integer)):
+            return "L{}".format(layer)
+        if isinstance(layer, str):
+            if layer[0] != "L":
+                return "L{}".format(layer)
+            return layer
+        raise TypeError(
+            "Bad type {} of layer value {} ".format(type(layer), layer))
 
     def get_layers(self, circuit_model):
-        return circuit_model.cells.layers.unique()
+        return [self._prefix_L(layer) for layer in circuit_model.cells.layer.unique()]
+
+    def get_layer_type(self, circuit_model):
+        try:
+            return circuit_model.layer_type
+        except AttributeError:
+            return "Cortical"
 
     def get_mtypes(self, circuit_model):
         """..."""
@@ -213,7 +263,7 @@ class SonataCircuitAdapter(WithFields):
                 
     def get_layer_thickness_values(self,
             circuit_model,
-            sample_size=10000,
+            sample_size=100,
             **spatial_query):
         """
         Get layer thickness sample for regions specified by a spatial query.
@@ -231,10 +281,12 @@ class SonataCircuitAdapter(WithFields):
         with layers along the y-axis.
         Change this for an atlas based circuit.
         """
-        cells = self.get_cells(circuit_model, **spatial_query)
-        bbox_circuit = cells[XYZ].agg(["min", "max"]).values
-        ymin_circuit = bbox_circuit["min"].y
-        ymax_circuit = bbox_circuit["max"].y
+        cells = self.get_cells(
+            circuit_model, **spatial_query
+        ).assign(layer=lambda df: df.layer.apply(self._prefix_L))
+        bbox_circuit = cells[XYZ].agg(["min", "max"])
+        ymin_circuit = bbox_circuit.loc["min"].y
+        ymax_circuit = bbox_circuit.loc["max"].y
 
         def _get_column(position):
             """
@@ -243,23 +295,24 @@ class SonataCircuitAdapter(WithFields):
             """
             return Cuboid(
                 np.array(
-                    [position[0] - self.bounding_box_size,
-                     ymin_circuit,
-                     position[1] - self.bounding_box_size]),
+                    [position[0], ymin_circuit, position[2]]
+                ) - self.bounding_box_size,
                 np.array(
-                    [position[0] + self.bounding_box_size,
-                     ymax_circuit,
-                     position[1] + self.bounding_box_size]))
+                    [position[0], ymax_circuit, position[2]]
+                ) + self.bounding_box_size
+            )
 
         def _apparent_thickness(position):
             """
             Thickness of layers as apparent from a position in the column.
             """
             column = _get_column(position)
-            self.get_cells(roi=column)[[LAYER, Y]]\
-                .groupby(LAYER)\
-                .agg(["min", "max"])[Y]\
-                .apply(lambda ys: ys["max"] - ys["min"], axis=1)
+            return\
+                self.get_cells(circuit_model, roi=column)[[LAYER, Y]]\
+                    .assign(**{LAYER: lambda df: df[LAYER].apply(self._prefix_L)})\
+                    .groupby(LAYER)\
+                    .agg(["min", "max"])[Y]\
+                    .apply(lambda ys: ys["max"] - ys["min"], axis=1)
 
         positions = cells.sample(n=sample_size)[XYZ]
         return positions.apply(_apparent_thickness, axis=1)
@@ -269,17 +322,27 @@ class SonataCircuitAdapter(WithFields):
         #         .agg(["min", "max"])\
         #         .y\
         #         .apply(lambda ys: ys["max"] - ys["min"], axis=1)
-    
+
     @terminology.use(*(
         terminology.circuit.terms + terminology.cell.terms))
-    def _resolve_query_region(self, **query):
+    def _resolve_query_region(self, brain_region, **query):
         """
         Resolve term `term` in query.
+
+        brain_region :: Brain region modeled 
         """
         if not (terminology.circuit.roi in query
                 or (terminology.circuit.region in query
                     and not isinstance(query[terminology.circuit.region], str))):
+            if not self.model_has_subregions:
+                try:
+                    region = query.pop(terminology.circuit.region)
+                except KeyError:
+                    region = None
+                if region and region != brain_region:
+                    query["region"] = region
             return query
+
         for axis in XYZ:
             if axis in query:
                 raise TypeError(
@@ -354,7 +417,8 @@ class SonataCircuitAdapter(WithFields):
         """
         cell_query =\
             self.get_cell_query(
-                self._resolve_query_region(**query))
+                self._resolve_query_region(self.get_brain_region(circuit_model),
+                                           **query))
         if isinstance(target, str):
             cell_query["$target"] = target
 
@@ -523,5 +587,4 @@ class SonataCircuitAdapter(WithFields):
                    cell_group,
                    with_synapse_ids,
                    with_synapse_count)
-
 
