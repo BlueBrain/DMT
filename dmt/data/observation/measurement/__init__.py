@@ -18,7 +18,7 @@ from collections import OrderedDict
 import itertools
 import numpy
 import pandas
-from dmt.tk.field import Field, lazyfield
+from dmt.tk.field import Record, Field, lazyfield
 from dmt.tk.utils import get_label
 from ...observation import Observation
 
@@ -105,11 +105,15 @@ class SampleMeasurement(Measurement):
         """
         A class that summarizes measurement of this Measurement's phenomenon.
         """
+        if "Sample" in cls.__name__:
+            name = cls.__name__.replace("Sample", "Summary")
+        elif "sample" in cls.__name__:
+            name = cls.__name__.replace("sample", "summary")
+        else:
+            name = "{}SummaryMeasurement".format(
+                cls.__name__.replace("Measurement", "").replace("_measurement", ""))
         return type(
-            "{}SummaryMeasurement".format(
-                cls.__name__\
-                   .strip("Measurement")\
-                   .strip("_measurement")),
+            name,
             (SummaryMeasurement,),
             {"phenomenon": cls.phenomenon,
              "parameters": cls.parameters})
@@ -182,11 +186,11 @@ class SampleMeasurement(Measurement):
             data=dataframe.reset_index(),
             label="ignore")
 
-    def samples(self, number=20):
+    def samples(self, size=20):
         """
         Get a dataframe containing samples for this measurement.
         """
-        return self.summary_measurement.samples(number)
+        return self.summary_measurement.samples(size)
 
 
 class SummaryMeasurement(Measurement):
@@ -409,20 +413,42 @@ class SummaryMeasurement(Measurement):
                     **{get_label(self.phenomenon): _sample(row)})
                 for index_values, row in self.dataframe.iterrows()])\
             .set_index(self.parameters_list)
+        
 
-    def SampleType(cls):
+    def sample_measurement(self, size=20):
+        """
+        Use normal statistics for this summary measurement to generate
+        a `SampleMeasurement`.
+        """
+        return self.SampleType(
+            label=self.label,
+            object_of_observation=self.object_of_observation,
+            procedure=self.procedure,
+            citation=self.citation,
+            uri=self.uri,
+            data=self.samples(size=size).reset_index())
+
+    @classmethod
+    def SampleType(cls, **kwargs):
         """
         A class that provides samples for the measurement of this
         `Measurement`'s phenomenon.
         """
-        return type(
-            "{}SampleMeasurement".format(
-                cls.__name__\
-                   .strip("Measurement")\
-                   .strip("_measurement")),
+        if "Summary" in cls.__name__:
+            name = cls.__name__.replace("Summary", "Sample")
+        elif "summary" in cls.__name__:
+            name = cls.__name__.replace("summary", "sample")
+        else:
+            name = "{}SummaryMeasurement".format(
+                cls.__name__.replace("Measurement", "").replace("_measurement", ""))
+        sample_type = type(
+            name,
             (SampleMeasurement,),
             {"phenomenon": cls.phenomenon,
              "parameters": cls.parameters})
+        if not kwargs:
+            return sample_type
+        return sample_type(**kwargs)
 
     def summary(self):
         """

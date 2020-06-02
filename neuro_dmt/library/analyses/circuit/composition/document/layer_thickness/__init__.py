@@ -19,10 +19,18 @@ Document layer thickness of a circuit.
 """
 import pandas as pd
 from dmt.model.interface import interfacemethod
-from dmt.data.observation import measurement
+from dmt.data.observation import measurement, SampleMeasurement, Summary
 from pathlib import Path
 from dmt.tk.plotting import Bars, MultiPlot
+from dmt.tk.utils import datasets
+from dmt.analysis.measurement import CompositeData
 from dmt.analysis.document.builder import DocumentBuilder
+from neuro_dmt.library.data.sscx_mouse.composition import\
+    LayerThicknessMeasurement,\
+    CorticalThicknessMeasurement
+from neuro_dmt.library.data.sscx_mouse.composition.layer_thickness import\
+    cortical_thickness_defelipe,\
+    relative_thickness_defelipe
 
 def get():
     """
@@ -90,6 +98,40 @@ def get():
         a sample of values for each layer in the named region.
         """
         raise NotImplementedError
+
+    @document.methods.reference_data
+    def cortical_thickness(path_dmt=None, n=20):
+        """
+        Experimental data for cortical thickness used to validate the model.
+        The data was provided by the DeFelipe lab (2018).
+        """
+        summary_data =\
+            cortical_thickness_defelipe(path_dmt=path_dmt)
+        samples =\
+            summary_data.sample_measurement(n)
+        samples.data =\
+            samples.data\
+                   .set_index("region")
+        return CompositeData({
+            "InputConstraintDeFelipe2018": samples})
+
+    @document.methods.reference_data
+    def relative_thickness(path_dmt=None, n=20):
+        """
+        Experimental data for relative thickness used to validate the model.
+        The data was provided by the DeFelipe lab (2018).
+        """
+        summary_data =\
+            relative_thickness_defelipe(path_dmt=path_dmt)
+        samples =\
+            summary_data.sample_measurement(n)
+        samples.data =\
+            samples.data\
+                   .set_index(["region", "layer"])\
+                   .rename(columns={"thickness": "relative_thickness"})
+        return CompositeData({
+            "InputConstraintDeFelipe2018": samples
+        })
 
     @document.methods.measurements
     def cortical_thickness(adapter, circuit_model, *args, **kwargs):

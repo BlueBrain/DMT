@@ -13,6 +13,8 @@
 
 # You should have received a copy of the GNU Lesser General Public License 
 # along with DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
+
 """
-Library of computational neuroscientific models and their analyses.
+Wrap data with meta-data.
 """
+

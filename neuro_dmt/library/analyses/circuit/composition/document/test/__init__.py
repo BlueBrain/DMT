@@ -18,6 +18,7 @@
 """
 Test develop documents that analyze circuit composition.
 """
+import os
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -47,7 +48,8 @@ class MockCircuitModel:
     layers = ["L1", "L2", "L3", "L4", "L5", "L6"]
     layer_type = "Cortical"
     brain_region = "SSCxO1"
-    subregions = ["mc{}_Column".format(c) for c in range(0, 7)]
+    #subregions = ["mc{}_Column".format(c) for c in range(0, 7)]
+    subregions = ["SSCx"]
 
 
 class MockCircuitAdapter:

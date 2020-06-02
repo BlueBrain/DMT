@@ -165,16 +165,21 @@ class _MethodsBuilder(_SectionBuilder):
         """
         argspec = inspect.getfullargspec(reference_data)
         if not argspec.args and not argspec.varargs and not argspec.varkw:
-            self.content.reference_data.assign(**{
-                reference_data.__name__: reference_data()
-            })
+            value = reference_data()
         else:
-            raise NotImplementedError(
-                """
-                Implementation will require us to decide when `reference_data`
-                will be evaluated. The arguments could be passed through
-                keyword arguments.
-                """)
+            try:
+                value = reference_data()
+            except TypeError:
+                raise NotImplementedError(
+                    """
+                    Implementation will require us to decide when `reference_data`
+                    will be evaluated. The arguments could be passed through
+                    keyword arguments.
+                    """)
+        
+        self.content.reference_data.assign(**{
+            reference_data.__name__: value
+        })
         return reference_data
 
     def measurements(self, measurement):
