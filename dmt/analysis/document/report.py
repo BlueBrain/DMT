@@ -228,7 +228,11 @@ class LabReport(Document):
               <h3>Figures</h3>
               #for $label, $figures in $introduction_images.items()
                 #for $figure_label, $location in $figures.items():
+                   <p>
+                   <strong>($figure_label.capitalize()):</strong>
                    <img src=$location alt="apologies.png">
+                   </p>
+                   <p>$underline</p>
                 #end for
                 <p>
                   <strong>$label.capitalize():</strong>
@@ -266,6 +270,7 @@ class LabReport(Document):
               <h3>Figures</h3>
               #for $label, $figures in $results_images.items()
                 #for $figure_label, $location in $figures.items():
+                   <strong>($figure_label.capitalize()):</strong>
                    <img src=$location alt="apologies.png">
                 #end for
                 <p>
@@ -328,9 +333,15 @@ class LabReport(Document):
                 paragraphs(illustration.caption)
 
         for label, figures in path_artefacts.introduction\
-                                                 .illustration\
-                                                 .items():
-            introduction_images[label] = figures
+                                            .illustration\
+                                            .items():
+            if isinstance(figures, Mapping):
+                introduction_images[label] = OrderedDict([
+                    (sub_label, sub_figure_path.relative_to(path_artefacts._))
+                    for sub_label, sub_figure_path in figures.items()
+                ])
+            else:
+                introduction_images[label] = figures.relative_to(path_artefacts._)
                 
         template_dict["introduction_images"] = introduction_images
         template_dict["introduction_captions"] = introduction_captions
@@ -367,7 +378,13 @@ class LabReport(Document):
         for label, figures in path_artefacts.results\
                                             .illustration\
                                             .items():
-            results_images[label] = figures
+            if isinstance(figures, Mapping):
+                results_images[label] = OrderedDict([
+                    (sub_label, sub_figure_path.relative_to(path_artefacts._))
+                    for sub_label, sub_figure_path in figures.items()
+                ])
+            else:
+                results_images[label] = figures.relative_to(path_artefacts._) 
 
         template_dict["results_images"] = results_images
         template_dict["results_captions"] = results_captions

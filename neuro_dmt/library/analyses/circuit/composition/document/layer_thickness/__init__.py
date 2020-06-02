@@ -65,7 +65,9 @@ def get():
         """
         The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
         """
-        return Path.cwd().joinpath("resources/neocortical_scaffold.png")
+        return {
+            "A": Path.cwd().joinpath("resources/neocortical_scaffold.png"),
+            "B": Path.cwd().joinpath("resources/neocortical_scaffold.png")}
 
     @document.methods
     def _():
