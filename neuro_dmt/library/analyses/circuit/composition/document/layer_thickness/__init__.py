@@ -66,8 +66,18 @@ def get():
         The neocortex is a 2-3 mm thick sheet of tissue on the surface of the brain. The figure above shows a digitally reconstructed neocortical column.
         """
         return {
-            "A": Path.cwd().joinpath("resources/neocortical_scaffold.png"),
-            "B": Path.cwd().joinpath("resources/neocortical_scaffold.png")}
+            "Top": Path.cwd().joinpath("resources/O1TopView.png"),
+            "Side": Path.cwd().joinpath("resources/neocortical_scaffold.png")}
+
+    @document.introduction.illustration
+    def experimental_layers():
+        """
+        A slide showing experimentally observed layers in the mouse SSCx.
+        The experimentalists marked 7 layers, splitting layer 5 into two. In the model,
+        we have used the standard 6 cortical layers.
+        """
+        return {
+            "_": Path.cwd().joinpath("resources/mouse_layers_experimental.png")}
 
     @document.methods
     def _():

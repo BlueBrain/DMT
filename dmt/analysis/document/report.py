@@ -204,48 +204,51 @@ class LabReport(Document):
               <h1>$title (<A HREF=$path_main_report>$title_main_report</A>)</h1>
             #else
               <h1>$title</h1>
-              <p>$endline</p>
+              <hr>
               <h2> Author </h2>
+              <hr style="width:50%;text-align:left;margin-left:0">
                 <h3> $author_name </h3>
                 <h3> Affiliation: $author_affiliation </h3>
             #end if
-            <p>$endline</p>
+            <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
             <h2>Abstract</h2>
-              <p>$underline</p>
+            <hr style="width:50%;text-align:left;margin-left:0">
               #for $line in $abstract
                  <p>$line</p>
               #end for
-            <p>$endline</p>
+            <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
             <h2>Introduction</h2>
-            <p>$underline</p>
+            <hr style="width:50%;text-align:left;margin-left:0">
             #for $line in $introduction
                 <p>$line</p>
             #end for
 
             #if $introduction_images
               <h3>Figures</h3>
+              <hr style="width:50%;text-align:left;margin-left:0">
               #for $label, $figures in $introduction_images.items()
                 #for $figure_label, $location in $figures.items():
                    <p>
                    <strong>($figure_label.capitalize()):</strong>
                    <img src=$location alt="apologies.png">
+                   <hr style="height:1px;border-width:0;color:gray;background-color:gray;width:50%;text-align:left;margin-left:0">
                    </p>
-                   <p>$underline</p>
                 #end for
                 <p>
                   <strong>$label.capitalize():</strong>
                   #for $line in $introduction_captions[label]
                     $line
                   #end for
+                <hr style="height:3px;border-width:0;color:gray;background-color:gray">
                 </p>
               #end for
             #end if
-            <p>$endline</p>
+            <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
             <h2>Methods</h2>
-            <p>$underline</p>
+            <hr style="width:50%;text-align:left;margin-left:0">
             #for $line in $methods
                <p>$line</p>
             #end for
@@ -258,30 +261,35 @@ class LabReport(Document):
                 #end for
               </p>
             #end for
-            <p>$endline</p>
+            <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
             <h2>Results</h2>
-            <p>$underline</p>
+            <hr style="width:50%;text-align:left;margin-left:0">
             #for $line in $results
                 <p>$line</p>
             #end for
 
             #if $results_images
               <h3>Figures</h3>
+              <hr style="width:50%;text-align:left;margin-left:0">
               #for $label, $figures in $results_images.items()
                 #for $figure_label, $location in $figures.items():
+                   <p>
                    <strong>($figure_label.capitalize()):</strong>
                    <img src=$location alt="apologies.png">
+                   <hr style="height:1px;border-width:0;color:gray;background-color:gray;width:50%;text-align:left;margin-left:0">
+                   </p>
                 #end for
                 <p>
                   <strong>$label.capitalize():</strong>
                   #for $line in $results_captions[label]
                     $line
                   #end for
+                <hr style="height:3px;border-width:0;color:gray;background-color:gray">
                 </p>
               #end for
             #end if
-            <p>$endline</p>
+            <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
           <h3>Source</h3>
           <p>
@@ -305,6 +313,7 @@ class LabReport(Document):
 
         template_dict.update(dict(
             underline=width_page * under_line_type,
+            longunderline=2 * width_page * under_line_type,
             endline=width_page * end_line_type,
             author_name=report.author.name,
             author_affiliation=report.author.affiliation))
