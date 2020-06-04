@@ -218,38 +218,66 @@ def test_introduction_from_file():
         path_save=path_save))
 
 def get_methods(document=None, from_file=False):
+    measurements = OrderedDict([
+                ("cell_density", {
+                    "description": """
+                    Layer cell densities for regions \\model{sub_brain_regions}.
+                    """,
+                    "parameters": regions_and_layers,
+                    "method": cell_density,
+                    "sample_size": 20}),
+                ("inhibitory_fraction", {
+                    "description": """
+                    Layer inhibitory cell fractions for regions \\model{sub_brain_regions}.
+                    """,
+                    "parameters": regions_and_layers,
+                    "method": inhibitory_fraction,
+                    "sample_size": 20})])
     if from_file:
-        narrative = Path.cwd().joinpath("resources/methods.txt")
+        cell_density_abc = mock_reference_data_cell_density()
+        cell_density_abc.data\
+                        .reset_index()\
+                        .to_csv("resources/cell_density_abc.csv",
+                                index=False, index_label=False)
+        cell_density_uvw = mock_reference_data_cell_density()
+        cell_density_uvw.data\
+                        .reset_index()\
+                        .to_csv("resources/cell_density_uvw.csv",
+                                index=False, index_label=False)
+        inh_fraction_abc = mock_reference_data_inhibitory_fraction()
+        inh_fraction_abc.data\
+                        .reset_index()\
+                        .to_csv("resources/inhibitory_fraction_abc.csv",
+                                index=False, index_label=False)
+        inh_fraction_uvw = mock_reference_data_inhibitory_fraction()
+        inh_fraction_uvw.data\
+                        .reset_index()\
+                        .to_csv("resources/inhibitory_fraction_uvw.csv",
+                                index=False, index_label=False)
+        kwargs_methods = dict(
+            narrative=Path.cwd().joinpath("resources/methods.txt"),
+            reference_data=CompositeData({
+                "cell_density": CompositeData({
+                    "abcYYYY": "resources/cell_density_abc.csv",
+                    "uvwXXXX": "resources/cell_density_uvw.csv"}),
+                "inhibitory_fraction": CompositeData({
+                    "abcYYYY": "resources/inhibitory_fraction_abc.csv",
+                    "uvwXXXX": "resources/inhibitory_fraction_uvw.csv"})}),
+            measurements=measurements)
     else:
-        narrative = """Random cell densities were assigned to each pair of
-        (sub-region, layer) for sub-regions \\model{sub_brain_regions}
-        and layers \\model{layer_values}, for the purposes of mocking the
-        behavior of a `methods` instance.
-        """ 
-    kwargs_methods = dict(
-        narrative=narrative,
-        reference_data=CompositeData({
-            "cell_density": CompositeData({
-                "abcYYYY": mock_reference_data_cell_density(),
-                "uvwXXXX": mock_reference_data_cell_density()}),
-            "inhibitory_fraction": CompositeData({
-                "abcYYYY": mock_reference_data_inhibitory_fraction(),
-                "uvwXXXX": mock_reference_data_inhibitory_fraction()})}),
-        measurements=OrderedDict([
-            ("cell_density", {
-                "description": """
-                Layer cell densities for regions \\model{sub_brain_regions}.
-                """,
-                "parameters": regions_and_layers,
-                "method": cell_density,
-                "sample_size": 20}),
-            ("inhibitory_fraction", {
-                "description": """
-                Layer inhibitory cell fractions for regions \\model{sub_brain_regions}.
-                """,
-                "parameters": regions_and_layers,
-                "method": inhibitory_fraction,
-                "sample_size": 20})]))
+        kwargs_methods = dict(
+            narrative="""Random cell densities were assigned to each pair of
+            (sub-region, layer) for sub-regions \\model{sub_brain_regions}
+            and layers \\model{layer_values}, for the purposes of mocking the
+            behavior of a `methods` instance.""",
+            reference_data=CompositeData({
+                "cell_density": CompositeData({
+                    "abcYYYY": mock_reference_data_cell_density(),
+                    "uvwXXXX": mock_reference_data_cell_density()}),
+                "inhibitory_fraction": CompositeData({
+                    "abcYYYY": mock_reference_data_inhibitory_fraction(),
+                    "uvwXXXX": mock_reference_data_inhibitory_fraction()})}),
+            measurements=measurements)
     if document:
         methods = Methods(parent=document,**kwargs_methods)
         document.methods = methods
@@ -285,7 +313,7 @@ def _test_methods_value(value, adapter, model):
     assert "cell_density" in value.reference_data
     assert "inhibitory_fraction" in value.reference_data
 
-def _test_methods_save(path_save, adapter, model):
+def _test_methods_save(path_save, adapter, model, from_file=False):
     """..."""
     path_methods = path_save.joinpath("methods")
     assert os.path.exists(path_methods)
@@ -297,20 +325,22 @@ def _test_methods_save(path_save, adapter, model):
 
     path_reference_data_cd = path_reference_data.joinpath("cell_density")
     assert os.path.exists(path_reference_data_cd)
-    assert os.path.isfile(
-        path_reference_data_cd.joinpath("abcYYYY.json"))
-    assert os.path.isfile(
-        path_reference_data_cd.joinpath("uvwXXXX.json"))
-
+    if not from_file:
+        assert os.path.isfile(
+            path_reference_data_cd.joinpath("abcYYYY.json"))
+        assert os.path.isfile(
+            path_reference_data_cd.joinpath("uvwXXXX.json"))
+        
     path_reference_data_if = path_reference_data.joinpath("inhibitory_fraction")
     assert os.path.exists(path_reference_data_if)
-    assert os.path.isfile(
-        path_reference_data_if.joinpath("abcYYYY.json"))
-    assert os.path.isfile(
-        path_reference_data_if.joinpath("uvwXXXX.json"))
+    if not from_file:
+        assert os.path.isfile(
+            path_reference_data_if.joinpath("abcYYYY.json"))
+        assert os.path.isfile(
+            path_reference_data_if.joinpath("uvwXXXX.json"))
     return True
 
-def test_methods(test_object=None):
+def test_methods(test_object=None, from_file=False):
     """
     Methods section of a document.
 
@@ -329,6 +359,8 @@ def test_methods(test_object=None):
     collector of data. These are not stored.
     Instead, we assume that some other object will handle the data associated
     with a `Methods` measurements.
+
+    If `from_file`, meta-data may not be saved.
     """
     adapter = MockAdapter()
     model = MockModel()
@@ -362,7 +394,7 @@ def test_methods(test_object=None):
         except AttributeError:
             path_save = get_path_save()
             methods.save(value, path_save)
-        _test_methods_save(path_save, adapter, model)
+        _test_methods_save(path_save, adapter, model, from_file=from_file)
     return True
 
 def test_methods_from_file():
@@ -376,10 +408,12 @@ def test_methods_from_file():
     path_save = get_path_save().joinpath("from_file")
     path_save.mkdir(parents=False, exist_ok=True)
     methods.save(value, path_save)
-    return test_methods(Record(
-        instance=methods,
-        value=value,
-        path_save=path_save))
+    return test_methods(
+        Record(
+            instance=methods,
+            value=value,
+            path_save=path_save),
+        from_file=True)
 
 def get_results(document=None, from_file=False):
     if from_file:

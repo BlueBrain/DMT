@@ -353,6 +353,24 @@ class Results(Section):
 
         measurements = self.measurements(adapter, model, *args, **kwargs)
 
+        def _align(reference_data, measurement_data):
+            """
+            Align reference data to the measurement.
+            """
+            try:
+                return reference_data.set_index(measurement_data.index.names)
+            except KeyError:
+                if reference_data.index.names != measurement_data.index.names:
+                    raise ValueError(
+                        """
+                        Measurement and Reference data do not have the same indices:
+                        \t Reference index names: {}.
+                        \t Measurement index names {}
+                        """.format(reference_data.index.names,
+                                   measurement_data.index.names))
+                return reference_data
+                                 
+
         for label_measurement, data_measurement in measurements.items():
             reference_data =\
                 self.reference_data.get(label_measurement, NA)
@@ -360,9 +378,11 @@ class Results(Section):
                 adapter.get_label(model): data_measurement}
             if reference_data is not NA:
                 if not isinstance(reference_data, Mapping):
-                    reference_data = {"reference": reference_data}
+                    reference_data = {"reference": _align(reference_data,
+                                                          data_measurement)}
                 data_illustration[label_measurement].update({
-                    label: _get_data(data)
+                    label: _align(_get_data(data),
+                                  data_measurement)
                     for label, data in reference_data.items()})
 
         for label_data, reference_data in self.reference_data.items():

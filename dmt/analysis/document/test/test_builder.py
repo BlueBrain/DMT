@@ -49,11 +49,11 @@ def test_context_management():
     path_save = get_path_save().joinpath("context")
     path_save.mkdir(parents=False, exist_ok=True)
 
-    with DocumentBuilder("Test") as document:
-        assert document.title == "Test"
+    with DocumentBuilder("Report") as document:
+        assert document.title == "Report"
         assert document.abstract.document_builder == document
 
-        report = Document("Test")
+        report = Document("Report")
 
         @document.abstract
         def _():
@@ -279,24 +279,28 @@ def test_context_management():
 
         report = document.get()
 
-        path_save = get_path_save()
         value_report = report(adapter, model)
         path_report = report.save(value_report, path_save)
         
-        assert path_report == path_save.joinpath("report")
+        assert path_report._ == path_save.joinpath("report"),\
+            """
+            path_report: {}
+            expected: {}
+            """.format(path_report,
+                       path_save.joinpath("report"))
         test_abstract(Record(
             instance=report.abstract,
             value=value_report.abstract,
-            path_save=path_report))
+            path_save=path_report._))
         test_introduction(Record(
             instance=report.introduction,
             value=value_report.introduction,
-            path_save=path_report))
+            path_save=path_report._))
         test_methods(Record(
             instance=report.methods,
             value=value_report.methods,
-            path_save=path_report))
+            path_save=path_report._))
         test_results(Record(
             instance=report.results,
             value=value_report.results,
-            path_save=path_report))
+            path_save=path_report._))

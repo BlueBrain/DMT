@@ -21,6 +21,7 @@ An `Analysis` will be that of one or more instances of `Measurement`.
 
 from collections.abc import Mapping
 from collections import OrderedDict
+from pathlib import Path
 import json
 import numpy as np
 import pandas as pd
@@ -224,7 +225,23 @@ class CompositeData(Mapping):
     and get a new instance.
     """
     def __init__(self, value=None):
-        self._value = OrderedDict(value) if value else OrderedDict()
+        self._value = self.load(value) if value else OrderedDict()
+
+    @classmethod
+    def load(cls, value):
+        """..."""
+        def _resolve(data):
+            """..."""
+            try:
+                path_data = Path(data)
+            except TypeError:
+                return data
+            return pd.read_csv(path_data)
+
+        return OrderedDict([
+            (label, _resolve(data))
+            for label, data in OrderedDict(value).items()
+        ])
 
     def __getitem__(self, label):
         """..."""
