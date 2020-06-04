@@ -97,16 +97,8 @@ class _SectionBuilder:
         if not argspec.args and not argspec.varargs and not argspec.varkw:
             value = table()
         else:
-            try:
-                value = table()
-            except TypeError:
-                raise NotImplementedError(
-                    """
-                    Implementation will require us to decide when `tables`
-                    will be evaluated. The arguments could be passed through
-                    keyword arguments.
-                    """)
-        
+            value = table
+
         self.content.tables.assign(**{
             table.__name__: value
         })

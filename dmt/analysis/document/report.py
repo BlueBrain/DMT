@@ -291,6 +291,18 @@ class LabReport(Document):
             #end if
             <hr style="height:2px;border-width:0;color:gray;background-color:gray">
 
+            #if $results_tables
+              <h3>Tables</h3>
+              <hr style="width:50%;text-align:left;margin-left:0">
+              #for $label, $table in $results_tables.items():
+                 <p>
+                 <strong>($label.capitalize*()):</strong>
+                 #for $line in $table:
+                   $line
+                 #end for
+                 </p>
+              #end for
+           #end if
           <h3>Source</h3>
           <p>
           This report was prepared using
@@ -399,6 +411,12 @@ class LabReport(Document):
         template_dict["results_captions"] = results_captions
 
 
+        results_tables = {}
+        for label, table in results.tables.items():
+            results_tables[label] = table.to_html(classes=label).split('\n')
+
+        template_dict["results_tables"] = results_tables
+        
         try:
             report_template_filled =\
                 Template(template, searchList=template_dict)

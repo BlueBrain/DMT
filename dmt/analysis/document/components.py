@@ -133,6 +133,20 @@ class Section(DocElem):
         """
         return self.data(adapter, model, *args, **kwargs)
 
+    def get_tables_values(self, adapter, model, *args, **kwargs):
+        """..."""
+        def _evaluate(label, table):
+            if callable(table):
+                measurement = self.measurements[label]
+                return table(measurement(adapter, model, *args, **kwargs))
+            else:
+                return table
+
+        return CompositeData(OrderedDict([
+            (label, _evaluate(label, table))
+            for label, table in self.tables.items()
+        ]))
+
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         return Record(
@@ -140,11 +154,14 @@ class Section(DocElem):
             label=self.label,
             narrative=self.narrative(
                 adapter, model, *args, **kwargs),
-            data=self.data(adapter, model, **kwargs),
-            tables=self.tables,
+            data=self.data(
+                adapter, model, **kwargs),
+            tables=self.get_tables_values(
+                adapter, model, *args, **kwargs),
             illustration=self.illustration(
                 adapter, model, *args,
-                data=self.get_illustration_data(adapter, model, **kwargs),
+                data=self.get_illustration_data(
+                    adapter, model, **kwargs),
                 **kwargs))
 
 

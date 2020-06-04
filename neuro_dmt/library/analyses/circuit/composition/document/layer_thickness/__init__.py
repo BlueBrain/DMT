@@ -146,21 +146,28 @@ def get():
         })
 
     @document.methods.measurements
+    def layer_thicknesses(adapter, circuit_model, *args, **kwargs):
+        """
+        Measurement to be made on `circuit_model`.
+        """
+        values =  pd.concat([
+            adapter.get_layer_thickness_values(
+                circuit_model, region=region, **kwargs
+            ).assign(region=region)
+            for region in adapter.get_sub_regions(circuit_model)
+        ]).set_index("region")
+        values.columns.name = "layer"
+        return values
+
+    @document.methods.measurements
     def cortical_thickness(adapter, circuit_model, *args, **kwargs):
         """
-        Measurement to be made on `circuit_model` for given `parameters`
+        Measurement to be made on `circuit_model`.
         """
-        def _in(region):
-            thicknesses = adapter.get_layer_thickness_values(
-                circuit_model, region=region, **kwargs
-            )
-            return thicknesses.sum(axis=1).values
-        return pd.concat([
-            pd.DataFrame({
-                "region": region,
-                "cortical_thickness": _in(region)})
-            for region in adapter.get_sub_regions(circuit_model)]
-        ).set_index("region")
+        return pd.DataFrame({
+            "cortical_thickness": layer_thicknesses(
+                adapter, circuit_model, *args, **kwargs
+            ).sum(axis=1)})
 
     @document.methods.measurements
     def relative_thickness(adapter, circuit_model, *args, **kwargs):
@@ -168,34 +175,53 @@ def get():
         Measurement to be made on `adapter, circuit_model` for given
         `parameters`.
         """
-        layers = adapter.get_layers(circuit_model)
-        def _in(region):
-            wide = adapter.get_layer_thickness_values(
-                circuit_model, region=region, **kwargs
-            ).assign(
-                total=lambda df: df.sum(axis=1)
-            ).apply(
-                lambda row: row[layers] / row.total,
-                axis=1
-            )
-            wide.columns.name = "layer"
-            return pd.concat(
-                [wide.iloc[i] for i in range(wide.shape[0])]
-            ).rename(
-                "relative_thickness"
-            )
-        return\
-            measurement.collection.series_type(
-                ({"region": region}, _in(region))
-                for region in adapter.get_sub_regions(circuit_model)
-            ).rename(columns={"value": "relative_thickness"})
-            
+        def _long(region, wide):
+            return pd.concat([
+                wide.iloc[i].rename(
+                    "relative_thickness"
+                ).reset_index().assign(
+                    region=region
+                ).set_index(
+                    ["region", "layer"]
+                ) for i in range(wide.shape[0])
+            ])
+        thicknesses = layer_thicknesses(
+            adapter, circuit_model, *args, **kwargs
+        ).apply(
+            lambda row: row/row.sum(), axis=1
+        )
+        return pd.concat([
+            _long(region, wide)
+            for region, wide in thicknesses.groupby("region")])
+
     @document.results
     def _():
         """
         Results are presented in the figures.
         """
         pass
+
+    def get_summary(samples):
+        """..."""
+        return 
+
+    @document.results.tables
+    def cortical_thickness(samples):
+        """
+        Summary statistics for cortical thickness measured in the model.
+        """
+        return samples.groupby("region")\
+                      .agg(["mean", "std"])\
+                      .cortical_thickness
+
+    @document.results.tables
+    def relative_thickness(samples):
+        """
+        Summary statistics for relative thickness measured in the model.
+        """
+        return samples.groupby(["region", "layer"])\
+                      .agg(["mean", "std"])\
+                      .relative_thickness
 
     @document.results.illustration
     def cortical_thickness():
