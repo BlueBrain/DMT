@@ -51,6 +51,7 @@ class _SectionBuilder:
         self.content = Record(
             narrative=OrderedDict(),
             data=OrderedDict(),
+            tables=CompositeData(),
             illustration=OrderedDict())
 
     def data(self, data):
@@ -76,7 +77,7 @@ class _SectionBuilder:
             try:
                 content = Path(content)
             except TypeError:
-                content = content
+                pass
             if not callable(content) and not isinstance(content, Mapping):
                 content = {illustration.__name__: content}
 
@@ -85,6 +86,31 @@ class _SectionBuilder:
             "caption": caption
         }
         return illustration
+
+
+    def tables(self, table):
+        """
+        TODO: Add description to `CompositeData` that can be picked up
+        ~     from a doc-string...
+        """
+        argspec = inspect.getfullargspec(table)
+        if not argspec.args and not argspec.varargs and not argspec.varkw:
+            value = table()
+        else:
+            try:
+                value = table()
+            except TypeError:
+                raise NotImplementedError(
+                    """
+                    Implementation will require us to decide when `tables`
+                    will be evaluated. The arguments could be passed through
+                    keyword arguments.
+                    """)
+        
+        self.content.tables.assign(**{
+            table.__name__: value
+        })
+        return table
 
     def __call__(self, narrative):
         self.content.narrative[narrative.__name__] = narrative.__doc__
@@ -98,11 +124,13 @@ class _SectionBuilder:
             parent=document,
             title=self.title,
             narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration)
+            illustration=self.content.illustration,
+            tables=self.content.tables)
     def get_content(self):
         return dict(
             narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration)
+            illustration=self.content.illustration,
+            tables=self.content.tables)
 
 
 class _AbstractBuilder:
@@ -137,10 +165,12 @@ class _IntroductionBuilder(_SectionBuilder):
         return Introduction(
             parent=document,
             narrative=paragraphs(self.content.narrative),
+            tables=self.content.tables,
             illustration=self.content.illustration)
     def get_content(self):
         return dict(
             narrative=paragraphs(self.content.narrative),
+            tables=self.content.tables,
             illustration=self.content.illustration)
     
 
@@ -231,14 +261,16 @@ class _ResultsBuilder(_SectionBuilder):
         """..."""
         return dict(
             narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration)
+            illustration=self.content.illustration,
+            tables=self.content.tables)
 
     def with_parent(self, document):
         """..."""
         return Results(
             parent=document,
             narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration)
+            illustration=self.content.illustration,
+            tables=self.content.tables)
 
 
 class DocumentBuilder:

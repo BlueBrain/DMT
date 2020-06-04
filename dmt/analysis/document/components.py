@@ -65,6 +65,13 @@ class Section(DocElem):
         """
         return NA
 
+    @field.cast(CompositeData)
+    def tables(self):
+        """
+        A collection of dataframes or paths to dataframes.
+        """
+        return NA
+
     @field.cast(CompositeIllustration)
     def illustration(self):
         """
@@ -85,6 +92,10 @@ class Section(DocElem):
         except AttributeError:
             data = None
         try:
+            tables = section.tables
+        except AttributeError:
+            tables = None
+        try:
             illustration = section.illustration
         except AttributeError:
             illustration = None
@@ -98,6 +109,10 @@ class Section(DocElem):
             record = record.assign(
                 data=self.data.save(
                     data, path_section))
+        if tables:
+            record = record.assign(
+                tables=tables.save(
+                    path_section, "tables"))
         if illustration:
             record = record.assign(
                 illustration=self.illustration.save(
@@ -126,6 +141,7 @@ class Section(DocElem):
             narrative=self.narrative(
                 adapter, model, *args, **kwargs),
             data=self.data(adapter, model, **kwargs),
+            tables=self.tables,
             illustration=self.illustration(
                 adapter, model, *args,
                 data=self.get_illustration_data(adapter, model, **kwargs),

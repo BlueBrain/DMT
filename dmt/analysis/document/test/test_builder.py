@@ -87,17 +87,34 @@ def test_context_management():
             return Path(os.getcwd()).joinpath(
                 "resources/neocortical_scaffold.png")
 
+        @document.introduction.tables
+        def experimental_cell_density():
+            """
+            Mock experimental cell density.
+            """
+            return CompositeData({
+                "experimental_cell_density": "resources/experimental_cell_density.csv"})
+
         assert document.introduction.content.narrative
         assert "_" in document.introduction.content.narrative
         assert document.introduction.illustration
+        assert document.introduction.tables
 
         introduction = document.introduction.with_parent(report)
         value_introduction = introduction(adapter, model)
         path_introduction = introduction.save(value_introduction, path_save)
+
         test_introduction(Record(
             instance=introduction,
             value=value_introduction,
             path_save=path_save))
+
+        assert "tables" in path_introduction
+        path_tables = path_save.joinpath("introduction", "tables")
+        assert os.path.exists(path_tables)
+        path_ecd = path_tables.joinpath("experimental_cell_density")
+        assert os.path.exists(path_ecd)
+        assert os.path.isfile(path_ecd.joinpath("experimental_cell_density.csv"))
 
         @document.methods
         def _():
