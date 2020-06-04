@@ -22,6 +22,7 @@ from abc import abstractmethod, abstractclassmethod
 from collections import OrderedDict
 from collections.abc import Mapping
 import pickle
+import os
 from pathlib import Path
 import re
 from Cheetah.Template import Template
@@ -59,18 +60,6 @@ class Narrative(WithFields):
     def __init__(self, text=NA, **kwargs):
         kwargs["text"] = text
         super().__init__(**kwargs)
-    # def __init__(self, *args, **kwargs):
-    #     if isinstance(self, DocElem) and args:
-    #         raise TypeError(
-    #             """
-    #             A `WithFields` mix in cannot be initialized with arguments.
-    #             Use only keyword arguments.
-    #             """)
-    #     if args:
-    #         super().__init__(*args[1:], text=args[0], **kwargs)
-    #     else:
-    #         super().__init__(**kwargs)
-
     @field.cast(TaggedTemplateString)
     def text(self):
         """

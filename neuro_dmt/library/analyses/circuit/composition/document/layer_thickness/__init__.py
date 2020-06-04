@@ -49,7 +49,7 @@ def get():
     def _():
         """
         Total thickness of cortical layers varies over the neocortex
-        (\\model{cortical-thickness-estimated-range}) in the \\model{animal}.
+        in the \\model{animal}.
         Furthermore relative thickness of individual layers
         (i.e. layer thickness divided  by thickness of all the layers together)
         also varies. 
@@ -148,7 +148,8 @@ def get():
     @document.methods.measurements
     def layer_thicknesses(adapter, circuit_model, *args, **kwargs):
         """
-        Measurement to be made on `circuit_model`.
+        For each position in a sample, thicknesses of the layers were measured
+        along an the local orientation of the cortical column.
         """
         values =  pd.concat([
             adapter.get_layer_thickness_values(
@@ -162,7 +163,8 @@ def get():
     @document.methods.measurements
     def cortical_thickness(adapter, circuit_model, *args, **kwargs):
         """
-        Measurement to be made on `circuit_model`.
+        Measured layer thicknesses were summed at each sampled position
+        to provide total cortical thickness.
         """
         return pd.DataFrame({
             "cortical_thickness": layer_thicknesses(
@@ -172,8 +174,8 @@ def get():
     @document.methods.measurements
     def relative_thickness(adapter, circuit_model, *args, **kwargs):
         """
-        Measurement to be made on `adapter, circuit_model` for given
-        `parameters`.
+        Measured layer thicknesses at each sampled position were divided by
+        the total cortical thickness at that position.
         """
         def _long(region, wide):
             return pd.concat([

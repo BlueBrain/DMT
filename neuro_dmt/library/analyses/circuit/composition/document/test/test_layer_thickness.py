@@ -123,7 +123,7 @@ def test_document():
         test_object.adapter, test_object.circuit_model)
     path_save = get_path_save().joinpath("document")
     path_save.mkdir(parents=False, exist_ok=True)
-    document.post(report, path_save)
+    document.post(report, path_save, latex=True)
 
     assert os.path.exists(
         path_save.joinpath("layer_thickness"))
@@ -133,5 +133,10 @@ def test_document():
         path_save.joinpath("layer_thickness", "results"))
     assert os.path.isfile(
         path_save.joinpath("layer_thickness", "report.html"))
-    # test_object.document.save(
-    #     report, Path.cwd().joinpath(report.label))
+
+
+    assert os.path.isfile(
+        path_save.joinpath("layer_thickness", "report.tex"))
+    path_abstract = path_save.joinpath("layer_thickness", "abstract")
+    assert os.path.isfile(
+        path_abstract.joinpath("abstract.tex"))

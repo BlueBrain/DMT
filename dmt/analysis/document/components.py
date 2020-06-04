@@ -208,6 +208,14 @@ class Abstract(DocElem):
         path_abstract.mkdir(parents=False, exist_ok=True)
         return self.narrative.save(abstract.narrative, path_abstract)
 
+    def to_latex(self, abstract, path_abstract):
+        """
+        Arguments
+        --------------
+        path_abstract :: object returned by `Abstract.save`
+        """
+        return abstract.narrative
+
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         return Record(
@@ -221,6 +229,55 @@ class Introduction(Section):
     Make Section an Introduction
     """
     title = "Introduction"
+
+    def to_latex(self, introduction, path_artefacts):
+
+        path_introduction = path_artefacts.introduction
+
+        latex = introduction.narrative
+
+        for label, figures in path_introduction.illustration.items():
+            caption = introduction.illustration[label].caption
+            figure_tex ="""
+            \\begin{figure}[hbt!]
+            """.strip()
+            if isinstance(figures, Mapping):
+                if len(figures) == 1:
+                    figure_tex += """
+                    \\includegraphics[width=1.00\\textwidth]{fig-location}
+                    """.strip()\
+                        .replace("fig-location",
+                                 str(list(figures.values())[0]))
+                else:
+                    for sub_label, sub_figure_path in figures.items():
+                        sub_figure_tex = """
+                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
+                        """.strip()\
+                           .replace("fig-label",
+                                    "{}".format(sub_label))\
+                           .replace("fig-location",
+                                    str(sub_figure_path.relative_to(path_artefacts._)))
+                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
+            else:
+                figure_tex += """
+                \\includegraphics[width=1.00\\textwidth]{fig-location}
+                """.strip()\
+                   .replace("fig-location",
+                            str(figures.relative_to(path_artefacts._)))
+
+            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                caption)
+            figure_tex += "\\end{figure}\n"
+
+            latex += "\n" + figure_tex
+
+        #for label, figures in introduction.tables.items():
+            
+
+        return latex
+
+
+
 
 
 class Methods(Section):
@@ -272,81 +329,23 @@ class Methods(Section):
             path_methods.assign(
                 reference_data=reference_data.save(
                     path_methods._, "reference_data"))
-            # if isinstance(reference_data, (pd.Series, pd.DataFrame)):
-            #     _flattened_columns(
-            #         reference_data.reset_index()
-            #     ).to_csv(
-            #         path_methods.joinpath(
-            #             "reference_data.csv"
-            #         )
-            #     )
-            # elif isinstance(reference_data, Mapping):
-            #     path_reference_data =\
-            #         path_methods.joinpath("reference_data")
-            #     path_reference_data.mkdir(parents=False, exist_ok=True)
-            #     for label, data in reference_data.items():
-            #         if isinstance(data, pd.DataFrame):
-            #             _flattened_columns(
-            #                 data.reset_index()
-            #             ).to_csv(
-            #                 path_reference_data.joinpath(
-            #                     "{}.csv".format(label)
-            #                 )
-            #             )
-            #         else:
-            #             try:
-            #                 path_jar_pickle =\
-            #                     path_reference_data.joinpath(
-            #                         "{}.pickle".format(label))
-            #                 with open(path_jar_pickle, 'w') as jar:
-            #                     pickle.dump(data, jar)
-            #                 continue
-            #             except PicklingError:
-            #                 pass
-            #             try:
-            #                 data_data = data.data
-            #             except AttributeError:
-            #                 try:
-            #                     data_data = data["data"]
-            #                 except (TypeError, KeyError):
-            #                     data_data = None
-            #                 data_data = None
-            #             if data_data is not None:
-            #                 if isinstance(data_data, pd.DataFrame):
-            #                     data_data.to_csv(
-            #                         path_reference_data.joinpath(
-            #                             "{}.csv".format(label)))
-            #                 else:
-            #                     try:
-            #                         path_jar_pickle =\
-            #                             path_reference_data.joinpath(
-            #                                 "{}.pickle".format(label))
-            #                         with open(path_jar_pickle, 'w') as jar:
-            #                             pickle.dump(data_data, jar)
-            #                     except PicklingError:
-            #                         pass
-            #             try:
-            #                 uri = data.data
-            #             except AttributeError:
-            #                 try:
-            #                     uri = data["data"]
-            #                 except (TypeError, KeyError):
-            #                     uri = None
-            #                 uri = None
-            #             if uri:
-            #                 path_uri = path_reference_data.joinpath(
-            #                     "{}.uri.txt".format(label))
-            #                 with open(path_uri, 'w') as uri_file:
-            #                     json.dump({"uri": uri})
-            # else:
-            #     try:
-            #         path_jar_pickle =\
-            #             path_methods.joinpath("reference_data.pickle")
-            #         with open(path_jar_pickle, 'w') as jar:
-            #             pickle.dump(reference_data, jar)
-            #     except PicklingError:
-            #         pass
         return path_methods
+
+    def to_latex(self, methods, path_artefacts):
+        latex = methods.narrative
+
+        latex += "Folowing measurements were made on the model:"
+        try:
+            methods_measurements = methods.measurements
+        except AttributeError:
+            pass
+        else:
+            latex += "\\begin{itemize}\n"
+            for label, description in methods_measurements.items():
+                latex += "\\item{}\n".format(description)
+            latex += "\\end{itemize}\n"
+
+        return latex
 
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
@@ -402,7 +401,7 @@ class Results(Section):
                         """.format(reference_data.index.names,
                                    measurement_data.index.names))
                 return reference_data
-                                 
+
 
         for label_measurement, data_measurement in measurements.items():
             reference_data =\
@@ -444,6 +443,57 @@ class Results(Section):
             path_results =\
                 path_results.assign(measurements=path_measurements)
         return path_results
+
+    def to_latex(self, results, path_artefacts):
+
+        path_results = path_artefacts.results
+
+        latex = results.narrative
+
+        for label, figures in path_results.illustration.items():
+            caption = results.illustration[label].caption
+            figure_tex ="""
+            \\begin{figure}[hbt!]
+            """.strip()
+            if isinstance(figures, Mapping):
+                if len(figures) == 1:
+                    figure_tex += """
+                    \\includegraphics[width=1.00\\textwidth]{fig-location}
+                    """.strip()\
+                        .replace("fig-location",
+                                 str(list(figures.values())[0]))
+                else:
+                    for sub_label, sub_figure_path in figures.items():
+                        sub_figure_tex = """
+                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
+                        """.strip()\
+                           .replace("fig-label",
+                                    "{}".format(sub_label))\
+                           .replace("fig-location",
+                                    str(sub_figure_path.relative_to(path_artefacts._)))
+                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
+            else:
+                figure_tex += """
+                \\includegraphics[width=1.00\\textwidth]{fig-location}
+                """.strip()\
+                   .replace("fig-location",
+                            str(figures.relative_to(path_artefacts._)))
+
+            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                caption)
+            figure_tex += "\\end{figure}\n"
+
+            latex += "\n" + figure_tex
+
+        for label, table in results.tables.items():
+            latex += "{\\bf label}\\\\\n".replace("label",
+                                                  ' '.join(w.capitalize()
+                                                           for w in label.split('_')))
+            latex += "\n" + table.to_latex(index=False)
+            latex += "\\\\\n\\\\"
+
+        return latex
+
 
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""

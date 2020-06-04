@@ -32,3 +32,7 @@ scratch
 .mypy_cache/
 
 .ipynb_checkpoints
+
+
+folder_test/
+
