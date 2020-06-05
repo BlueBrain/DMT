@@ -47,17 +47,6 @@ class Section(DocElem):
             except TypeError:
                 super().__init__(narrative=args[0], *args[1:], **kwargs)
 
-
-    def __init__0(self, narrative=None, *args, **kwargs):
-        """
-        Initialize `Abstract` with a story.
-        """
-        if not narrative:
-            raise TypeError(
-                "{} needs a narrative".format(
-                    self.__class__.__name__))
-        super().__init__(*args, narrative=narrative, **kwargs)
-
     @field.cast(Data)
     def data(self):
         """
@@ -147,6 +136,98 @@ class Section(DocElem):
             for label, table in self.tables.items()
         ]))
 
+    def _latex_illustration(self, section, path_tree_report):
+        """
+        Generate latex code for illustrations.
+
+        TODO:
+        This method can be moved to `CompositeIllustration`!
+        """
+        path_section = getattr(path_tree_report, self.label)
+        try:
+            illustration = section.illustration
+        except AttributeError:
+            return ""
+        try:
+            path_illustration = path_section.illustration
+        except AttributeError:
+            return ""
+
+        latex = ""
+        for label, figures in path_illustration.items():
+            caption = illustration[label].caption
+            figure_tex ="""
+            \\begin{figure}[hbt!]
+            """.strip()
+            if isinstance(figures, Mapping):
+                if len(figures) == 1:
+                    figure_tex += """
+                    \\includegraphics[width=1.00\\textwidth]{fig-location}
+                    """.strip()\
+                      .replace("fig-location",
+                                str(list(figures.values())[0]))
+                else:
+                    for sub_label, sub_figure_path in figures.items():
+                        sub_figure_tex = """
+                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
+                        """.strip()\
+                          .replace("fig-label",
+                                    "{}".format(sub_label))\
+                          .replace("fig-location",
+                                    str(sub_figure_path.relative_to(path_tree_report._)))
+                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
+            else:
+                figure_tex += """
+                \\includegraphics[width=1.00\\textwidth]{fig-location}
+                """.strip()\
+                  .replace("fig-location",
+                            str(figures.relative_to(path_tree_report._)))
+
+            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                caption)
+            figure_tex += "\\end{figure}\n"
+
+            latex += "\n" + figure_tex
+        return latex
+
+    def _latex_tables(self, section, path_tree_report):
+        """
+        Generate latex code for tables.
+
+        TODO:
+        This method can be moved to `CompositeData`!
+        """
+        path_section = getattr(path_tree_report, self.label)
+        try:
+            tables = section.tables
+        except AttributeError:
+            return ""
+        try:
+            path_tables = path_section.tables
+        except AttributeError:
+            return ""
+
+        latex = ""
+        for label, table in tables.items():
+            latex += "{\\bf label}\\\\\n".replace("label",
+                                                  ' '.join(w.capitalize()
+                                                           for w in label.split('_')))
+            latex += "\n" + table.to_latex(index=False)
+            latex += "\\\\\n\\\\"
+
+        return latex
+
+    def to_latex(self, section, path_tree_report):
+        """
+        Assemble a latex for section.
+        """
+        path_section = getattr(path_tree_report, self.label)
+        latex = section.narrative
+        latex += self._latex_illustration(section, path_tree_report)
+        latex += self._latex_tables(section, path_tree_report)
+        return latex
+
+
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
         return Record(
@@ -229,55 +310,6 @@ class Introduction(Section):
     Make Section an Introduction
     """
     title = "Introduction"
-
-    def to_latex(self, introduction, path_artefacts):
-
-        path_introduction = path_artefacts.introduction
-
-        latex = introduction.narrative
-
-        for label, figures in path_introduction.illustration.items():
-            caption = introduction.illustration[label].caption
-            figure_tex ="""
-            \\begin{figure}[hbt!]
-            """.strip()
-            if isinstance(figures, Mapping):
-                if len(figures) == 1:
-                    figure_tex += """
-                    \\includegraphics[width=1.00\\textwidth]{fig-location}
-                    """.strip()\
-                        .replace("fig-location",
-                                 str(list(figures.values())[0]))
-                else:
-                    for sub_label, sub_figure_path in figures.items():
-                        sub_figure_tex = """
-                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
-                        """.strip()\
-                           .replace("fig-label",
-                                    "{}".format(sub_label))\
-                           .replace("fig-location",
-                                    str(sub_figure_path.relative_to(path_artefacts._)))
-                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
-            else:
-                figure_tex += """
-                \\includegraphics[width=1.00\\textwidth]{fig-location}
-                """.strip()\
-                   .replace("fig-location",
-                            str(figures.relative_to(path_artefacts._)))
-
-            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
-                                                                caption)
-            figure_tex += "\\end{figure}\n"
-
-            latex += "\n" + figure_tex
-
-        #for label, figures in introduction.tables.items():
-            
-
-        return latex
-
-
-
 
 
 class Methods(Section):
@@ -443,56 +475,6 @@ class Results(Section):
             path_results =\
                 path_results.assign(measurements=path_measurements)
         return path_results
-
-    def to_latex(self, results, path_artefacts):
-
-        path_results = path_artefacts.results
-
-        latex = results.narrative
-
-        for label, figures in path_results.illustration.items():
-            caption = results.illustration[label].caption
-            figure_tex ="""
-            \\begin{figure}[hbt!]
-            """.strip()
-            if isinstance(figures, Mapping):
-                if len(figures) == 1:
-                    figure_tex += """
-                    \\includegraphics[width=1.00\\textwidth]{fig-location}
-                    """.strip()\
-                        .replace("fig-location",
-                                 str(list(figures.values())[0]))
-                else:
-                    for sub_label, sub_figure_path in figures.items():
-                        sub_figure_tex = """
-                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
-                        """.strip()\
-                           .replace("fig-label",
-                                    "{}".format(sub_label))\
-                           .replace("fig-location",
-                                    str(sub_figure_path.relative_to(path_artefacts._)))
-                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
-            else:
-                figure_tex += """
-                \\includegraphics[width=1.00\\textwidth]{fig-location}
-                """.strip()\
-                   .replace("fig-location",
-                            str(figures.relative_to(path_artefacts._)))
-
-            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
-                                                                caption)
-            figure_tex += "\\end{figure}\n"
-
-            latex += "\n" + figure_tex
-
-        for label, table in results.tables.items():
-            latex += "{\\bf label}\\\\\n".replace("label",
-                                                  ' '.join(w.capitalize()
-                                                           for w in label.split('_')))
-            latex += "\n" + table.to_latex(index=False)
-            latex += "\\\\\n\\\\"
-
-        return latex
 
 
     def __call__(self, adapter, model, *args, **kwargs):
