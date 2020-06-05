@@ -1,4 +1,13 @@
-# Copyright (C) 2020 Blue Brain Project / EPFL # This file is part of BlueBrain DMT <https://github.com/BlueBrain/DMT> # This program is free software: you can redistribute it and/or modify it under # the terms of the GNU Lesser General Public License version 3.0 as published #  by the Free Software Foundation. # This program is distributed in the hope that it will be useful, # but WITHOUT ANY WARRANTY; without even the implied warranty of 
+# Copyright (C) 2020 Blue Brain Project / EPFL
+
+# This file is part of BlueBrain DMT <https://github.com/BlueBrain/DMT>
+
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Lesser General Public License version 3.0 as published
+#  by the Free Software Foundation.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of 
 # MERCHANTABILITY or FITNESS FOR A  PARTICULAR PURPOSE.
 # See the GNU Lesser General Public License for more details.
 
@@ -17,6 +26,7 @@ import pandas as pd
 from dmt.data.observation import SampleMeasurement, Summary
 from dmt.tk.phenomenon import Phenomenon
 from dmt.tk.utils import datasets
+from ..import check_environment, DMTPATH
 
 class LayerThicknessMeasurement(SampleMeasurement):
     """
@@ -82,17 +92,7 @@ def thickness_defelipe(subregions=["SSCx"], path_dmt=None):
     subregions :: SSCx subregions for which data is required.
     path_dmt :: Where DMT is located on the file system
     """
-    if not path_dmt:
-        try:
-            path_dmt = Path(os.environ["DMTPATH"])
-        except KeyError:
-            raise RuntimeError(
-                """
-                Neither a path to DMT provided as an argument,
-                nor is `DMTPATH` available as an environmental variable.
-                """)
-        else:
-            path_dmt = Path(path_dmt)
+    path_dmt = Path(check_environment(DMTPATH, value=path_dmt))
             
     path_mouse_data = path_dmt.joinpath(
         "neuro_dmt", "library", "data",

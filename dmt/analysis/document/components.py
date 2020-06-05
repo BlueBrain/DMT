@@ -366,15 +366,18 @@ class Methods(Section):
     def to_latex(self, methods, path_artefacts):
         latex = methods.narrative
 
-        latex += "Folowing measurements were made on the model:"
         try:
-            methods_measurements = methods.measurements
+            measurements_methods = methods.measurements
         except AttributeError:
-            pass
-        else:
+            measurement_methods = {}
+        if measurements_methods:
+            latex += "Folowing measurements were made on the model:\n"
             latex += "\\begin{itemize}\n"
-            for label, description in methods_measurements.items():
-                latex += "\\item{}\n".format(description)
+            for label, description in measurements_methods.items():
+                latex += "\\item {\\bf label}: description\n".replace(
+                    "label", ' '.join(w.capitalize() for w in label.split('_'))
+                ).replace(
+                    "description", description.strip())
             latex += "\\end{itemize}\n"
 
         return latex

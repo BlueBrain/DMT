@@ -25,9 +25,6 @@ from dmt.tk.plotting import Bars, MultiPlot
 from dmt.tk.utils import datasets
 from dmt.analysis.measurement import CompositeData
 from dmt.analysis.document.builder import DocumentBuilder
-from neuro_dmt.library.data.sscx_mouse.composition import\
-    LayerThicknessMeasurement,\
-    CorticalThicknessMeasurement
 from neuro_dmt.library.data.sscx_mouse.composition.layer_thickness import\
     cortical_thickness_defelipe,\
     relative_thickness_defelipe
@@ -145,6 +142,15 @@ def get():
             "InputConstraintDeFelipe2018": samples
         })
 
+    @interfacemethod
+    def get_sub_regions(adapter, model):
+        """
+        The `adapter` should implement a method to get brain regions that were
+        reconstructed in the given `model`. The modeled regions are the
+        sub-regions of the larger modeled region.
+        """
+        raise NotImplementedError
+ 
     @document.methods.measurements
     def layer_thicknesses(adapter, circuit_model, *args, **kwargs):
         """

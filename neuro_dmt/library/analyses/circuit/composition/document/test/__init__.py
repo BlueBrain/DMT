@@ -20,6 +20,7 @@ Test develop documents that analyze circuit composition.
 """
 import os
 from pathlib import Path
+import random
 import numpy as np
 import pandas as pd
 from dmt.tk.journal import Logger
@@ -45,6 +46,7 @@ REGION = terminology.bluebrain.cell.region
 
 CIRCUIT = os.environ.get("CIRCUIT", "MOCK")
 
+
 class MockCircuitModel:
     def __init__(self, *args, **kwargs):
         pass
@@ -54,6 +56,17 @@ class MockCircuitModel:
     brain_region = "SSCxO1"
     #subregions = ["mc{}_Column".format(c) for c in range(0, 7)]
     subregions = ["SSCx"]
+    xrange = (0., 1000.)
+    yrange = (0., 2000.)
+    zrange = (0., 1000.)
+    inh_frac = {
+        "L1": 1.,
+        "L2": 105./648.,
+        "L3": 118.78 / 1265.84,
+        "L4": 139. / 1788.,
+        "L5": 221. / 1317.,
+        "L6": 132. / 1422.
+    }
 
 
 class MockCircuitAdapter:
@@ -73,6 +86,24 @@ class MockCircuitAdapter:
 
     def get_layers(self, model):
         return model.layers
+
+    def get_cells(self, model, **kwargs):
+        """..."""
+        def _random_cell():
+            layer = random.choice(self.get_layers(model))
+            return {
+                "layer": layer,
+                "region": random.choice(self.get_sub_regions(model)),
+                "x": np.random.uniform(*model.xrange),
+                "y": np.random.uniform(*model.yrange),
+                "z": np.random.uniform(*model.zrange),
+                "morph_class": ("INT"
+                                if np.random.uniform() < model.inh_frac[layer]
+                                else "EXC")
+            }
+        return pd.DataFrame([
+            _random_cell() for _ in range(100)
+        ])
 
     def get_provenance(self, model, **kwargs):
         return dict(

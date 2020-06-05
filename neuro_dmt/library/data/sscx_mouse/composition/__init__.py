@@ -17,6 +17,21 @@
 """
 Wrap data with meta-data.
 """
+import os
+
+DMTPATH = "DMTPATH"
+
+def check_environment(variable, value=None):
+    if not value:
+        try:
+            value = os.environ[variable]
+        except KeyError:
+            raise RuntimeError(
+                """
+                Neither was {} provided as an argument,
+                nor was it available in the environment.
+                """.format(variable))
+        return value
 
 from .layer_thickness import\
     LayerThicknessMeasurement,\

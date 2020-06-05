@@ -417,8 +417,9 @@ class SonataCircuitAdapter(WithFields):
         """
         cell_query =\
             self.get_cell_query(
-                self._resolve_query_region(self.get_brain_region(circuit_model),
-                                           **query))
+                self._resolve_query_region(
+                    self.get_brain_region(circuit_model),
+                    **terminology.bluebrain.cell.filter(**query)))
         if isinstance(target, str):
             cell_query["$target"] = target
 
@@ -436,6 +437,7 @@ class SonataCircuitAdapter(WithFields):
                              .dropna()
         return cells.assign(gid=cells.index.values)\
             if with_gid_column else cells
+
     def get_soma_positions(self, circuit_model, cells):
         """..."""
         try:

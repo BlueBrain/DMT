@@ -396,13 +396,16 @@ class LabReport(Document):
 
         introduction_images = {}
         introduction_captions = {}
-        for label, illustration in introduction.illustration.items():
+        for label, illustration in illustration_introduction.items():
             introduction_captions[label] =\
                 paragraphs(illustration.caption)
 
-        for label, figures in path_artefacts.introduction\
-                                            .illustration\
-                                            .items():
+        path_introduction = path_artefacts.introduction
+        try:
+            path_introduction_illustration = path_introduction.illustration
+        except AttributeError:
+            path_introduction_illustration = {}
+        for label, figures in path_introduction_illustration.items():
             if isinstance(figures, Mapping):
                 introduction_images[label] = OrderedDict([
                     (sub_label, sub_figure_path.relative_to(path_artefacts._))
@@ -431,20 +434,24 @@ class LabReport(Document):
         results = report.results 
         template_dict["results"] =\
             paragraphs(results.narrative)
+
+        results_images = {}
+        results_captions = {}
         try:
             illustration_results = results.illustration
         except AttributeError:
             illustration_results = {}
-
-        results_images = {}
-        results_captions = {}
-        for label, illustration in results.illustration.items():
+        for label, illustration in illustration_results.items():
             results_captions[label] =\
                 paragraphs(illustration.caption)
 
-        for label, figures in path_artefacts.results\
-                                            .illustration\
-                                            .items():
+        path_results = path_artefacts.results
+        try:
+            path_results_illustration = path_results.illustration
+        except AttributeError:
+            path_results_illustration = {}
+
+        for label, figures in path_results_illustration.items():
             if isinstance(figures, Mapping):
                 results_images[label] = OrderedDict([
                     (sub_label, sub_figure_path.relative_to(path_artefacts._))
@@ -456,9 +463,12 @@ class LabReport(Document):
         template_dict["results_images"] = results_images
         template_dict["results_captions"] = results_captions
 
-
         results_tables = {}
-        for label, table in results.tables.items():
+        try:
+            tables_results = results.tables
+        except:
+            tables_results = {}
+        for label, table in tables_results.items():
             results_tables[label] = table.to_html(classes=label).split('\n')
 
         template_dict["results_tables"] = results_tables
