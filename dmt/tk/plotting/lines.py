@@ -112,38 +112,43 @@ class LinePlot(BasePlotter):
         dataframe =\
             self.get_dataframe(data, dataset)
         #if self.fvar:
-        grid = seaborn\
-            .FacetGrid(
-                dataframe,
-                col=self.fvar if self.fvar else None,
-                hue=self.gvar if self.gvar else None,
-                hue_order=self.gvar_order if self.gvar_order else None,
-                hue_kws=self.gvar_kwargs if self.gvar_kwargs else None,
-                col_wrap=self.number_columns,
-                height=self.height_figure,
-                aspect=self.aspect_ratio_figure,
+        with seaborn.plotting_context(self.context,
+                                      font_scale=self.font_scale,
+                                      rc=self.rc_params()):
+            grid = seaborn\
+                .FacetGrid(
+                    dataframe,
+                    col=self.fvar if self.fvar else None,
+                    hue=self.gvar if self.gvar else None,
+                    hue_order=self.gvar_order if self.gvar_order else None,
+                    hue_kws=self.gvar_kwargs if self.gvar_kwargs else None,
+                    col_wrap=self.number_columns,
+                    height=self.height_figure,
+                    aspect=self.aspect_ratio_figure,
                 legend_out=True)
-        grid.map(
-            seaborn.lineplot,
-            self.xvar,
-            self.yvar,
-            drawstyle=self.drawstyle,
-            alpha=0.7,
-            dashes=False,
-            hue=dataframe[self.gvar] if self.gvar else None,
-            style=dataframe[self.gvar] if self.gvar else None,
-            markers=self._get_markers(dataframe[self.gvar]) if self.gvar else None,
-            ms=self.marker_size
-        ).set_titles(
-            _make_name(self.fvar) + "\n{col_name} "
-        ).add_legend(
-            title=_make_name(self.gvar))
-        return Figure(
-            grid.set(
-                xlabel=self.xlabel,
-                ylabel=self.ylabel,
-                title=self.title if title is None else title),
-            caption=caption)
+            grid.map(
+                seaborn.lineplot,
+                self.xvar,
+                self.yvar,
+                drawstyle=self.drawstyle,
+                alpha=0.7,
+                dashes=False,
+                hue=dataframe[self.gvar] if self.gvar else None,
+                style=dataframe[self.gvar] if self.gvar else None,
+                markers=self._get_markers(dataframe[self.gvar]) if self.gvar else None,
+                ms=self.marker_size
+            ).set_titles(
+                _make_name(self.fvar) + "\n{col_name} "
+            ).add_legend(
+                title=_make_name(self.gvar))
+            return Figure(
+                grid.set(
+                    xlabel=self.xlabel,
+                    ylabel=self.ylabel,
+                    title=self.title if title is None else title),
+                caption=caption)
+        raise RuntimeError(
+            "Something must have gone wrong.")
 
     def plot(self,
             *args, **kwargs):

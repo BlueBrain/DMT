@@ -269,15 +269,19 @@ class DocumentBuilder:
     """
     A context manager to help build a document.
     """
-    def __init__(self, title):
+    def __init__(self, title, author=Author.anonymous):
         self._title = title
+        self._author = author
         self.document = Document(self._title)
         self.abstract = _AbstractBuilder(self)
         self.introduction = _IntroductionBuilder(self)
         self.methods = _MethodsBuilder(self)
         self.results = _ResultsBuilder(self)
-
         self._sections = OrderedDict()
+
+    @property
+    def author(self):
+        return self._author
 
     @property
     def title(self):
@@ -302,6 +306,7 @@ class DocumentBuilder:
 
     def get(self, *args, **kwargs):
         return LabReport(
+            author=self.author,
             title=self.title,
             abstract=self.abstract.get_content(),
             introduction=self.introduction.get_content(),

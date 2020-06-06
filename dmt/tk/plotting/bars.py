@@ -77,24 +77,29 @@ class Bars(BasePlotter):
         """
         Plot the dataframe.
         """
-        graphic = seaborn\
-            .catplot(
-                data=self.get_dataframe(data),
-                x=self.xvar,
-                y=self.yvar,
-                ci=self.confidence_interval,
-                kind="bar",
-                hue=self.gvar if self.gvar else None,
-                height=self.height_figure,
-                aspect=self.aspect_ratio_figure)\
-            .set(
-                xlabel=self.xlabel,
-                ylabel=self.ylabel,
-                title=kwargs.pop("title", ""))
-        plt.xticks(rotation=90)
-        return Figure(
-            graphic,
-            caption=caption)
+        with seaborn.plotting_context(self.context,
+                                      font_scale=self.font_scale,
+                                      rc=self.rc_params()):
+            graphic = seaborn\
+                .catplot(
+                    data=self.get_dataframe(data),
+                    x=self.xvar,
+                    y=self.yvar,
+                    ci=self.confidence_interval,
+                    kind="bar",
+                    hue=self.gvar if self.gvar else None,
+                    height=self.height_figure,
+                    aspect=self.aspect_ratio_figure)\
+                .set(
+                    xlabel=self.xlabel,
+                    ylabel=self.ylabel,
+                    title=kwargs.pop("title", ""))
+            plt.xticks(rotation=90)
+            return Figure(
+                graphic,
+                caption=caption)
+        raise RuntimeError(
+            "Something must have gone wrong.")
 
 
     def plot(self,

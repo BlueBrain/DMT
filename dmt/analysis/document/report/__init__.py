@@ -18,6 +18,7 @@
 A type of document.
 """
 
+from collections.abc import Iterable
 import shutil
 from Cheetah.Template import Template
 from dmt.tk.author import Author
@@ -203,7 +204,15 @@ class LabReport(Document):
 
         with open(path_title, 'w') as title_tex:
             title_tex.write("\\title{" + self.title + "}\n")
-            title_tex.write("\\author{" + self.author.name + "}\n")
+            if isinstance(self.author, Iterable):
+                for i, author in enumerate(self.author):
+                    title_tex.write("\\author[number]{".replace("number", str(i+1))
+                                    + author.name + "}\n")
+                    title_tex.write("\\affil[number]{".replace("number", str(i+1))
+                                    + author.affiliation + "}\n")
+            else:
+                title_tex.write("\\author{" + self.author.name + "}\n")
+                title_tex.write("\\affil{" + self.author.affiliation + "}\n")
 
         path_abstract_tex = path_artefacts._.joinpath("abstract", "abstract.tex")
         with open(path_abstract_tex, 'w') as abstract_tex:

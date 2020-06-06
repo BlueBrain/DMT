@@ -67,7 +67,8 @@ class MockCircuitModel:
         "L5": 221. / 1317.,
         "L6": 132. / 1422.
     }
-
+    mtypes = ["L1_IC", "L23_IC", "L23_PC", "L4_IC", "L4_PC",
+              "L5_IC", "L5_PC", "L6_IC", "L6_PC"]
 
 class MockCircuitAdapter:
     def __init__(self, *args, **kwargs):
@@ -87,19 +88,22 @@ class MockCircuitAdapter:
     def get_layers(self, model):
         return model.layers
 
+    def get_mtypes(self, model):
+        return model.mtypes
+
     def get_cells(self, model, **kwargs):
         """..."""
         def _random_cell():
             layer = random.choice(self.get_layers(model))
+            mtype = random.choice(model.mtypes)
             return {
                 "layer": layer,
                 "region": random.choice(self.get_sub_regions(model)),
+                "mtype": mtype,
                 "x": np.random.uniform(*model.xrange),
                 "y": np.random.uniform(*model.yrange),
                 "z": np.random.uniform(*model.zrange),
-                "morph_class": ("INT"
-                                if np.random.uniform() < model.inh_frac[layer]
-                                else "EXC")
+                "morph_class": "INT" if "IC" in mtype else "EXC"
             }
         return pd.DataFrame([
             _random_cell() for _ in range(100)
@@ -156,7 +160,7 @@ def get_test_object(chapter):
             """
             Get a document builder.
             """)
-        document = chapter.get()
+        document = chapter.get(sample_size=20)
         LOGGER.status(
             LOGGER.get_source_info(),
             """

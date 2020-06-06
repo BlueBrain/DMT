@@ -260,7 +260,7 @@ class SonataCircuitAdapter(WithFields):
         df = self.get_cells(circuit_model)[XYZ]\
                  .agg(["min", "max"])
         return Cuboid(df["min"].values, df["max"].values)
-                
+
     def get_layer_thickness_values(self,
             circuit_model,
             sample_size=100,
@@ -322,6 +322,13 @@ class SonataCircuitAdapter(WithFields):
         #         .agg(["min", "max"])\
         #         .y\
         #         .apply(lambda ys: ys["max"] - ys["min"], axis=1)
+
+    def get_height(self, circuit_model, depth):
+        """
+        Get height for model of a cortical column.
+        """
+        cells = self.get_cells(circuit_model)
+        return cells.y.max() - depth
 
     @terminology.use(*(
         terminology.circuit.terms + terminology.cell.terms))

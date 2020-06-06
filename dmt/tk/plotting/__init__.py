@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn
-from dmt.tk.field import Field, LambdaField,  ABCWithFields
+from dmt.tk.field import NA, Field, LambdaField,  ABCWithFields
 
 golden_aspect_ratio = 0.5 * (1. + np.sqrt(5)) 
 
@@ -116,21 +116,6 @@ class BasePlotter(ABCWithFields):
         and error bars will not be drawn.
         """,
         __default_value__="sd")
-    font_size = Field(
-        """
-        Size of the font to use.
-        """,
-        __default_value__=20)
-    title_size = Field(
-        """
-        Size of the title.
-        """,
-        __default_value__=20)
-    axes_labelsize = Field(
-        """
-        Size of axes labels.
-        """,
-        __default_value__=20)
     order = Field(
         """
         Either a column in the measurement dataframe that the values should
@@ -138,16 +123,75 @@ class BasePlotter(ABCWithFields):
         dataframe.
         """,
         __default_value__=lambda dataframe: dataframe)
+    context = Field(
+        """
+        Context in which plots will be produced.
+        """,
+        __examples__=["paper", "notebook"],
+        __default_value__="paper")
+    font = Field(
+        """
+        Font family.
+        """,
+        __default_value__="sans-serif")
+    font_size = Field(
+        """
+        Size of the font to use.
+        """,
+        __default_value__=60)
+    font_scale = Field(
+        """
+        Separate scaling factor to independently scale the size of the font
+        elements.
+        """,
+        __default_value__=2.)
+    title_size = Field(
+        """
+        Size of the title.
+        """,
+        __default_value__=30)
+    axes_labelsize = Field(
+        """
+        Size of axes labels.
+        """,
+        __default_value__=30)
+    legend_text_size = Field(
+        """
+        Size of text in plot legend.
+        """,
+        __default_value__=32)
+    legend_title_size = Field(
+        """
+        Size of the title of plot legend.
+        """,
+        __default_value__=42)
+    rc = Field(
+        """
+        Dictionary of rc parameter mappings to override global values set above...
+        """,
+        __default_value__=NA)
 
-
+    def rc_params(self):
+        return {
+            "font.size":self.font_size,
+            "axes.titlesize":self.title_size,
+            "axes.labelsize":self.axes_labelsize
+        }
     def _set_rc_params(self):
         """..."""
-        seaborn.set_context(
-            "paper",
-            rc={"font.size":self.font_size,
-                "axes.titlesize":self.title_size,
-                "axes.labelsize":self.axes_labelsize})
+        seaborn.set_context(self.context, rc=self.rc_params())
 
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(*args, **kwargs)
+        seaborn.set(context=self.context,
+                    style="darkgrid",
+                    palette="deep",
+                    font=self.font,
+                    font_scale=self.font_scale,
+                    color_codes=True,
+                    rc=None)
+        self._set_rc_params()
 
     @abstractmethod
     def get_figure(self, *args, **kwargds):

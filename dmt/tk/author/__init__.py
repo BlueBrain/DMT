@@ -68,12 +68,12 @@ Author.anonymous =\
     Author()
 Author.zero =\
     Author(
-        name = "V. Sood",
-        affiliation = "BBP, EPFL",
+        name = "Vishal Sood",
+        affiliation = "Blue Brain Project, EPFL",
         user_id = 0)
 Author.one =\
     Author(
         name = "H. T. Dictus",
-        affiliation = "BBP, EPFL",
+        affiliation = "Blue Brain Project, EPFL",
         user_id = 1)
 

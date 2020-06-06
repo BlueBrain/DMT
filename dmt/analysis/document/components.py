@@ -17,6 +17,7 @@
 """
 Components of a documented analysis.
 """
+from itertools import islice
 from pickle import PicklingError
 import json
 from dmt.tk.field.exceptions import MissingFieldError
@@ -136,13 +137,43 @@ class Section(DocElem):
             for label, table in self.tables.items()
         ]))
 
-    def _latex_illustration(self, section, path_tree_report):
+    def _latex_illustration(self, section, path_tree_report, n_single_page=4):
         """
         Generate latex code for illustrations.
 
         TODO:
         This method can be moved to `CompositeIllustration`!
+
+        Arguments
+        -----------------
+        n_single_page: number of figures on a single page.
         """
+
+        def _single_page(figures):
+            """
+            Put figures on a single page.
+            """
+            assert len(figures) <= n_single_page
+
+            for label, figure_path in figures.items():
+                figure_tex = """
+                \\subfloat[fig-label]{\\includegraphics[width=1\\textwidth]{fig-location}}
+                """.strip()\
+                   .replace("fig-label",
+                            "{}".format(label.replace('_', "\\_")))\
+                   .replace("fig-location",
+                            str(figure_path.relative_to(path_tree_report._)))
+                figure_tex += '\n' + figure_tex + "\\\\\n" + "\\\\\n"
+                            
+        def _groups_single_page(figures):
+            """
+            Create groups of figure, each group for a single page of figures.
+            """
+            n = 0
+            while n < len(figures):
+                yield islice(figures.items(), n, n + n_single_page)
+                n += n_single_page
+
         path_section = getattr(path_tree_report, self.label)
         try:
             illustration = section.illustration
@@ -156,36 +187,52 @@ class Section(DocElem):
         latex = ""
         for label, figures in path_illustration.items():
             caption = illustration[label].caption
-            figure_tex ="""
-            \\begin{figure}[hbt!]
-            """.strip()
+            figure_tex = ""
             if isinstance(figures, Mapping):
                 if len(figures) == 1:
+                    figure_tex +="""
+                    \\begin{figure}[hbt!]
+                    """.strip()
                     figure_tex += """
                     \\includegraphics[width=1.00\\textwidth]{fig-location}
                     """.strip()\
                       .replace("fig-location",
                                 str(list(figures.values())[0]))
+                    figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                        caption)
+                    figure_tex += "\\end{figure}\n"
                 else:
-                    for sub_label, sub_figure_path in figures.items():
-                        sub_figure_tex = """
-                        \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
-                        """.strip()\
-                          .replace("fig-label",
-                                    "{}".format(sub_label))\
-                          .replace("fig-location",
-                                    str(sub_figure_path.relative_to(path_tree_report._)))
-                        figure_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
+                    for group_figures in _groups_single_page(figures):
+                        group_tex ="""
+                        \\begin{figure}[h]
+                        """.strip()
+                        for sub_label, sub_figure_path in group_figures:
+                            sub_figure_tex = """
+                            \\subfloat[fig-label]{\\includegraphics[width=0.65\\textwidth]{fig-location}}
+                            """.strip()\
+                               .replace("fig-label",
+                                        "{}".format(sub_label.replace('_', '\\_')))\
+                               .replace("fig-location",
+                                        str(sub_figure_path.relative_to(path_tree_report._)))
+                            group_tex += "\n" + sub_figure_tex + "\\\\\n" + "\\\\\n"
+                        group_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                           caption)
+                        group_tex += "\\end{figure}\n"
+
+                        figure_tex += group_tex
             else:
+                figure_tex +="""
+                \\begin{figure}[hbt!]
+                """.strip()
                 figure_tex += """
                 \\includegraphics[width=1.00\\textwidth]{fig-location}
                 """.strip()\
                   .replace("fig-location",
                             str(figures.relative_to(path_tree_report._)))
 
-            figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
-                                                                caption)
-            figure_tex += "\\end{figure}\n"
+                figure_tex += "\\caption{figure-caption}\n".replace("figure-caption",
+                                                                    caption)
+                figure_tex += "\\end{figure}\n"
 
             latex += "\n" + figure_tex
         return latex
