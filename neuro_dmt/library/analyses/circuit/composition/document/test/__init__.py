@@ -160,7 +160,7 @@ def get_test_object(chapter):
             """
             Get a document builder.
             """)
-        document = chapter.get(sample_size=20)
+        document = chapter.get(sample_size=2)
         LOGGER.status(
             LOGGER.get_source_info(),
             """

@@ -137,12 +137,13 @@ class Section(DocElem):
             for label, table in self.tables.items()
         ]))
 
-    def _latex_illustration(self, section, path_tree_report, n_single_page=4):
+    def _latex_illustration(self, section, path_tree_report, n_single_page=3):
         """
         Generate latex code for illustrations.
 
         TODO:
-        This method can be moved to `CompositeIllustration`!
+        1. This method can be moved to `CompositeIllustration`!
+        2. Pass a value for `n_single_page` in the call from top-level document
 
         Arguments
         -----------------
@@ -273,7 +274,6 @@ class Section(DocElem):
         latex += self._latex_illustration(section, path_tree_report)
         latex += self._latex_tables(section, path_tree_report)
         return latex
-
 
     def __call__(self, adapter, model, *args, **kwargs):
         """..."""
@@ -418,7 +418,7 @@ class Methods(Section):
         except AttributeError:
             measurement_methods = {}
         if measurements_methods:
-            latex += "Folowing measurements were made on the model:\n"
+            latex += "\n\n\n{\\bf Measurements}\n\n"
             latex += "\\begin{itemize}\n"
             for label, description in measurements_methods.items():
                 latex += "\\item {\\bf label}: description\n".replace(

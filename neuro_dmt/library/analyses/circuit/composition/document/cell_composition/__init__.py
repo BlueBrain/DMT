@@ -15,7 +15,7 @@
 # along with DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
 
 """
-Document layer thickness of a circuit.
+Document cell composition of a circuit.
 """
 import numpy as np
 import pandas as pd
@@ -45,7 +45,7 @@ LOGGER = Logger(client=__file__)
 
 def get(sample_size=100):
     """
-    Build a document that analyzes cell densities in a circuit.
+    Build a document that analyzes cell composition of a circuit.
     """
 
     document = DocumentBuilder("Cell Composition", author=Author.zero)
@@ -91,6 +91,20 @@ def get(sample_size=100):
         The null-hypothesis is that the {\\it in-silico} mean and the
         {\\it in-experimentum} mean are the same. The alternative hypothesis is
         that the two means are different.
+        """
+        pass
+
+    @document.methods
+    def statistical_testing():
+        """
+        The {\\it in-silico} value is assumed to be a realization of a 
+        random variable from a normal distribution with the mean and standard 
+        deviation estimated from biological data. This assumption results in 
+        the test statistic: $\\frac{X - \\bar{x}}{\\bar{s}}$. The test statistic
+        follows a normal distribution with zero mean and standard deviation 1.
+        When a given dataset contains multiple data points, {\\it e.g.} cell density
+        across layers, a pooled p-value is computed as
+        $-2\\sum_{i=1} \\log p_i$ according to Fischer's method.
         """
         pass
 
@@ -288,20 +302,11 @@ def get(sample_size=100):
     @document.methods.measurements
     def mtype_fraction(adapter, circuit_model, *args, **kwargs):
         """
-        Similar to other measurements, to compute the fraction of cells of a
-        given mtype, cells were sampled from a given region of interest and
-        counted by their mtype.
+        Fraction of cells of a given mtype were computed over all the cells in
+        a layer.
         """
         def measurement_parameter_set(*args, size_roi=50, **query):
-            region = query.get("region")
-            layer = query.get("layer")
-            depth = query.get("depth")
-            cells = sample_cells(adapter, circuit_model,
-                                 size_roi=size_roi,
-                                 region=region,
-                                 layer=layer,
-                                 depth=depth,
-                                 **kwargs)
+            cells = adapter.get_cells(circuit_model, **query)
             mtype_counts = cells.mtype.value_counts()
             mtype_counts.index.name = "mtype"
             return mtype_counts/mtype_counts.sum()

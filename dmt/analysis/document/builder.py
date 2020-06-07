@@ -31,12 +31,21 @@ def paragraphs(narrative):
     Arguments
     -------------
     narrative :: Mapping
+
+    TODO:
+    This a hotfix assuming latex processing.
+    Refactor code to allow the latex requirement implemented as this hotfix.
     """
     def _paragraph(label, content):
         if label == "_":
-            return "\t" + content
-        return "{}:\t{}".format(label, content)
-    return "\n\n".join(
+            return '\t' + content  + "\n\n"
+        p = "\n\n{\\bf title}:\t".replace("title",
+                                   ' '.join(w.capitalize()
+                                            for w in label.split('_')))
+        p += content
+        return p + "\\\\\n\n"
+
+    return '\n'.join(
         _paragraph(label, content)
         for label, content in narrative.items())
 
