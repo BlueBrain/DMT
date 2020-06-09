@@ -916,6 +916,7 @@ class PathwayMeasurement(WithFields):
                     post_synaptic_cell_group=post_synaptic_cell_group,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     direction=self.direction)
+
             def _prefixed(measurement):
                 return\
                     self._prefix_secondary_synaptic_side(query, measurement)\
@@ -934,6 +935,8 @@ class PathwayMeasurement(WithFields):
                         if prefixed else measurement
                 listed_samples =[
                     _prefixed(measurement.dropna()) for measurement in samples]
+                if not listed_samples:
+                    return pd.DataFrame()
                 try:
                     result = pd.concat(listed_samples)
                 except TypeError:
@@ -943,14 +946,14 @@ class PathwayMeasurement(WithFields):
                     "Collected measurement of size: {}".format(result.shape))
                 return result
             try:
-                return\
+                result =\
                     _prefixed(
                         _transformed(
                             self.pandamonad.reduce(
-                                samples, aggregate, combine))
-                    ).dropna()
+                                samples, aggregate, combine)))
             except Exception as error:
                 LOGGER.alert(
+                    LOGGER.get_source_info(),
                     """
                     Apologies that this did not work out for your use-case.
                     The current version is designed for a sequence
@@ -960,6 +963,9 @@ class PathwayMeasurement(WithFields):
                     made on a batch of queried primary cells.
                     """)
                 raise error
+            if result is None:
+                return None
+            return result.dropna()
         return _collect
 
     def norm_per_pair(self,
@@ -986,16 +992,21 @@ class PathwayMeasurement(WithFields):
                 circuit_model, adapter,
                 pre_synaptic_cell_group=pre_synaptic_cell_group,
                 post_synaptic_cell_group=post_synaptic_cell_group,
-                prefixed=False,
+                prefixed=prefixed,
                 **kwargs)
+
+        if number_connections_pathway is None:
+            return None
 
         if not self.by_soma_distance:
             number_pairs_pathway =\
                 target.primary.shape[0] *\
                 target.secondary\
                       .groupby(self.specifiers_cell_type)\
-                      .agg("size")\
+                      .agg("size")
 
+            number_pairs_pathway.index.names =\
+                number_connections_pathway.index.names
         else:
             if target.primary.shape[0] * target.secondary.shape[0] > 1e9:
                 raise ValueError(
@@ -1013,8 +1024,10 @@ class PathwayMeasurement(WithFields):
                     circuit_model, adapter,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     post_synaptic_cell_group=post_synaptic_cell_group,
-                    prefixed=False,
-                    **kwargs)
+                    prefixed=prefixed,
+                    **kwargs
+                )
 
-        return\
-            (number_connections_pathway / number_pairs_pathway).dropna()
+        return (
+            number_connections_pathway / number_pairs_pathway
+        ).dropna()

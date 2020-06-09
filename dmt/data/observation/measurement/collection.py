@@ -19,7 +19,10 @@ Utiility methods to create collections of individual measurements.
 """
 from collections.abc import Mapping
 import pandas as pd
+from dmt.tk.journal import Logger
 from dmt.tk.parameters import index_tree
+
+LOGGER = Logger(client=__file__)
 
 def _with_index(dataframe, value="value"):
     """..."""
@@ -89,17 +92,21 @@ def series_type(measurement_generator, value="value"):
     """
     def _join(parameters_measurement, value_measurement):
         """..."""
+        if value_measurement is None:
+            return pd.DataFrame()
         if isinstance(parameters_measurement, Mapping):
             parameters_measurement =\
                 pd.Series(
                     index_tree.as_unnested_dict(
                         parameters_measurement))
+
+        renamed =\
+            value_measurement.rename("value")
+                             
         return\
-            value_measurement.rename("value")\
-                             .reset_index()\
-                             .apply(
-                                 parameters_measurement.append,
-                                 axis=1)
+            renamed.reset_index()\
+                   .apply(parameters_measurement.append,
+                          axis=1)
                                      
     return _with_index(
         pd.concat([

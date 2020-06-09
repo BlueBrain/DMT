@@ -271,3 +271,18 @@ def where(**term_dict):
 
 
 from .collection import TermCollection
+
+class measurement_type(TermCollection):
+    """
+    What kind of measurement?
+    """
+    summary = Term(
+        "summary",
+        """
+        A measurement that is a statistical summary.
+        """)
+    samples = Term(
+        "samples",
+        """
+        A measurement that are samples from a population.
+        """)

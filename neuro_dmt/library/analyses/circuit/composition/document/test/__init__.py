@@ -30,10 +30,10 @@ from neuro_dmt.analysis.reporting import CircuitProvenance
 from neuro_dmt.library.models.sonata.circuit.model import SonataCircuitModel
 from neuro_dmt.library.models.sonata.circuit.adapter import SonataCircuitAdapter
 
-#from neuro_dmt.library.models.mock.circuit.model import MockCircuitModel
-#from neuro_dmt.library.models.mock.circuit.adapter import MockCircuitAdapter
-#from neuro_dmt.library.models.mock.circuit.test.mock_circuit_light\
-    #import circuit_composition, circuit_connectivity
+from neuro_dmt.library.models.mock.circuit.model import MockCircuitModel
+from neuro_dmt.library.models.mock.circuit.adapter import MockCircuitAdapter
+from neuro_dmt.library.models.mock.circuit.test.mock_circuit_light\
+    import circuit_composition, circuit_connectivity
 
 LOGGER = Logger(client=__file__, level=Logger.Level.STUDY)
 
@@ -47,7 +47,7 @@ REGION = terminology.bluebrain.cell.region
 CIRCUIT = os.environ.get("CIRCUIT", "MOCK")
 
 
-class MockCircuitModel:
+class _MockCircuitModel:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -70,7 +70,7 @@ class MockCircuitModel:
     mtypes = ["L1_IC", "L23_IC", "L23_PC", "L4_IC", "L4_PC",
               "L5_IC", "L5_PC", "L6_IC", "L6_PC"]
 
-class MockCircuitAdapter:
+class _MockCircuitAdapter:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -147,10 +147,9 @@ class MockCircuitAdapter:
         return positions.apply(_thickness, axis=1)
 
 
-
 TESTOBJ = None
 
-def get_test_object(chapter):
+def get_test_object(chapter, **kwargs):
     """..."""
     global TESTOBJ
 
@@ -160,18 +159,19 @@ def get_test_object(chapter):
             """
             Get a document builder.
             """)
-        document = chapter.get(sample_size=2)
+        document = chapter.get(sample_size=100, **kwargs)
         LOGGER.status(
             LOGGER.get_source_info(),
             """
             Build a circuit to work with.
             """)
-        # circuit = MockCircuitModel(circuit_composition,
-        #                            circuit_connectivity,
-        #                            label="SSCxMockCircuit")
         if CIRCUIT == "MOCK":
-            circuit = MockCircuitModel()
+            circuit = MockCircuitModel(circuit_composition,
+                                       circuit_connectivity,
+                                       label="SSCxMockCircuit")
             adapter = MockCircuitAdapter()
+            #circuit = _MockCircuitModel()
+            #adapter = _MockCircuitAdapter()
         else:
             LOGGER.status(
                 LOGGER.get_source_info(),
@@ -198,7 +198,9 @@ def get_test_object(chapter):
         TESTOBJ = Record(document=document,
                          circuit_model=circuit,
                          adapter=adapter)
-
+    LOGGER.status(
+        "test object: {}".format(TESTOBJ)
+    )
     return TESTOBJ
 
 def get_path_save():

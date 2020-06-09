@@ -660,7 +660,6 @@ class CompositeIllustration(Mapping):
             for label, illustration in self._illustrations.items()])
 
 
-
 class DocElem(WithFields, AIBase):
     """..."""
     title = Field(
@@ -766,7 +765,7 @@ class Document(WithFields):
         """
         return []
 
-    
+
 
 from .components import *
 from .report import LabReport

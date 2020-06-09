@@ -432,8 +432,7 @@ class SonataCircuitAdapter(WithFields):
 
         cells =\
             circuit_model.cell_collection\
-                         .get(group=cell_query,
-                              properties=properties)
+                         .get(group=cell_query, properties=properties)
         if isinstance(target, Iterable):
             if isinstance(target, str):
                 cells = cells.assign(group=target)
@@ -527,7 +526,7 @@ class SonataCircuitAdapter(WithFields):
             circuit_model.connectome\
                          .iter_connections(
                              target=post_synaptic_gids,
-                             return_edge_ids = with_synapse_ids,
+                             return_edge_ids=with_synapse_ids,
                              return_edge_count=with_synapse_count)
         connections =\
             np.array([
@@ -587,9 +586,17 @@ class SonataCircuitAdapter(WithFields):
             with_synapse_ids=False,
             with_synapse_count=True):
         """..."""
+        if with_synapse_ids and with_synapse_count:
+            raise TypeError(
+                """
+                `get_connections(...)` called requesting both synapse ids and
+                synapse count. Only one of these may be requested.
+                """)
         return\
             self.get_afferent_connections(
-                circuit_model, cell_group, with_synapse_count)\
+                circuit_model, cell_group,
+                with_synapse_ids=with_synapse_ids,
+                with_synapse_count=with_synapse_count)\
             if direction in ("AFF", "afferent", "aff") else\
                self.get_efferent_connections(
                    circuit_model,

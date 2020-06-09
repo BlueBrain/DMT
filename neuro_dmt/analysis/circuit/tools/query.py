@@ -19,7 +19,9 @@ Query to analyze circuits.
 """
 
 from dmt.tk.collections.data import make_hashable
-from dmt.tk.field import Field, lazyfield, WithFields
+from dmt.tk.field import Record, Field, lazyfield, WithFields
+from dmt.tk.collections import head
+from neuro_dmt import terminology
 
 class QueryDB(WithFields):
     """
@@ -143,18 +145,18 @@ class PathwayQuery(WithFields):
     @lazyfield
     def secondary_synaptic_side(self):
         if self.direction == terminology.direction.afferent:
-            return "pre_synaptic_cell"
+            return "pre_synaptic_cell_group"
         if self.direction == terminology.direction.efferent:
-            return "post_synaptic_cell"
+            return "post_synaptic_cell_group"
         raise ValueError(
             "Unknown measurement direction {}.".format(self.direction))
 
     @lazyfield
     def primary_synaptic_side(self):
         if self.direction == terminology.direction.afferent:
-            return "post_synaptic_cell"
+            return "post_synaptic_cell_group"
         if self.direction == terminology.direction.efferent:
-            return "pre_synaptic_cell"
+            return "pre_synaptic_cell_group"
         raise ValueError(
             "Unknown measurement direction {}.".format(self.direction))
 

@@ -21,6 +21,7 @@ import pandas as pd
 from dmt.model.interface import interfacemethod
 from dmt.data.observation import measurement, SampleMeasurement, Summary
 from pathlib import Path
+from dmt.tk.author import Author
 from dmt.tk.plotting import Bars, MultiPlot
 from dmt.tk.utils import datasets
 from dmt.analysis.measurement import CompositeData
@@ -29,12 +30,12 @@ from neuro_dmt.library.data.sscx_mouse.composition.layer_thickness import\
     cortical_thickness_defelipe,\
     relative_thickness_defelipe
 
-def get():
+def get(sample_size=100):
     """
     Build a document that analyzes layer thickness.
     """
 
-    document = DocumentBuilder("Layer Thickness")
+    document = DocumentBuilder("Layer Thickness", author=Author.zero)
 
     @document.abstract
     def _():
@@ -238,7 +239,7 @@ def get():
         plotted along experimental measurements.
         """
         return Bars(
-            xvar="region", xlabel="Layer",
+            xvar="region", xlabel="Region",
             yvar="cortical_thickness", ylabel="Cortical Thickness",
             gvar="dataset")
 

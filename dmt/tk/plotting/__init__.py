@@ -138,7 +138,7 @@ class BasePlotter(ABCWithFields):
         """
         Size of the font to use.
         """,
-        __default_value__=60)
+        __default_value__=20)
     font_scale = Field(
         """
         Separate scaling factor to independently scale the size of the font
@@ -154,7 +154,12 @@ class BasePlotter(ABCWithFields):
         """
         Size of axes labels.
         """,
-        __default_value__=30)
+        __default_value__="xx-large")
+    axes_titlesize = Field(
+        """
+        Size of axes title.
+        """,
+        __default_value__="xx-large")
     legend_text_size = Field(
         """
         Size of text in plot legend.
@@ -165,6 +170,16 @@ class BasePlotter(ABCWithFields):
         Size of the title of plot legend.
         """,
         __default_value__=42)
+    xtick_labelsize = Field(
+        """
+        How large should the xticks be?
+        """,
+        __default_value__="small")
+    ytick_labelsize = LambdaField(
+        """
+        How should the yticks be?
+        """,
+        lambda self: self.xtick_labelsize)
     rc = Field(
         """
         Dictionary of rc parameter mappings to override global values set above...
@@ -173,9 +188,12 @@ class BasePlotter(ABCWithFields):
 
     def rc_params(self):
         return {
-            "font.size":self.font_size,
-            "axes.titlesize":self.title_size,
-            "axes.labelsize":self.axes_labelsize
+            "font.size": self.font_size,
+            "legend.fontsize": "xx-large",
+            "axes.labelsize": self.axes_labelsize,
+            "axes.titlesize": self.axes_titlesize, 
+            "xtick.labelsize": self.xtick_labelsize,
+            "ytick.labelsize": self.ytick_labelsize
         }
     def _set_rc_params(self):
         """..."""

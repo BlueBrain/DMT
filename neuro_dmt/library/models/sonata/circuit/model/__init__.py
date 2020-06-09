@@ -155,14 +155,17 @@ class SonataCircuitModel(WithFields):
         """
         Connectome for the circuit.
         """
+        bp = self.bluepysnap_circuit
+        edges = bp.edges
         try:
-            bp = self.bluepysnap_circuit
-            return bp.edges["All"]
+            return edges["All"]
+        except KeyError:
+            return edges["default"]
         except BluepySnapError as error:
             LOGGER.warn(
                 LOGGER.get_source_info(),
-                """Circuit does not have cells.
-                or cells could not be loaded:
+                """Circuit does not have edges,
+                or could not be loaded:
                 \t{}""".format(error))
         return None
 
