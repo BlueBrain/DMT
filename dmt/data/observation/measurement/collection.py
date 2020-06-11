@@ -100,6 +100,15 @@ def series_type(measurement_generator, value="value"):
                     index_tree.as_unnested_dict(
                         parameters_measurement))
 
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            join with parameters
+            {}
+            value measurements
+            {}
+            """.format(parameters_measurement,
+                       value_measurement.head()))
         renamed =\
             value_measurement.rename("value")
                              

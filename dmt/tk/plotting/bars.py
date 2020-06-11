@@ -77,6 +77,7 @@ class Bars(BasePlotter):
         """
         Plot the dataframe.
         """
+        plt.figure()
         with seaborn.plotting_context(self.context,
                                       font_scale=self.font_scale,
                                       rc=self.rc_params()):

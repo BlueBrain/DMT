@@ -125,7 +125,7 @@ class LinePlot(BasePlotter):
                     col_wrap=self.number_columns,
                     height=self.height_figure,
                     aspect=self.aspect_ratio_figure,
-                legend_out=True)
+                    legend_out=True)
             grid.map(
                 seaborn.lineplot,
                 self.xvar,

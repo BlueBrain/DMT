@@ -18,6 +18,7 @@ A figure is a graphic with a caption.
 """
 from pathlib import Path
 import shutil
+from matplotlib import pyplot as plt
 from dmt.tk.utils.string_utils import paragraphs
 from dmt.tk.field import Field, lazyproperty, WithFields
 
@@ -58,7 +59,6 @@ class Figure(WithFields):
             caption=caption,
             *args, **kwargs)
 
-
     def save(self, path, dpi=100):
         """
         Save the figure.
@@ -67,12 +67,13 @@ class Figure(WithFields):
             shutil.copy(self.graphic, path)
             return path
         try:
-            return self.graphic.savefig(path, dpi=dpi)
+            result = self.graphic.savefig(path, dpi=dpi)
         except AttributeError:
             try:
-                return self.graphic.figure.savefig(path, dpi=dpi)
+                result = self.graphic.figure.savefig(path, dpi=dpi)
             except AttributeError:
                 raise TypeError(
                     "Figure type {} not supported".format(
                         self.graphic.__class__))
-        return None
+            result = None
+        return result

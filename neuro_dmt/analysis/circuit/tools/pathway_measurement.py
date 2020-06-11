@@ -358,12 +358,21 @@ class PathwayMeasurement(WithFields):
         """
         return self.with_fields(target=target)
 
-    def _sample_target(self, circuit_model, adapter, query, size=None):
+    def sample_target(self,
+            circuit_model, adapter,
+            pre_synaptic_cell_group={},
+            post_synaptic_cell_group={},
+            query=None, size=None):
         """
         Primary and secondary cell samples.
         """
+        if not query:
+            query = PathwayQuery(
+                pre_synaptic_cell_group=pre_synaptic_cell_group,
+                post_synaptic_cell_group=post_synaptic_cell_group,
+                direction=self.direction)
         LOGGER.debug(
-            "PathwayMeasurement._sample_target(...)",
+            "PathwayMeasurement.sample_target(...)",
             "{}".format(query))
         exhaustive =\
             self.sampling_methodology ==\
@@ -561,6 +570,7 @@ class PathwayMeasurement(WithFields):
             circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
+            target=None,
             prefixed=True,
             **kwargs):
         """
@@ -579,14 +589,16 @@ class PathwayMeasurement(WithFields):
             "post-synaptic cell group {}".format(post_synaptic_cell_group ))
            
         self._check_sampling_methodology(kwargs)
+
         query =\
             PathwayQuery(
                 post_synaptic_cell_group=post_synaptic_cell_group,
                 pre_synaptic_cell_group=pre_synaptic_cell_group,
                 direction=self.direction)
-        target =\
-            self._sample_target(
-                circuit_model, adapter, query)
+        if target is None:
+            target =\
+                self.sample_target(
+                    circuit_model, adapter, query=query)
         batches =\
             self._batches(target.primary)
 
@@ -617,8 +629,11 @@ class PathwayMeasurement(WithFields):
                 "pre-synaptic cell group {}".format(pre_synaptic_cell_group),
                 "post-synaptic cell group {}".format(post_synaptic_cell_group),
                 "measurement obtained {}".format(type(measurement)),
-                "\t{}".format(measurement.name),
-                "\t shape {}".format(measurement.shape))
+                "\t{}".format(
+                    measurement.name if isinstance(measurement, pd.Series)
+                    else measurement.columns),
+                "\t shape {}".format(
+                    measurement.shape))
 
             yield\
                 self._prefixed_with_synaptic_roles(
@@ -638,6 +653,8 @@ class PathwayMeasurement(WithFields):
                     for level in self.specifiers_cell_type})
             values =\
                 measurement.values
+            columns =\
+                measurement.columns
             _gids_primary =\
                 measurement.index.get_level_values(self.label_gid_primary)\
                                  .to_numpy(np.int32)
@@ -677,7 +694,8 @@ class PathwayMeasurement(WithFields):
             print(index.head())
             return\
                 pd.DataFrame(
-                    {self.variable: values},
+                    values,
+                    columns=columns,
                     index=pd.MultiIndex.from_frame(index))
         else:
             return\
@@ -735,6 +753,52 @@ class PathwayMeasurement(WithFields):
     def label_gid_primary(self):
         return\
             "post_gid" if self.direction == "AFF" else "pre_gid"
+
+    def get_measurement(self, connections):
+        """
+        What value must be measured for a sequence of connections?
+
+        Arguments
+        -----------------
+        connections :: 
+        """
+        self.variable: self.get_measurement(connections)
+        try:
+            value_items = self.value.items()
+        except AttributeError:
+            pass
+        else:
+            return {
+                variable: value(connections)
+                for variable, value in value_items
+            }
+        try:
+            value = self.value(connections)
+        except TypeError:
+            pass
+        else:
+            if isinstance(value, Mapping):
+                return value
+            return {self.variable: value}
+        if self.value == "synapse_count" or self.value == "strength":
+            return {self.variable: connections.strength.to_numpy(np.float)}
+        if self.value == "connection":
+            return {self.variable: 1.}
+        raise ValueError(
+            """
+            Value {} set for {} is not handled.
+            """.format(self.value))
+
+    @staticmethod
+    def moments(variable, value, n=2):
+        """
+        Moments ... upto the n-th
+        """
+        def _(connections):
+            v = value(connections)
+            return { "{}_{}".format(variable, m): v ** m
+                     for m in range(n + 1)}
+        return _
 
     @count_number_calls(LOGGER)
     def _method(self,
@@ -827,6 +891,8 @@ class PathwayMeasurement(WithFields):
         if connections.empty:
             return None
 
+        measurement = self.get_measurement(connections)
+        variables = list(measurement.keys())
         variables_groupby =\
             cell_properties_groupby +(
                 [self.label_gid_primary, "soma_distance"]
@@ -834,9 +900,9 @@ class PathwayMeasurement(WithFields):
                 [self.label_gid_primary])
         columns_relevant =\
             cell_properties_groupby + (
-                [self.label_gid_primary, "soma_distance", self.variable]
+                [self.label_gid_primary, "soma_distance"] + variables
                 if by_soma_distance else
-                [self.label_gid_primary, self.variable])
+                [self.label_gid_primary] + variables)
 
         primary_gids =\
             connections[self.label_gid_primary].to_numpy(np.int32)
@@ -845,9 +911,8 @@ class PathwayMeasurement(WithFields):
         cells_connected =\
             adapter.get_cells(circuit_model)\
                    .loc[secondary_gids]\
-                   .assign(**{
-                       self.label_gid_primary: primary_gids,
-                       self.variable: self.value(connections)})
+                   .assign(**{self.label_gid_primary: primary_gids})\
+                   .assign(**measurement)
 
         if by_soma_distance or self.filter_by_upper_bound_soma_distance:
             def _soma_distance(other_cells):
@@ -863,7 +928,6 @@ class PathwayMeasurement(WithFields):
             cells_connected =\
                 cells_connected[
                     cells_connected.soma_distance < self.upper_bound_soma_distance]
-
         cells_connected =\
             cells_connected[columns_relevant]
 
@@ -888,7 +952,7 @@ class PathwayMeasurement(WithFields):
                     error))
             value_groups = cells_connected
 
-        summed_value_groups = value_groups.agg("sum")[self.variable]
+        summed_value_groups = value_groups.agg("sum")[variables]
         
         return summed_value_groups.fillna(0.)
 
@@ -901,6 +965,7 @@ class PathwayMeasurement(WithFields):
                 circuit_model, adapter,
                 pre_synaptic_cell_group={},
                 post_synaptic_cell_group={},
+                target=None,
                 prefixed=True,
                 **kwargs):
             """"..."""
@@ -909,6 +974,7 @@ class PathwayMeasurement(WithFields):
                     circuit_model, adapter,
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     post_synaptic_cell_group=post_synaptic_cell_group,
+                    target=target,
                     prefixed=False,
                     **kwargs)
             query =\
@@ -917,16 +983,6 @@ class PathwayMeasurement(WithFields):
                     pre_synaptic_cell_group=pre_synaptic_cell_group,
                     direction=self.direction)
 
-            def _prefixed(measurement):
-                return\
-                    self._prefix_secondary_synaptic_side(query, measurement)\
-                    if prefixed else measurement
-
-            def _transformed(measurement):
-                return\
-                    measurement if transform is None\
-                    else self.pandamonad.transform(measurement, transform)
-
             if aggregate is None:
                 def _prefixed(measurement):
                     return\
@@ -934,9 +990,10 @@ class PathwayMeasurement(WithFields):
                             circuit_model, adapter, query, measurement)\
                         if prefixed else measurement
                 listed_samples =[
-                    _prefixed(measurement.dropna()) for measurement in samples]
+                    _prefixed(measurement.dropna()) for measurement in samples
+                    if measurement is not None]
                 if not listed_samples:
-                    return pd.DataFrame()
+                    return None
                 try:
                     result = pd.concat(listed_samples)
                 except TypeError:
@@ -945,6 +1002,15 @@ class PathwayMeasurement(WithFields):
                     LOGGER.get_source_info(),
                     "Collected measurement of size: {}".format(result.shape))
                 return result
+
+            def _prefixed(measurement):
+                return\
+                    self._prefix_secondary_synaptic_side(query, measurement)\
+                    if prefixed else measurement
+            def _transformed(measurement):
+                return\
+                    measurement if transform is None\
+                    else self.pandamonad.transform(measurement, transform)
             try:
                 result =\
                     _prefixed(
@@ -968,66 +1034,49 @@ class PathwayMeasurement(WithFields):
             return result.dropna()
         return _collect
 
-    def norm_per_pair(self,
+    def number_pairs(self,
             circuit_model, adapter,
             pre_synaptic_cell_group={},
             post_synaptic_cell_group={},
+            target=None,
             prefixed=True,
             **kwargs):
         """
-        Get a norm for the summaries...
-        Will be used to measure connection probability.
+        Number of pairs `(x, y)` where
+        `x in population(pre_synaptic_cell_group)`, and
+        `y in population(post_synaptic_cell_group)`
         """
-
-        query =\
-            PathwayQuery(
-                post_synaptic_cell_group=post_synaptic_cell_group,
-                pre_synaptic_cell_group=pre_synaptic_cell_group,
-                direction=self.direction)
-        target =\
-            self._sample_target(
+        query = PathwayQuery(
+            pre_synaptic_cell_group=pre_synaptic_cell_group,
+            post_synaptic_cell_group=post_synaptic_cell_group,
+            direction=self.direction)
+        if target is None:
+            target = self.sample_target(
                 circuit_model, adapter, query)
-        number_connections_pathway =\
-            self.collector("sum")(
-                circuit_model, adapter,
-                pre_synaptic_cell_group=pre_synaptic_cell_group,
-                post_synaptic_cell_group=post_synaptic_cell_group,
-                prefixed=prefixed,
-                **kwargs)
-
-        if number_connections_pathway is None:
-            return None
-
         if not self.by_soma_distance:
-            number_pairs_pathway =\
-                target.primary.shape[0] *\
-                target.secondary\
-                      .groupby(self.specifiers_cell_type)\
-                      .agg("size")
-
-            number_pairs_pathway.index.names =\
-                number_connections_pathway.index.names
-        else:
-            if target.primary.shape[0] * target.secondary.shape[0] > 1e9:
-                raise ValueError(
-                    """
-                    A target of size priaary: {}, secondary {}
-                    is too big to process.
-                    \t choose a smaller target.
-                    """.format(target.primary.shape[0],
-                               target.secondary.shape[0]))
-            number_pairs_pathway =\
-                self.with_field_values(
-                    connectivity=Connectivity.COMPLETE,
-                    target=self.target
-                ).collector("sum")(
-                    circuit_model, adapter,
-                    pre_synaptic_cell_group=pre_synaptic_cell_group,
-                    post_synaptic_cell_group=post_synaptic_cell_group,
-                    prefixed=prefixed,
-                    **kwargs
+            return self._prefix_secondary_synaptic_side(
+                query,
+                target.primary.shape[0] * target.secondary.groupby(
+                    self.specifiers_cell_type
+                ).agg(
+                    "size"
                 )
-
-        return (
-            number_connections_pathway / number_pairs_pathway
-        ).dropna()
+            )
+        if target.primary.shape[0] * target.secondary.shape[0] > 1.e9:
+            raise ValueError(
+                """
+                A target of size primary: {}, secondary {}
+                is too big to process.
+                \t choose a smaller target.
+                """.format(target.primary.shape[0],
+                           target.secondary.shape[0]))
+        return self.with_field_values(
+            connectivity=Connectivity.COMPLETE,
+            target=self.target
+        ).collector("sum")(
+            circuit_model, adapter,
+            pre_synaptic_cell_group=pre_synaptic_cell_group,
+            post_synaptic_cell_group=post_synaptic_cell_group,
+            prefixed=prefixed,
+            **kwargs
+        )

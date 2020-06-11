@@ -153,7 +153,7 @@ class HeatMap(BasePlotter):
         with seaborn.plotting_context(self.context,
                                       font_scale=self.font_scale,
                                       rc=self.rc_params()):
-            #fig, ax = plt.subplots(figsize=(12, 12))
+            plt.figure()
             self.adjustments_plt()
             graphic = seaborn\
                 .heatmap(
