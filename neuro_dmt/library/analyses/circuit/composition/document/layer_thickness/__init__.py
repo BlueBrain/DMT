@@ -24,8 +24,8 @@ from pathlib import Path
 from dmt.tk.author import Author
 from dmt.tk.plotting import Bars, MultiPlot
 from dmt.tk.utils import datasets
-from dmt.analysis.measurement import CompositeData
-from dmt.analysis.document.builder import DocumentBuilder
+from dmt.analysis.document.measurement import CompositeData
+from dmt.analysis.document.builder import LabReportBuilder
 from neuro_dmt.library.data.sscx_mouse.composition.layer_thickness import\
     cortical_thickness_defelipe,\
     relative_thickness_defelipe
@@ -35,7 +35,7 @@ def get(sample_size=100):
     Build a document that analyzes layer thickness.
     """
 
-    document = DocumentBuilder("Layer Thickness", author=Author.zero)
+    document = LabReportBuilder("Layer Thickness", author=Author.zero)
 
     @document.abstract
     def _():

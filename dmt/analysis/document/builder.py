@@ -17,6 +17,7 @@
 """
 Build a document
 """
+import types
 import inspect
 import functools
 from .components import *
@@ -56,7 +57,7 @@ class _SectionBuilder:
     """
     def __init__(self, title, document_builder):
         self.title = title
-        self.document_builder = document_builder
+        self.document = document_builder
         self.content = Record(
             narrative=OrderedDict(),
             data=OrderedDict(),
@@ -78,10 +79,10 @@ class _SectionBuilder:
         """
         raise NotImplementedError
 
-    def illustration(self, illustration):
+    def illustration(self, illustration, set_document_attr=False):
         argspec = inspect.getfullargspec(illustration)
+        caption = illustration.__doc__
         if not argspec.args and not argspec.varargs and not argspec.varkw:
-            caption = illustration.__doc__
             content = illustration()
             try:
                 content = Path(content)
@@ -89,13 +90,18 @@ class _SectionBuilder:
                 pass
             if not callable(content) and not isinstance(content, Mapping):
                 content = {illustration.__name__: content}
-
-        self.content.illustration[illustration.__name__] = {
+        else:
+            content = illustration
+                
+        _illustration = {
             "figures": content,
             "caption": caption
         }
+        self.content.illustration[illustration.__name__] = _illustration
+        if set_document_attr:
+            self.set_document_attribute(illustration.__name__,
+                                        "illustration", content)
         return illustration
-
 
     def tables(self, table):
         """
@@ -127,12 +133,48 @@ class _SectionBuilder:
             narrative=paragraphs(self.content.narrative),
             illustration=self.content.illustration,
             tables=self.content.tables)
-    def get_content(self):
+    def get_content(self, *args, **kwargs):
         return dict(
             narrative=paragraphs(self.content.narrative),
             illustration=self.content.illustration,
             tables=self.content.tables)
 
+    def get_struct(self, *args, **kwargs):
+        """..."""
+        return Record(
+            narrative=paragraphs(self.content.narrative),
+            illustration=Record(**{
+                label: illustration.figures
+                for label, illustration in self.content.illustration.items()}),
+            tables=Record(**self.content.tables))
+
+    def set_document_attribute(self, phenomenon, name_attribute, value_attribute):
+        """
+        Set an attribute on the document of which this section...
+        """
+        LOGGER.debug(
+            LOGGER.get_source_info(),
+            """
+            Set attribute {}: {}
+            """.format(phenomenon, name_attribute))
+        try:
+            phenomenon = getattr(self.document, phenomenon)
+        except AttributeError:
+            setattr(self.document, phenomenon, Record())
+            phenomenon = getattr(self.document, phenomenon)
+
+        setattr(phenomenon, name_attribute, value_attribute)
+
+
+
+class _SectionsCollector:
+    """
+    Collect and build a document's sections.
+    """
+    def __init__(self, title, document_builder):
+        self.title = title
+        self.document = document_builder
+        self._sections = OrderedDoc
 
 class _AbstractBuilder:
     def __init__(self, document_builder):
@@ -182,7 +224,7 @@ class _MethodsBuilder(_SectionBuilder):
     def __init__(self, document_builder):
         """..."""
         self.title = "Methods"
-        self.document_builder = document_builder
+        self.document = document_builder
         self.content = Record(narrative=OrderedDict(),
                                data=OrderedDict(),
                                reference_data=CompositeData(),
@@ -232,10 +274,14 @@ class _MethodsBuilder(_SectionBuilder):
                     """
                     Measurement of a model must be a callable.
                     """)
+            self.set_document_attribute(measurement.__name__,
+                                        "measurement", unloaded)
         else:
             self.content.measurements[measurement.__name__] ={
                 "description": measurement.__doc__,
                 "method": measurement}
+            self.set_document_attribute(measurement.__name__,
+                                        "measurement", measurement)
         return measurement
 
     def with_parent(self, document):
@@ -249,6 +295,14 @@ class _MethodsBuilder(_SectionBuilder):
             "narrative": paragraphs(self.content.narrative),
             "reference_data": self.content.reference_data,
             "measurements": self.content.measurements}
+    def get_struct(self):
+        return Record(
+            narrative=paragraphs(self.content.narrative),
+            reference_data=Record(**self.content.reference_data),
+            measurements=Record(**{
+                name: measurement.method
+                for name, measurement in self.measurements.items()
+            }))
 
 
 class _ResultsBuilder(_SectionBuilder):
@@ -258,12 +312,15 @@ class _ResultsBuilder(_SectionBuilder):
     def __init__(self, document_builder):
         super().__init__("Results", document_builder)
 
-    def get_content(self):
-        """..."""
-        return dict(
-            narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration,
-            tables=self.content.tables)
+    # def get_content(self):
+    #     """..."""
+    #     return dict(
+    #         narrative=paragraphs(self.content.narrative),
+    #         illustration=self.content.illustration,
+    #         tables=self.content.tables)
+
+    def illustration(self, illustration):
+        return super().illustration(illustration, set_document_attr=True)
 
     def with_parent(self, document):
         """..."""
@@ -279,14 +336,17 @@ class DocumentBuilder:
     A context manager to help build a document.
     """
     def __init__(self, title, author=Author.anonymous):
+        """
+        Arguments
+        ------------
+        module :: Name of the module to contain the methods defined
+        ~         in the document.
+        """
         self._title = title
         self._author = author
         self.document = Document(self._title)
         self.abstract = _AbstractBuilder(self)
         self.introduction = _IntroductionBuilder(self)
-        self.methods = _MethodsBuilder(self)
-        self.results = _ResultsBuilder(self)
-        self._sections = OrderedDict()
 
     @property
     def author(self):
@@ -295,6 +355,20 @@ class DocumentBuilder:
     @property
     def title(self):
         return self._title
+
+    def interfacemethod(self, function):
+        """
+        `function(adapter, method, *args, **kwargs)` should be added to
+        this documented analysis' interface.
+        """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            TO BE IMPLEMENTED:
+            A function decorator to add the input function to the document's
+            interface.
+            """)
+        return function
 
     def __enter__(self):
         """
@@ -313,7 +387,42 @@ class DocumentBuilder:
                 _SectionBuilder(title=title, document_builder=self)
         return self._sections[title]
 
+
+    @abstractmethod
     def get(self, *args, **kwargs):
+        """..."""
+        raise NotImplementedError
+
+    @classmethod
+    def chapter(cls, chapter):
+        """
+        chapter :: A callable...
+        """
+        document_builder = cls(chapter.__name__)
+        document_builder.abstract = Abstract(parent=document_builder,
+                                             narrative=chapter.__doc__)
+        return document_builder
+
+
+class LabReportBuilder(DocumentBuilder):
+    """
+    Build a `LabReport`.
+    """
+    def __init__(self, title, author=Author.anonymous):
+        """
+        Arguments
+        ------------
+        module :: Name of the module to contain the methods defined
+        ~         in the document.
+        """
+        super().__init__(title, author)
+        self.methods = _MethodsBuilder(self)
+        self.results = _ResultsBuilder(self)
+        self._sections = OrderedDict()
+
+
+    def get(self, *args, **kwargs):
+        """..."""
         return LabReport(
             author=self.author,
             title=self.title,
@@ -325,15 +434,18 @@ class DocumentBuilder:
                 (title, section.get_content())
                 for title, section in self._sections.items()]))
 
-    def chapter(self, chapter):
-        """
-        chapter :: A callable...
-        """
-        document_builder = DocumentBuilder(
-            chapter.__name__
+    @lazyfield
+    def analysis(self):
+        """..."""
+        return Record(
+            methods=self.methods.get_struct(),
+            results=self.results.get_struct()
         )
-        document_builder.abstract = Abstract(
-            parent=document_builder,
-            narrative=chapter.__doc__
-        )
-        return document_builder
+
+
+class ArticleBuilder(DocumentBuilder):
+    """
+    Build an `Article`.
+    """
+    pass
+

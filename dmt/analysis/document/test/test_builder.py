@@ -49,7 +49,7 @@ def test_context_management():
     path_save = get_path_save().joinpath("context")
     path_save.mkdir(parents=False, exist_ok=True)
 
-    with DocumentBuilder("Report") as document:
+    with LabReportBuilder("Report") as document:
         assert document.title == "Report"
         assert document.abstract.document_builder == document
 

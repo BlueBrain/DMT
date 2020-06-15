@@ -40,8 +40,8 @@ from dmt.tk.field import\
     NA, Record,\
     WithFields,\
     FieldIsRequired
-from .document import Narrative
-from .import _flattened_columns
+from .narrative import Narrative
+from ..import _flattened_columns
 
 class Measurement(WithFields, AIBase):
     """

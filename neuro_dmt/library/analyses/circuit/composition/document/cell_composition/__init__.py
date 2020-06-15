@@ -26,8 +26,8 @@ from dmt.tk.journal import Logger
 from dmt.tk.author import Author
 from dmt.tk.plotting import Bars, MultiPlot, LinePlot
 from dmt.tk.utils import datasets
-from dmt.analysis.measurement import CompositeData, Measurement
-from dmt.analysis.document.builder import DocumentBuilder
+from dmt.analysis.document.measurement import CompositeData, Measurement
+from dmt.analysis.document.builder import LabReportBuilder
 from neuro_dmt import terminology
 from neuro_dmt.utils.geometry import Cuboid
 from neuro_dmt.library.data.sscx_mouse.composition.cell_density import\
@@ -48,7 +48,7 @@ def get(sample_size=100):
     Build a document that analyzes cell composition of a circuit.
     """
 
-    document = DocumentBuilder("Cell Composition", author=Author.zero)
+    document = LabReportBuilder("Cell Composition", author=Author.zero)
 
     @document.abstract
     def _():

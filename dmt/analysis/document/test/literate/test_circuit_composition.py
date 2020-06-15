@@ -15,60 +15,49 @@
 # along with DMT source-code.  If not, see <https://www.gnu.org/licenses/>. 
 
 """
-Test develop document components.
+Test Develop
+Document layer thickness of a circuit.
 """
-from .test_composition import\
-    test_abstract,\
-    test_introduction,\
-    test_methods,\
-    test_results
-from .test_composition import *
-from .import *
+from ..test_composition import *
+from ..import *
+from .import get_path_save
+from .import circuit_composition
 
+LOGGER = Logger(client=__file__)
 
-def test_lab_report():
+LOGGER.status(
+    LOGGER.get_source_info(),
     """
-    A basic lab report should have:
-    0. Abstract
-    1. Introduction
-    2. Methods
-    3. Results
-    """
+    File {}
+    """.format(__file__))
+
+def test_document_attributes():
+    document = circuit_composition.document
+
+    assert hasattr(document, "cell_density")
+    assert hasattr(document.cell_density, "measurement")
+    assert callable(document.cell_density.measurement),\
+        type(document.cell_density.measurement)
+    assert hasattr(document.cell_density, "illustration")
+    assert callable(document.cell_density.illustration),\
+        type(document.cell_density.illustration)
+
+    assert hasattr(document, "inhibitory_fraction")
+    assert hasattr(document.inhibitory_fraction, "measurement")
+    assert callable(document.inhibitory_fraction.measurement)
+    assert hasattr(document.inhibitory_fraction, "illustration")
+    assert callable(document.inhibitory_fraction.illustration)
+
+    report = document.get()
+    path_save = get_path_save().joinpath("document")
+    path_save.mkdir(parents=False, exist_ok=True)
+
     adapter = MockAdapter()
     model = MockModel()
-    mock_experimental_figures = Bars(
-        xvar="layer", xlabel="Layer",
-        yvar="cell_density", ylabel="Cell Density"
-    )(mock_cell_density())
-    mock_experimental_figures.update(Bars(
-        xvar="layer", xlabel="Layer",
-        yvar="inhibitory_fraction", ylabel="Inhibitory Fraction"
-    )(mock_inh_fraction()))
-
-    plotter_cd = MultiPlot(
-        mvar="region",
-        plotter=Bars(
-            xvar="layer", xlabel="Layer",
-            yvar="cell_density", ylabel="Cell Density"))
-    plotter_if = MultiPlot(
-        mvar="region",
-        plotter=Bars(
-            xvar="layer", xlabel="Layer",
-            yvar="inhibitory_fraction", ylabel="Inhibitory Fraction"))
-
-    report = LabReport(
-        title="MockAnalysis",
-        phenomenon="Composition",
-        abstract=get_abstract(),
-        introduction=get_introduction(),
-        methods=get_methods(),
-        results=get_results())
-
-    path_save = get_path_save()
     value_report = report(adapter, model)
     path_report = report.save(value_report, path_save)
 
-    assert path_report._ == path_save.joinpath("mockanalysis")
+    assert path_report._ == path_save.joinpath("circuit_composition")
     test_abstract(Record(
         instance=report.abstract,
         value=value_report.abstract,
@@ -85,5 +74,3 @@ def test_lab_report():
         instance=report.results,
         value=value_report.results,
         path_save=path_report._))
-
-    return True

@@ -21,10 +21,10 @@ from itertools import islice
 from pickle import PicklingError
 import json
 from dmt.tk.field.exceptions import MissingFieldError
-from ..measurement import\
+from .import *
+from .measurement import\
     Measurement, MeasurementSuite,\
     CompositeData, save_elemental
-from .import *
 
 
 class Section(DocElem):

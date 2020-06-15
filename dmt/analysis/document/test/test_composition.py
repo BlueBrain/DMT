@@ -19,7 +19,7 @@ Test develop composition of Narrative, Data, Illustration
 """
 
 from ..components import *
-from ...measurement import CompositeData
+from ..measurement import CompositeData
 from .import *
 
 def get_abstract(document=None):

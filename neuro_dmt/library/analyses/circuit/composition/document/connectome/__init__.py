@@ -28,8 +28,8 @@ from dmt.tk.author import Author
 from dmt.tk.parameters import Parameters
 from dmt.tk.plotting import Bars, MultiPlot, LinePlot, HeatMap
 from dmt.tk.utils import datasets
-from dmt.analysis.measurement import CompositeData, Measurement
-from dmt.analysis.document.builder import DocumentBuilder
+from dmt.analysis.document.measurement import CompositeData, Measurement
+from dmt.analysis.document.builder import LabReportBuilder
 from neuro_dmt import terminology
 from neuro_dmt.utils.geometry import Cuboid
 from neuro_dmt.library.data.sscx_mouse.composition.cell_density import\
@@ -55,7 +55,7 @@ def get(sample_size=100, target={}, **kwargs):
     sample_size :: Population size to sample for a measurement.
     """
 
-    document = DocumentBuilder("Circuit Connectome", author=Author.zero)
+    document = LabReportBuilder("Circuit Connectome", author=Author.zero)
 
     @document.abstract
     def _():
@@ -112,6 +112,11 @@ def get(sample_size=100, target={}, **kwargs):
         connected to a cell from a post-synaptic population?
         The pre and post synaptic populations are specified by their mtypes.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Compute connection probability.
+            """)
         pathway_measurement = PathwayMeasurement(
             direction="AFF",
             value={"number": lambda c: 1.},
@@ -157,6 +162,11 @@ def get(sample_size=100, target={}, **kwargs):
         Number of synapses mediating connections.
         The pre and post synaptic populations are specified by their mtypes.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Compute synapse count.
+            """)
         strength = lambda connections: connections.strength.to_numpy(np.float)
         pathway_measurement = PathwayMeasurement(
             direction="AFF",
@@ -198,6 +208,11 @@ def get(sample_size=100, target={}, **kwargs):
         """
         Number of afferent / in-coming connections at a neuron of a given mtype.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Compute in-degree.
+            """)
         pathway_measurement = PathwayMeasurement(
             direction="AFF",
             value={"indegree": lambda c: 1.},
@@ -232,6 +247,11 @@ def get(sample_size=100, target={}, **kwargs):
         """
         Number of efferent / out-going connections from a neuron of a given mtype.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Compute out-degree.
+            """)
         pathway_measurement = PathwayMeasurement(
             direction="EFF",
             value={"outdegree": lambda c: 1.},
@@ -267,6 +287,11 @@ def get(sample_size=100, target={}, **kwargs):
         How many connections from neurons of a given pre-synaptic mtype
         to a neuron of a give post-synaptic mtype.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Compute number of afferent connections.
+            """)
         pathway_measurement = PathwayMeasurement(
             direction="AFF",
             value={"number_afferent_connections": lambda c: 1.},
@@ -332,6 +357,11 @@ def get(sample_size=100, target={}, **kwargs):
         to a neuron from a post-synaptic population. The populations are specified
         by mtype.
         """
+        LOGGER.info(
+            LOGGER.get_source_info(),
+            """
+            Illustration connection probability.
+            """)
         return HeatMap(
             vvar="connection_probability",
             xvar=("post_synaptic_cell_group", "mtype"),

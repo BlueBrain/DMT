@@ -146,10 +146,13 @@ class _MockCircuitAdapter:
         )
         return positions.apply(_thickness, axis=1)
 
+    def get_height(self, model, depth):
+        return model.yrange[1] - depth
+
 
 TESTOBJ = None
 
-def get_test_object(chapter, **kwargs):
+def get_test_object(chapter=None, **kwargs):
     """..."""
     global TESTOBJ
 
@@ -159,19 +162,27 @@ def get_test_object(chapter, **kwargs):
             """
             Get a document builder.
             """)
-        document = chapter.get(sample_size=100, **kwargs)
+        try:
+            get_chapter = chapter.get
+        except AttributeError:
+            try:
+                document = chapter.document
+            except AttributeError:
+                document = chapter
+        else:
+            document = get_chapter(sample_size=100, **kwargs)
         LOGGER.status(
             LOGGER.get_source_info(),
             """
             Build a circuit to work with.
             """)
         if CIRCUIT == "MOCK":
-            circuit = MockCircuitModel(circuit_composition,
-                                       circuit_connectivity,
-                                       label="SSCxMockCircuit")
-            adapter = MockCircuitAdapter()
-            #circuit = _MockCircuitModel()
-            #adapter = _MockCircuitAdapter()
+     #       circuit = MockCircuitModel(circuit_composition,
+     #                                  circuit_connectivity,
+     #                                  label="SSCxMockCircuit")
+     #       adapter = MockCircuitAdapter()
+            circuit = _MockCircuitModel()
+            adapter = _MockCircuitAdapter()
         else:
             LOGGER.status(
                 LOGGER.get_source_info(),

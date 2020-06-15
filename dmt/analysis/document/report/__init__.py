@@ -34,7 +34,6 @@ def _get_label(x):
     return None
 
 
-
 class LabReport(Document):
     """
     A specialize type of report.
