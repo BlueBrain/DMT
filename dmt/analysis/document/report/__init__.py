@@ -36,7 +36,7 @@ def _get_label(x):
 
 class LabReport(Document):
     """
-    A specialize type of report.
+    A specialized type of report.
     """
     author = Field(
         """
@@ -84,7 +84,7 @@ class LabReport(Document):
     #@field.cast(Phenomenon)
     def phenomenon(self):
         """
-        Phenomenon studied in this lab-report. 
+        Phenomenon studied in this lab-report.
         """
         return NA
 
@@ -180,10 +180,10 @@ class LabReport(Document):
             author=self.author,
             phenomenon=_get_label(self.phenomenon),
             label=self.label,
-            abstract=self.abstract(adapter, model),
-            introduction=self.introduction(adapter, model),
-            methods=self.methods(adapter, model),
-            results=self.results(adapter, model))
+            abstract=self.abstract(adapter, model, *args, **kwargs),
+            introduction=self.introduction(adapter, model, *args, **kwargs),
+            methods=self.methods(adapter, model, *args, **kwargs),
+            results=self.results(adapter, model, *args, **kwargs))
 
 
     def post(self, report, path_output, html=True, latex=False):
@@ -515,3 +515,6 @@ class LabReport(Document):
         with open(path_file, 'w') as file_ptr:
             file_ptr.write(report_html)
         return path_file
+
+
+from .article import Article

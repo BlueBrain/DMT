@@ -48,6 +48,29 @@ class Section(DocElem):
             except TypeError:
                 super().__init__(narrative=args[0], *args[1:], **kwargs)
 
+    @field.cast(MeasurementSuite)
+    def measurements(self):
+        """
+        A dict that will be cast to become a `MeasurementSuite`.
+        """
+        return NA
+
+    @field.cast(CompositeData)
+    def reference_data(self):
+        """
+        Reference data to be used for analysis.
+
+        Valid values
+        ---------------
+        1.`pandas.DataFrame`
+        2. Mapping{label -> pandas.DataFrame}
+
+        Examples
+        ---------------
+        { "cell_density": {label_x: data_x, label_y: data_y} }
+        """
+        return NA
+
     @field.cast(Data)
     def data(self):
         """
@@ -115,14 +138,6 @@ class Section(DocElem):
 
         return record
 
-    def get_illustration_data(self, adapter, model, *args, **kwargs):
-        """
-        Data for illustrations.
-
-        Override this ....
-        """
-        return self.data(adapter, model, *args, **kwargs)
-
     def get_tables_values(self, adapter, model, *args, **kwargs):
         """..."""
         def _evaluate(label, table):
@@ -136,6 +151,67 @@ class Section(DocElem):
             (label, _evaluate(label, table))
             for label, table in self.tables.items()
         ]))
+
+    def get_illustration_data(self, adapter, model, *args, **kwargs):
+        """
+        Gather measurement and reference data.
+        """
+
+        def _get_data(dataset):
+            try:
+                return dataset.data
+            except AttributeError:
+                return dataset
+
+        data_illustration = OrderedDict()
+
+        measurements = self.measurements(adapter, model, *args, **kwargs)
+
+        def _align(reference_data, measurement_data):
+            """
+            Align reference data to the measurement.
+            """
+            try:
+                return reference_data.set_index(measurement_data.index.names)
+            except KeyError:
+                if reference_data.index.names != measurement_data.index.names:
+                    raise ValueError(
+                        """
+                        Measurement and Reference data do not have the same indices:
+                        \t Reference index names: {}.
+                        \t Measurement index names {}
+                        """.format(reference_data.index.names,
+                                   measurement_data.index.names))
+                return reference_data
+
+
+        for label_measurement, data_measurement in measurements.items():
+            reference_data =\
+                self.reference_data.get(label_measurement, NA)
+            data_illustration[label_measurement] ={
+                adapter.get_label(model): data_measurement}
+            if reference_data is not NA:
+                if not isinstance(reference_data, Mapping):
+                    reference_data = {"reference": _align(reference_data,
+                                                          data_measurement)}
+                data_illustration[label_measurement].update({
+                    label: _align(_get_data(data),
+                                  data_measurement)
+                    for label, data in reference_data.items()})
+
+        for label_data, reference_data in self.reference_data.items():
+            if label_data not in data_illustration:
+                data_illustration[label_data] = reference_data
+
+        data = self.data(adapter, model, *args, **kwargs)
+        if data:
+            try:
+                data_illustration.update(data)
+            except TypeError:
+                data_illustration["data"] = data
+
+        return data_illustration
+            
 
     def _latex_illustration(self, section, path_tree_report, n_single_page=3):
         """
@@ -362,29 +438,6 @@ class Introduction(Section):
 class Methods(Section):
     """..."""
     title = "Methods"
-    @field.cast(MeasurementSuite)
-    def measurements(self):
-        """
-        A dict that will be cast to become a `MeasurementSuite`.
-        """
-        return NA
-
-    @field.cast(CompositeData)
-    def reference_data(self):
-        """
-        Reference data to be used for analysis.
-
-        Valid values
-        ---------------
-        1.`pandas.DataFrame`
-        2. Mapping{label -> pandas.DataFrame}
-
-        Examples
-        ---------------
-        { "cell_density": {label_x: data_x, label_y: data_y} }
-        """
-        return NA
-
     def save(self, value, path_folder):
         """
         Save a value of this methods instance evaluated for a given
@@ -451,59 +504,6 @@ class Results(Section):
     @lazyfield
     def reference_data(self):
         return self.parent.methods.reference_data
-
-    def get_illustration_data(self, adapter, model, *args, **kwargs):
-        """
-        Gather measurement and reference data.
-        """
-
-        def _get_data(dataset):
-            try:
-                return dataset.data
-            except AttributeError:
-                return dataset
-
-        data_illustration = OrderedDict()
-
-        measurements = self.measurements(adapter, model, *args, **kwargs)
-
-        def _align(reference_data, measurement_data):
-            """
-            Align reference data to the measurement.
-            """
-            try:
-                return reference_data.set_index(measurement_data.index.names)
-            except KeyError:
-                if reference_data.index.names != measurement_data.index.names:
-                    raise ValueError(
-                        """
-                        Measurement and Reference data do not have the same indices:
-                        \t Reference index names: {}.
-                        \t Measurement index names {}
-                        """.format(reference_data.index.names,
-                                   measurement_data.index.names))
-                return reference_data
-
-
-        for label_measurement, data_measurement in measurements.items():
-            reference_data =\
-                self.reference_data.get(label_measurement, NA)
-            data_illustration[label_measurement] ={
-                adapter.get_label(model): data_measurement}
-            if reference_data is not NA:
-                if not isinstance(reference_data, Mapping):
-                    reference_data = {"reference": _align(reference_data,
-                                                          data_measurement)}
-                data_illustration[label_measurement].update({
-                    label: _align(_get_data(data),
-                                  data_measurement)
-                    for label, data in reference_data.items()})
-
-        for label_data, reference_data in self.reference_data.items():
-            if label_data not in data_illustration:
-                data_illustration[label_data] = reference_data
-
-        return data_illustration
 
     def save(self, value, path_folder):
         """

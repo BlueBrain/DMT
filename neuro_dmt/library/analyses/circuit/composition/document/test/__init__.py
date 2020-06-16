@@ -166,9 +166,10 @@ def get_test_object(chapter=None, **kwargs):
             get_chapter = chapter.get
         except AttributeError:
             try:
-                document = chapter.document
+                chapter = chapter.document
             except AttributeError:
-                document = chapter
+                chapter = chapter.article
+            document = chapter.get(sample_size=100, **kwargs)
         else:
             document = get_chapter(sample_size=100, **kwargs)
         LOGGER.status(

@@ -78,6 +78,14 @@ def make_label(string, separator='_'):
         separator=separator,
         with_capitalized_words=False)
     
+def make_title(label, separator='_'):
+    """
+    Make title from a string representing a label.
+    A label cannot have any spaces.
+    The intended spaces are separated by a separator.
+    """
+    return ' '.join(w.capitalize() for w in label.split(separator))
+    
 def paragraphs(string):
     """
     Convert a (doc-)string into paragraphs, with each paragraph consisting

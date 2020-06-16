@@ -21,7 +21,7 @@ import types
 import inspect
 import functools
 from .components import *
-from .report import LabReport
+from .report import LabReport, Article
 
 LOGGER = Logger(client=__file__, level=Logger.Level.STUDY)
 
@@ -58,11 +58,11 @@ class _SectionBuilder:
     def __init__(self, title, document_builder):
         self.title = title
         self.document = document_builder
-        self.content = Record(
-            narrative=OrderedDict(),
-            data=OrderedDict(),
-            tables=CompositeData(),
-            illustration=OrderedDict())
+        self.content = Record(narrative=OrderedDict(),
+                              measurements=OrderedDict(),
+                              data=OrderedDict(),
+                              tables=CompositeData(),
+                              illustration=OrderedDict())
 
     def data(self, data):
         """
@@ -78,6 +78,35 @@ class _SectionBuilder:
         ~     `CompositeData`.
         """
         raise NotImplementedError
+
+    def measurements(self, measurement):
+        """
+        One measurement at a time.
+        """
+        argspec = inspect.getfullargspec(measurement)
+        if not argspec.args and not argspec.varargs and not argspec.varkw:
+            unloaded = measurement()
+            if isinstance(unloaded, (Measurement, Mapping)):
+                self.content.measurements[measurement.__name__] =\
+                    unloaded
+            elif callable(unloaded):
+                self.content.measurements[measurement.__name__] ={
+                    "description": measurement.__doc__,
+                    "method": unloaded}
+            else:
+                raise TypeError(
+                    """
+                    Measurement of a model must be a callable.
+                    """)
+            self.set_document_attribute(measurement.__name__,
+                                        "measurement", unloaded)
+        else:
+            self.content.measurements[measurement.__name__] ={
+                "description": measurement.__doc__,
+                "method": measurement}
+            self.set_document_attribute(measurement.__name__,
+                                        "measurement", measurement)
+        return measurement
 
     def illustration(self, illustration, set_document_attr=False):
         argspec = inspect.getfullargspec(illustration)
@@ -134,10 +163,14 @@ class _SectionBuilder:
             illustration=self.content.illustration,
             tables=self.content.tables)
     def get_content(self, *args, **kwargs):
-        return dict(
-            narrative=paragraphs(self.content.narrative),
-            illustration=self.content.illustration,
-            tables=self.content.tables)
+        content = dict(narrative=paragraphs(self.content.narrative),
+                       illustration=self.content.illustration,
+                       tables=self.content.tables)
+        if self.content.measurements:
+            content["measurements"] = self.content.measurements
+        if self.content.data:
+            content["data"] = self.content.data
+        return content
 
     def get_struct(self, *args, **kwargs):
         """..."""
@@ -165,16 +198,6 @@ class _SectionBuilder:
 
         setattr(phenomenon, name_attribute, value_attribute)
 
-
-
-class _SectionsCollector:
-    """
-    Collect and build a document's sections.
-    """
-    def __init__(self, title, document_builder):
-        self.title = title
-        self.document = document_builder
-        self._sections = OrderedDoc
 
 class _AbstractBuilder:
     def __init__(self, document_builder):
@@ -255,35 +278,6 @@ class _MethodsBuilder(_SectionBuilder):
         })
         return reference_data
 
-    def measurements(self, measurement):
-        """
-        One measurement at a time.
-        """
-        argspec = inspect.getfullargspec(measurement)
-        if not argspec.args and not argspec.varargs and not argspec.varkw:
-            unloaded = measurement()
-            if isinstance(unloaded, (Measurement, Mapping)):
-                self.content.measurements[measurement.__name__] =\
-                    unloaded
-            elif callable(unloaded):
-                self.content.measurements[measurement.__name__] ={
-                    "description": measurement.__doc__,
-                    "method": unloaded}
-            else:
-                raise TypeError(
-                    """
-                    Measurement of a model must be a callable.
-                    """)
-            self.set_document_attribute(measurement.__name__,
-                                        "measurement", unloaded)
-        else:
-            self.content.measurements[measurement.__name__] ={
-                "description": measurement.__doc__,
-                "method": measurement}
-            self.set_document_attribute(measurement.__name__,
-                                        "measurement", measurement)
-        return measurement
-
     def with_parent(self, document):
         return Methods(
             parent=document,
@@ -336,12 +330,7 @@ class DocumentBuilder:
     A context manager to help build a document.
     """
     def __init__(self, title, author=Author.anonymous):
-        """
-        Arguments
-        ------------
-        module :: Name of the module to contain the methods defined
-        ~         in the document.
-        """
+        """..."""
         self._title = title
         self._author = author
         self.document = Document(self._title)
@@ -387,7 +376,6 @@ class DocumentBuilder:
                 _SectionBuilder(title=title, document_builder=self)
         return self._sections[title]
 
-
     @abstractmethod
     def get(self, *args, **kwargs):
         """..."""
@@ -420,7 +408,6 @@ class LabReportBuilder(DocumentBuilder):
         self.results = _ResultsBuilder(self)
         self._sections = OrderedDict()
 
-
     def get(self, *args, **kwargs):
         """..."""
         return LabReport(
@@ -443,9 +430,61 @@ class LabReportBuilder(DocumentBuilder):
         )
 
 
+class _SectionsCollector(Mapping):
+    """
+    Collect and build a document's sections.
+    """
+    def __init__(self, document_builder, sections=None):
+        self.document = document_builder
+        self._sections = OrderedDict() if not sections else sections
+
+    def __getattr__(self, attribute):
+        """..."""
+        section = _SectionBuilder(attribute, self.document)
+        setattr(self, attribute, section)
+        self._sections[attribute] = section
+        return section
+
+    def items(self):
+        return self._sections.items()
+
+    def map_value(self, transformed):
+        return self.__class__(self.document,
+                              OrderedDict([
+                                  (label, transformed(section))
+                                  for label, section in self.items()
+                              ]))
+
+    def __getitem__(self, label):
+        try:
+            return self._sections[label]
+        except KeyError as error:
+            raise KeyError(
+                "No such section: {}".format(label))
+        return None
+
+    def __iter__(self):
+        return self._sections.__iter__()
+
+    def __len__(self):
+        return len(self._sections)
+
+
 class ArticleBuilder(DocumentBuilder):
     """
     Build an `Article`.
     """
-    pass
+    def __init__(self, *args, **kwargs):
+        """..."""
+        super().__init__(*args, **kwargs)
+        self.sections = _SectionsCollector(self)
 
+
+    def get(self, *args, **kwargs):
+        """..."""
+        return Article(
+            author=self.author,
+            title=self.title,
+            abstract=self.abstract.get_content(),
+            introduction=self.introduction.get_content(),
+            sections=self.sections.map_value(lambda s: s.get_content()))

@@ -406,4 +406,3 @@ def get(sample_size=100):
                         gvar="region")
 
     return document.get()
-

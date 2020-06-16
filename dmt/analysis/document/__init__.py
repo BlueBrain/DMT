@@ -44,7 +44,7 @@ from dmt.tk.field import\
     WithFields,\
     FieldIsRequired
 from dmt.tk.plotting.figure import Figure
-from dmt.tk.utils.string_utils import make_label
+from dmt.tk.utils.string_utils import make_label, make_title
 from neuro_dmt import terminology
 from ..import _flattened_columns
 from .template import TaggedTemplateString
@@ -674,6 +674,7 @@ class Document(WithFields):
         """
         return OrderedDict()
 
+    @classmethod
     def get_class_sections(cls):
         """
         Sections defined in this `Document class`
